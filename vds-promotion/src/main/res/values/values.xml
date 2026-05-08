@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="recyclerViewDividerAsSpace" format="boolean" />
+    <attr name="recyclerViewDividerDrawable" format="reference" />
+    <attr name="recyclerViewDividerInsetEnd" format="dimension" />
+    <attr name="recyclerViewDividerInsetStart" format="dimension" />
+    <attr name="recyclerViewDividerSize" format="dimension" />
+    <attr name="recyclerViewDividerTint" format="color" />
+    <dimen name="gridBottom">@dimen/_13sdp</dimen>
+    <dimen name="gridLeft">@dimen/_13sdp</dimen>
+    <dimen name="gridRight">@dimen/_13sdp</dimen>
+    <dimen name="gridTop">@dimen/_13sdp</dimen>
+    <dimen name="tokenBorderRadius02">@dimen/_2sdp</dimen>
+    <dimen name="tokenBorderRadius04">@dimen/_3sdp</dimen>
+    <dimen name="tokenBorderRadius06">@dimen/_4sdp</dimen>
+    <dimen name="tokenBorderRadius08">@dimen/_6sdp</dimen>
+    <dimen name="tokenBorderRadius10">@dimen/_8sdp</dimen>
+    <dimen name="tokenBorderRadius12">@dimen/_10sdp</dimen>
+    <dimen name="tokenBorderRadius14">@dimen/_11sdp</dimen>
+    <dimen name="tokenBorderRadius16">@dimen/_13sdp</dimen>
+    <dimen name="tokenBorderRadius18">@dimen/_14sdp</dimen>
+    <dimen name="tokenBorderRadius20">@dimen/_16sdp</dimen>
+    <dimen name="tokenBorderRadius22">@dimen/_18sdp</dimen>
+    <dimen name="tokenBorderRadius24">@dimen/_19sdp</dimen>
+    <dimen name="tokenCellHeight40">@dimen/_40sdp</dimen>
+    <dimen name="tokenFontSize10">@dimen/_8sdp</dimen>
+    <dimen name="tokenFontSize12">@dimen/_10sdp</dimen>
+    <dimen name="tokenFontSize13">@dimen/_11sdp</dimen>
+    <dimen name="tokenFontSize14">@dimen/_12sdp</dimen>
+    <dimen name="tokenFontSize16">@dimen/_13sdp</dimen>
+    <dimen name="tokenFontSize18">@dimen/_15sdp</dimen>
+    <dimen name="tokenFontSize22">@dimen/_18sdp</dimen>
+    <dimen name="tokenFontSize24">@dimen/_20sdp</dimen>
+    <dimen name="tokenFontSize26">@dimen/_22sdp</dimen>
+    <dimen name="tokenPadingApp">@dimen/_14sdp</dimen>
+    <dimen name="tokenServiceSize">@dimen/_38sdp</dimen>
+    <dimen name="tokenSizing01">@dimen/_1sdp</dimen>
+    <dimen name="tokenSizing02">@dimen/_2sdp</dimen>
+    <dimen name="tokenSizing04">@dimen/_3sdp</dimen>
+    <dimen name="tokenSizing08">@dimen/_6sdp</dimen>
+    <dimen name="tokenSizing104">@dimen/_83sdp</dimen>
+    <dimen name="tokenSizing112">@dimen/_90sdp</dimen>
+    <dimen name="tokenSizing120">@dimen/_96sdp</dimen>
+    <dimen name="tokenSizing128">@dimen/_102sdp</dimen>
+    <dimen name="tokenSizing136">@dimen/_109sdp</dimen>
+    <dimen name="tokenSizing144">@dimen/_115sdp</dimen>
+    <dimen name="tokenSizing152">@dimen/_122sdp</dimen>
+    <dimen name="tokenSizing16">@dimen/_13sdp</dimen>
+    <dimen name="tokenSizing160">@dimen/_128sdp</dimen>
+    <dimen name="tokenSizing168">@dimen/_134sdp</dimen>
+    <dimen name="tokenSizing176">@dimen/_141sdp</dimen>
+    <dimen name="tokenSizing184">@dimen/_147sdp</dimen>
+    <dimen name="tokenSizing192">@dimen/_154sdp</dimen>
+    <dimen name="tokenSizing200">@dimen/_160sdp</dimen>
+    <dimen name="tokenSizing24">@dimen/_19sdp</dimen>
+    <dimen name="tokenSizing32">@dimen/_26sdp</dimen>
+    <dimen name="tokenSizing40">@dimen/_32sdp</dimen>
+    <dimen name="tokenSizing42">@dimen/_34sdp</dimen>
+    <dimen name="tokenSizing48">@dimen/_38sdp</dimen>
+    <dimen name="tokenSizing56">@dimen/_45sdp</dimen>
+    <dimen name="tokenSizing64">@dimen/_51sdp</dimen>
+    <dimen name="tokenSizing72">@dimen/_58sdp</dimen>
+    <dimen name="tokenSizing80">@dimen/_64sdp</dimen>
+    <dimen name="tokenSizing88">@dimen/_70sdp</dimen>
+    <dimen name="tokenSizing96">@dimen/_77sdp</dimen>
+    <dimen name="tokenSpacing00">0dp</dimen>
+    <dimen name="tokenSpacing02">@dimen/_2sdp</dimen>
+    <dimen name="tokenSpacing04">@dimen/_3sdp</dimen>
+    <dimen name="tokenSpacing08">@dimen/_6sdp</dimen>
+    <dimen name="tokenSpacing10">@dimen/_8sdp</dimen>
+    <dimen name="tokenSpacing12">@dimen/_10sdp</dimen>
+    <dimen name="tokenSpacing14">@dimen/_11sdp</dimen>
+    <dimen name="tokenSpacing16">@dimen/_13sdp</dimen>
+    <dimen name="tokenSpacing18">@dimen/_14sdp</dimen>
+    <dimen name="tokenSpacing20">@dimen/_16sdp</dimen>
+    <dimen name="tokenSpacing22">@dimen/_18sdp</dimen>
+    <dimen name="tokenSpacing24">@dimen/_19sdp</dimen>
+    <dimen name="tokenSpacing32">@dimen/_26sdp</dimen>
+    <dimen name="tokenSpacing40">@dimen/_32sdp</dimen>
+    <dimen name="tokenSpacing48">@dimen/_38sdp</dimen>
+    <dimen name="tokenSpacing56">@dimen/_45sdp</dimen>
+    <dimen name="tokenSpacing64">@dimen/_51sdp</dimen>
+    <dimen name="tokenStatusBarHeight">@dimen/_40sdp</dimen>
+    <integer name="tokenTimingDelay200">200</integer>
+    <integer name="tokenTimingDelay300">300</integer>
+    <integer name="tokenTimingDuration1000">1000</integer>
+    <integer name="tokenTimingDuration2000">2000</integer>
+    <integer name="tokenTimingDuration3000">3000</integer>
+    <integer name="tokenTimingIterationCount01">1</integer>
+    <integer name="tokenTimingIterationCount02">1</integer>
+    <integer name="tokenTimingIterationCount03">1</integer>
+    <integer name="tokenTimingIterationCountInfinite">-1</integer>
+
+    <style name="fontSfDisplayBold14">
+        <item name="fontFamily">@font/sf_pro_display_bold</item>
+        <item name="android:textSize">@dimen/_11sdp</item>
+        <item name="lineHeight">@dimen/_14sdp</item>
+    </style>
+</resources>

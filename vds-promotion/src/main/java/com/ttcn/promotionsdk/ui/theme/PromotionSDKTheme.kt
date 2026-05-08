@@ -3,7 +3,7 @@ package com.ttcn.promotionsdk.ui.theme
 
 data class PromotionSDKTheme(
     val colors: PromotionColorToken = PromotionColorToken(),
-//    val typography: PromotionTypographyToken = PromotionTypographyToken(),
-//    val icons: PromotionIconToken = PromotionIconToken(),
-//    val shape: PromotionShapeToken = PromotionShapeToken()
+    val fonts: PromotionFontTokens = PromotionFontTokens(),
+    val icons: PromotionIconToken = PromotionIconToken(),
+    val borders: PromotionBorderTokens = PromotionBorderTokens()
 )
