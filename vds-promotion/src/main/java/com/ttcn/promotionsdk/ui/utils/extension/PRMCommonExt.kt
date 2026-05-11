@@ -18,6 +18,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
+import kotlin.text.toUpperCase
 
 fun Float.dpToPixel(): Int {
     val metrics = Resources.getSystem().displayMetrics
@@ -188,4 +189,58 @@ fun parseTimeToSeconds(timeString: String): Int? {
         Timber.tag("DisplayTimeFrames").e(e, "Error parsing time: $timeString")
         null
     }
+}
+
+private var vn = arrayOf(
+    "à", "á", "ả", "ã", "ạ",
+    "â", "ầ", "ấ", "ẩ", "ẫ", "ậ",
+    "ă", "ằ", "ắ", "ẳ", "ẵ", "ặ",
+    "è", "é", "ẻ", "ẽ", "ẹ",
+    "ê", "ề", "ế", "ể", "ễ", "ệ",
+    "ò", "ó", "ỏ", "õ", "ọ",
+    "ô", "ố", "ồ", "ổ", "ỗ", "ộ",
+    "ơ", "ờ", "ớ", "ở", "ỡ", "ợ",
+    "ù", "ú", "ủ", "ũ", "ụ",
+    "ư", "ừ", "ứ", "ử", "ữ", "ự",
+    "ì", "í", "ỉ", "ĩ", "ị", "ỳ", "ý", "ỷ", "ỹ", "ỵ", "đ"
+)
+
+private var en = arrayOf(
+    "a", "a", "a", "a", "a",
+    "a", "a", "a", "a", "a", "a",
+    "a", "a", "a", "a", "a", "a",
+    "e", "e", "e", "e", "e",
+    "e", "e", "e", "e", "e", "e",
+    "o", "o", "o", "o", "o",
+    "o", "o", "o", "o", "o", "o",
+    "o", "o", "o", "o", "o", "o",
+    "u", "u", "u", "u", "u",
+    "u", "u", "u", "u", "u", "u",
+    "i", "i", "i", "i", "i", "y", "y", "y", "y", "y", "d"
+)
+
+private var normalizeEn = arrayOf(
+    "af", "as", "ar", "ax", "aj",
+    "aa", "a", "a", "a", "a", "a",
+    "aw", "a", "a", "a", "a", "a",
+    "ef", "es", "er", "ex", "ej",
+    "e", "e", "e", "e", "e", "e",
+    "of", "os", "or", "ox", "oj",
+    "o", "o", "o", "o", "o", "o",
+    "o", "o", "o", "o", "o", "o",
+    "uf", "us", "ur", "ux", "uj",
+    "u", "u", "u", "u", "u", "u",
+    "if", "is", "ir", "ix", "ij", "yf", "ys", "yr", "yx", "yj", "dd"
+)
+
+/**
+ * replace Accents
+ */
+fun String.replaceAccents(): String {
+    var s = this
+    vn.forEachIndexed { index, v ->
+        s = s.replace(v, en[index])
+        s = s.replace(uppercase(Locale.US), uppercase(Locale.US))
+    }
+    return s
 }

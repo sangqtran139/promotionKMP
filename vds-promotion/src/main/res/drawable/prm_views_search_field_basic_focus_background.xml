@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+  <solid android:color="@color/tokenWhite" />
+  <stroke
+    android:width="@dimen/tokenSizing01"
+    android:color="@color/tokenDark10" />
+  <corners android:radius="@dimen/tokenBorderRadius16" />
+</shape>

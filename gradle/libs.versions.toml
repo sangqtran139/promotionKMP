@@ -12,9 +12,11 @@ constraintlayout = "2.1.4"
 material = "1.12.0"
 coil = "2.6.0"
 fragment = "1.7.1"
+shapeofview = "1.4.7"
 swiperefreshlayout = "1.1.0"
 sdp = "1.0.6"
 timber = "5.0.1"
+appcompatVersion = "1.7.1"
 shimmer = "0.5.0"
 
 [libraries]
@@ -34,10 +36,12 @@ constraintlayout = { module = "androidx.constraintlayout:constraintlayout", vers
 material = { module = "com.google.android.material:material", version.ref = "material" }
 coil = { module = "io.coil-kt:coil", version.ref = "coil" }
 fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
+shapeofview = { module = "io.github.florent37:shapeofview", version.ref = "shapeofview" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 sdp-android = { module = "com.intuit.sdp:sdp-android", version.ref = "sdp" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 shimmer = { group = "com.facebook.shimmer", name = "shimmer", version.ref = "shimmer" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompatVersion" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

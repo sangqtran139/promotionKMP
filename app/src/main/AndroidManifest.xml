@@ -3,7 +3,12 @@
     <application
         android:icon="@drawable/app_logo"
         android:label="Promotion SDK"
-        android:roundIcon="@drawable/app_logo">
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.PRMApplication">
         <activity
             android:name=".MainActivity"
             android:exported="true">

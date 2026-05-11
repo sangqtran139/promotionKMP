@@ -90,6 +90,7 @@
     <integer name="tokenTimingIterationCount02">1</integer>
     <integer name="tokenTimingIterationCount03">1</integer>
     <integer name="tokenTimingIterationCountInfinite">-1</integer>
+    <integer name="tokenOpacity08">20</integer>
 
     <style name="fontSfDisplayBold14">
         <item name="fontFamily">@font/sf_pro_display_bold</item>

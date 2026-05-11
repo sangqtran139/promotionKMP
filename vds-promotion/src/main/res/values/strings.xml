@@ -7,4 +7,9 @@
     <string name="hot_deal_description">Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!</string>
     <string name="my_promotion">Ưu đãi của tôi</string>
     <string name="get_now">Săn ngay</string>
+    <string name="prm_detail">Chi tiết</string>
+    <string name="prm_choose_endow">Chọn ưu đãi</string>
+    <string name="prm_check">Kiểm tra</string>
+    <string name="prm_please_input_endow">Vui lòng nhập mã ưu đãi</string>
+    <string name="prm_not_enough_apply_voucher">Chưa đủ điều kiện áp dụng</string>
 </resources>

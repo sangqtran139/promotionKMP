@@ -46,4 +46,5 @@ dependencies {
     implementation(libs.swiperefreshlayout)
     implementation(libs.sdp.android)
     implementation(libs.shimmer)
+    implementation(libs.shapeofview)
 }
