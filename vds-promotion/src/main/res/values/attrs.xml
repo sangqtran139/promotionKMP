@@ -39,6 +39,13 @@
         <attr name="prmTvEnableAutoScroll" format="boolean" />
     </declare-styleable>
 
+    <declare-styleable name="PRMCircleImageView">
+        <attr name="prm_civ_border_width" format="dimension" />
+        <attr name="prm_civ_border_color" format="color" />
+        <attr name="prm_civ_border_overlay" format="boolean" />
+        <attr name="prm_civ_fill_color" format="color" />
+    </declare-styleable>
+
     <declare-styleable name="PRMSearchField">
         <!--  Hint string or resource id  -->
         <attr name="prmSfHint" format="string" />

@@ -38,11 +38,16 @@
     <dimen name="view_size_35">35dp</dimen>
     <dimen name="view_size_36">36dp</dimen>
     <dimen name="view_size_37">37dp</dimen>
+    <dimen name="view_size_40">40dp</dimen>
     <dimen name="view_size_45">45dp</dimen>
     <dimen name="view_size_48">48dp</dimen>
     <dimen name="view_size_50">50dp</dimen>
-    <dimen name="view_size_60">60dp</dimen>
+    <dimen name="view_size_54">54dp</dimen>
     <dimen name="view_size_59">59dp</dimen>
+    <dimen name="view_size_60">60dp</dimen>
+    <dimen name="view_size_75">75dp</dimen>
+    <dimen name="view_size_81">81dp</dimen>
+    <dimen name="view_size_82">82dp</dimen>
     <dimen name="view_size_96">96dp</dimen>
     <dimen name="view_size_120">120dp</dimen>
 

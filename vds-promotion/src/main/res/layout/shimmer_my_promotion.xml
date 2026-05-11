@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools">
+  <LinearLayout
+    android:id="@+id/viewShimmer"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.facebook.shimmer.ShimmerFrameLayout
+      android:id="@+id/shimmer_my_endow_list"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      app:shimmer_base_color="@color/colorWhite"
+      app:shimmer_colored="false"
+      app:shimmer_duration="@integer/shimmer_duration"
+      app:shimmer_highlight_color="@color/colorWhite"
+      app:shimmer_repeat_delay="@integer/shimmer_repeat_delay"
+      tools:visibility="visible">
+
+      <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+          android:id="@+id/ctlOne"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toTopOf="parent"
+          app:layout_constraintStart_toStartOf="parent">
+          <include layout="@layout/item_shimmer_my_promotion"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+          android:id="@+id/ctlTwo"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toBottomOf="@+id/ctlOne"
+          app:layout_constraintStart_toStartOf="parent">
+          <include layout="@layout/item_shimmer_my_promotion"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+          android:id="@+id/ctlThree"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toBottomOf="@+id/ctlTwo"
+          app:layout_constraintStart_toStartOf="parent">
+          <include layout="@layout/item_shimmer_my_promotion"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+          android:id="@+id/ctlFour"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          app:layout_constraintTop_toBottomOf="@+id/ctlThree"
+          app:layout_constraintStart_toStartOf="parent">
+          <include layout="@layout/item_shimmer_my_promotion"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+      </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.facebook.shimmer.ShimmerFrameLayout>
+
+  </LinearLayout>
+</layout>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_marginEnd="@dimen/view_size_8"
+    android:layout_height="wrap_content">
+
+    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+        android:id="@+id/tvTag"
+        style="@style/fontPRMSfDisplayRegular14"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/prm_background_4e_corner"
+        android:paddingStart="@dimen/view_size_10"
+        android:paddingTop="@dimen/view_size_8"
+        android:paddingEnd="@dimen/view_size_10"
+        android:paddingBottom="@dimen/view_size_10"
+        android:textColor="@color/white"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Tất cả" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

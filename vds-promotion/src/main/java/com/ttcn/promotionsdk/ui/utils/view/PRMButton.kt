@@ -1,6 +1,5 @@
 package com.ttcn.promotionsdk.ui.utils.view
 
-
 import android.content.Context
 import android.graphics.Typeface
 import android.util.AttributeSet
@@ -112,13 +111,16 @@ class PRMButton : PRMAbstractButton {
     }
 
     constructor(context: Context, attrs: AttributeSet?) : super(
-        context, attrs
+        context,
+        attrs
     ) {
         init(attrs)
     }
 
     constructor(
-        context: Context, attrs: AttributeSet?, defStyleAttr: Int
+        context: Context,
+        attrs: AttributeSet?,
+        defStyleAttr: Int
     ) : super(context, attrs, defStyleAttr) {
         init(attrs)
     }
@@ -184,7 +186,8 @@ class PRMButton : PRMAbstractButton {
                 height = resources.getDimensionPixelSize(coreButtonSize.heightRes)
             }
             it.setTextSize(
-                TypedValue.COMPLEX_UNIT_PX, resources.getDimension(coreButtonSize.textSizeRes)
+                TypedValue.COMPLEX_UNIT_PX,
+                resources.getDimension(coreButtonSize.textSizeRes)
             )
         }
         viewBinding?.buttonSlide?.let {

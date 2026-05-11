@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.ttcn.promotionsdk"
-    compileSdk = 34
+    compileSdk = 35
 
     buildFeatures {
         dataBinding = true
@@ -45,4 +45,5 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.swiperefreshlayout)
     implementation(libs.sdp.android)
+    implementation(libs.shimmer)
 }

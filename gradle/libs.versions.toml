@@ -15,6 +15,7 @@ fragment = "1.7.1"
 swiperefreshlayout = "1.1.0"
 sdp = "1.0.6"
 timber = "5.0.1"
+shimmer = "0.5.0"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -36,6 +37,7 @@ fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragm
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 sdp-android = { module = "com.intuit.sdp:sdp-android", version.ref = "sdp" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+shimmer = { group = "com.facebook.shimmer", name = "shimmer", version.ref = "shimmer" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
