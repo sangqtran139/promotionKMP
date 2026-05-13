@@ -6,6 +6,7 @@ import android.text.InputFilter.LengthFilter
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.LinearLayout
 import androidx.annotation.ColorRes
 import com.ttcn.promotionsdk.R
@@ -13,6 +14,7 @@ import com.ttcn.promotionsdk.databinding.ViewsSearchFieldBinding
 import com.ttcn.promotionsdk.ui.utils.PRMViewsDataProvider.getInputTextWatcher
 import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
 import com.ttcn.promotionsdk.ui.utils.extension.getText
+import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 import com.ttcn.promotionsdk.ui.utils.extension.replaceAccents
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 import com.ttcn.promotionsdk.ui.utils.extension.setFont
@@ -145,7 +147,19 @@ class PRMSearchField @JvmOverloads constructor(
     }
 
     fun setOnSearchActionListener(listener: OnClickListener?) {
+        hideSoftInput()
         viewBinding.buttonSearch.setOnClickListener(listener)
+    }
+
+    fun setOnDoneKeyboardListener(listener: OnClickListener?) {
+        viewBinding.searchInput.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                hideSoftInput()
+                listener?.onClick(this)
+                true
+            }
+            false
+        }
     }
 
     override fun textChangeListeners(): MutableList<(String) -> Unit> = textChangeListeners

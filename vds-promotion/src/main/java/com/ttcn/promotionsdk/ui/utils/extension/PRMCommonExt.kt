@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.res.Resources
 import android.graphics.Point
 import android.os.Build
+import android.os.Bundle
+import android.os.Parcelable
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
@@ -243,4 +245,35 @@ fun String.replaceAccents(): String {
         s = s.replace(uppercase(Locale.US), uppercase(Locale.US))
     }
     return s
+}
+
+inline fun <reified T : Parcelable> Bundle?.parcelable(
+    key: String
+): T? {
+
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+        this?.getParcelable(key, T::class.java)
+
+    } else {
+
+        @Suppress("DEPRECATION")
+        this?.getParcelable(key)
+    }
+}
+
+inline fun <reified T : Parcelable> Bundle?.parcelableArrayList(
+    key: String
+): ArrayList<T> {
+
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+        this?.getParcelableArrayList(key, T::class.java)
+
+    } else {
+
+        @Suppress("DEPRECATION")
+        this?.getParcelableArrayList<T>(key)
+
+    } ?: arrayListOf()
 }

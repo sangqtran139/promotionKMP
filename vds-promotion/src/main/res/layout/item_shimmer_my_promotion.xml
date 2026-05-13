@@ -58,7 +58,7 @@
                     app:layout_constraintTop_toTopOf="parent">
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
-                        android:id="@+id/tvStore"
+                        android:id="@+id/txtVoucherName"
                         android:layout_width="@dimen/view_size_120"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/view_size_15"
@@ -82,8 +82,8 @@
                         android:textColor="@color/tokenDark10"
                         android:textSize="@dimen/text_size_11"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/tvStore"
-                        app:layout_constraintTop_toBottomOf="@+id/tvStore" />
+                        app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
+                        app:layout_constraintTop_toBottomOf="@+id/txtVoucherName" />
 
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView

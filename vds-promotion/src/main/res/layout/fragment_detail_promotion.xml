@@ -88,7 +88,7 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
-                    android:id="@+id/tvStore"
+                    android:id="@+id/txtVoucherName"
                     style="@style/fontPRMDisPlayRegular14"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

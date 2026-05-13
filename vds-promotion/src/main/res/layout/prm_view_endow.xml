@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            android:id="@+id/txtTitleEndow"
+            style="@style/fontPRMSfDisplayBold18"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/prm_endow"
+            android:textColor="@color/color_222_cep"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            android:id="@+id/txtNumberEndow"
+            style="@style/fontPRMSfDisplayMedium16"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/_10sdp"
+            android:ellipsize="end"
+            android:lines="1"
+            android:maxLines="1"
+            android:textColor="@color/color_222_cep"
+            app:layout_constraintBottom_toBottomOf="@id/txtStatusEndow"
+            app:layout_constraintEnd_toStartOf="@id/txtStatusEndow"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
+            tools:text="Bạn có 10 mã ưu đãi" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcvEndow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="visible"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toBottomOf="@id/txtStatusEndow"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
+            tools:listitem="@layout/item_list_voucher_apply" />
+
+        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            android:id="@+id/txtStatusEndow"
+            style="@style/fontPRMSfDisplayMedium16"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_12sdp"
+            android:textColor="@color/color_EE0033"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/txtTitleEndow"
+            tools:text="Sử dụng" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>

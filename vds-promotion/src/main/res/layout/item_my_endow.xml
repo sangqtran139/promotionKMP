@@ -5,40 +5,43 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="@dimen/_125sdp"
-        android:background="@color/tokenDark05">
+        android:layout_height="wrap_content"
+        android:background="@color/tokenDark05"
+        android:paddingVertical="@dimen/_6sdp">
 
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/notEnoughApplyVoucher"
+            android:id="@+id/ctlNotEnoughApplyVoucher"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/_44sdp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            android:layout_height="@dimen/_30sdp"
             android:layout_marginHorizontal="@dimen/_15sdp"
-            android:background="@drawable/prm_not_enough_apply_voucher">
+            android:layout_marginBottom="@dimen/_minus22sdp"
+            android:background="@drawable/prm_not_enough_apply_voucher"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/ctlTop"
+            app:layout_constraintStart_toStartOf="parent">
 
             <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
                 android:id="@+id/imgWarning"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/prm_ic_warning_yellow"
                 android:layout_gravity="bottom"
                 android:layout_marginStart="@dimen/_9sdp"
                 android:layout_marginBottom="@dimen/_5sdp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"/>
+                android:src="@drawable/prm_ic_warning_yellow"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
             <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                style="@style/fontPRMRegular12"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                style="@style/fontPRMRegular12"
-                android:textColor="@color/color_222_cep"
-                app:layout_constraintStart_toEndOf="@id/imgWarning"
-                app:layout_constraintEnd_toEndOf="parent"
                 android:layout_marginHorizontal="@dimen/_3sdp"
                 android:text="@string/prm_not_enough_apply_voucher"
-                app:layout_constraintTop_toTopOf="@id/imgWarning"
-                app:layout_constraintBottom_toBottomOf="@id/imgWarning"/>
+                android:textColor="@color/color_222_cep"
+                app:layout_constraintBottom_toBottomOf="@id/imgWarning"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/imgWarning"
+                app:layout_constraintTop_toTopOf="@id/imgWarning" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -47,11 +50,9 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/_82sdp"
             android:layout_marginHorizontal="@dimen/_15sdp"
-            android:layout_marginVertical="@dimen/_6sdp"
             android:background="@color/white"
             app:cardCornerRadius="@dimen/_12sdp"
             app:cardElevation="0dp"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -59,7 +60,6 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:id="@+id/ctlPartOne"
@@ -88,7 +88,7 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
-                    android:id="@+id/img_circle_top"
+                    android:id="@+id/imgCircleTop"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_minus7sdp"
@@ -98,25 +98,25 @@
                     app:layout_constraintTop_toTopOf="parent" />
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
-                    android:id="@+id/img_circle_bottom"
+                    android:id="@+id/imgCircleBottom"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/_minus7sdp"
                     android:src="@drawable/prm_bg_circle_gray"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="@id/imgLine"
-                    app:layout_constraintStart_toStartOf="@id/imgLine"
-                    android:visibility="visible"/>
+                    app:layout_constraintStart_toStartOf="@id/imgLine" />
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
-                    android:id="@+id/img_circle_not_enough"
+                    android:id="@+id/imgCircleNotEnoughApplyVoucher"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/_minus7sdp"
                     android:src="@drawable/prm_bg_circle_gold"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="@id/imgLine"
-                    app:layout_constraintStart_toStartOf="@id/imgLine" />
+                    app:layout_constraintStart_toStartOf="@id/imgLine"
+                    android:visibility="gone"/>
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
                     android:id="@+id/imgLine"
@@ -138,7 +138,7 @@
                     app:layout_constraintWidth_percent="0.76">
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
-                        android:id="@+id/tvStore"
+                        android:id="@+id/txtVoucherName"
                         style="@style/fontPRMRegular12"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -159,7 +159,8 @@
                         android:background="@drawable/prm_bg_checkbox_use_voucher"
                         android:button="@null"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:checked="true" />
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
                         android:id="@+id/tvContent"
@@ -172,8 +173,8 @@
                         android:maxLines="2"
                         android:textColor="@color/color_222_cep"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/tvStore"
-                        app:layout_constraintTop_toBottomOf="@+id/tvStore"
+                        app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
+                        app:layout_constraintTop_toBottomOf="@+id/txtVoucherName"
                         tools:text="Tặng 1 trà sen vàng cho hoá đơn từ 59khjshvjkfshaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
@@ -187,13 +188,27 @@
                         app:layout_constraintTop_toBottomOf="@+id/tvContent"
                         tools:text="HSD 18/10/2023" />
 
+                    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                        android:id="@+id/txtExpired"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        android:text="@string/prm_is_used"
+                        style="@style/fontSfDisplayBold14"
+                        android:background="@drawable/prm_bg_item_endow_expired"
+                        android:paddingVertical="@dimen/_1sdp"
+                        android:paddingHorizontal="@dimen/_5sdp"
+                        app:layout_constraintTop_toTopOf="@id/tvEndDate"/>
+
                     <LinearLayout
                         android:id="@+id/lnDetail"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
                         app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tvEndDate">
+                        app:layout_constraintTop_toTopOf="@id/tvEndDate"
+                        android:visibility="gone">
 
                         <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
                             android:id="@+id/tvDetail"

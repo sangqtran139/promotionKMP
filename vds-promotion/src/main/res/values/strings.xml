@@ -12,4 +12,11 @@
     <string name="prm_check">Kiểm tra</string>
     <string name="prm_please_input_endow">Vui lòng nhập mã ưu đãi</string>
     <string name="prm_not_enough_apply_voucher">Chưa đủ điều kiện áp dụng</string>
+    <string name="prm_endow">Ưu đãi</string>
+    <string name="prm_no_endow">Bạn chưa có mã ưu đãi</string>
+    <string name="prm_one_endow">Bạn có 1 mã ưu đãi</string>
+    <string name="prm_multiple_endow">Bạn có %d mã ưu đãi</string>
+    <string name="prm_use_voucher">Sử dụng</string>
+    <string name="prm_change_voucher">Chọn lại</string>
+    <string name="prm_is_used">Đã dùng hết</string>
 </resources>

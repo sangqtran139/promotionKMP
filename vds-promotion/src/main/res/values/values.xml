@@ -97,4 +97,10 @@
         <item name="android:textSize">@dimen/_11sdp</item>
         <item name="lineHeight">@dimen/_14sdp</item>
     </style>
+
+    <style name="fontSfDisplayBold10">
+        <item name="fontFamily">@font/sf_pro_display_bold</item>
+        <item name="android:textSize">@dimen/_8sdp</item>
+        <item name="lineHeight">@dimen/_10sdp</item>
+    </style>
 </resources>

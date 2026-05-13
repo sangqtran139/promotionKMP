@@ -33,7 +33,4 @@ android {
 dependencies {
     implementation(project(":vds-promotion"))
     implementation(libs.androidx.appcompat)
-
-    implementation("com.mikepenz:fastadapter:5.7.0")
-    implementation("com.mikepenz:fastadapter-extensions-binding:5.7.0")
 }
