@@ -19,4 +19,8 @@
     <string name="prm_use_voucher">Sử dụng</string>
     <string name="prm_change_voucher">Chọn lại</string>
     <string name="prm_is_used">Đã dùng hết</string>
+    <string name="no_result">Không tìm thấy kết quả phù hợp</string>
+    <string name="discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
+    <string name="search_result">Kết quả tìm kiếm</string>
+    <string name="prm_search_hint">Nhập tên ưu đãi, ngành hàng, ...</string>
 </resources>

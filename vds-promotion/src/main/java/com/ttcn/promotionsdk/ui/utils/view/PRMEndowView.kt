@@ -9,9 +9,9 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
-import com.ttcn.promotionsdk.ui.presentation.promotion.myendow.adapter.EndowViewState
-import com.ttcn.promotionsdk.ui.presentation.promotion.myendow.adapter.ApplyChooseEndowAdapter
-import com.ttcn.promotionsdk.ui.presentation.promotion.myendow.adapter.PromotionVoucherItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyChooseEndowAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowViewState
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionVoucherItem
 
 class PRMEndowView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0

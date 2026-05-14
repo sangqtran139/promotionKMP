@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/color_FBFBFB"
+        android:clickable="true"
+        android:focusable="true"
+        android:paddingTop="@dimen/view_size_30">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/imgBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/view_size_10"
+            android:layout_marginTop="@dimen/tokenSpacing24"
+            android:layout_marginBottom="@dimen/view_size_16"
+            android:padding="@dimen/view_size_8"
+            android:visibility="visible"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/prm_ic_back_in_onboarding" />
+
+        <com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
+            android:id="@+id/sfEndow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/view_size_60"
+            android:layout_marginTop="@dimen/tokenSpacing16"
+            android:layout_marginEnd="@dimen/view_size_25"
+            app:layout_constraintStart_toEndOf="@+id/imgBack"
+            app:layout_constraintTop_toTopOf="parent"
+            app:prmSfAllowVietnamese="true"
+            app:prmSfHint="@string/prm_search_hint" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlSearch"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/view_size_70"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/sfEndow">
+
+            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                android:id="@+id/tvTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_20"
+                android:layout_marginTop="@dimen/view_size_20"
+                android:fontFamily="@font/sf_pro_display_medium"
+                android:text="@string/search_result"
+                android:textSize="@dimen/text_size_16"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rcvSearchList"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="@dimen/view_size_50"
+                android:layout_marginBottom="@dimen/view_size_20"
+                android:orientation="vertical"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvTitle" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlNoResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_150"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/sfEndow">
+
+            <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                android:id="@+id/imgNoData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/prm_il_chua_co_uu_dai_new_vers"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_40"
+                android:layout_marginTop="@dimen/view_size_10"
+                android:layout_marginEnd="@dimen/view_size_40"
+                android:fontFamily="@font/sf_pro_display_bold"
+                android:gravity="center"
+                android:lineHeight="@dimen/view_size_22"
+                android:text="@string/no_result"
+                android:textColor="@color/black"
+                android:textSize="@dimen/text_size_18"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/imgNoData" />
+
+            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_40"
+                android:layout_marginTop="@dimen/view_size_50"
+                android:layout_marginEnd="@dimen/view_size_40"
+                android:fontFamily="@font/sf_pro_display_regular"
+                android:gravity="center"
+                android:lineHeight="@dimen/view_size_22"
+                android:text="@string/discover_voucher"
+                android:textSize="@dimen/text_size_16"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/imgNoData" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/tokenSpacing20"
+            android:layout_marginBottom="@dimen/tokenSpacing32"
+            android:backgroundTint="@color/tokenWhite"
+            android:src="@drawable/prm_ic_arrow_up_vector"
+            android:visibility="gone"
+            app:borderWidth="0dp"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:maxImageSize="@dimen/_13sdp"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

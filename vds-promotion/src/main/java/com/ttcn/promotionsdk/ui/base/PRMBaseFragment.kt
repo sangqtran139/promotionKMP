@@ -1,0 +1,109 @@
+package com.ttcn.promotionsdk.ui.base
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Toast
+import androidx.annotation.IdRes
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.viewbinding.ViewBinding
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
+
+abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
+
+    private var _binding: VB? = null
+
+    protected val binding: VB
+        get() = requireNotNull(_binding) {
+            "Binding is only valid between onCreateView and onDestroyView."
+        }
+
+    abstract fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?): VB
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = inflateBinding(inflater, container)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupUI()
+        observeData()
+    }
+
+    open fun setupUI() {}
+    open fun observeData() {}
+
+    protected fun <T> collectFlow(
+        flow: Flow<T>,
+        state: Lifecycle.State = Lifecycle.State.STARTED,
+        collector: suspend (T) -> Unit
+    ) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(state) {
+                flow.collect { collector(it) }
+            }
+        }
+    }
+
+    protected fun showToast(message: CharSequence?) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+    protected fun addFragment(
+        fragment: Fragment,
+        addToBackStack: Boolean = true
+    ) {
+        val parent = requireView().parent as? ViewGroup
+        val containerId = parent?.id ?: run {
+            showToast("Cannot navigate: no valid container found.")
+            return
+        }
+        val tag = fragment::class.java.simpleName
+
+        requireActivity()
+            .supportFragmentManager
+            .beginTransaction()
+            .add(containerId, fragment, tag)
+            .apply { if (addToBackStack) addToBackStack(tag) }
+            .commit()
+    }
+
+    protected fun replaceFragment(
+        fragment: Fragment,
+        @IdRes containerId: Int,
+        addToBackStack: Boolean = true
+    ) {
+        val tag = fragment::class.java.simpleName
+
+        requireActivity()
+            .supportFragmentManager
+            .beginTransaction()
+            .replace(containerId, fragment, tag)
+            .apply { if (addToBackStack) addToBackStack(tag) }
+            .commit()
+    }
+
+    open fun onBackFragment() {
+        val manager = requireActivity().supportFragmentManager
+        if (manager.backStackEntryCount > 1) {
+            manager.popBackStack()
+        } else {
+            requireActivity().finish()
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+}

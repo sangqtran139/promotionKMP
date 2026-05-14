@@ -1,21 +1,39 @@
 package com.ttcn.promotionsdk.app
 
+import android.view.LayoutInflater
 import androidx.activity.enableEdgeToEdge
-import androidx.lifecycle.ViewModel
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
-import com.ttcn.promotionsdk.ui.presentation.promotion.myendow.PaymentIntegrateFragment
-import com.vds.vdsinappmessage.base.PRMBaseActivity
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.ui.base.PRMBaseActivity
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
 
-class MainActivity : PRMBaseActivity<ViewModel, LayoutMainBinding>() {
+class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
 
-    override val layoutId: Int
-        get() = R.layout.layout_main
+    override fun inflateBinding(layoutInflater: LayoutInflater) =
+        LayoutMainBinding.inflate(layoutInflater)
 
-    override fun init() {
+    override fun setupUI() {
         enableEdgeToEdge()
-        addFragment(
-            PaymentIntegrateFragment.newInstance(),
-            R.id.layoutRoot
-        )
+
+        if (!PromotionContainer.isInitialized()) {
+            PromotionSDK.init(
+                this,
+                PromotionSDKOptions(
+                    config = PromotionSDKConfig(
+                        apiKey = "demo",
+                        baseUrl = "https://example.com"
+                    )
+                )
+            )
+        }
+
+        if (supportFragmentManager.findFragmentById(R.id.layoutRoot) == null) {
+            supportFragmentManager.beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.layoutRoot, MainLauncherFragment())
+                .commit()
+        }
     }
 }

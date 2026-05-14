@@ -21,4 +21,6 @@ object PromotionContainer {
         applicationContext = null
         config = null
     }
+
+    fun isInitialized(): Boolean = applicationContext != null
 }

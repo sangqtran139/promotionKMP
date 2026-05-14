@@ -2,10 +2,14 @@
 package com.ttcn.promotionsdk.ui.entry
 
 import android.content.Context
+import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 
 object PromotionSDK {
+
+    private const val TAG_MY_PROMOTION = "prm_my_promotion"
 
     private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
@@ -22,6 +26,37 @@ object PromotionSDK {
 
     @JvmStatic
     fun getCallback(): PromotionSDKCallback? = callback
+
+    /**
+     * Hiển thị màn "Ưu đãi của tôi" ([MyPromotionFragment]).
+     *
+     * @param activity Activity host (FragmentActivity / AppCompatActivity).
+     * @param containerViewId Nếu khác null, dùng FragmentTransaction.replace trên container này;
+     * nếu null, fragment được add lên android.R.id.content.
+     *
+     * @throws IllegalStateException khi chưa gọi [init].
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null) {
+        check(PromotionContainer.isInitialized()) {
+            "PromotionSDK.init() must be called before openMyPromotion()."
+        }
+        val fm = activity.supportFragmentManager
+        if (fm.findFragmentByTag(TAG_MY_PROMOTION) != null) return
+        val fragment = MyPromotionFragment()
+        fm.beginTransaction()
+            .setReorderingAllowed(true)
+            .apply {
+                if (containerViewId != null) {
+                    replace(containerViewId, fragment, TAG_MY_PROMOTION)
+                } else {
+                    add(android.R.id.content, fragment, TAG_MY_PROMOTION)
+                }
+            }
+            .addToBackStack(TAG_MY_PROMOTION)
+            .commit()
+    }
 
     @JvmStatic
     fun release() {
