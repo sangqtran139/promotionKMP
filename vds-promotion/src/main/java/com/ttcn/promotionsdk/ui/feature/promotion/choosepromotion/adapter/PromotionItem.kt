@@ -11,6 +11,8 @@ data class PromotionItem(
     val isExpired: Boolean = false,
     var isNotEnoughApplied: Boolean = false,
     var isApplied: Boolean = false,
+    val urlLogo: String = "",
+    val urlBanner: String = "",
 ) : Parcelable
 
 // Enum cho trạng thái view

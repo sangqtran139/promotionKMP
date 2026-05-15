@@ -11,24 +11,33 @@
         <androidx.appcompat.widget.AppCompatImageView
             android:layout_width="wrap_content"
             android:layout_height="@dimen/_120sdp"
-            android:src="@drawable/app_logo"/>
+            android:src="@drawable/app_logo" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnCustomView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_10sdp"
+            android:backgroundTint="#EE0033"
+            android:text="Custom view"
+            android:textColor="@color/white" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnOpenPaymentIntegrate"
-            android:layout_marginTop="@dimen/_10sdp"
-            android:backgroundTint="#EE0033"
-            android:textColor="@color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Payment integrate" />
+            android:layout_marginTop="@dimen/_10sdp"
+            android:backgroundTint="#EE0033"
+            android:text="Payment integrate"
+            android:textColor="@color/white" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnOpenMyPromotion"
             android:layout_width="match_parent"
-            android:textColor="@color/white"
-            android:backgroundTint="#EE0033"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="My promotion" />
+            android:backgroundTint="#EE0033"
+            android:text="My promotion"
+            android:textColor="@color/white" />
     </LinearLayout>
 </layout>

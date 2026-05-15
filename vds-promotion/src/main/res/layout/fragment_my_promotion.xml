@@ -17,8 +17,8 @@
             android:id="@+id/ctlHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <androidx.appcompat.widget.AppCompatImageButton
@@ -76,7 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="@dimen/_25sdp"
-            android:background="@drawable/prm_bg_item_endow"
+            android:background="@drawable/my_prm_bg"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ctlHeader">
 
@@ -111,13 +111,11 @@
                     android:layout_marginTop="@dimen/view_size_10"
                     android:background="@color/color_FBFBFB"
                     android:orientation="vertical"
-                    android:paddingStart="@dimen/view_size_8"
-                    android:paddingEnd="@dimen/view_size_8"
                     android:visibility="visible"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/rvTabs"
-                    tools:listitem="@layout/prm_item_my_endow" />
+                    tools:listitem="@layout/item_my_endow" />
             </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -125,8 +123,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/view_size_20"
-                android:visibility="gone"
                 android:layout_marginBottom="@dimen/_110sdp"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/rvTabs">
@@ -178,12 +176,12 @@
                     android:layout_marginStart="@dimen/view_size_75"
                     android:layout_marginTop="@dimen/view_size_20"
                     android:layout_marginEnd="@dimen/view_size_75"
-                    app:prmBtSize="large"
-                    app:prmBtText="@string/get_now"
-                    app:prmBtType="gradient"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvContentText" />
+                    app:layout_constraintTop_toBottomOf="@id/tvContentText"
+                    app:prmBtSize="large"
+                    app:prmBtText="@string/get_now"
+                    app:prmBtType="gradient" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>

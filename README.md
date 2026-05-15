@@ -89,6 +89,53 @@ ui  ──depends on──>  core
 core  ──must not──>  ui
 ```
 
+## Detailed Package Structure
+
+The trees below reflect **`vds-promotion/src/main/java/com/ttcn/promotionsdk/`** as of this repository. **Core** and **UI** are **Kotlin/Java package directories inside the same `vds-promotion` Gradle module**; they are not separate Gradle modules or separate AARs.
+
+### Core package structure
+
+```text
+com.ttcn.promotionsdk.core/
+├── config/                         # Library-facing configuration types (e.g. environment, API settings)
+├── data/
+│   ├── dto/                        # Data transfer objects and mappers for API/cache layers
+│   ├── local/                      # Room DAOs, database, shared preferences–backed storage
+│   ├── remote/                     # Retrofit services, client, interceptors
+│   └── repository/                 # Repository implementations bridging remote + local sources
+├── di/                             # SDK container, module registration, and service resolution
+│   └── internal/                   # Component registry and DI key types
+├── domain/
+│   ├── exception/                  # Domain/network/feature-flag oriented errors
+│   ├── model/                      # Domain models (promotion config, feature flags, …)
+│   ├── repository/                 # Repository interfaces (contracts for data access)
+│   └── usecase/                    # Application use cases (get promotions, submit, flags, …)
+└── utils/                          # Coroutine and date helpers shared by core layers
+```
+
+### UI package structure
+
+```text
+com.ttcn.promotionsdk.ui/
+├── base/                           # Activity/Fragment base classes shared by SDK screens
+├── di/                             # UI-scoped dependency wiring (e.g. ViewModel module)
+├── entry/                          # Public SDK façade: init options, callbacks, navigation helpers
+├── feature/
+│   ├── featureflag/                # Feature-flag screen logic (ViewModel, UI state/actions)
+│   └── promotion/                  # Promotion flows: shared ViewModel + feature subpackages
+│       ├── choosepromotion/        # Voucher selection / payment-integrate flows
+│       │   ├── adapter/            # RecyclerView adapters and list item types
+│       │   └── searchmypromotion/  # Search-my-promotion screen (fragment, ViewModel, contract)
+│       ├── mypromotion/            # “My promotions” list screen (fragment, ViewModel, contract)
+│       └── promotiondetail/        # Promotion detail screen (fragment, ViewModel, contract)
+├── theme/                          # SDK theming tokens and theme resolution
+└── utils/
+    ├── enum/                       # UI enumerations (button size/type, search type, …)
+    ├── extension/                  # Kotlin extensions (keyboard, resources, RecyclerView, …)
+    └── view/                       # Custom views, buttons, inputs, promotion-specific widgets
+        └── itf/                    # Small view/input interfaces used by composite controls
+```
+
 ---
 
 ## Build output

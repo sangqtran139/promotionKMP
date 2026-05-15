@@ -147,5 +147,10 @@ val allAvailableVouchers = listOf(
         name = "VinFast",
         discount = "80000",
         isApplied = false
+    ),
+).map {
+    it.copy(
+        urlLogo = "https://picsum.photos/seed/prm-${it.id}/200/200",
+        urlBanner = "https://picsum.photos/seed/prm-banner-${it.id}/1200/600",
     )
-)
+}

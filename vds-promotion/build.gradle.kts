@@ -44,7 +44,7 @@ dependencies {
     implementation(libs.recyclerview)
     implementation(libs.constraintlayout)
     implementation(libs.material)
-    implementation(libs.coil)
+    implementation(libs.glide)
     implementation(libs.swiperefreshlayout)
     implementation(libs.sdp.android)
     implementation(libs.shimmer)

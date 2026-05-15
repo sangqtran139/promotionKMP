@@ -2,6 +2,9 @@ package com.ttcn.promotionsdk.app
 
 import android.view.LayoutInflater
 import androidx.activity.enableEdgeToEdge
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.di.PromotionContainer
@@ -16,6 +19,12 @@ class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
 
     override fun setupUI() {
         enableEdgeToEdge()
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updatePadding(bottom = navBarHeight)
+            insets
+        }
 
         if (!PromotionContainer.isInitialized()) {
             PromotionSDK.init(

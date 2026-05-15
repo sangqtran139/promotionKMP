@@ -48,34 +48,19 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/view_size_13"
             android:layout_marginEnd="@dimen/view_size_13"
+            android:translationY="-30dp"
+            app:layout_constraintBottom_toBottomOf="@id/ctlTop"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ctlTop"
             app:prmCvBottomLeftRadius="@dimen/view_size_16"
             app:prmCvBottomRightRadius="@dimen/view_size_16"
             app:prmCvTopLeftRadius="@dimen/view_size_16"
-            app:prmCvTopRightRadius="@dimen/view_size_16"
-            app:layout_constraintBottom_toBottomOf="@id/ctlTop"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ctlTop">
+            app:prmCvTopRightRadius="@dimen/view_size_16">
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingBottom="@dimen/view_size_20">
-
-                <!--                                <io.github.florent37.shapeofview.shapes.CircleView-->
-                <!--                                    android:id="@+id/circleLogo"-->
-                <!--                                    android:layout_width="@dimen/view_size_24"-->
-                <!--                                    android:layout_height="@dimen/view_size_24"-->
-                <!--                                    android:layout_marginStart="@dimen/view_size_16"-->
-                <!--                                    android:layout_marginTop="@dimen/view_size_20"-->
-                <!--                                    app:layout_constraintStart_toStartOf="parent"-->
-                <!--                                    app:layout_constraintTop_toTopOf="parent">-->
-
-                <!--                                    <com.ttcn.promotionsdk.ui.utils.view.PRMImageView-->
-                <!--                                        android:id="@+id/imgLogo"-->
-                <!--                                        android:layout_width="@dimen/view_size_24"-->
-                <!--                                        android:layout_height="@dimen/view_size_24"-->
-                <!--                                        android:src="@mipmap/ic_launcher" />-->
-                <!--                                </io.github.florent37.shapeofview.shapes.CircleView>-->
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMCircleImageView
                     android:id="@+id/circleLogo"
@@ -176,11 +161,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/tokenSpacing12"
             android:layout_marginEnd="@dimen/tokenSpacing12"
-            app:prmBtSize="large"
-            app:prmBtText="@string/use_now"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:prmBtSize="large"
+            app:prmBtText="@string/use_now" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

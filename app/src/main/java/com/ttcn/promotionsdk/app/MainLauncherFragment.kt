@@ -14,6 +14,11 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         FragmentMainLauncherBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
+
+        binding.btnCustomView.setOnClickListener {
+
+        }
+
         binding.btnOpenPaymentIntegrate.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)
@@ -23,7 +28,7 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         }
 
         binding.btnOpenMyPromotion.setOnClickListener {
-            PromotionSDK.openMyPromotion(requireActivity() as FragmentActivity, R.id.layoutRoot)
+            PromotionSDK.openMyPromotion(requireActivity(), R.id.layoutRoot)
         }
     }
 }
