@@ -8,20 +8,20 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.ttcn.promotionsdk.databinding.ItemMyEndowBinding
+import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
 import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 
-sealed class EndowListItem {
-    data class Header(val title: String) : EndowListItem()
-    data class Endow(
-        val data: PromotionVoucherItem
-    ) : EndowListItem()
+sealed class ChoosePromotionListItem {
+    data class Header(val title: String) : ChoosePromotionListItem()
+    data class ChoosePromotion(
+        val data: PromotionItem
+    ) : ChoosePromotionListItem()
 }
 
-class ChooseEndowAdapter(
-    private val onVoucherClick: (PromotionVoucherItem, Int) -> Unit,
-    private val onDetailClick: (PromotionVoucherItem, Int) -> Unit
-) : ListAdapter<EndowListItem, RecyclerView.ViewHolder>(VoucherDiffCallback()) {
+class ListChoosePromotionAdapter(
+    private val onVoucherClick: (PromotionItem, Int) -> Unit,
+    private val onDetailClick: (PromotionItem, Int) -> Unit
+) : ListAdapter<ChoosePromotionListItem, RecyclerView.ViewHolder>(ChoosePromotionDiffCallback()) {
 
     companion object {
         private const val VIEW_TYPE_HEADER = 0
@@ -30,8 +30,8 @@ class ChooseEndowAdapter(
 
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
-            is EndowListItem.Header -> VIEW_TYPE_HEADER
-            is EndowListItem.Endow -> VIEW_TYPE_VOUCHER
+            is ChoosePromotionListItem.Header -> VIEW_TYPE_HEADER
+            is ChoosePromotionListItem.ChoosePromotion -> VIEW_TYPE_VOUCHER
         }
     }
 
@@ -40,39 +40,44 @@ class ChooseEndowAdapter(
         return when (viewType) {
             VIEW_TYPE_HEADER -> {
                 val binding = ItemTitleMyEndowBinding.inflate(inflater, parent, false)
-                HeaderViewHolder(binding)
+                HeaderListChoosePromotionViewHolder(binding)
             }
 
             else -> {
-                val binding = ItemMyEndowBinding.inflate(inflater, parent, false)
-                VoucherViewHolder(binding, onVoucherClick, onDetailClick)
+                val binding = ItemChoosePromotionBinding.inflate(inflater, parent, false)
+                ItemPromotionViewHolder(binding, onVoucherClick, onDetailClick)
             }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is EndowListItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is EndowListItem.Endow -> (holder as VoucherViewHolder).bind(item)
+            is ChoosePromotionListItem.Header -> (holder as HeaderListChoosePromotionViewHolder).bind(
+                item
+            )
+
+            is ChoosePromotionListItem.ChoosePromotion -> (holder as ItemPromotionViewHolder).bind(
+                item
+            )
         }
     }
 
-    class HeaderViewHolder(
+    private class HeaderListChoosePromotionViewHolder(
         private val binding: ItemTitleMyEndowBinding
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: EndowListItem.Header) {
+        fun bind(item: ChoosePromotionListItem.Header) {
             binding.txtTitleEndow.text = item.title
         }
     }
 
-    class VoucherViewHolder(
-        private val binding: ItemMyEndowBinding,
-        private val onVoucherClick: (PromotionVoucherItem, Int) -> Unit,
-        private val onDetailClick: (PromotionVoucherItem, Int) -> Unit
+    private class ItemPromotionViewHolder(
+        private val binding: ItemChoosePromotionBinding,
+        private val onVoucherClick: (PromotionItem, Int) -> Unit,
+        private val onDetailClick: (PromotionItem, Int) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         @SuppressLint("SetTextI18n")
-        fun bind(item: EndowListItem.Endow) {
+        fun bind(item: ChoosePromotionListItem.ChoosePromotion) {
             binding.apply {
                 val voucher = item.data
 
@@ -111,14 +116,17 @@ class ChooseEndowAdapter(
     }
 }
 
-class VoucherDiffCallback : DiffUtil.ItemCallback<EndowListItem>() {
-    override fun areItemsTheSame(oldItem: EndowListItem, newItem: EndowListItem): Boolean {
+class ChoosePromotionDiffCallback : DiffUtil.ItemCallback<ChoosePromotionListItem>() {
+    override fun areItemsTheSame(
+        oldItem: ChoosePromotionListItem,
+        newItem: ChoosePromotionListItem
+    ): Boolean {
         return when {
-            oldItem is EndowListItem.Header && newItem is EndowListItem.Header -> {
+            oldItem is ChoosePromotionListItem.Header && newItem is ChoosePromotionListItem.Header -> {
                 oldItem.title == newItem.title
             }
 
-            oldItem is EndowListItem.Endow && newItem is EndowListItem.Endow -> {
+            oldItem is ChoosePromotionListItem.ChoosePromotion && newItem is ChoosePromotionListItem.ChoosePromotion -> {
                 oldItem.data.id == newItem.data.id
             }
 
@@ -126,13 +134,16 @@ class VoucherDiffCallback : DiffUtil.ItemCallback<EndowListItem>() {
         }
     }
 
-    override fun areContentsTheSame(oldItem: EndowListItem, newItem: EndowListItem): Boolean {
+    override fun areContentsTheSame(
+        oldItem: ChoosePromotionListItem,
+        newItem: ChoosePromotionListItem
+    ): Boolean {
         return when {
-            oldItem is EndowListItem.Header && newItem is EndowListItem.Header -> {
+            oldItem is ChoosePromotionListItem.Header && newItem is ChoosePromotionListItem.Header -> {
                 oldItem == newItem
             }
 
-            oldItem is EndowListItem.Endow && newItem is EndowListItem.Endow -> {
+            oldItem is ChoosePromotionListItem.ChoosePromotion && newItem is ChoosePromotionListItem.ChoosePromotion -> {
                 // So sánh toàn bộ data object, bao gồm cả isApplied
                 oldItem.data == newItem.data
             }

@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.ttcn.promotionsdk.databinding.ItemListVoucherApplyBinding
-import com.ttcn.promotionsdk.databinding.ItemListVoucherCountBinding
+import com.ttcn.promotionsdk.databinding.ItemListPromotionApplyBinding
+import com.ttcn.promotionsdk.databinding.ItemListPromotionCountBinding
 
-class ApplyChooseEndowAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val vouchers = mutableListOf<PromotionVoucherItem>()
+    private val vouchers = mutableListOf<PromotionItem>()
     private val maxVisibleVouchers = 2
 
     companion object {
@@ -18,7 +18,7 @@ class ApplyChooseEndowAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() 
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun submitList(list: List<PromotionVoucherItem>) {
+    fun submitList(list: List<PromotionItem>) {
         vouchers.clear()
         vouchers.addAll(list)
         notifyDataSetChanged()
@@ -35,21 +35,21 @@ class ApplyChooseEndowAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             VIEW_TYPE_VOUCHER -> {
-                val binding = ItemListVoucherApplyBinding.inflate(
+                val binding = ItemListPromotionApplyBinding.inflate(
                     LayoutInflater.from(parent.context),
                     parent,
                     false
                 )
-                VoucherAppliedViewHolder(binding)
+                ApplyPromotionViewHolder(binding)
             }
 
             VIEW_TYPE_COUNT -> {
-                val binding = ItemListVoucherCountBinding.inflate(
+                val binding = ItemListPromotionCountBinding.inflate(
                     LayoutInflater.from(parent.context),
                     parent,
                     false
                 )
-                CountViewHolder(binding)
+                CountChoosePromotionViewHolder(binding)
             }
 
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
@@ -58,11 +58,11 @@ class ApplyChooseEndowAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() 
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is VoucherAppliedViewHolder -> {
+            is ApplyPromotionViewHolder -> {
                 holder.bind(vouchers[position])
             }
 
-            is CountViewHolder -> {
+            is CountChoosePromotionViewHolder -> {
                 val remainingCount = vouchers.size - maxVisibleVouchers
                 holder.bind(remainingCount)
             }
@@ -74,6 +74,26 @@ class ApplyChooseEndowAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() 
             vouchers.isEmpty() -> 0
             vouchers.size <= maxVisibleVouchers -> vouchers.size
             else -> maxVisibleVouchers + 1
+        }
+    }
+
+    private class ApplyPromotionViewHolder(
+        private val binding: ItemListPromotionApplyBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(voucher: PromotionItem) {
+            binding.txtName.text = voucher.discount
+        }
+    }
+
+    // CountViewHolder.kt
+    private class CountChoosePromotionViewHolder(
+        private val binding: ItemListPromotionCountBinding
+    ) : RecyclerView.ViewHolder(binding.root) {
+
+        @SuppressLint("SetTextI18n")
+        fun bind(count: Int) {
+            binding.txtCount.text = "+$count"
         }
     }
 }

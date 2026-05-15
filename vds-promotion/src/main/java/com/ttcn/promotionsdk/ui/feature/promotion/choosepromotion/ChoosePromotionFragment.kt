@@ -6,11 +6,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.ttcn.promotionsdk.databinding.PrmFragmentChooseEndowBinding
+import com.ttcn.promotionsdk.databinding.FragmentChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChooseEndowAdapter
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowListItem
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionVoucherItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ListChoosePromotionAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
 import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
 import com.ttcn.promotionsdk.ui.utils.extension.parcelableArrayList
 import java.text.NumberFormat
@@ -20,18 +20,18 @@ import java.util.Locale
  * Màn chọn voucher - Nhận list voucher từ parent
  * Không tự tạo data
  */
-class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
+class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>() {
 
     companion object {
         private const val KEY_ALL_VOUCHERS = "all_vouchers"
         private const val KEY_CURRENT_APPLIED = "current_applied"
 
         fun newInstance(
-            allVouchers: List<PromotionVoucherItem>,
-            currentAppliedVouchers: List<PromotionVoucherItem>,
-            onApplyVoucher: (List<PromotionVoucherItem>) -> Unit
-        ): ChooseEndowFragment {
-            return ChooseEndowFragment().apply {
+            allVouchers: List<PromotionItem>,
+            currentAppliedVouchers: List<PromotionItem>,
+            onApplyVoucher: (List<PromotionItem>) -> Unit
+        ): ChoosePromotionFragment {
+            return ChoosePromotionFragment().apply {
                 arguments = Bundle().apply {
                     putParcelableArrayList(KEY_ALL_VOUCHERS, ArrayList(allVouchers))
                     putParcelableArrayList(KEY_CURRENT_APPLIED, ArrayList(currentAppliedVouchers))
@@ -42,9 +42,9 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
     }
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        PrmFragmentChooseEndowBinding.inflate(inflater, container, false)
+        FragmentChoosePromotionBinding.inflate(inflater, container, false)
 
-    private var onApplyVoucher: ((List<PromotionVoucherItem>) -> Unit)? = null
+    private var onApplyVoucher: ((List<PromotionItem>) -> Unit)? = null
 
     /**
      * false  -> chỉ chọn 1 voucher
@@ -55,31 +55,31 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
     /**
      * List voucher được truyền từ parent (SINGLE SOURCE OF TRUTH)
      */
-    private var allVouchers: List<PromotionVoucherItem> = emptyList()
+    private var allVouchers: List<PromotionItem> = emptyList()
 
     /**
      * Voucher đã apply trước đó
      */
-    private var previousAppliedVouchers: List<PromotionVoucherItem> = emptyList()
+    private var previousAppliedVouchers: List<PromotionItem> = emptyList()
 
     /**
      * Voucher đang chọn hiện tại
      */
-    private val currentSelectedVouchers = mutableListOf<PromotionVoucherItem>()
+    private val currentSelectedVouchers = mutableListOf<PromotionItem>()
 
     /**
      * List voucher sau khi filter từ search, dùng để hiển thị lên UI
      */
-    private var filteredVouchers: List<PromotionVoucherItem> = emptyList()
+    private var filteredVouchers: List<PromotionItem> = emptyList()
 
-    private lateinit var voucherAdapter: ChooseEndowAdapter
+    private lateinit var voucherAdapter: ListChoosePromotionAdapter
 
     override fun setupUI() {
         // Lấy data từ arguments
         allVouchers =
-            arguments?.parcelableArrayList<PromotionVoucherItem>(KEY_ALL_VOUCHERS) ?: arrayListOf()
+            arguments?.parcelableArrayList<PromotionItem>(KEY_ALL_VOUCHERS) ?: arrayListOf()
         previousAppliedVouchers =
-            arguments?.parcelableArrayList<PromotionVoucherItem>(KEY_CURRENT_APPLIED)
+            arguments?.parcelableArrayList<PromotionItem>(KEY_CURRENT_APPLIED)
                 ?: arrayListOf()
         filteredVouchers = allVouchers
 
@@ -93,7 +93,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
     }
 
     private fun setupRecyclerView() {
-        voucherAdapter = ChooseEndowAdapter(
+        voucherAdapter = ListChoosePromotionAdapter(
             onVoucherClick = { voucher, position ->
                 handleVoucherSelection(voucher)
             },
@@ -115,9 +115,9 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
         loadVouchers()
     }
 
-    private fun loadVouchers(vouchers: List<PromotionVoucherItem> = filteredVouchers) {
+    private fun loadVouchers(vouchers: List<PromotionItem> = filteredVouchers) {
 
-        val items = mutableListOf<EndowListItem>()
+        val items = mutableListOf<ChoosePromotionListItem>()
 
         val myVouchers = vouchers.take(15)
 
@@ -127,7 +127,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
         if (myVouchers.isNotEmpty()) {
 
             items.add(
-                EndowListItem.Header("Ưu đãi của tôi")
+                ChoosePromotionListItem.Header("Ưu đãi của tôi")
             )
 
             myVouchers.forEach { voucher ->
@@ -138,7 +138,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
                     }
 
                 items.add(
-                    EndowListItem.Endow(
+                    ChoosePromotionListItem.ChoosePromotion(
                         voucher.copy(
                             isApplied = isSelected
                         )
@@ -151,7 +151,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
         if (otherVouchers.isNotEmpty()) {
 
             items.add(
-                EndowListItem.Header("Ưu đãi khác")
+                ChoosePromotionListItem.Header("Ưu đãi khác")
             )
 
             otherVouchers.forEach { voucher ->
@@ -162,7 +162,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
                     }
 
                 items.add(
-                    EndowListItem.Endow(
+                    ChoosePromotionListItem.ChoosePromotion(
                         voucher.copy(
                             isApplied = isSelected
                         )
@@ -174,7 +174,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
         voucherAdapter.submitList(items)
     }
 
-    private fun handleVoucherSelection(voucher: PromotionVoucherItem) {
+    private fun handleVoucherSelection(voucher: PromotionItem) {
         if (isMultiSelection) {
             handleMultiSelection(voucher)
         } else {
@@ -189,7 +189,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
     /**
      * Chỉ chọn 1 voucher
      */
-    private fun handleSingleSelection(voucher: PromotionVoucherItem) {
+    private fun handleSingleSelection(voucher: PromotionItem) {
         val isCurrentlySelected = currentSelectedVouchers.any { it.id == voucher.id }
 
         if (isCurrentlySelected) {
@@ -205,7 +205,7 @@ class ChooseEndowFragment : PRMBaseFragment<PrmFragmentChooseEndowBinding>() {
     /**
      * Cho phép chọn nhiều voucher
      */
-    private fun handleMultiSelection(voucher: PromotionVoucherItem) {
+    private fun handleMultiSelection(voucher: PromotionItem) {
         val isCurrentlySelected = currentSelectedVouchers.any { it.id == voucher.id }
 
         if (isCurrentlySelected) {

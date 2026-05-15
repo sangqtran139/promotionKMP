@@ -9,9 +9,9 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyChooseEndowAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowViewState
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionVoucherItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
 
 class PRMEndowView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -19,15 +19,15 @@ class PRMEndowView @JvmOverloads constructor(
 
     private val binding: PrmViewEndowBinding =
         PrmViewEndowBinding.inflate(LayoutInflater.from(context), this, true)
-    private val applyChooseEndowAdapter = ApplyChooseEndowAdapter()
+    private val applyPromotionAdapter = ApplyPromotionAdapter()
 
     private var currentState: EndowViewState = EndowViewState.NOT_APPLIED
-    private var allVouchers: List<PromotionVoucherItem> = emptyList()
+    private var allVouchers: List<PromotionItem> = emptyList()
 
     // Callbacks
     private var onUseVoucherClickListener: (() -> Unit)? = null
     private var onChangeVoucherClickListener: (() -> Unit)? = null
-    private var onVoucherItemClickListener: ((PromotionVoucherItem) -> Unit)? = null
+    private var onVoucherItemClickListener: ((PromotionItem) -> Unit)? = null
 
     init {
         setupRecyclerView()
@@ -36,7 +36,7 @@ class PRMEndowView @JvmOverloads constructor(
 
     private fun setupRecyclerView() {
         binding.rcvEndow.apply {
-            adapter = applyChooseEndowAdapter
+            adapter = applyPromotionAdapter
             layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         }
 
@@ -69,7 +69,7 @@ class PRMEndowView @JvmOverloads constructor(
      * Set danh sách tất cả vouchers
      * Tự động phát hiện trạng thái dựa vào isApplied
      */
-    fun setVouchers(vouchers: List<PromotionVoucherItem>) {
+    fun setVouchers(vouchers: List<PromotionItem>) {
         allVouchers = vouchers
 
         currentState = when {
@@ -154,7 +154,7 @@ class PRMEndowView @JvmOverloads constructor(
         binding.apply {
             val appliedVouchers = allVouchers.filter { it.isApplied }
 
-            applyChooseEndowAdapter.submitList(appliedVouchers)
+            applyPromotionAdapter.submitList(appliedVouchers)
 
             txtNumberEndow.visibility = View.GONE
             rcvEndow.visibility = View.VISIBLE
@@ -181,7 +181,7 @@ class PRMEndowView @JvmOverloads constructor(
     /**
      * Set callback khi click vào voucher item trong RecyclerView
      */
-    fun setOnVoucherItemClickListener(listener: (PromotionVoucherItem) -> Unit) {
+    fun setOnVoucherItemClickListener(listener: (PromotionItem) -> Unit) {
         onVoucherItemClickListener = listener
     }
 
@@ -200,7 +200,7 @@ class PRMEndowView @JvmOverloads constructor(
     /**
      * Get danh sách vouchers đã apply
      */
-    fun getAppliedVouchers(): List<PromotionVoucherItem> {
+    fun getAppliedVouchers(): List<PromotionItem> {
         return allVouchers.filter { it.isApplied }
     }
 }

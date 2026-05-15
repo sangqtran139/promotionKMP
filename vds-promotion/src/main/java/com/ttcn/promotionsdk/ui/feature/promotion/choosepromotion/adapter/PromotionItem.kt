@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class PromotionVoucherItem(
+data class PromotionItem(
     val id: String,
     val name: String,
     val discount: String,

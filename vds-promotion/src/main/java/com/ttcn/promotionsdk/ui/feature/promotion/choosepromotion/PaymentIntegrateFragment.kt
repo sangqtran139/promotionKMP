@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.databinding.FragmentPaymentDemoBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionVoucherItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
 import com.ttcn.promotionsdk.ui.utils.extension.parcelableArrayList
 
 /**
@@ -17,7 +17,7 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
     companion object {
         private const val KEY_APPLIED_VOUCHERS = "applied_vouchers"
 
-        fun newInstance(appliedVouchers: List<PromotionVoucherItem>? = null): PaymentIntegrateFragment {
+        fun newInstance(appliedVouchers: List<PromotionItem>? = null): PaymentIntegrateFragment {
             return PaymentIntegrateFragment().apply {
                 arguments = Bundle().apply {
                     appliedVouchers?.let {
@@ -40,11 +40,11 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
     /**
      * Danh sách voucher đã được apply
      */
-    private var currentAppliedVouchers: List<PromotionVoucherItem> = emptyList()
+    private var currentAppliedVouchers: List<PromotionItem> = emptyList()
 
     override fun setupUI() {
         currentAppliedVouchers =
-            arguments?.parcelableArrayList<PromotionVoucherItem>(KEY_APPLIED_VOUCHERS)
+            arguments?.parcelableArrayList<PromotionItem>(KEY_APPLIED_VOUCHERS)
                 ?: arrayListOf()
         setupEndowView()
     }
@@ -89,7 +89,7 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
      */
     private fun openVoucherSelectionScreen() {
         addFragment(
-            ChooseEndowFragment.newInstance(
+            ChoosePromotionFragment.newInstance(
                 allVouchers = allAvailableVouchers,
                 currentAppliedVouchers = currentAppliedVouchers,
                 onApplyVoucher = { selectedVouchers ->
@@ -102,7 +102,7 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
     /**
      * Xử lý khi user apply voucher từ MyEndowFragment
      */
-    private fun handleVoucherApplied(selectedVouchers: List<PromotionVoucherItem>) {
+    private fun handleVoucherApplied(selectedVouchers: List<PromotionItem>) {
         // Cập nhật vouchers đã apply
         currentAppliedVouchers = selectedVouchers
 

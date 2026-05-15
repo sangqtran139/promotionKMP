@@ -74,7 +74,7 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher"
-                tools:listitem="@layout/item_my_endow" />
+                tools:listitem="@layout/item_choose_promotion" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -43,7 +43,7 @@
             app:layout_constraintBottom_toBottomOf="@id/txtStatusEndow"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
-            tools:listitem="@layout/item_list_voucher_apply" />
+            tools:listitem="@layout/item_list_promotion_apply" />
 
         <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
             android:id="@+id/txtStatusEndow"
