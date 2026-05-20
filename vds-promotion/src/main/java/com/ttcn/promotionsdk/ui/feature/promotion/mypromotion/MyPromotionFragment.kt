@@ -1,10 +1,10 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
-import android.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.allAvailableVouchers
@@ -18,10 +18,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
     private val viewModel: MyPromotionViewModel by viewModels()
 
-    private val tabAdapter = MyPromotionTabAdapter(
-        titles = listOf("Tất cả", "Sắp hết hạn"),
-        onTabSelected = { },
-    )
+    private lateinit var tabAdapter: MyPromotionTabAdapter
 
     private val homeListAdapter = ChoosePromotionAdapter(
         onVoucherClick = { voucher, _ ->
@@ -39,6 +36,13 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
         binding.imgSearch.setOnClickListener { openSearchMyPromotion() }
 
+        tabAdapter = MyPromotionTabAdapter(
+            titles = listOf(
+                getString(R.string.prm_tab_all),
+                getString(R.string.prm_tab_expiring_soon),
+            ),
+            onTabSelected = { },
+        )
         binding.rvTabs.adapter = tabAdapter
 
         binding.homeList.apply {
@@ -59,7 +63,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         val fm = requireActivity().supportFragmentManager
         if (fm.findFragmentByTag(TAG_SEARCH_MY_PROMOTION) != null) return
         fm.beginTransaction().setReorderingAllowed(true)
-            .add(R.id.content, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
+            .add(android.R.id.content, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
             .addToBackStack(TAG_SEARCH_MY_PROMOTION).commit()
     }
 

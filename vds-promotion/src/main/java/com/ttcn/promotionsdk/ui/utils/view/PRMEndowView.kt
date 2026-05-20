@@ -12,6 +12,9 @@ import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowViewState
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
+import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.utils.applyTextColorIfSet
 
 class PRMEndowView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -23,6 +26,7 @@ class PRMEndowView @JvmOverloads constructor(
 
     private var currentState: EndowViewState = EndowViewState.NOT_APPLIED
     private var allVouchers: List<PromotionItem> = emptyList()
+    private var lastAppliedToken: DiscountBadgeToken? = null
 
     // Callbacks
     private var onUseVoucherClickListener: (() -> Unit)? = null
@@ -32,6 +36,24 @@ class PRMEndowView @JvmOverloads constructor(
     init {
         setupRecyclerView()
         setupClickListeners()
+        applyToken(PromotionThemeRegistry.discountBadgeToken())
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
+    }
+
+    fun applyToken(token: DiscountBadgeToken?) {
+        lastAppliedToken = token
+        applyTokenInternal(token)
+    }
+
+    private fun applyTokenInternal(token: DiscountBadgeToken?) {
+        // Text/background badge tokens apply to voucher chips only (DiscountBadgeApplier).
+        binding.root.background = null
+        token?.actionTextColor?.let { binding.txtStatusEndow.applyTextColorIfSet(it) }
+        applyPromotionAdapter.applyToken(token)
     }
 
     private fun setupRecyclerView() {
@@ -142,8 +164,8 @@ class PRMEndowView @JvmOverloads constructor(
             rcvEndow.visibility = GONE
             txtStatusEndow.visibility = VISIBLE
             txtStatusEndow.text = context.getString(R.string.prm_use_voucher)
-            txtStatusEndow.setTextColor(context.getColor(R.color.color_EE0033))
         }
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
     }
 
     /**
@@ -160,8 +182,8 @@ class PRMEndowView @JvmOverloads constructor(
             rcvEndow.visibility = View.VISIBLE
             txtStatusEndow.visibility = View.VISIBLE
             txtStatusEndow.text = context.getString(R.string.prm_change_voucher)
-            txtStatusEndow.setTextColor(context.getColor(R.color.color_EE0033))
         }
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
     }
 
     /**

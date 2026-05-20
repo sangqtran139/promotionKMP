@@ -4,10 +4,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
 import com.ttcn.promotionsdk.ui.utils.extension.parcelable
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.TabLayoutThemeApplier
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherBanner
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
@@ -25,9 +28,13 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             binding.circleLogo.background = null
             binding.circleLogo.loadPromotionVoucherLogo(voucher.urlLogo, preferCache = true)
             binding.txtVoucherName.text = voucher.name
-            binding.tvContent.text = "Giảm giá ${voucher.discount}đ"
-            binding.tvExpired.text = "HSD 15/05/2025"
+            binding.tvContent.text = getString(R.string.prm_discount_amount_format, voucher.discount)
+            binding.tvExpired.text = getString(
+                R.string.prm_expiry_short_format,
+                getString(R.string.prm_demo_expiry_date),
+            )
         }
+        TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
     }
 
     override fun observeData() {

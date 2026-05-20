@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/prm_bg_color_picker_sheet"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false"
+        android:maxHeight="@dimen/prm_color_picker_scroll_max_height"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/prm_color_picker_sheet_padding">
+
+            <!-- Header: title + RGB pill -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="@string/prm_theme_color_picker_title"
+                        android:textColor="@color/prm_theme_title_text"
+                        android:textSize="@dimen/text_size_20"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtPickerTokenLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/view_size_4"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif"
+                        android:maxLines="1"
+                        android:textColor="@color/prm_theme_label_text"
+                        android:textSize="@dimen/text_size_13"
+                        tools:text="backgroundColor" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/txtRgbModeBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/prm_bg_color_picker_mode_pill"
+                    android:fontFamily="sans-serif-medium"
+                    android:paddingHorizontal="@dimen/view_size_12"
+                    android:paddingVertical="@dimen/view_size_6"
+                    android:text="@string/prm_theme_color_picker_rgb_mode"
+                    android:textColor="@color/prm_theme_title_text"
+                    android:textSize="@dimen/text_size_12" />
+            </LinearLayout>
+
+            <!-- Color preview (white frame) -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/prm_theme_color_picker_preview_height"
+                android:layout_marginTop="@dimen/view_size_20"
+                android:background="@android:color/white"
+                android:padding="@dimen/view_size_2">
+
+                <View
+                    android:id="@+id/viewPickerPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <!-- Hex input row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/view_size_16"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/view_size_12"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="@string/prm_theme_color_picker_section_hex"
+                    android:textColor="@color/prm_theme_label_text"
+                    android:textSize="@dimen/text_size_13" />
+
+                <EditText
+                    android:id="@+id/edtPickerHex"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:autofillHints=""
+                    android:background="@drawable/prm_bg_color_picker_hex_field"
+                    android:hint="@string/prm_theme_color_hex_hint"
+                    android:imeOptions="actionDone"
+                    android:importantForAutofill="no"
+                    android:inputType="textCapCharacters"
+                    android:maxLines="1"
+                    android:paddingHorizontal="@dimen/view_size_12"
+                    android:paddingVertical="@dimen/view_size_10"
+                    android:singleLine="true"
+                    android:textColor="@color/prm_theme_title_text"
+                    android:textColorHint="@color/prm_theme_label_text"
+                    android:textSize="@dimen/text_size_14" />
+            </LinearLayout>
+
+            <!-- RGB sliders card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/view_size_20"
+                android:background="@drawable/prm_bg_color_picker_inner_card"
+                android:orientation="vertical"
+                android:padding="@dimen/prm_color_picker_inner_card_padding">
+
+                <!-- R -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/view_size_48"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="@dimen/prm_color_picker_channel_label_size"
+                        android:layout_height="@dimen/prm_color_picker_channel_label_size"
+                        android:background="@drawable/prm_bg_channel_label_r"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:text="@string/prm_theme_channel_r"
+                        android:textColor="@color/prm_channel_r_text"
+                        android:textSize="@dimen/text_size_14"
+                        android:textStyle="bold" />
+
+                    <SeekBar
+                        android:id="@+id/seekRed"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/view_size_8"
+                        android:layout_weight="1"
+                        android:max="255"
+                        android:minHeight="@dimen/view_size_48"
+                        android:paddingStart="@dimen/view_size_0"
+                        android:paddingEnd="@dimen/view_size_0"
+                        android:progressDrawable="@drawable/prm_seekbar_channel_r"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/prm_seekbar_rgb_thumb"
+                        android:thumbOffset="0dp" />
+
+                    <TextView
+                        android:id="@+id/txtRedCurrent"
+                        android:layout_width="@dimen/view_size_40"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="end"
+                        android:textColor="@color/prm_theme_title_text"
+                        android:textSize="@dimen/text_size_15"
+                        tools:text="238" />
+                </LinearLayout>
+
+                <!-- G -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/view_size_12"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/view_size_48"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="@dimen/prm_color_picker_channel_label_size"
+                        android:layout_height="@dimen/prm_color_picker_channel_label_size"
+                        android:background="@drawable/prm_bg_channel_label_g"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:text="@string/prm_theme_channel_g"
+                        android:textColor="@color/prm_channel_g_text"
+                        android:textSize="@dimen/text_size_14"
+                        android:textStyle="bold" />
+
+                    <SeekBar
+                        android:id="@+id/seekGreen"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/view_size_8"
+                        android:layout_weight="1"
+                        android:max="255"
+                        android:minHeight="@dimen/view_size_48"
+                        android:paddingStart="@dimen/view_size_0"
+                        android:paddingEnd="@dimen/view_size_0"
+                        android:progressDrawable="@drawable/prm_seekbar_channel_g"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/prm_seekbar_rgb_thumb"
+                        android:thumbOffset="0dp" />
+
+                    <TextView
+                        android:id="@+id/txtGreenCurrent"
+                        android:layout_width="@dimen/view_size_40"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="end"
+                        android:textColor="@color/prm_theme_title_text"
+                        android:textSize="@dimen/text_size_15"
+                        tools:text="0" />
+                </LinearLayout>
+
+                <!-- B -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/view_size_12"
+                    android:gravity="center_vertical"
+                    android:minHeight="@dimen/view_size_48"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="@dimen/prm_color_picker_channel_label_size"
+                        android:layout_height="@dimen/prm_color_picker_channel_label_size"
+                        android:background="@drawable/prm_bg_channel_label_b"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:text="@string/prm_theme_channel_b"
+                        android:textColor="@color/prm_channel_b_text"
+                        android:textSize="@dimen/text_size_14"
+                        android:textStyle="bold" />
+
+                    <SeekBar
+                        android:id="@+id/seekBlue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="@dimen/view_size_8"
+                        android:layout_weight="1"
+                        android:max="255"
+                        android:minHeight="@dimen/view_size_48"
+                        android:paddingStart="@dimen/view_size_0"
+                        android:paddingEnd="@dimen/view_size_0"
+                        android:progressDrawable="@drawable/prm_seekbar_channel_b"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/prm_seekbar_rgb_thumb"
+                        android:thumbOffset="0dp" />
+
+                    <TextView
+                        android:id="@+id/txtBlueCurrent"
+                        android:layout_width="@dimen/view_size_40"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="end"
+                        android:textColor="@color/prm_theme_title_text"
+                        android:textSize="@dimen/text_size_15"
+                        tools:text="0" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/view_size_1"
+        android:background="@color/prm_color_picker_footer_divider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/prm_bg_color_picker_footer"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/prm_color_picker_footer_padding_h"
+        android:paddingTop="@dimen/view_size_12"
+        android:paddingBottom="@dimen/prm_color_picker_footer_padding_v">
+
+        <TextView
+            android:id="@+id/btnPickerCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/view_size_48"
+            android:paddingHorizontal="@dimen/view_size_8"
+            android:text="@string/prm_theme_color_picker_cancel"
+            android:textColor="@color/prm_theme_reset_text"
+            android:textSize="@dimen/text_size_16"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="@dimen/view_size_48"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/btnPickerOk"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/prm_bg_color_picker_ok_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minHeight="@dimen/view_size_48"
+            android:minWidth="@dimen/prm_color_picker_ok_min_width"
+            android:paddingHorizontal="@dimen/view_size_24"
+            android:text="@string/prm_theme_color_picker_ok"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/text_size_16"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

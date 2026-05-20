@@ -1,6 +1,5 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,7 +7,10 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
+import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 
 sealed class ChoosePromotionListItem {
@@ -76,15 +78,18 @@ class ListChoosePromotionAdapter(
         private val onDetailClick: (PromotionItem, Int) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("SetTextI18n")
         fun bind(item: ChoosePromotionListItem.ChoosePromotion) {
             binding.apply {
                 val voucher = item.data
+                val ctx = binding.root.context
 
                 // Hiển thị thông tin voucher
                 txtVoucherName.text = voucher.name
-                tvContent.text = "Giảm giá ${voucher.discount}đ"
-                tvEndDate.text = "HSD 15/05/2025"
+                tvContent.text = ctx.getString(R.string.prm_discount_amount_format, voucher.discount)
+                tvEndDate.text = ctx.getString(
+                    R.string.prm_expiry_short_format,
+                    ctx.getString(R.string.prm_demo_expiry_date),
+                )
 
                 // Sử dụng isApplied từ PromotionVoucherItem
                 cbUseVoucher.isChecked = voucher.isApplied
@@ -111,6 +116,11 @@ class ListChoosePromotionAdapter(
                 lnDetail.setOnClickListener {
                     onDetailClick(voucher, bindingAdapterPosition)
                 }
+
+                PromotionListItemApplier.apply(
+                    this,
+                    PromotionThemeRegistry.listItemToken(),
+                )
             }
         }
     }

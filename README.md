@@ -172,6 +172,52 @@ Public entry types for UI integration are under **`com.ttcn.promotionsdk.ui.entr
 
 ---
 
+## Theming
+
+The SDK applies optional **component tokens** (button, search field, list row, tab chip, tab underline, discount badge). Hosts pass them when initializing the SDK and may update them at runtime.
+
+### Initialization
+
+```kotlin
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
+import com.ttcn.promotionsdk.ui.entry.PromotionTheme
+import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
+import com.ttcn.promotionsdk.ui.theme.ButtonToken
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
+
+PromotionSDK.init(
+    context,
+    PromotionSDKOptions(
+        config = PromotionSDKConfig(apiKey = "…", baseUrl = "…"),
+        theme = PromotionSDKTheme(
+            config = PromotionThemeConfig(
+                buttonToken = ButtonToken(
+                    backgroundColor = 0xFFE00029.toInt(),
+                    textColor = 0xFFFFFFFF.toInt(),
+                ),
+                // … other tokens optional (null = use SDK defaults from resources)
+            ),
+        ),
+    ),
+)
+```
+
+### Runtime updates
+
+`PromotionTheme.configure(PromotionThemeConfig)` updates the internal theme registry **and** keeps `PromotionSDK.getTheme()` in sync. Use `PromotionTheme.clear()` to reset tokens to defaults (empty config). `PromotionSDK.release()` also clears theme state.
+
+### Persistence (optional)
+
+`PromotionThemeJson` in the library can serialize/deserialize `PromotionThemeConfig` with Gson for simple storage. Hosts may use their own format as long as they rebuild `PromotionThemeConfig` before calling `init` or `PromotionTheme.configure`.
+
+### Migration note (older `PromotionSDKTheme` shape)
+
+Earlier snapshots modeled `PromotionSDKTheme` with separate `colors`, `fonts`, `icons`, and `borders` properties. That shape was **replaced** by a single `config: PromotionThemeConfig` aggregating the **token** types above. Hosts that integrated against the old fields need to map their styling into the new token properties (or rely on SDK defaults by omitting tokens).
+
+---
+
 ## Development guidelines
 
 | Guideline | Detail |

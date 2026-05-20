@@ -2,10 +2,11 @@ package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.ItemTagMyPromotionBinding
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeDefaults
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.TabChipThemeApplier
 
 class MyPromotionTabAdapter(
     private val titles: List<String>,
@@ -49,13 +50,9 @@ class MyPromotionTabAdapter(
         fun bind(title: String, selected: Boolean) {
             binding.tvTag.text = title
             val ctx = binding.root.context
-            if (selected) {
-                binding.tvTag.setBackgroundResource(R.drawable.prm_background_4e_corner)
-                binding.tvTag.setTextColor(ContextCompat.getColor(ctx, R.color.white))
-            } else {
-                binding.tvTag.setBackgroundResource(R.drawable.prm_bg_my_promotion_tab_unselected)
-                binding.tvTag.setTextColor(ContextCompat.getColor(ctx, R.color.color_7A7A7A))
-            }
+            val token = PromotionThemeRegistry.tabChipToken()
+                ?: PromotionThemeDefaults.tabChip(ctx)
+            TabChipThemeApplier.applyChip(binding.tvTag, selected, token)
         }
     }
 }

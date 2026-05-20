@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prm_theme_apply_success">Theme applied successfully</string>
+    <string name="prm_theme_reset_success">Theme reset to defaults</string>
+    <string name="prm_theme_config_subtitle">Config (28 tokens)</string>
+    <string name="prm_theme_custom_title">Custom theme</string>
+
+    <string name="prm_theme_card_title_format">%1$s (%2$d)</string>
+    <string name="prm_theme_slider_label_format">%1$s · dp</string>
+    <string name="prm_theme_slider_value_dp">%1$d dp</string>
+    <string name="prm_theme_slider_caption_min">Min</string>
+    <string name="prm_theme_slider_caption_max">Max</string>
+    <string name="prm_theme_bottom_sheet_preview_format">Preview: %1$s</string>
+
+    <string name="prm_theme_apply">Apply</string>
+    <string name="prm_theme_reset">Reset</string>
+    <string name="prm_theme_preview">Preview</string>
+
+    <string name="prm_theme_section_button">Button</string>
+    <string name="prm_theme_section_search_bar">Search Bar</string>
+    <string name="prm_theme_section_list_item">List Item</string>
+    <string name="prm_theme_section_tab_chip">Tab Chip</string>
+    <string name="prm_theme_section_tab_underline">TabUnderline</string>
+    <string name="prm_theme_section_discount_badge">DiscountBadge</string>
+
+    <string name="prm_theme_lbl_background_color">backgroundColor</string>
+    <string name="prm_theme_lbl_text_color">textColor</string>
+    <string name="prm_theme_lbl_shadow_color">shadowColor</string>
+    <string name="prm_theme_lbl_corner_radius">cornerRadius</string>
+    <string name="prm_theme_lbl_border_color">borderColor</string>
+    <string name="prm_theme_lbl_hint_text_color">hintTextColor</string>
+    <string name="prm_theme_lbl_icon_color">iconColor</string>
+    <string name="prm_theme_lbl_link_text_color">linkTextColor</string>
+    <string name="prm_theme_lbl_used_badge_text_color">usedBadgeTextColor</string>
+    <string name="prm_theme_lbl_used_badge_background_color">usedBadgeBackgroundColor</string>
+    <string name="prm_theme_lbl_radio_stroke_color">radioButtonStrokeColor</string>
+    <string name="prm_theme_lbl_radio_selected_fill">radioButtonSelectedStrokeColor</string>
+    <string name="prm_theme_lbl_active_background_color">activeBackgroundColor</string>
+    <string name="prm_theme_lbl_inactive_background_color">inactiveBackgroundColor</string>
+    <string name="prm_theme_lbl_active_text_color">activeTextColor</string>
+    <string name="prm_theme_lbl_inactive_text_color">inactiveTextColor</string>
+    <string name="prm_theme_lbl_indicator_color">indicatorColor</string>
+    <string name="prm_theme_lbl_background_tab">backgroundColor</string>
+    <string name="prm_theme_lbl_available_text_color">availableTextColor</string>
+    <string name="prm_theme_lbl_unavailable_text_color">unavailableTextColor</string>
+    <string name="prm_theme_lbl_available_background_color">availableBackgroundColor</string>
+    <string name="prm_theme_lbl_unavailable_background_color">unavailableBackgroundColor</string>
+    <string name="prm_theme_lbl_action_text_color">actionTextColor</string>
+
+    <string name="prm_theme_sheet_component_prm_button">PRMButton</string>
+    <string name="prm_theme_sheet_component_prm_search">PRMSearchField</string>
+    <string name="prm_theme_sheet_component_rv_tabs">rvTabs</string>
+    <string name="prm_theme_sheet_component_tabs">tabs</string>
+    <string name="prm_theme_sheet_component_prm_endow">PRMEndowView</string>
+    <string name="prm_theme_sheet_component_promotion_item">PromotionItem</string>
+
+    <string name="prm_theme_demo_btn_continue">Tiếp tục</string>
+    <string name="prm_theme_demo_search_text">Preview</string>
+    <string name="prm_theme_demo_tab_all">Tất cả</string>
+    <string name="prm_theme_demo_tab_expiring">Sắp hết hạn</string>
+    <string name="prm_theme_demo_detail_tab_info">Thông tin chi tiết</string>
+    <string name="prm_theme_demo_detail_tab_guide">Hướng dẫn sử dụng</string>
+    <string name="prm_theme_demo_voucher_available_name">Ưu đãi khả dụng</string>
+    <string name="prm_theme_demo_voucher_available_discount">Giảm 50.000đ</string>
+    <string name="prm_theme_demo_voucher_unavailable_name">Ưu đãi không khả dụng</string>
+    <string name="prm_theme_demo_voucher_unavailable_discount">Giảm 30.000đ</string>
+    <string name="prm_theme_demo_list_voucher_name">Ưu đãi mẫu</string>
+    <string name="prm_theme_demo_list_discount">Giảm giá 50.000đ</string>
+    <string name="prm_theme_demo_list_expiry">HSD 15/05/2025</string>
+
+    <string name="prm_theme_color_picker_red">Red</string>
+    <string name="prm_theme_color_picker_green">Green</string>
+    <string name="prm_theme_color_picker_blue">Blue</string>
+    <string name="prm_theme_color_picker_alpha">Alpha</string>
+    <string name="prm_theme_color_picker_section_hex">Hex</string>
+    <string name="prm_theme_color_hex_hint">#EE0033</string>
+    <string name="prm_theme_color_picker_title">Chọn màu</string>
+    <string name="prm_theme_color_picker_rgb_mode">RGB Mode</string>
+    <string name="prm_theme_color_picker_cancel">Hủy</string>
+    <string name="prm_theme_color_picker_ok">OK</string>
+    <string name="prm_theme_channel_r">R</string>
+    <string name="prm_theme_channel_g">G</string>
+    <string name="prm_theme_channel_b">B</string>
+
+    <string name="prm_theme_bottom_sheet_demo_title">Demo</string>
+</resources>

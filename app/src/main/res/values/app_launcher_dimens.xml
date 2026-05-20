@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="app_launcher_btn_corner_radius">20dp</dimen>
+    <dimen name="app_launcher_btn_min_height">54dp</dimen>
+</resources>

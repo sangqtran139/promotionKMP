@@ -4,9 +4,9 @@
   <item android:state_selected="false" android:state_pressed="false">
     <layer-list>
       <!-- Bottom indicator color for the UNSELECTED tab state -->
-      <item android:top="@dimen/view_size_45" android:left="-5dp" android:right="-5dp">
+      <item android:top="@dimen/view_size_45" android:left="@dimen/prm_detail_tab_underline_horizontal_inset" android:right="@dimen/prm_detail_tab_underline_horizontal_inset">
         <shape android:shape="line">
-          <stroke android:color="#D3D3D3" android:width="2dp"/>
+          <stroke android:color="@color/color_D3D3D3" android:width="@dimen/view_size_2"/>
         </shape>
       </item>
     </layer-list>

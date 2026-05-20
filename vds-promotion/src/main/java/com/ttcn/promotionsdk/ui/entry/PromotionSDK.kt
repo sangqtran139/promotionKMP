@@ -6,6 +6,8 @@ import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 
 object PromotionSDK {
 
@@ -14,9 +16,22 @@ object PromotionSDK {
     private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
 
+    /**
+     * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]
+     * without re-running [init].
+     */
+    @JvmStatic
+    internal fun syncThemeConfig(config: PromotionThemeConfig?) {
+        theme = when (config) {
+            null -> PromotionSDKTheme()
+            else -> PromotionSDKTheme(config = config)
+        }
+    }
+
     @JvmStatic
     fun init(context: Context, options: PromotionSDKOptions) {
         theme = options.theme
+        PromotionThemeRegistry.configure(options.theme.config)
         callback = options.callback
         PromotionContainer.init(context, options.config)
     }
@@ -61,7 +76,8 @@ object PromotionSDK {
     @JvmStatic
     fun release() {
         PromotionContainer.clear()
-        theme = PromotionSDKTheme()
+        PromotionThemeRegistry.configure(null)
+        syncThemeConfig(null)
         callback = null
     }
 }

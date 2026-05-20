@@ -13,6 +13,11 @@ import androidx.core.widget.addTextChangedListener
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.ViewsSearchFieldBinding
 import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.SearchBarToken
+import com.ttcn.promotionsdk.ui.utils.applyCornerRadiusDp
+import com.ttcn.promotionsdk.ui.utils.applyImageTintIfSet
+import com.ttcn.promotionsdk.ui.utils.applyStrokeColorIfSet
 import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 import com.ttcn.promotionsdk.ui.utils.extension.setFont
@@ -83,6 +88,8 @@ class PRMSearchField @JvmOverloads constructor(
 
     private var previousKeyword: String = ""
 
+    private var lastAppliedToken: SearchBarToken? = null
+
     init {
         viewBinding.searchInput.onFocusChangeListener = this
         viewBinding.buttonClear.setOnClickListener { viewBinding.searchInput.setText("") }
@@ -113,6 +120,30 @@ class PRMSearchField @JvmOverloads constructor(
             previousKeyword = newKeyword
             onTextChangeListener?.invoke(newKeyword)
         }
+        applyToken(PromotionThemeRegistry.searchBarToken())
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.searchBarToken())
+    }
+
+    fun applyToken(token: SearchBarToken?) {
+        lastAppliedToken = token
+        applyTokenInternal(token)
+    }
+
+    private fun applyTokenInternal(token: SearchBarToken?) {
+        if (token == null) return
+        token.borderColor?.let { viewBinding.searchInput.applyStrokeColorIfSet(it) }
+        token.hintTextColor?.let { viewBinding.searchInput.setHintTextColor(it) }
+        token.textColor?.let { viewBinding.searchInput.setTextColor(it) }
+        token.iconColor?.let { color ->
+            viewBinding.searchIcon.applyImageTintIfSet(color)
+            viewBinding.buttonClear.applyImageTintIfSet(color)
+            viewBinding.buttonSearch.applyImageTintIfSet(color)
+        }
+        token.cornerRadius?.let { viewBinding.searchInput.applyCornerRadiusDp(it) }
     }
 
     private fun updateInputType() {
@@ -145,6 +176,7 @@ class PRMSearchField @JvmOverloads constructor(
                 setPadding(leftPadding, paddingTop, rightPadding, paddingBottom)
             }
         }
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.searchBarToken())
     }
 
     override fun value(): String {

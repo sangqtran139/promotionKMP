@@ -10,7 +10,7 @@
 
         <com.ttcn.promotionsdk.ui.utils.view.PRMCardView
             android:layout_width="match_parent"
-            android:layout_height="138dp"
+            android:layout_height="@dimen/view_size_138"
             app:prmCvCornerRadius="@dimen/view_size_16"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">

@@ -17,7 +17,7 @@
         android:paddingEnd="@dimen/view_size_10"
         android:paddingBottom="@dimen/view_size_10"
         android:textColor="@color/white"
-        android:textSize="12sp"
+        android:textSize="@dimen/text_size_12"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Tất cả" />

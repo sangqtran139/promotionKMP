@@ -1,6 +1,7 @@
 package com.ttcn.promotionsdk.ui.utils.view
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.TypedValue
@@ -17,6 +18,10 @@ import com.ttcn.promotionsdk.databinding.ViewsCoreButtonPrmBinding
 import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonSize
 import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonType
 import com.ttcn.promotionsdk.ui.utils.enum.PRMShadowType
+import com.ttcn.promotionsdk.ui.theme.ButtonToken
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.utils.applyBackgroundColorIfSet
+import com.ttcn.promotionsdk.ui.utils.applyTextColorIfSet
 import com.ttcn.promotionsdk.ui.utils.extension.getString
 import com.ttcn.promotionsdk.ui.utils.extension.getText
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
@@ -28,6 +33,7 @@ import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 class PRMButton : PRMAbstractButton {
 
     private var viewBinding: ViewsCoreButtonPrmBinding? = null
+    private var lastAppliedToken: ButtonToken? = null
 
     var onSlideListener: OnSlideListener? = null
 
@@ -128,6 +134,9 @@ class PRMButton : PRMAbstractButton {
     private fun init(attrs: AttributeSet?) {
         viewBinding = ViewsCoreButtonPrmBinding.inflate(LayoutInflater.from(context), this, true)
         if (attrs == null) {
+            updateSize()
+            updateType()
+            applyToken(PromotionThemeRegistry.buttonToken())
             return
         }
         context.obtainStyledAttributes(attrs, R.styleable.PRMButton).apply {
@@ -149,6 +158,60 @@ class PRMButton : PRMAbstractButton {
             }
             recycle()
         }
+        applyToken(PromotionThemeRegistry.buttonToken())
+    }
+
+    fun applyToken(token: ButtonToken?) {
+        lastAppliedToken = token
+        applyTokenInternal(token)
+    }
+
+    private fun applyTokenInternal(token: ButtonToken?) {
+        if (token == null) return
+        token.backgroundColor?.let { color ->
+            applyTokenBackground(color, token.cornerRadius)
+        }
+        token.textColor?.let { viewBinding?.buttonAction?.applyTextColorIfSet(it) }
+        token.shadowColor?.let { setShadowColor(it) }
+        token.cornerRadius?.let { applyTokenCornerRadius(it) }
+        postInvalidate()
+    }
+
+    private fun applyTokenBackground(@androidx.annotation.ColorInt color: Int, cornerRadiusDp: Float?) {
+        bgColor = color
+        val radiusPx = cornerRadiusDp?.let { it * resources.displayMetrics.density }
+        viewBinding?.buttonContainer?.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(color)
+            radiusPx?.let { cornerRadius = it }
+        }
+    }
+
+    private fun applyTokenCornerRadius(radiusDp: Float) {
+        val radiusPx = radiusDp * resources.displayMetrics.density
+        setCorners(radiusPx, radiusPx, radiusPx, radiusPx, radiusPx)
+        val containerBg = viewBinding?.buttonContainer?.background
+        when (containerBg) {
+            is GradientDrawable -> containerBg.cornerRadius = radiusPx
+            null -> {
+                tokenBackgroundColor()?.let { applyTokenBackground(it, radiusDp) }
+            }
+        }
+    }
+
+    private fun tokenBackgroundColor(): Int? = lastAppliedToken?.backgroundColor
+
+    private fun reapplyTokenOverridesFromShadow() {
+        val token = lastAppliedToken ?: return
+        token.shadowColor?.let { setShadowColor(it) }
+        token.cornerRadius?.let { applyTokenCornerRadius(it) }
+        token.backgroundColor?.let { applyTokenBackground(it, token.cornerRadius) }
+        token.textColor?.let { viewBinding?.buttonAction?.applyTextColorIfSet(it) }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.buttonToken())
     }
 
     override fun onIdle() {
@@ -271,6 +334,7 @@ class PRMButton : PRMAbstractButton {
         if (buttonType == PRMCoreButtonType.TET) {
             setShadowColor(context.retrieveColor(R.color.ui_color_tet_2))
         }
+        reapplyTokenOverridesFromShadow()
     }
 
     private fun updatePaddingButton() {

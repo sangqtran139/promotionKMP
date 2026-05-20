@@ -129,7 +129,7 @@
             android:backgroundTint="@color/tokenWhite"
             android:src="@drawable/prm_ic_arrow_up_vector"
             android:visibility="gone"
-            app:borderWidth="0dp"
+            app:borderWidth="@dimen/view_size_0"
             app:fabSize="mini"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

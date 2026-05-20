@@ -1294,6 +1294,7 @@ open class PRMShadowView : FrameLayout {
      */
     fun setShadowColor(color: Int) {
         shadow.color = color
+        postInvalidate()
     }
 
     /**

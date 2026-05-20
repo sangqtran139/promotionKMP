@@ -27,10 +27,14 @@ android {
 
     buildFeatures {
         dataBinding = true
+        viewBinding = true
     }
 }
 
 dependencies {
     implementation(project(":vds-promotion"))
     implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.fragment.ktx)
+    implementation(libs.constraintlayout)
 }

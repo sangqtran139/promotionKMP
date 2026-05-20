@@ -6,11 +6,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
+import com.ttcn.promotionsdk.app.theme.ThemePreferenceManager
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.ui.base.PRMBaseActivity
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
+import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 
 class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
 
@@ -27,13 +29,16 @@ class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
         }
 
         if (!PromotionContainer.isInitialized()) {
+            val savedTheme = ThemePreferenceManager(this).load()
             PromotionSDK.init(
                 this,
                 PromotionSDKOptions(
                     config = PromotionSDKConfig(
                         apiKey = "demo",
                         baseUrl = "https://example.com"
-                    )
+                    ),
+                    theme = savedTheme?.let { PromotionSDKTheme(config = it) }
+                        ?: PromotionSDKTheme(),
                 )
             )
         }

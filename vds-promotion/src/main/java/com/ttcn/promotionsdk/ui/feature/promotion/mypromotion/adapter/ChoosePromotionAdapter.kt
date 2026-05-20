@@ -1,15 +1,17 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 import com.ttcn.promotionsdk.databinding.PrmItemPromotionBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
+import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
 sealed class PromotionListItem {
@@ -63,16 +65,19 @@ class ChoosePromotionAdapter(
         private val onUseClick: (PromotionItem, Int) -> Unit,
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        @SuppressLint("SetTextI18n")
         fun bind(item: PromotionListItem.Endow) {
             binding.apply {
                 val voucher = item.data
+                val ctx = binding.root.context
 
                 // Hiển thị thông tin voucher
                 imgVoucher.loadPromotionVoucherLogo(voucher.urlLogo)
                 txtVoucherName.text = voucher.name
-                tvContent.text = "Giảm giá ${voucher.discount}đ"
-                tvEndDate.text = "HSD 15/05/2025"
+                tvContent.text = ctx.getString(R.string.prm_discount_amount_format, voucher.discount)
+                tvEndDate.text = ctx.getString(
+                    R.string.prm_expiry_short_format,
+                    ctx.getString(R.string.prm_demo_expiry_date),
+                )
 
                 ctlTop.alpha = if (voucher.isExpired) 0.6f else 1f
                 txtExpired.isVisible = voucher.isExpired
@@ -89,6 +94,11 @@ class ChoosePromotionAdapter(
                 tvUse.setOnClickListener {
                     onUseClick(voucher, bindingAdapterPosition)
                 }
+
+                PromotionListItemApplier.apply(
+                    this,
+                    PromotionThemeRegistry.listItemToken(),
+                )
             }
         }
     }
