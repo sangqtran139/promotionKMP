@@ -93,22 +93,19 @@ object PromotionThemeDisplay {
         fun hex(@androidx.annotation.ColorInt color: Int?) =
             color?.let { PromotionThemeDefaults.colorToHex(it) }
 
-        fun radiusDp(px: Float?) =
-            if (px != null && context != null) PromotionThemeDefaults.pxToDp(context, px) else px
-
         return Defaults(
             button = ButtonValues(
                 backgroundColor = hex(config.buttonToken?.backgroundColor),
                 textColor = hex(config.buttonToken?.textColor),
                 shadowColor = hex(config.buttonToken?.shadowColor),
-                cornerRadius = radiusDp(config.buttonToken?.cornerRadius),
+                cornerRadius = config.buttonToken?.cornerRadius,
             ),
             searchBar = SearchBarValues(
                 borderColor = hex(config.searchBarToken?.borderColor),
                 hintTextColor = hex(config.searchBarToken?.hintTextColor),
                 textColor = hex(config.searchBarToken?.textColor),
                 iconColor = hex(config.searchBarToken?.iconColor),
-                cornerRadius = radiusDp(config.searchBarToken?.cornerRadius),
+                cornerRadius = config.searchBarToken?.cornerRadius,
             ),
             listItem = ListItemValues(
                 linkTextColor = hex(config.listItemToken?.linkTextColor),
@@ -122,7 +119,7 @@ object PromotionThemeDisplay {
                 inactiveBackgroundColor = hex(config.tabChipToken?.inactiveBackgroundColor),
                 activeTextColor = hex(config.tabChipToken?.activeTextColor),
                 inactiveTextColor = hex(config.tabChipToken?.inactiveTextColor),
-                cornerRadius = radiusDp(config.tabChipToken?.cornerRadius),
+                cornerRadius = config.tabChipToken?.cornerRadius,
             ),
             tabUnderline = TabUnderlineValues(
                 indicatorColor = hex(config.tabUnderlineToken?.indicatorColor),

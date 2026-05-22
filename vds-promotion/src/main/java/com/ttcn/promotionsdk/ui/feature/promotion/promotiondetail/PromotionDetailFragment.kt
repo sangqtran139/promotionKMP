@@ -3,14 +3,15 @@ package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
-import com.ttcn.promotionsdk.ui.utils.extension.parcelable
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.TabLayoutThemeApplier
+import com.ttcn.promotionsdk.ui.utils.extension.parcelable
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherBanner
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
@@ -24,15 +25,18 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     override fun setupUI() {
         binding.imgBack.setOnClickListener { onBackFragment() }
         arguments?.parcelable<PromotionItem>(KEY_VOUCHER)?.let { voucher ->
-            binding.imgBanner.loadPromotionVoucherBanner(voucher.urlBanner, preferCache = false)
-            binding.circleLogo.background = null
-            binding.circleLogo.loadPromotionVoucherLogo(voucher.urlLogo, preferCache = true)
-            binding.txtVoucherName.text = voucher.name
-            binding.tvContent.text = getString(R.string.prm_discount_amount_format, voucher.discount)
-            binding.tvExpired.text = getString(
-                R.string.prm_expiry_short_format,
-                getString(R.string.prm_demo_expiry_date),
-            )
+            binding.apply {
+                imgBanner.loadPromotionVoucherBanner(voucher.urlBanner, preferCache = false)
+                circleLogo.background = null
+                circleLogo.loadPromotionVoucherLogo(voucher.urlLogo, preferCache = true)
+                txtVoucherName.text = voucher.name
+                tvContent.text = getString(R.string.prm_discount_amount_format, voucher.discount)
+                tvExpired.text = getString(
+                    R.string.prm_expiry_short_format,
+                    getString(R.string.prm_demo_expiry_date),
+                )
+                tvUse.isVisible = !voucher.isExpired
+            }
         }
         TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
     }

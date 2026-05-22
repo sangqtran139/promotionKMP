@@ -4,9 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import androidx.annotation.ColorInt
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonSize
 import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonType
-import com.ttcn.promotionsdk.ui.utils.enum.PRMShadowType
 import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 
@@ -17,25 +15,17 @@ import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 internal object PromotionThemeDefaults {
 
     /**
-     * Defaults aligned with [PRMButton] PRIMARY + LARGE (common CTA in promotion screens).
+     * Defaults aligned with [PRMButton] PRIMARY (common CTA in promotion screens).
      * Background is gradient in SDK; token stores gradient end color [R.color.tokenRainbowRedEnd].
-     * Corner radius matches [PRMShadowType.TokenShadowsButtonLarge] (in dp).
+     * Corner radius follows foundation button drawables ([R.dimen.tokenBorderRadius24] → _19sdp).
+     * Note: sdp scales on device (e.g. ~25dp on a wide screen); that is the physical radius to apply via [ButtonToken].
      */
     fun button(context: Context) = ButtonToken(
         backgroundColor = context.retrieveColor(R.color.tokenRainbowRedEnd),
         textColor = context.retrieveColor(PRMCoreButtonType.PRIMARY.textColorRes),
         shadowColor = context.retrieveColor(R.color.tokenShadowsButtonColor),
-        cornerRadius = buttonCornerRadiusDp(context, PRMCoreButtonSize.LARGE),
+        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.tokenBorderRadius24))
     )
-
-    fun buttonCornerRadiusDp(context: Context, size: PRMCoreButtonSize = PRMCoreButtonSize.LARGE): Float {
-        val shadowType = when (size) {
-            PRMCoreButtonSize.SMALL -> PRMShadowType.TokenShadowsButtonSmall
-            PRMCoreButtonSize.MEDIUM -> PRMShadowType.TokenShadowsButtonMedium
-            PRMCoreButtonSize.LARGE -> PRMShadowType.TokenShadowsButtonLarge
-        }
-        return pxToDp(context, context.resources.getDimension(shadowType.cornerRes))
-    }
 
     fun searchBar(context: Context) = SearchBarToken(
         borderColor = context.retrieveColor(R.color.tokenDark10),

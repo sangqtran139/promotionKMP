@@ -85,9 +85,6 @@ class ChoosePromotionAdapter(
 
                 // Chỉ handle click ở root view
                 root.setOnClickListener {
-                    if (voucher.isExpired) {
-                        return@setOnClickListener
-                    }
                     onVoucherClick(voucher, bindingAdapterPosition)
                 }
 
