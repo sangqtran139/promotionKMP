@@ -1,11 +1,108 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
+import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
+import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
-class PromotionDetailViewModel :
+class PromotionDetailViewModel(
+    private val repository: PromotionRepository,
+    private val requestContextProvider: PromotionRequestContextProvider,
+) :
     PRMBaseViewModel<PromotionDetailUiState, PromotionDetailAction, PromotionDetailEffect>(
         PromotionDetailUiState(),
     ) {
+    override fun handleAction(action: PromotionDetailAction) {
+        when (action) {
+            is PromotionDetailAction.LoadDetail -> loadDetail(action.voucherId)
+        }
+    }
 
-    override fun handleAction(action: PromotionDetailAction) = Unit
+    private fun loadDetail(voucherId: String) {
+        launch {
+            setState { copy(isLoading = true) }
+            val customerId = requestContextProvider.getCustomerId()
+            if (customerId.isNullOrBlank()) {
+                setState { copy(isLoading = false) }
+                sendEffect(PromotionDetailEffect.ShowError("missing_customer_id"))
+                return@launch
+            }
+
+            runCatching {
+                repository.getCustomerVoucherDetail(
+                    voucherId = voucherId,
+                    customerId = customerId,
+                    service = requestContextProvider.getService(),
+                )
+            }.onSuccess { detail ->
+                val status = VoucherStatus.from(detail?.status)
+                val label = detail?.displayStatusLabel.orEmpty()
+                val actionState = status.toActionUiState(label)
+                setState {
+                    copy(
+                        isLoading = false,
+                        detail = detail,
+                        status = status,
+                        actionVisible = actionState.visible,
+                        actionEnabled = actionState.enabled,
+                        actionLabel = actionState.label,
+                    )
+                }
+                if (detail == null) {
+                    sendEffect(PromotionDetailEffect.ShowError("error_detail_unavailable"))
+                }
+            }.onFailure { throwable ->
+                setState { copy(isLoading = false) }
+                sendEffect(PromotionDetailEffect.ShowError(throwable.toErrorCode()))
+            }
+        }
+    }
+
+    override fun onError(throwable: Throwable) {
+        setState {
+            copy(
+                isLoading = false,
+            )
+        }
+        sendEffect(PromotionDetailEffect.ShowError(throwable.toErrorCode()))
+    }
+
+    private fun VoucherStatus.toActionUiState(displayStatusLabel: String): VoucherActionUiState {
+        return when (this) {
+            VoucherStatus.ACTIVE -> VoucherActionUiState(
+                visible = true,
+                enabled = true,
+                label = displayStatusLabel,
+            )
+
+            VoucherStatus.RESERVED,
+            VoucherStatus.REDEEMED,
+            VoucherStatus.EXPIRED,
+            VoucherStatus.REVOKED,
+            VoucherStatus.SUSPENDED -> VoucherActionUiState(
+                visible = true,
+                enabled = false,
+                label = displayStatusLabel,
+            )
+
+            VoucherStatus.UNKNOWN -> VoucherActionUiState(
+                visible = false,
+                enabled = false,
+                label = displayStatusLabel,
+            )
+        }
+    }
+
+    private fun Throwable.toErrorCode(): String {
+        return (this as? PromotionApiException)?.errorCode
+            ?: message
+            ?: "error_general"
+    }
 }
+
+data class VoucherActionUiState(
+    val visible: Boolean,
+    val enabled: Boolean,
+    val label: String,
+)

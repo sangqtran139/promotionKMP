@@ -1,4 +1,32 @@
 // vds-promotion/src/main/java/com/ttcn/promotionsdk/core/data/remote/PromotionApiService.kt
 package com.ttcn.promotionsdk.core.data.remote
 
-interface PromotionApiService
+import com.ttcn.promotionsdk.core.data.dto.voucher.ApiResponseTemplate
+import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
+import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+
+interface PromotionApiService {
+
+    @GET("promotion/promotion-bff-mobile/v1/customer-vouchers")
+    suspend fun searchCustomerVouchers(
+        @Query("customerId") customerId: String,
+        @Query("keyword") keyword: String?,
+        @Query("serviceCode") serviceCode: String?,
+        @Query("tab") tab: String?,
+        @Query("sectionCode") sectionCode: String?,
+        @Query("myVouchers.page") myVouchersPage: Int?,
+        @Query("myVouchers.size") myVouchersSize: Int?,
+        @Query("otherVouchers.page") otherVouchersPage: Int?,
+        @Query("otherVouchers.size") otherVouchersSize: Int?,
+    ): ApiResponseTemplate<SearchCustomerVouchersData>
+
+    @GET("promotion/promotion-bff-mobile/v1/customer-vouchers/{voucherId}")
+    suspend fun getCustomerVoucherDetail(
+        @Path("voucherId") voucherId: String,
+        @Query("customerId") customerId: String,
+        @Query("service") service: String?,
+    ): ApiResponseTemplate<CustomerVoucherDetail>
+}

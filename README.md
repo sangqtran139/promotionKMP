@@ -89,6 +89,72 @@ ui  ──depends on──>  core
 core  ──must not──>  ui
 ```
 
+## Custom Dependency Injection
+
+SDK currently uses an in-house DI container in `core.di` (no Hilt/Koin/Dagger).
+
+### Core pieces
+
+- `SdkDi`: service locator + registry (supports `single` and `factory` scopes)
+- `module { ... }`: module DSL for dependency registration
+- `PromotionContainer`: SDK-level bootstrap and access point for config and resolved dependencies
+- `ComponentRegistry`: internal storage/resolution engine for DI keys/providers
+
+### Startup flow
+
+When host app calls `PromotionSDK.init(...)`:
+
+1. `PromotionContainer.init(context, config)` is invoked
+2. `SdkDi.start(context, config, ...)` registers base dependencies (`Context`, `PromotionSDKConfig`)
+3. DI modules are loaded (e.g. `NetworkModule.module`, `RepositoryModule.module`)
+4. Features resolve dependencies from container/DI instead of creating them manually
+
+`PromotionSDKConfig.baseUrl` convention in SDK:
+
+- Pass host root URL (e.g. `https://domain.com/`)
+- Keep API path segments in `PromotionApiService` annotations
+- This avoids double-path when host app config changes
+
+### Registration pattern
+
+Use modules under `core.di` to register dependencies:
+
+```kotlin
+object NetworkModule {
+    internal val module = module {
+        single<PromotionApiService> { RetrofitClient.promotionApiService() }
+        single<PromotionRemoteDataSource> { PromotionRemoteDataSource(get()) }
+    }
+}
+
+object RepositoryModule {
+    internal val module = module {
+        single<PromotionRepository> { PromotionRepositoryImpl(get()) }
+    }
+}
+```
+
+### Usage rules
+
+- Register infra dependencies in modules (`ApiService`, `RemoteDataSource`, `Repository`, factories)
+- Resolve dependencies through container/DI (`get<T>()`, `inject<T>()`, or `PromotionContainer` providers)
+- Avoid manual creation of managed dependencies in UI/business code
+  - avoid patterns like `PromotionRepositoryImpl(...)` or `RetrofitClient.promotionApiService()` in Fragment/ViewModel
+- Keep DI scope consistent:
+  - `single` for shared stateless/network/repository objects
+  - `factory` for short-lived objects when needed
+- Clear DI state on SDK release via `PromotionContainer.clear()`
+
+### Architectural note
+
+Current codebase allows service-locator style resolution in some places, but preferred direction is:
+
+- constructor injection for classes with dependencies
+- centralized creation via custom DI modules
+- minimal direct dependency construction outside DI bootstrap
+
+This keeps feature implementations aligned with SDK architecture and makes testing/replacement easier.
+
 ## Detailed Package Structure
 
 The trees below reflect **`vds-promotion/src/main/java/com/ttcn/promotionsdk/`** as of this repository. **Core** and **UI** are **Kotlin/Java package directories inside the same `vds-promotion` Gradle module**; they are not separate Gradle modules or separate AARs.

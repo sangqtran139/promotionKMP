@@ -61,6 +61,10 @@ internal class SdkDi {
         registry.single { context.applicationContext }
         registry.single { config }
 
+        loadModules(*modules)
+    }
+
+    fun loadModules(vararg modules: Module) {
         modules.forEach {
             it.definition.invoke()
         }

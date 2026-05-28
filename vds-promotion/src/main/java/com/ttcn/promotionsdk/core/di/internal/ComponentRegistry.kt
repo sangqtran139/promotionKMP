@@ -24,23 +24,28 @@ internal class ComponentRegistry {
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> resolve(clazz: KClass<T>, qualifier: String? = null): T {
         val key = DiKey(clazz, qualifier)
+        val provider = providers[key]
+            ?: throw IllegalStateException(
+                "Dependency not found: ${clazz.simpleName} (Qualifier: ${qualifier ?: "null"})"
+            )
+
         if (factoryTypes.contains(key)) {
-            val provider = providers[key]
-                ?: throw IllegalStateException(
-                    "Dependency not found: ${clazz.simpleName} (Qualifier: ${qualifier ?: "null"})"
-                )
             return provider() as T
         }
 
-        val instance = singleInstances.computeIfAbsent(key) { key ->
-            val provider = providers[key]
-                ?: throw IllegalStateException(
-                    "Dependency not found: ${clazz.simpleName} (Qualifier: ${qualifier ?: "null"})"
-                )
-            provider()
+        singleInstances[key]?.let {
+            return it as T
         }
 
-        return instance as T
+        synchronized(this) {
+            singleInstances[key]?.let {
+                return it as T
+            }
+
+            val instance = provider()
+            singleInstances[key] = instance
+            return instance as T
+        }
     }
 
     fun <T : Any> contain(clazz: KClass<T>, qualifier: String? = null): Boolean {

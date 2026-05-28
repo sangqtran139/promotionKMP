@@ -1,22 +1,24 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.databinding.ItemTagMyPromotionBinding
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDefaults
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.TabChipThemeApplier
 
 class MyPromotionTabAdapter(
-    private val titles: List<String>,
-    private val onTabSelected: (Int) -> Unit = {},
+    private val onTabSelected: (TabItem) -> Unit = {},
 ) : RecyclerView.Adapter<MyPromotionTabAdapter.TabViewHolder>() {
+    private var tabs: List<TabItem> = emptyList()
 
-    var selectedPosition: Int = 0
+    var selectedPosition: Int = RecyclerView.NO_POSITION
         private set
 
-    override fun getItemCount(): Int = titles.size
+    override fun getItemCount(): Int = tabs.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabViewHolder {
         val binding = ItemTagMyPromotionBinding.inflate(
@@ -28,7 +30,7 @@ class MyPromotionTabAdapter(
     }
 
     override fun onBindViewHolder(holder: TabViewHolder, position: Int) {
-        holder.bind(titles[position], position == selectedPosition)
+        holder.bind(tabs[position], position == selectedPosition)
     }
 
     inner class TabViewHolder(
@@ -41,18 +43,30 @@ class MyPromotionTabAdapter(
                 if (pos == RecyclerView.NO_POSITION || pos == selectedPosition) return@setOnClickListener
                 val old = selectedPosition
                 selectedPosition = pos
-                notifyItemChanged(old)
+                if (old != RecyclerView.NO_POSITION) notifyItemChanged(old)
                 notifyItemChanged(pos)
-                onTabSelected(pos)
+                onTabSelected(tabs[pos])
             }
         }
 
-        fun bind(title: String, selected: Boolean) {
-            binding.tvTag.text = title
+        @SuppressLint("SetTextI18n")
+        fun bind(tab: TabItem, selected: Boolean) {
+            val countText = tab.count.takeIf { it >= 0 }?.let { " ($it)" }.orEmpty()
+            binding.tvTag.text = tab.label + countText
             val ctx = binding.root.context
             val token = PromotionThemeRegistry.tabChipToken()
                 ?: PromotionThemeDefaults.tabChip(ctx)
             TabChipThemeApplier.applyChip(binding.tvTag, selected, token)
         }
+    }
+
+    fun submitTabs(items: List<TabItem>, selectedCode: String?) {
+        tabs = items
+        selectedPosition = if (tabs.isEmpty()) {
+            RecyclerView.NO_POSITION
+        } else {
+            tabs.indexOfFirst { it.code == selectedCode }.takeIf { it >= 0 } ?: 0
+        }
+        notifyDataSetChanged()
     }
 }

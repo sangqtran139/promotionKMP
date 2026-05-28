@@ -4,6 +4,10 @@ package com.ttcn.promotionsdk.ui.entry
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.core.di.SdkDi
+import com.ttcn.promotionsdk.ui.di.ViewModelModule
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
@@ -15,6 +19,9 @@ object PromotionSDK {
 
     private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
+
+    @Volatile
+    private var isUiDiLoaded: Boolean = false
 
     /**
      * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]
@@ -34,6 +41,7 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(options.theme.config)
         callback = options.callback
         PromotionContainer.init(context, options.config)
+        ensureUiDiLoaded()
     }
 
     @JvmStatic
@@ -57,6 +65,7 @@ object PromotionSDK {
         check(PromotionContainer.isInitialized()) {
             "PromotionSDK.init() must be called before openMyPromotion()."
         }
+        ensureUiDiLoaded()
         val fm = activity.supportFragmentManager
         if (fm.findFragmentByTag(TAG_MY_PROMOTION) != null) return
         val fragment = MyPromotionFragment()
@@ -79,5 +88,15 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(null)
         syncThemeConfig(null)
         callback = null
+        isUiDiLoaded = false
+    }
+
+    private fun ensureUiDiLoaded() {
+        if (isUiDiLoaded) return
+        synchronized(this) {
+            if (isUiDiLoaded) return
+            SdkDi.getInstance().loadModules(ViewModelModule.module)
+            isUiDiLoaded = true
+        }
     }
 }

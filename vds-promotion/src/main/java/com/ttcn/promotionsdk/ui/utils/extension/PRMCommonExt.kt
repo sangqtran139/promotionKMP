@@ -17,10 +17,11 @@ import com.google.gson.Gson
 import com.ttcn.promotionsdk.ui.utils.ViewGlobalConst
 import timber.log.Timber
 import java.text.Normalizer
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
-import kotlin.text.toUpperCase
 
 fun Float.dpToPixel(): Int {
     val metrics = Resources.getSystem().displayMetrics
@@ -190,6 +191,16 @@ fun parseTimeToSeconds(timeString: String): Int? {
     } catch (e: Exception) {
         Timber.tag("DisplayTimeFrames").e(e, "Error parsing time: $timeString")
         null
+    }
+}
+
+fun String.toVoucherDisplayDate(): String {
+    if (isBlank()) return ""
+    return runCatching {
+        OffsetDateTime.parse(this)
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()))
+    }.getOrElse {
+        take(10)
     }
 }
 

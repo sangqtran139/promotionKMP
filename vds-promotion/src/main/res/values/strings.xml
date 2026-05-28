@@ -31,4 +31,7 @@
     <string name="prm_tab_expiring_soon">Sắp hết hạn</string>
     <string name="prm_vouchers_more_suffix">+%1$d</string>
     <string name="prm_demo_expiry_date">15/05/2025</string>
+    <string name="prm_keyword_too_short">Từ khóa phải có ít nhất 2 ký tự</string>
+    <string name="prm_missing_customer_id">Không tìm thấy thông tin khách hàng</string>
+    <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
 </resources>

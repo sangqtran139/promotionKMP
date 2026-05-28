@@ -1,4 +1,37 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/core/di/NetworkModule.kt
 package com.ttcn.promotionsdk.core.di
 
-object NetworkModule
+import com.ttcn.promotionsdk.core.config.EmptyPromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.core.data.remote.ApiInterceptor
+import com.ttcn.promotionsdk.core.data.remote.PromotionApiService
+import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
+import com.ttcn.promotionsdk.core.data.remote.RetrofitClient
+
+object NetworkModule {
+    internal val module = module {
+        single<PromotionRequestContextProvider> {
+            get<PromotionSDKConfig>().requestContextProvider
+                ?: EmptyPromotionRequestContextProvider()
+        }
+
+        single<ApiInterceptor> {
+            ApiInterceptor(
+                requestContextProvider = get(),
+            )
+        }
+
+        single<PromotionApiService> {
+            RetrofitClient.promotionApiService(
+                baseUrl = get<PromotionSDKConfig>().baseUrl,
+                apiInterceptor = get(),
+            )
+        }
+
+        single<PromotionRemoteDataSource> {
+            PromotionRemoteDataSource(
+                apiService = get(),
+            )
+        }
+    }
+}

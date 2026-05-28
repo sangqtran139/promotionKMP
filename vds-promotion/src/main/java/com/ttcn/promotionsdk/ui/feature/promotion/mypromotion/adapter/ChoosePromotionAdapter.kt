@@ -7,23 +7,25 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
+import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 import com.ttcn.promotionsdk.databinding.PrmItemPromotionBinding
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
 sealed class PromotionListItem {
     data class Header(val title: String) : PromotionListItem()
     data class Endow(
-        val data: PromotionItem
+        val data: MyVoucherListItem
     ) : PromotionListItem()
 }
 
 class ChoosePromotionAdapter(
-    private val onVoucherClick: (PromotionItem, Int) -> Unit,
-    private val onUseClick: (PromotionItem, Int) -> Unit
+    private val onVoucherClick: (MyVoucherListItem, Int) -> Unit,
+    private val onUseClick: (MyVoucherListItem, Int) -> Unit
 ) : ListAdapter<PromotionListItem, RecyclerView.ViewHolder>(VoucherDiffCallback()) {
 
     companion object {
@@ -40,8 +42,22 @@ class ChoosePromotionAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val binding = PrmItemPromotionBinding.inflate(inflater, parent, false)
-        return VoucherViewHolder(binding, onVoucherClick, onUseClick)
+        return when (viewType) {
+            VIEW_TYPE_HEADER -> {
+                val binding = ItemTitleMyEndowBinding.inflate(inflater, parent, false)
+                HeaderViewHolder(binding)
+            }
+
+            VIEW_TYPE_VOUCHER -> {
+                val binding = PrmItemPromotionBinding.inflate(inflater, parent, false)
+                VoucherViewHolder(binding, onVoucherClick, onUseClick)
+            }
+
+            else -> {
+                val binding = PrmItemPromotionBinding.inflate(inflater, parent, false)
+                VoucherViewHolder(binding, onVoucherClick, onUseClick)
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -61,8 +77,8 @@ class ChoosePromotionAdapter(
 
     class VoucherViewHolder(
         private val binding: PrmItemPromotionBinding,
-        private val onVoucherClick: (PromotionItem, Int) -> Unit,
-        private val onUseClick: (PromotionItem, Int) -> Unit,
+        private val onVoucherClick: (MyVoucherListItem, Int) -> Unit,
+        private val onUseClick: (MyVoucherListItem, Int) -> Unit,
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: PromotionListItem.Endow) {
@@ -71,17 +87,23 @@ class ChoosePromotionAdapter(
                 val ctx = binding.root.context
 
                 // Hiển thị thông tin voucher
-                imgVoucher.loadPromotionVoucherLogo(voucher.urlLogo)
-                txtVoucherName.text = voucher.name
-                tvContent.text = ctx.getString(R.string.prm_discount_amount_format, voucher.discount)
+                imgVoucher.loadPromotionVoucherLogo(voucher.logo)
+                txtVoucherName.text = voucher.merchantName
+                tvContent.text = voucher.title.ifBlank { voucher.description }
                 tvEndDate.text = ctx.getString(
                     R.string.prm_expiry_short_format,
-                    ctx.getString(R.string.prm_demo_expiry_date),
+                    voucher.expirationDate.toVoucherDisplayDate(),
                 )
 
-                ctlTop.alpha = if (voucher.isExpired) 0.6f else 1f
-                txtExpired.isVisible = voucher.isExpired
-                lnDetail.isVisible = !voucher.isExpired
+                val canUse = voucher.status == VoucherStatus.ACTIVE
+                ctlTop.alpha = if (canUse) 1f else 0.6f
+                txtExpired.isVisible = !canUse
+                txtExpired.text = voucher.displayStatusLabel.ifBlank {
+                    ctx.getString(R.string.prm_is_used)
+                }
+                lnDetail.isVisible = canUse
+                txtExpired.isEnabled = !lnDetail.isVisible
+                txtExpired.isClickable = !lnDetail.isVisible
 
                 // Chỉ handle click ở root view
                 root.setOnClickListener {
@@ -109,7 +131,7 @@ class VoucherDiffCallback : DiffUtil.ItemCallback<PromotionListItem>() {
             }
 
             oldItem is PromotionListItem.Endow && newItem is PromotionListItem.Endow -> {
-                oldItem.data.id == newItem.data.id
+                oldItem.data.voucherId == newItem.data.voucherId
             }
 
             else -> false
