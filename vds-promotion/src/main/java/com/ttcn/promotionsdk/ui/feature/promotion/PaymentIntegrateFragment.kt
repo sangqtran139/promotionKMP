@@ -1,10 +1,11 @@
-package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
+package com.ttcn.promotionsdk.ui.feature.promotion
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.databinding.FragmentPaymentDemoBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
 import com.ttcn.promotionsdk.ui.utils.extension.parcelableArrayList
 
@@ -89,13 +90,7 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
      */
     private fun openVoucherSelectionScreen() {
         addFragment(
-            ChoosePromotionFragment.newInstance(
-                allVouchers = allAvailableVouchers,
-                currentAppliedVouchers = currentAppliedVouchers,
-                onApplyVoucher = { selectedVouchers ->
-                    handleVoucherApplied(selectedVouchers)
-                }
-            )
+            ChoosePromotionFragment()
         )
     }
 

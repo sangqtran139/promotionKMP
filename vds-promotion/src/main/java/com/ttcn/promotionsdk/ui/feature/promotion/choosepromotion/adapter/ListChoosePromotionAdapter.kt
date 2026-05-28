@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,157 +9,158 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
+import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherListItem
+import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
+import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
+import com.ttcn.promotionsdk.databinding.PrmItemSeeMoreBinding
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 
 sealed class ChoosePromotionListItem {
-    data class Header(val title: String) : ChoosePromotionListItem()
-    data class ChoosePromotion(
-        val data: PromotionItem
-    ) : ChoosePromotionListItem()
+    data class SectionHeader(val title: String) : ChoosePromotionListItem()
+    data class VoucherItem(val data: MyVoucherListItem) : ChoosePromotionListItem()
+    data object SeeMoreMyVoucher : ChoosePromotionListItem()
+    data object SeeMoreOtherVoucher : ChoosePromotionListItem()
 }
 
-class ListChoosePromotionAdapter(
-    private val onVoucherClick: (PromotionItem, Int) -> Unit,
-    private val onDetailClick: (PromotionItem, Int) -> Unit
-) : ListAdapter<ChoosePromotionListItem, RecyclerView.ViewHolder>(ChoosePromotionDiffCallback()) {
+class ChoosePromotionMainAdapter(
+    private val onVoucherClick: (MyVoucherListItem) -> Unit,
+    private val onDetailClick: (MyVoucherListItem) -> Unit,
+    private val onSeeMoreMyVoucher: () -> Unit,
+    private val onSeeMoreOtherVoucher: () -> Unit,
+) : ListAdapter<ChoosePromotionListItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
-        private const val VIEW_TYPE_HEADER = 0
-        private const val VIEW_TYPE_VOUCHER = 1
+        private const val TYPE_HEADER = 0
+        private const val TYPE_VOUCHER = 1
+        private const val TYPE_SEE_MORE_MY = 2
+        private const val TYPE_SEE_MORE_OTHER = 3
     }
 
-    override fun getItemViewType(position: Int): Int {
-        return when (getItem(position)) {
-            is ChoosePromotionListItem.Header -> VIEW_TYPE_HEADER
-            is ChoosePromotionListItem.ChoosePromotion -> VIEW_TYPE_VOUCHER
-        }
+    override fun getItemViewType(position: Int) = when (getItem(position)) {
+        is ChoosePromotionListItem.SectionHeader -> TYPE_HEADER
+        is ChoosePromotionListItem.VoucherItem -> TYPE_VOUCHER
+        is ChoosePromotionListItem.SeeMoreMyVoucher -> TYPE_SEE_MORE_MY
+        is ChoosePromotionListItem.SeeMoreOtherVoucher -> TYPE_SEE_MORE_OTHER
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
-            VIEW_TYPE_HEADER -> {
-                val binding = ItemTitleMyEndowBinding.inflate(inflater, parent, false)
-                HeaderListChoosePromotionViewHolder(binding)
-            }
-
-            else -> {
-                val binding = ItemChoosePromotionBinding.inflate(inflater, parent, false)
-                ItemPromotionViewHolder(binding, onVoucherClick, onDetailClick)
-            }
+            TYPE_HEADER -> HeaderViewHolder(ItemTitleMyEndowBinding.inflate(inflater, parent, false))
+            TYPE_SEE_MORE_MY, TYPE_SEE_MORE_OTHER -> FooterViewHolder(PrmItemSeeMoreBinding.inflate(inflater, parent, false))
+            else -> VoucherViewHolder(ItemChoosePromotionBinding.inflate(inflater, parent, false))
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
-            is ChoosePromotionListItem.Header -> (holder as HeaderListChoosePromotionViewHolder).bind(
-                item
-            )
-
-            is ChoosePromotionListItem.ChoosePromotion -> (holder as ItemPromotionViewHolder).bind(
-                item
-            )
+            is ChoosePromotionListItem.SectionHeader -> (holder as HeaderViewHolder).bind(item.title)
+            is ChoosePromotionListItem.VoucherItem -> (holder as VoucherViewHolder).bind(item.data, onVoucherClick, onDetailClick)
+            is ChoosePromotionListItem.SeeMoreMyVoucher -> (holder as FooterViewHolder).bind(onSeeMoreMyVoucher)
+            is ChoosePromotionListItem.SeeMoreOtherVoucher -> (holder as FooterViewHolder).bind(onSeeMoreOtherVoucher)
         }
     }
 
-    private class HeaderListChoosePromotionViewHolder(
-        private val binding: ItemTitleMyEndowBinding
-    ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: ChoosePromotionListItem.Header) {
-            binding.txtTitleEndow.text = item.title
+    class HeaderViewHolder(private val binding: ItemTitleMyEndowBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(title: String) {
+            binding.txtTitleEndow.text = title
         }
     }
 
-    private class ItemPromotionViewHolder(
-        private val binding: ItemChoosePromotionBinding,
-        private val onVoucherClick: (PromotionItem, Int) -> Unit,
-        private val onDetailClick: (PromotionItem, Int) -> Unit
-    ) : RecyclerView.ViewHolder(binding.root) {
+    class FooterViewHolder(private val binding: PrmItemSeeMoreBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(onClick: () -> Unit) {
+            binding.root.setOnClickListener { onClick() }
+        }
+    }
 
-        fun bind(item: ChoosePromotionListItem.ChoosePromotion) {
+    class VoucherViewHolder(private val binding: ItemChoosePromotionBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(
+            voucher: MyVoucherListItem,
+            onVoucherClick: (MyVoucherListItem) -> Unit,
+            onDetailClick: (MyVoucherListItem) -> Unit,
+        ) {
             binding.apply {
-                val voucher = item.data
-                val ctx = binding.root.context
+                val ctx = root.context
+                val isExpired = voucher.status == VoucherStatus.EXPIRED
 
-                // Hiển thị thông tin voucher
-                txtVoucherName.text = voucher.name
-                tvContent.text = ctx.getString(R.string.prm_discount_amount_format, voucher.discount)
+                txtVoucherName.text = voucher.merchantName
+                tvContent.text = voucher.title
                 tvEndDate.text = ctx.getString(
                     R.string.prm_expiry_short_format,
-                    ctx.getString(R.string.prm_demo_expiry_date),
+                    voucher.expirationDate.ifEmpty { ctx.getString(R.string.prm_demo_expiry_date) }
                 )
 
-                // Sử dụng isApplied từ PromotionVoucherItem
-                cbUseVoucher.isChecked = voucher.isApplied
-
-                // Disable checkbox click để tránh conflict với root click
+                cbUseVoucher.isChecked = voucher.isSelected
                 cbUseVoucher.isClickable = false
                 cbUseVoucher.isFocusable = false
 
-                ctlTop.alpha = if (voucher.isExpired) 0.6f else 1f
-                ctlNotEnoughApplyVoucher.isVisible = voucher.isNotEnoughApplied
-                imgCircleNotEnoughApplyVoucher.isVisible = voucher.isNotEnoughApplied
-                txtExpired.isVisible = voucher.isExpired
-                lnDetail.isVisible = !voucher.isExpired
-                cbUseVoucher.visibility = if (voucher.isExpired) View.INVISIBLE else View.VISIBLE
+                ctlTop.alpha = if (isExpired) 0.6f else 1f
+                ctlNotEnoughApplyVoucher.isVisible = false
+                imgCircleNotEnoughApplyVoucher.isVisible = false
+                txtExpired.isVisible = isExpired
+                lnDetail.isVisible = !isExpired
+                cbUseVoucher.visibility = if (isExpired) View.INVISIBLE else View.VISIBLE
 
-                // Chỉ handle click ở root view
                 root.setOnClickListener {
-                    if (voucher.isExpired) {
-                        return@setOnClickListener
+                    if (isExpired) return@setOnClickListener
+                    onVoucherClick(voucher)
+                }
+                lnDetail.setOnClickListener { onDetailClick(voucher) }
+
+                PromotionListItemApplier.apply(this, PromotionThemeRegistry.listItemToken())
+            }
+        }
+    }
+
+    class DiffCallback : DiffUtil.ItemCallback<ChoosePromotionListItem>() {
+        override fun areItemsTheSame(old: ChoosePromotionListItem, new: ChoosePromotionListItem): Boolean {
+            return when {
+                old is ChoosePromotionListItem.SectionHeader && new is ChoosePromotionListItem.SectionHeader -> old.title == new.title
+                old is ChoosePromotionListItem.VoucherItem && new is ChoosePromotionListItem.VoucherItem -> old.data.voucherId == new.data.voucherId
+                old is ChoosePromotionListItem.SeeMoreMyVoucher && new is ChoosePromotionListItem.SeeMoreMyVoucher -> true
+                old is ChoosePromotionListItem.SeeMoreOtherVoucher && new is ChoosePromotionListItem.SeeMoreOtherVoucher -> true
+                else -> false
+            }
+        }
+
+        override fun areContentsTheSame(old: ChoosePromotionListItem, new: ChoosePromotionListItem) = old == new
+    }
+
+    fun updateVoucherSelection(
+        voucherId: String,
+        isMultiSelection: Boolean = true,
+    ) {
+        val updatedList = currentList.map { item ->
+            if (item is ChoosePromotionListItem.VoucherItem) {
+
+                val selected = when {
+                    isMultiSelection && item.data.voucherId == voucherId -> {
+                        !item.data.isSelected
                     }
-                    onVoucherClick(voucher, bindingAdapterPosition)
+
+                    !isMultiSelection -> {
+                        item.data.voucherId == voucherId &&
+                                !item.data.isSelected
+                    }
+
+                    else -> {
+                        !item.data.isSelected
+                    }
                 }
 
-                lnDetail.setOnClickListener {
-                    onDetailClick(voucher, bindingAdapterPosition)
-                }
-
-                PromotionListItemApplier.apply(
-                    this,
-                    PromotionThemeRegistry.listItemToken(),
+                item.copy(
+                    data = item.data.copy(
+                        isSelected = selected
+                    )
                 )
+            } else {
+                item
             }
         }
-    }
-}
 
-class ChoosePromotionDiffCallback : DiffUtil.ItemCallback<ChoosePromotionListItem>() {
-    override fun areItemsTheSame(
-        oldItem: ChoosePromotionListItem,
-        newItem: ChoosePromotionListItem
-    ): Boolean {
-        return when {
-            oldItem is ChoosePromotionListItem.Header && newItem is ChoosePromotionListItem.Header -> {
-                oldItem.title == newItem.title
-            }
-
-            oldItem is ChoosePromotionListItem.ChoosePromotion && newItem is ChoosePromotionListItem.ChoosePromotion -> {
-                oldItem.data.id == newItem.data.id
-            }
-
-            else -> false
-        }
-    }
-
-    override fun areContentsTheSame(
-        oldItem: ChoosePromotionListItem,
-        newItem: ChoosePromotionListItem
-    ): Boolean {
-        return when {
-            oldItem is ChoosePromotionListItem.Header && newItem is ChoosePromotionListItem.Header -> {
-                oldItem == newItem
-            }
-
-            oldItem is ChoosePromotionListItem.ChoosePromotion && newItem is ChoosePromotionListItem.ChoosePromotion -> {
-                // So sánh toàn bộ data object, bao gồm cả isApplied
-                oldItem.data == newItem.data
-            }
-
-            else -> false
-        }
+        submitList(updatedList)
     }
 }

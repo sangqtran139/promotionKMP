@@ -1,5 +1,8 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter
 
+import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
+
 val allAvailableVouchers = listOf(
 
     PromotionItem(
@@ -153,4 +156,44 @@ val allAvailableVouchers = listOf(
         urlLogo = "https://picsum.photos/seed/prm-${it.id}/200/200",
         urlBanner = "https://picsum.photos/seed/prm-banner-${it.id}/1200/600",
     )
+}
+
+object FakeVoucherData {
+
+    fun getMyVouchers(page: Int, size: Int = 7): List<MyVoucherListItem> {
+        val start = page * size + 1
+        val end = start + size - 1
+        return (start..end).map { i ->
+            MyVoucherListItem(
+                voucherId = "my_voucher_$i",
+                merchantName = "Merchant $i",
+                title = "Giảm ${i * 10}% cho đơn hàng từ ${i * 100}k",
+                description = "Mô tả voucher số $i",
+                logo = "",
+                expirationDate = "31/12/2025",
+                displayStatusLabel = "Còn hạn",
+                status = if (i % 7 == 0) VoucherStatus.EXPIRED else VoucherStatus.ACTIVE,
+            )
+        }
+    }
+
+    fun getOtherVouchers(page: Int, size: Int = 7): List<MyVoucherListItem> {
+        val start = page * size + 1
+        val end = start + size - 1
+        return (start..end).map { i ->
+            MyVoucherListItem(
+                voucherId = "other_voucher_$i",
+                merchantName = "Brand $i",
+                title = "Tặng quà trị giá ${i * 50}k",
+                description = "Mô tả ưu đãi khác số $i",
+                logo = "",
+                expirationDate = "28/02/2025",
+                displayStatusLabel = if (i % 5 == 0) "Hết hạn" else "Còn hạn",
+                status = if (i % 5 == 0) VoucherStatus.EXPIRED else VoucherStatus.ACTIVE,
+            )
+        }
+    }
+
+    // Giả lập tổng số page, đến page 3 thì hết
+    fun isLastPage(page: Int) = page >= 2
 }

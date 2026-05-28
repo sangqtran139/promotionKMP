@@ -1,4 +1,4 @@
-package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.searchmypromotion
+package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 

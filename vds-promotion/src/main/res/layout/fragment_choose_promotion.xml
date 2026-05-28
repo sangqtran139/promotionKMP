@@ -10,73 +10,75 @@
         android:background="@color/white"
         android:paddingTop="@dimen/_18sdp">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/ctl_content"
+        <include
+            android:id="@+id/shimmer_provider"
+            layout="@layout/shimmer_my_promotion"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@id/ctl_apply_voucher"
+            android:layout_marginStart="@dimen/view_size_15"
+            android:layout_marginTop="@dimen/_42sdp"
+            android:layout_marginEnd="@dimen/view_size_15"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+            android:id="@+id/btnBack"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:layout_marginStart="@dimen/_6sdp"
+            android:layout_marginTop="@dimen/_14sdp"
+            android:padding="@dimen/_6sdp"
+            android:tint="@color/color_222_cep"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/prm_ic_back" />
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
-                android:id="@+id/btnBack"
-                android:layout_width="@dimen/_24sdp"
-                android:layout_height="@dimen/_24sdp"
-                android:layout_marginStart="@dimen/_6sdp"
-                android:layout_marginTop="@dimen/_14sdp"
-                android:padding="@dimen/_6sdp"
-                android:tint="@color/color_222_cep"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/prm_ic_back" />
+        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            android:id="@+id/tvEndow"
+            style="@style/fontPRMBold16"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/prm_choose_endow"
+            android:textColor="@color/color_222_cep"
+            app:layout_constraintBottom_toBottomOf="@id/btnBack"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btnBack" />
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
-                android:id="@+id/tvEndow"
-                style="@style/fontPRMBold16"
-                android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/lnEdtVoucher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_9sdp"
+            android:background="@color/color_FBFBFB"
+            android:paddingHorizontal="@dimen/_15sdp"
+            android:paddingTop="@dimen/_10sdp"
+            android:paddingBottom="@dimen/_12sdp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvEndow">
+
+            <com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
+                android:id="@+id/edtVoucher"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/prm_choose_endow"
-                android:textColor="@color/color_222_cep"
-                app:layout_constraintBottom_toBottomOf="@id/btnBack"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="@id/btnBack" />
+                app:prmSfAllowVietnamese="true"
+                app:prmSfHint="Vui lòng nhập mã ưu đãi" />
 
-            <LinearLayout
-                android:id="@+id/lnEdtVoucher"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/_48sdp"
-                android:layout_marginTop="@dimen/_9sdp"
-                android:background="@color/color_FBFBFB"
-                android:paddingHorizontal="@dimen/_15sdp"
-                android:paddingTop="@dimen/_10sdp"
-                android:paddingBottom="@dimen/_12sdp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/tvEndow">
+        </LinearLayout>
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
-                    android:id="@+id/edtVoucher"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:prmSfAllowVietnamese="true"
-                    app:prmSfHint="Vui lòng nhập mã ưu đãi" />
-
-            </LinearLayout>
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rcvVoucher"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:background="@color/color_f4f4f4"
-                android:orientation="vertical"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher"
-                tools:listitem="@layout/item_choose_promotion" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rcvVoucher"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:background="@color/color_f4f4f4"
+            android:orientation="vertical"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher"
+            tools:listitem="@layout/item_choose_promotion" />
 
         <androidx.cardview.widget.CardView
             android:id="@+id/ctl_apply_voucher"

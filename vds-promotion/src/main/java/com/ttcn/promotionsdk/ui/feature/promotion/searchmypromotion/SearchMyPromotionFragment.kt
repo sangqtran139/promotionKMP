@@ -1,4 +1,4 @@
-package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.searchmypromotion
+package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import android.view.LayoutInflater
 import android.view.ViewGroup

@@ -41,6 +41,7 @@ data class MyVoucherListItem(
     val expirationDate: String,
     val displayStatusLabel: String,
     val status: VoucherStatus,
+    var isSelected: Boolean = false,
 )
 
 data class TabItem(

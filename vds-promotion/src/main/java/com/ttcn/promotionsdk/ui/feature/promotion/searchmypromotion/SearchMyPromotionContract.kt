@@ -1,4 +1,4 @@
-package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.searchmypromotion
+package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 data class SearchMyPromotionUiState(
     val query: String = "",

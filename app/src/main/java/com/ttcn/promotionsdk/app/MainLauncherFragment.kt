@@ -7,7 +7,7 @@ import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.PaymentIntegrateFragment
+import com.ttcn.promotionsdk.ui.feature.promotion.PaymentIntegrateFragment
 
 class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
 

@@ -11,11 +11,11 @@ import com.ttcn.promotionsdk.core.di.inject
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.searchmypromotion.SearchMyPromotionFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionTabAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.PromotionListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
+import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
 
 class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
