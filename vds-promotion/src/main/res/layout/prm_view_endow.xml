@@ -42,6 +42,8 @@
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toBottomOf="@id/txtStatusEndow"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/txtStatusEndow"
+            android:layout_marginEnd="@dimen/_8sdp"
             app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
             tools:listitem="@layout/item_list_promotion_apply" />
 

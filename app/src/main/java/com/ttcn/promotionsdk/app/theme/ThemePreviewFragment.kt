@@ -33,7 +33,7 @@ import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.entry.PromotionTheme
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.PromotionItem
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.FakeVoucherData
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay.Defaults
@@ -809,23 +809,7 @@ class ThemePreviewFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
-            setVouchers(
-                listOf(
-                    PromotionItem(
-                        id = "preview_valid",
-                        name = getString(R.string.prm_theme_demo_voucher_available_name),
-                        discount = getString(R.string.prm_theme_demo_voucher_available_discount),
-                        isApplied = true,
-                    ),
-                    PromotionItem(
-                        id = "preview_expired",
-                        name = getString(R.string.prm_theme_demo_voucher_unavailable_name),
-                        discount = getString(R.string.prm_theme_demo_voucher_unavailable_discount),
-                        isApplied = true,
-                        isExpired = true,
-                    ),
-                ),
-            )
+            setAppliedVouchers(FakeVoucherData.getMyVouchers(0))
         }
         showBottomSheet(R.string.prm_theme_sheet_component_prm_endow, endow)
         endow.post { endow.applyToken(token) }

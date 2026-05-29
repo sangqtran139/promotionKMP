@@ -1,8 +1,5 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherListItem
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherTabInfo
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 
@@ -29,13 +26,15 @@ data class ChoosePromotionUiState(
 )
 
 sealed interface ChoosePromotionAction {
+    data class InitWithData(
+        val myVouchers: List<MyVoucherListItem>,
+        val otherVouchers: List<MyVoucherListItem>,
+    ) : ChoosePromotionAction
     data object LoadInitialIfNeeded : ChoosePromotionAction
     data object Refresh : ChoosePromotionAction
-    data class SelectTab(val tabCode: String) : ChoosePromotionAction
     data class SearchKeyword(val keyword: String) : ChoosePromotionAction
     data object LoadMoreMyVouchers : ChoosePromotionAction
     data object LoadMoreOtherVouchers : ChoosePromotionAction
-    data class ApplyVouchers(val listVoucher: List<MyVoucherListItem>) : ChoosePromotionAction
 }
 
 sealed interface ChoosePromotionEffect {

@@ -27,7 +27,7 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         binding.btnOpenPaymentIntegrate.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)
-                .replace(R.id.layoutRoot, PaymentIntegrateFragment.newInstance())
+                .replace(R.id.layoutRoot, PaymentIntegrateFragment())
                 .addToBackStack(null)
                 .commit()
         }

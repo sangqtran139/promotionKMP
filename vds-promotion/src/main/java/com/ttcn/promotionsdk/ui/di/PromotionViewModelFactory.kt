@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.ui.feature.promotion.PaymentIntegrateViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailViewModel
@@ -31,6 +32,13 @@ class PromotionViewModelFactory(
 
             ChoosePromotionViewModel::class.java -> {
                 ChoosePromotionViewModel(
+                    repository = promotionRepository,
+                    requestContextProvider = requestContextProvider,
+                ) as T
+            }
+
+            PaymentIntegrateViewModel::class.java -> {
+                PaymentIntegrateViewModel(
                     repository = promotionRepository,
                     requestContextProvider = requestContextProvider,
                 ) as T

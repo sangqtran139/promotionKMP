@@ -22,35 +22,31 @@ sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
     data class VoucherItem(val data: MyVoucherListItem) : ChoosePromotionListItem()
     data object SeeMoreMyVoucher : ChoosePromotionListItem()
-    data object SeeMoreOtherVoucher : ChoosePromotionListItem()
 }
 
 class ChoosePromotionMainAdapter(
     private val onVoucherClick: (MyVoucherListItem) -> Unit,
     private val onDetailClick: (MyVoucherListItem) -> Unit,
     private val onSeeMoreMyVoucher: () -> Unit,
-    private val onSeeMoreOtherVoucher: () -> Unit,
 ) : ListAdapter<ChoosePromotionListItem, RecyclerView.ViewHolder>(DiffCallback()) {
 
     companion object {
         private const val TYPE_HEADER = 0
         private const val TYPE_VOUCHER = 1
         private const val TYPE_SEE_MORE_MY = 2
-        private const val TYPE_SEE_MORE_OTHER = 3
     }
 
     override fun getItemViewType(position: Int) = when (getItem(position)) {
         is ChoosePromotionListItem.SectionHeader -> TYPE_HEADER
         is ChoosePromotionListItem.VoucherItem -> TYPE_VOUCHER
         is ChoosePromotionListItem.SeeMoreMyVoucher -> TYPE_SEE_MORE_MY
-        is ChoosePromotionListItem.SeeMoreOtherVoucher -> TYPE_SEE_MORE_OTHER
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             TYPE_HEADER -> HeaderViewHolder(ItemTitleMyEndowBinding.inflate(inflater, parent, false))
-            TYPE_SEE_MORE_MY, TYPE_SEE_MORE_OTHER -> FooterViewHolder(PrmItemSeeMoreBinding.inflate(inflater, parent, false))
+            TYPE_SEE_MORE_MY -> FooterViewHolder(PrmItemSeeMoreBinding.inflate(inflater, parent, false))
             else -> VoucherViewHolder(ItemChoosePromotionBinding.inflate(inflater, parent, false))
         }
     }
@@ -60,7 +56,6 @@ class ChoosePromotionMainAdapter(
             is ChoosePromotionListItem.SectionHeader -> (holder as HeaderViewHolder).bind(item.title)
             is ChoosePromotionListItem.VoucherItem -> (holder as VoucherViewHolder).bind(item.data, onVoucherClick, onDetailClick)
             is ChoosePromotionListItem.SeeMoreMyVoucher -> (holder as FooterViewHolder).bind(onSeeMoreMyVoucher)
-            is ChoosePromotionListItem.SeeMoreOtherVoucher -> (holder as FooterViewHolder).bind(onSeeMoreOtherVoucher)
         }
     }
 
@@ -121,7 +116,6 @@ class ChoosePromotionMainAdapter(
                 old is ChoosePromotionListItem.SectionHeader && new is ChoosePromotionListItem.SectionHeader -> old.title == new.title
                 old is ChoosePromotionListItem.VoucherItem && new is ChoosePromotionListItem.VoucherItem -> old.data.voucherId == new.data.voucherId
                 old is ChoosePromotionListItem.SeeMoreMyVoucher && new is ChoosePromotionListItem.SeeMoreMyVoucher -> true
-                old is ChoosePromotionListItem.SeeMoreOtherVoucher && new is ChoosePromotionListItem.SeeMoreOtherVoucher -> true
                 else -> false
             }
         }
@@ -147,7 +141,7 @@ class ChoosePromotionMainAdapter(
                     }
 
                     else -> {
-                        !item.data.isSelected
+                        item.data.isSelected
                     }
                 }
 

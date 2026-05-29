@@ -16,7 +16,6 @@ import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.Choose
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
-import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
 import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
 import java.text.NumberFormat
 import java.util.Locale
@@ -25,13 +24,14 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentChoosePromotionBinding.inflate(inflater, container, false)
+    var initialMyVouchers: List<MyVoucherListItem> = emptyList()
+    var initialOtherVouchers: List<MyVoucherListItem> = emptyList()
+    var selectedVouchers: List<MyVoucherListItem> = emptyList()
+    var onApplyVoucher: ((List<MyVoucherListItem>) -> Unit)? = null
 
-    private val isMultiSelection = true
-
+    private val isMultiSelection = false
     private val currentSelectedVouchers = mutableListOf<MyVoucherListItem>()
-
     private var isMyVoucherExpanded = false
-    private var isOtherVoucherExpanded = false
 
     private lateinit var mainAdapter: ChoosePromotionMainAdapter
 
@@ -39,6 +39,9 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private val viewModel: ChoosePromotionViewModel by viewModels { viewModelFactory }
 
     override fun setupUI() {
+        currentSelectedVouchers.clear()
+        currentSelectedVouchers.addAll(selectedVouchers.map { it.copy(isSelected = true) })
+
         setupRecyclerView()
         setupButtons()
         setupSearch()
@@ -56,7 +59,17 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                 is ChoosePromotionEffect.OpenVoucherDetail -> Unit
             }
         }
-        viewModel.handleAction(ChoosePromotionAction.LoadInitialIfNeeded)
+
+        if (initialMyVouchers.isNotEmpty() || initialOtherVouchers.isNotEmpty()) {
+            viewModel.handleAction(
+                ChoosePromotionAction.InitWithData(
+                    myVouchers = initialMyVouchers,
+                    otherVouchers = initialOtherVouchers,
+                )
+            )
+        } else {
+            viewModel.handleAction(ChoosePromotionAction.LoadInitialIfNeeded)
+        }
     }
 
     private fun setupRecyclerView() {
@@ -64,24 +77,42 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             onVoucherClick = { handleVoucherSelection(it) },
             onDetailClick = { addFragment(PromotionDetailFragment()) },
             onSeeMoreMyVoucher = {
-                isMyVoucherExpanded = true
-                rebuildList(viewModel.uiState.value)
+                if (isMyVoucherExpanded) {
+                    isMyVoucherExpanded = true
+                    viewModel.handleAction(ChoosePromotionAction.LoadMoreMyVouchers)
+                } else {
+                    isMyVoucherExpanded = true
+                    rebuildList(viewModel.uiState.value)
+                }
             },
-            onSeeMoreOtherVoucher = {
-                isOtherVoucherExpanded = true
-                rebuildList(viewModel.uiState.value)
-            }
         )
 
         binding.rcvVoucher.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = mainAdapter
-            addItemDecoration(VerticalSpaceItemDecoration(0, resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._6sdp)))
+            addItemDecoration(
+                VerticalSpaceItemDecoration(
+                    0,
+                    resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._6sdp)
+                )
+            )
+
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (!recyclerView.canScrollVertically(1)) {
-                        if (isMyVoucherExpanded) viewModel.handleAction(ChoosePromotionAction.LoadMoreMyVouchers)
-                        if (isOtherVoucherExpanded) viewModel.handleAction(ChoosePromotionAction.LoadMoreOtherVouchers)
+                override fun onScrolled(
+                    recyclerView: RecyclerView,
+                    dx: Int,
+                    dy: Int
+                ) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    if (dy <= 0) return
+                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                    val totalItemCount = layoutManager.itemCount
+                    val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+
+                    val shouldLoadMore = lastVisibleItem >= totalItemCount - 2
+
+                    if (shouldLoadMore) {
+                        viewModel.handleAction(ChoosePromotionAction.LoadMoreOtherVouchers)
                     }
                 }
             })
@@ -91,36 +122,36 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun rebuildList(state: ChoosePromotionUiState) {
         val items = mutableListOf<ChoosePromotionListItem>()
 
-        // My vouchers section
         if (state.vouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
             val myList = if (isMyVoucherExpanded) state.vouchers else state.vouchers.take(3)
-            items.addAll(myList.map { ChoosePromotionListItem.VoucherItem(it) })
-            if (!isMyVoucherExpanded && state.vouchers.size > 3) {
-                items.add(ChoosePromotionListItem.SeeMoreMyVoucher)
-            }
+            items.addAll(
+                myList.map { voucher ->
+                    val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                    ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected))
+                }
+            )
+            items.add(ChoosePromotionListItem.SeeMoreMyVoucher)
         }
 
-        // Other vouchers section
         if (state.otherVouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prn_endow_differebt)))
-            val otherList = if (isOtherVoucherExpanded) state.otherVouchers else state.otherVouchers.take(3)
-            items.addAll(otherList.map { ChoosePromotionListItem.VoucherItem(it) })
-            if (!isOtherVoucherExpanded && state.otherVouchers.size > 3) {
-                items.add(ChoosePromotionListItem.SeeMoreOtherVoucher)
-            }
+            items.addAll(
+                state.otherVouchers.map { voucher ->
+                    val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                    ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected))
+                }
+            )
         }
 
         mainAdapter.submitList(items)
     }
 
     private fun handleVoucherSelection(voucher: MyVoucherListItem) {
-        if (isMultiSelection) handleMultiSelection(voucher)
-        else handleSingleSelection(voucher)
-
+        if (isMultiSelection) handleMultiSelection(voucher) else handleSingleSelection(voucher)
         mainAdapter.updateVoucherSelection(
             voucherId = voucher.voucherId,
-            isMultiSelection = isMultiSelection
+            isMultiSelection = isMultiSelection,
         )
         updateApplyButtonState()
     }
@@ -143,32 +174,27 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupButtons() {
         binding.btnBack.setOnClickListener { onBackFragment() }
         binding.btnApply.setOnClickListener {
-            viewModel.handleAction(ChoosePromotionAction.ApplyVouchers(currentSelectedVouchers.toList()))
+            onApplyVoucher?.invoke(currentSelectedVouchers.map { it.copy(isSelected = true) })
+            onBackFragment()
         }
         updateApplyButtonState()
     }
 
     @SuppressLint("SetTextI18n")
     private fun updateApplyButtonState() {
-        val hasSelectedVoucher = currentSelectedVouchers.isNotEmpty()
-
         if (!isMultiSelection) {
             binding.layoutReducePrice.isVisible = false
             return
         }
-
+        val hasSelectedVoucher = currentSelectedVouchers.isNotEmpty()
         binding.layoutReducePrice.isVisible = hasSelectedVoucher
-
         if (!hasSelectedVoucher) return
-
         binding.txtNumberChooseEndow.text = "Đã chọn ${currentSelectedVouchers.size} voucher"
-//         TODO: thay bằng field discount thực tế từ MyVoucherListItem
-//         binding.txtReducedPrice.text = "-${formatMoney(totalDiscount)}đ"
+        // TODO: binding.txtReducedPrice.text = "-${formatMoney(totalDiscount)}đ"
     }
 
-    private fun formatMoney(amount: Long): String {
-        return NumberFormat.getNumberInstance(Locale("vi", "VN")).format(amount)
-    }
+    private fun formatMoney(amount: Long): String =
+        NumberFormat.getNumberInstance(Locale("vi", "VN")).format(amount)
 
     private fun setupSearch() {
         binding.edtVoucher.apply {

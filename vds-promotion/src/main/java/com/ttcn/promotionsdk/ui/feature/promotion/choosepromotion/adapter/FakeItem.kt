@@ -160,9 +160,14 @@ val allAvailableVouchers = listOf(
 
 object FakeVoucherData {
 
-    fun getMyVouchers(page: Int, size: Int = 7): List<MyVoucherListItem> {
+    private const val TOTAL_MY_VOUCHERS = 53
+    private const val TOTAL_OTHER_VOUCHERS = 27
+    private const val LAST_PAGE = 5
+
+    fun getMyVouchers(page: Int, size: Int = 10): List<MyVoucherListItem> {
         val start = page * size + 1
-        val end = start + size - 1
+        val end = minOf(start + size - 1, TOTAL_MY_VOUCHERS)
+        if (start > TOTAL_MY_VOUCHERS) return emptyList()
         return (start..end).map { i ->
             MyVoucherListItem(
                 voucherId = "my_voucher_$i",
@@ -171,15 +176,16 @@ object FakeVoucherData {
                 description = "Mô tả voucher số $i",
                 logo = "",
                 expirationDate = "31/12/2025",
-                displayStatusLabel = "Còn hạn",
+                displayStatusLabel = if (i % 7 == 0) "Hết hạn" else "Còn hạn",
                 status = if (i % 7 == 0) VoucherStatus.EXPIRED else VoucherStatus.ACTIVE,
             )
         }
     }
 
-    fun getOtherVouchers(page: Int, size: Int = 7): List<MyVoucherListItem> {
+    fun getOtherVouchers(page: Int, size: Int = 10): List<MyVoucherListItem> {
         val start = page * size + 1
-        val end = start + size - 1
+        val end = minOf(start + size - 1, TOTAL_OTHER_VOUCHERS)
+        if (start > TOTAL_OTHER_VOUCHERS) return emptyList()
         return (start..end).map { i ->
             MyVoucherListItem(
                 voucherId = "other_voucher_$i",
@@ -194,6 +200,9 @@ object FakeVoucherData {
         }
     }
 
-    // Giả lập tổng số page, đến page 3 thì hết
-    fun isLastPage(page: Int) = page >= 2
+    fun getTotalMyVoucherCount(): Int = TOTAL_MY_VOUCHERS
+
+    fun getTotalOtherVoucherCount(): Int = TOTAL_OTHER_VOUCHERS
+
+    fun isLastPage(page: Int): Boolean = page >= LAST_PAGE
 }

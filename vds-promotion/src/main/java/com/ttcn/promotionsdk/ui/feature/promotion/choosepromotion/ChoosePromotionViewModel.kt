@@ -7,7 +7,6 @@ import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.*
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.FakeVoucherData
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherTabUi
 
 class ChoosePromotionViewModel(
     private val repository: PromotionRepository,
@@ -17,49 +16,38 @@ class ChoosePromotionViewModel(
 ) {
     override fun handleAction(action: ChoosePromotionAction) {
         when (action) {
+            is ChoosePromotionAction.InitWithData -> {
+                if (uiState.value.hasLoadedInitial) return
+                setState {
+                    copy(
+                        vouchers = action.myVouchers,
+                        otherVouchers = action.otherVouchers,
+                        hasLoadedInitial = true,
+                        isEmpty = action.myVouchers.isEmpty() && action.otherVouchers.isEmpty(),
+                    )
+                }
+            }
+
             ChoosePromotionAction.LoadInitialIfNeeded -> {
-//                if (!uiState.value.hasLoadedInitial) {
-//                    loadVouchers(reset = true, selectedTabCode = null, keyword = "")
-//                }
                 if (!uiState.value.hasLoadedInitial) {
-                    // TODO: xóa khi có API
-                    setState {
-                        copy(
-                            vouchers = FakeVoucherData.getMyVouchers(page = 0),
-                            otherVouchers = FakeVoucherData.getOtherVouchers(page = 0),
-                            hasLoadedInitial = true,
-                            page = 0,
-                            otherPage = 0,
-                            isLastPage = FakeVoucherData.isLastPage(0),
-                            isLastOtherPage = FakeVoucherData.isLastPage(0),
-                        )
-                    }
-                    // loadVouchers(reset = true, selectedTabCode = null, keyword = "")
+                    loadVouchers(reset = true, serviceCode = "vay", keyword = "")
                 }
             }
             ChoosePromotionAction.Refresh -> loadVouchers(
                 reset = true,
-                selectedTabCode = uiState.value.selectedTabCode,
+                serviceCode = "vay",
                 keyword = uiState.value.keyword,
                 isRefresh = true,
-            )
-            is ChoosePromotionAction.SelectTab -> loadVouchers(
-                reset = true,
-                selectedTabCode = action.tabCode,
-                keyword = uiState.value.keyword,
             )
             is ChoosePromotionAction.SearchKeyword -> {
                 val trimmedKeyword = action.keyword.trim()
                 if (trimmedKeyword.isNotEmpty() && trimmedKeyword.length < 2) {
                     sendEffect(ShowError("keyword_too_short"))
                 } else {
-                    val requestKeyword = trimmedKeyword.takeIf { it.isNotBlank() }.orEmpty()
-                    val allTabCode = uiState.value.tabs
-                        .firstOrNull { it.code == TAB_ALL }?.code ?: TAB_ALL
                     loadVouchers(
                         reset = true,
-                        selectedTabCode = if (requestKeyword.isBlank()) uiState.value.selectedTabCode else allTabCode,
-                        keyword = requestKeyword,
+                        serviceCode = "vay",
+                        keyword = trimmedKeyword.takeIf { it.isNotBlank() }.orEmpty(),
                     )
                 }
             }
@@ -88,13 +76,12 @@ class ChoosePromotionViewModel(
                 }
                 // loadMoreOtherVouchers()
             }
-            is ChoosePromotionAction.ApplyVouchers -> Unit
         }
     }
 
     private fun loadVouchers(
         reset: Boolean,
-        selectedTabCode: String?,
+        serviceCode: String?,
         keyword: String,
         isRefresh: Boolean = false,
     ) {
@@ -121,25 +108,15 @@ class ChoosePromotionViewModel(
                 repository.searchCustomerVouchers(
                     customerId = customerId,
                     keyword = keyword.takeIf { it.isNotBlank() },
-                    serviceCode = null,
-                    tab = selectedTabCode,
+                    serviceCode = serviceCode,
                     sectionCode = null,
+                    tab = null,
                     myVouchersPage = 0,
                     myVouchersSize = currentState.size,
                     otherVouchersPage = 0,
                     otherVouchersSize = currentState.otherSize,
                 )
             }.onSuccess { response ->
-                val incomingTabs = response?.tabs
-                    ?.map { it.toMyVoucherTabUi() }
-                    ?.sortedBy { it.order }
-                    .orEmpty()
-                val tabs = incomingTabs.takeIf { it.isNotEmpty() } ?: currentState.tabs
-                val selected = response?.selectedTab
-                    ?: response?.defaultTab
-                    ?: selectedTabCode
-                    ?: tabs.firstOrNull()?.code
-
                 val myVouchers = response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
                 val otherVouchers = response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
                 val myPageInfo = response?.myVouchers
@@ -152,8 +129,8 @@ class ChoosePromotionViewModel(
                         isLoadingMore = false,
                         isLoadingMoreOther = false,
                         isEmpty = myVouchers.isEmpty() && otherVouchers.isEmpty(),
-                        tabs = tabs,
-                        selectedTabCode = selected,
+                        tabs = emptyList(),
+                        selectedTabCode = null,
                         vouchers = myVouchers,
                         otherVouchers = otherVouchers,
                         page = myPageInfo?.number ?: 0,
@@ -202,8 +179,8 @@ class ChoosePromotionViewModel(
                 repository.searchCustomerVouchers(
                     customerId = customerId,
                     keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                    serviceCode = null,
-                    tab = currentState.selectedTabCode,
+                    serviceCode = "vay",
+                    tab = null,
                     sectionCode = "my_vouchers",
                     myVouchersPage = nextPage,
                     myVouchersSize = currentState.size,
@@ -247,8 +224,8 @@ class ChoosePromotionViewModel(
                 repository.searchCustomerVouchers(
                     customerId = customerId,
                     keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                    serviceCode = null,
-                    tab = currentState.selectedTabCode,
+                    serviceCode = "vay",
+                    tab = null,
                     sectionCode = "other_vouchers",
                     myVouchersPage = null,
                     myVouchersSize = null,
@@ -276,10 +253,6 @@ class ChoosePromotionViewModel(
     override fun onError(throwable: Throwable) {
         setState { copy(isLoading = false, isRefreshing = false, isLoadingMore = false, isLoadingMoreOther = false) }
         sendEffect(ShowError(throwable.toErrorCode()))
-    }
-
-    private companion object {
-        private const val TAB_ALL = "all"
     }
 
     private fun Throwable.toErrorCode(): String {
