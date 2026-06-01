@@ -58,7 +58,7 @@ class ChoosePromotionViewModel(
                     copy(
                         vouchers = vouchers + FakeVoucherData.getMyVouchers(page = nextPage),
                         page = nextPage,
-                        isLastPage = FakeVoucherData.isLastPage(nextPage),
+                        isLastPage = FakeVoucherData.isNextLastPage(nextPage),
                     )
                 }
 //                loadMoreMyVouchers()

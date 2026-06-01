@@ -177,7 +177,8 @@ object FakeVoucherData {
                 logo = "",
                 expirationDate = "31/12/2025",
                 displayStatusLabel = if (i % 7 == 0) "Hết hạn" else "Còn hạn",
-                status = if (i % 7 == 0) VoucherStatus.EXPIRED else VoucherStatus.ACTIVE,
+                status = if (i % 7 == 0) VoucherStatus.EXPIRED else if (i % 3 == 0) VoucherStatus.REVOKED else VoucherStatus.ACTIVE,
+                isAutoApplied = i % 5 == 0,
             )
         }
     }
@@ -195,7 +196,7 @@ object FakeVoucherData {
                 logo = "",
                 expirationDate = "28/02/2025",
                 displayStatusLabel = if (i % 5 == 0) "Hết hạn" else "Còn hạn",
-                status = if (i % 5 == 0) VoucherStatus.EXPIRED else VoucherStatus.ACTIVE,
+                status = if (i % 5 == 0) VoucherStatus.EXPIRED else if (i % 7 == 0) VoucherStatus.REVOKED else VoucherStatus.ACTIVE,
             )
         }
     }
@@ -205,4 +206,6 @@ object FakeVoucherData {
     fun getTotalOtherVoucherCount(): Int = TOTAL_OTHER_VOUCHERS
 
     fun isLastPage(page: Int): Boolean = page >= LAST_PAGE
+
+    fun isNextLastPage(page: Int): Boolean = page == LAST_PAGE - 1
 }

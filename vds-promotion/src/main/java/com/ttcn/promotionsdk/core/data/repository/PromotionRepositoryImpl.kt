@@ -1,6 +1,10 @@
 // vds-promotion/src/main/java/com/ttcn/promotionsdk/core/data/repository/PromotionRepositoryImpl.kt
 package com.ttcn.promotionsdk.core.data.repository
 
+import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
+import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
 import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
 import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
@@ -44,5 +48,17 @@ class PromotionRepositoryImpl(
             customerId = customerId,
             service = service,
         )
+    }
+
+    override suspend fun createRedemptionSession(
+        request: RedemptionSessionRequest,
+    ): RedemptionSessionResponse? {
+        return remoteDataSource.createRedemptionSession(request)
+    }
+
+    override suspend fun validateStackableDiscounts(
+        request: StackableDiscountsRequest,
+    ): StackableDiscountsResponse? {
+        return remoteDataSource.validateStackableDiscounts(request)
     }
 }

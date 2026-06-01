@@ -36,4 +36,6 @@
     <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
     <string name="prm_my_endow">Ưu đãi của tôi</string>
     <string name="prn_endow_differebt">Ưu đãi khác</string>
+    <string name="prm_see_more">Xem thêm</string>
+    <string name="prm_collapse">Thu gọn</string>
 </resources>

@@ -1,5 +1,9 @@
 package com.ttcn.promotionsdk.core.data.remote
 
+import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
+import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
 import com.ttcn.promotionsdk.core.data.dto.voucher.ApiResponseTemplate
 import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
 import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
@@ -41,6 +45,18 @@ class PromotionRemoteDataSource(
             customerId = customerId,
             service = service,
         ).requireData()
+    }
+
+    suspend fun createRedemptionSession(
+        request: RedemptionSessionRequest,
+    ): RedemptionSessionResponse? {
+        return apiService.createRedemptionSession(request).requireData()
+    }
+
+    suspend fun validateStackableDiscounts(
+        request: StackableDiscountsRequest,
+    ): StackableDiscountsResponse? {
+        return apiService.validateStackableDiscounts(request).requireData()
     }
 
     private fun <T> ApiResponseTemplate<T>.requireData(): T? {

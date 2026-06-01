@@ -20,10 +20,32 @@ import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
 import java.text.NumberFormat
 import java.util.Locale
 
+/**
+ * VERSION A — Load more API bình thường, nhưng cache-aware khi collapse/expand.
+ *
+ * Flow của "Ưu đãi của tôi":
+ *   1. [collapsed]  show 2 item đầu + footer "Xem thêm"
+ *   2. Nhấn "Xem thêm":
+ *      a. Nếu chưa expand lần nào → expand local (show tất cả đã fetch trong state)
+ *         - isLastPage = false → footer "Xem thêm" (còn trang, có thể load more)
+ *         - isLastPage = true  → footer "Thu gọn"  (hết data)
+ *      b. Nếu đã expanded + isLastPage = false → gọi API LoadMoreMyVouchers
+ *         (chỉ gọi khi thực sự còn trang chưa fetch)
+ *   3. Nhấn "Thu gọn" → collapsed, reset isMyVoucherExpanded = false
+ *   4. Nhấn "Xem thêm" lần 2 sau khi thu gọn:
+ *      → chỉ expand local (state vẫn giữ toàn bộ data đã fetch), KHÔNG gọi API
+ *      → chỉ gọi API nếu isLastPage = false (tức là chưa fetch hết từ trước)
+ *
+ * Điểm khác vs Version B:
+ *   Version B: sau khi collapse → expand lại luôn gọi API load more
+ *   Version A: sau khi collapse → expand lại CHỈ dùng local state;
+ *              API chỉ được gọi khi isLastPage = false VÀ đang ở trạng thái expanded
+ */
 class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>() {
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentChoosePromotionBinding.inflate(inflater, container, false)
+
     var initialMyVouchers: List<MyVoucherListItem> = emptyList()
     var initialOtherVouchers: List<MyVoucherListItem> = emptyList()
     var selectedVouchers: List<MyVoucherListItem> = emptyList()
@@ -31,6 +53,11 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     private val isMultiSelection = false
     private val currentSelectedVouchers = mutableListOf<MyVoucherListItem>()
+
+    /**
+     * true  = đang hiển thị toàn bộ my-vouchers (expand)
+     * false = chỉ hiển thị [COLLAPSED_COUNT] item đầu
+     */
     private var isMyVoucherExpanded = false
 
     private lateinit var mainAdapter: ChoosePromotionMainAdapter
@@ -41,7 +68,6 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     override fun setupUI() {
         currentSelectedVouchers.clear()
         currentSelectedVouchers.addAll(selectedVouchers.map { it.copy(isSelected = true) })
-
         setupRecyclerView()
         setupButtons()
         setupSearch()
@@ -59,7 +85,6 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                 is ChoosePromotionEffect.OpenVoucherDetail -> Unit
             }
         }
-
         if (initialMyVouchers.isNotEmpty() || initialOtherVouchers.isNotEmpty()) {
             viewModel.handleAction(
                 ChoosePromotionAction.InitWithData(
@@ -75,15 +100,23 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
             onVoucherClick = { handleVoucherSelection(it) },
-            onDetailClick = { addFragment(PromotionDetailFragment()) },
+            onDetailClick = { addFragment(PromotionDetailFragment.newInstance(it.voucherId)) },
             onSeeMoreMyVoucher = {
-                if (isMyVoucherExpanded) {
+                val state = viewModel.uiState.value
+                if (!isMyVoucherExpanded) {
+                    // Lần đầu hoặc sau khi thu gọn: chỉ expand local, không gọi API
                     isMyVoucherExpanded = true
+                    rebuildList(state)
+                } else if (!state.isLastPage) {
+                    // Đang expanded + còn trang chưa fetch → mới gọi API
                     viewModel.handleAction(ChoosePromotionAction.LoadMoreMyVouchers)
-                } else {
-                    isMyVoucherExpanded = true
-                    rebuildList(viewModel.uiState.value)
                 }
+                // Đang expanded + isLastPage = true → footer hiển thị "Thu gọn",
+                // onSeeMoreMyVoucher không được gọi trong trường hợp này
+            },
+            onCollapseMyVoucher = {
+                isMyVoucherExpanded = false
+                rebuildList(viewModel.uiState.value)
             },
         )
 
@@ -98,20 +131,12 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             )
 
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(
-                    recyclerView: RecyclerView,
-                    dx: Int,
-                    dy: Int
-                ) {
-                    super.onScrolled(recyclerView, dx, dy)
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     if (dy <= 0) return
-                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
-                    val totalItemCount = layoutManager.itemCount
-                    val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
-
-                    val shouldLoadMore = lastVisibleItem >= totalItemCount - 2
-
-                    if (shouldLoadMore) {
+                    val lm = recyclerView.layoutManager as LinearLayoutManager
+                    val lastVisible = lm.findLastVisibleItemPosition()
+                    val total = lm.itemCount
+                    if (lastVisible >= total - 2) {
                         viewModel.handleAction(ChoosePromotionAction.LoadMoreOtherVouchers)
                     }
                 }
@@ -119,29 +144,43 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         }
     }
 
+    /**
+     * Quy tắc render footer "Ưu đãi của tôi":
+     *
+     * | isMyVoucherExpanded | isLastPage | isExpanded (footer) | Nghĩa                              |
+     * |---------------------|------------|---------------------|------------------------------------|
+     * | false               | any        | false               | "Xem thêm" → expand local          |
+     * | true                | false      | false               | "Xem thêm" → load more API         |
+     * | true                | true       | true                | "Thu gọn"  → collapse về 2 item    |
+     */
     private fun rebuildList(state: ChoosePromotionUiState) {
         val items = mutableListOf<ChoosePromotionListItem>()
 
         if (state.vouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
-            val myList = if (isMyVoucherExpanded) state.vouchers else state.vouchers.take(3)
-            items.addAll(
-                myList.map { voucher ->
-                    val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
-                    ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected))
-                }
-            )
-            items.add(ChoosePromotionListItem.SeeMoreMyVoucher)
+
+            val visibleMyVouchers =
+                if (isMyVoucherExpanded) state.vouchers else state.vouchers.take(COLLAPSED_COUNT)
+
+            visibleMyVouchers.forEach { voucher ->
+                val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
+            }
+
+            if (state.vouchers.size > COLLAPSED_COUNT) {
+                // isExpanded = true chỉ khi: đang mở rộng VÀ đã hết trang
+                // → footer hiển thị "Thu gọn"
+                val footerIsExpanded = isMyVoucherExpanded && state.isLastPage
+                items.add(ChoosePromotionListItem.SeeMoreMyVoucher(isExpanded = footerIsExpanded))
+            }
         }
 
         if (state.otherVouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prn_endow_differebt)))
-            items.addAll(
-                state.otherVouchers.map { voucher ->
-                    val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
-                    ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected))
-                }
-            )
+            state.otherVouchers.forEach { voucher ->
+                val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
+            }
         }
 
         mainAdapter.submitList(items)
@@ -163,8 +202,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     }
 
     private fun handleMultiSelection(voucher: MyVoucherListItem) {
-        val isCurrentlySelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
-        if (isCurrentlySelected) {
+        if (currentSelectedVouchers.any { it.voucherId == voucher.voucherId }) {
             currentSelectedVouchers.removeAll { it.voucherId == voucher.voucherId }
         } else {
             currentSelectedVouchers.add(voucher)
@@ -186,15 +224,11 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             binding.layoutReducePrice.isVisible = false
             return
         }
-        val hasSelectedVoucher = currentSelectedVouchers.isNotEmpty()
-        binding.layoutReducePrice.isVisible = hasSelectedVoucher
-        if (!hasSelectedVoucher) return
+        val hasSelected = currentSelectedVouchers.isNotEmpty()
+        binding.layoutReducePrice.isVisible = hasSelected
+        if (!hasSelected) return
         binding.txtNumberChooseEndow.text = "Đã chọn ${currentSelectedVouchers.size} voucher"
-        // TODO: binding.txtReducedPrice.text = "-${formatMoney(totalDiscount)}đ"
     }
-
-    private fun formatMoney(amount: Long): String =
-        NumberFormat.getNumberInstance(Locale("vi", "VN")).format(amount)
 
     private fun setupSearch() {
         binding.edtVoucher.apply {
@@ -223,5 +257,9 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             "no_result" -> getString(R.string.no_result)
             else -> getString(R.string.prm_error_general)
         }
+    }
+
+    companion object {
+        private const val COLLAPSED_COUNT = 2
     }
 }

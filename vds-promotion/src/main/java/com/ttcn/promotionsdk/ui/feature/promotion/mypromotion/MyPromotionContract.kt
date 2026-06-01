@@ -42,6 +42,7 @@ data class MyVoucherListItem(
     val displayStatusLabel: String,
     val status: VoucherStatus,
     var isSelected: Boolean = false,
+    val isAutoApplied: Boolean = false,
 )
 
 data class TabItem(

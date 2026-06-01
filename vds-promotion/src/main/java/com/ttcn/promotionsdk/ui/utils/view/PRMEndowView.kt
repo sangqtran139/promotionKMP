@@ -4,30 +4,77 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
+import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
+import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.di.inject
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowViewState
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.FakeVoucherData
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.utils.applyTextColorIfSet
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class PRMEndowView @JvmOverloads constructor(
-    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0,
 ) : ConstraintLayout(context, attrs, defStyleAttr) {
+
+    // ─── Binding & Adapter ────────────────────────────────────────────────────
 
     private val binding: PrmViewEndowBinding =
         PrmViewEndowBinding.inflate(LayoutInflater.from(context), this, true)
     private val applyPromotionAdapter = ApplyPromotionAdapter()
 
+    // ─── Injected dependencies ────────────────────────────────────────────────
+
+    private val repository: PromotionRepository by inject()
+    private val requestContextProvider: PromotionRequestContextProvider by inject()
+
+    // ─── Internal state ───────────────────────────────────────────────────────
+
     private var currentState: EndowViewState = EndowViewState.NOT_APPLIED
     private var lastAppliedToken: DiscountBadgeToken? = null
+    private var hasLoadedInitial = false
 
-    private var onUseVoucherClickListener: (() -> Unit)? = null
-    private var onChangeVoucherClickListener: (() -> Unit)? = null
-    private var onVoucherItemClickListener: ((MyVoucherListItem) -> Unit)? = null
+    var myVouchers: List<MyVoucherListItem> = emptyList()
+        private set
+    var otherVouchers: List<MyVoucherListItem> = emptyList()
+        private set
+    var appliedVouchers: List<MyVoucherListItem> = emptyList()
+        private set
+
+    // ─── Coroutine scope ──────────────────────────────────────────────────────
+
+    private var viewScope: CoroutineScope? = null
+
+    // ─── Public callbacks ─────────────────────────────────────────────────────
+
+    var onOpenVoucherSelection: (() -> Unit)? = null
+    var onVoucherItemClick: ((MyVoucherListItem) -> Unit)? = null
+    var onError: ((errorCode: String) -> Unit)? = null
+
+    /**
+     * Fired once after the initial load when ≥1 voucher has isAutoApplied = true.
+     * The host can use this to sync its own state (e.g. update order total).
+     * Not fired when the host calls [setAppliedVouchers] manually.
+     */
+    var onAutoApplied: ((autoApplied: List<MyVoucherListItem>) -> Unit)? = null
+
+    // ─── Init ─────────────────────────────────────────────────────────────────
 
     init {
         setupRecyclerView()
@@ -35,23 +82,49 @@ class PRMEndowView @JvmOverloads constructor(
         applyToken(PromotionThemeRegistry.discountBadgeToken())
     }
 
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
+
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
+
+        val lifecycleOwner = findViewTreeLifecycleOwner()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        viewScope = scope
+
+        lifecycleOwner?.lifecycle?.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                scope.cancel()
+                viewScope = null
+            }
+        })
+
+        if (!hasLoadedInitial) {
+            loadInitialVouchers()
+        }
     }
 
-    fun setVoucherCount(count: Int) {
-        currentState = if (count > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
-        showNotAppliedState(count)
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        viewScope?.cancel()
+        viewScope = null
     }
 
-    fun setAppliedVouchers(appliedVouchers: List<MyVoucherListItem>) {
-        if (appliedVouchers.isEmpty()) {
+    // ─── Public API ───────────────────────────────────────────────────────────
+
+    /**
+     * Push the user's manual selection back into the view.
+     * Clears any previous auto-apply state.
+     */
+    fun setAppliedVouchers(selected: List<MyVoucherListItem>) {
+        appliedVouchers = selected
+        if (selected.isEmpty()) {
             currentState = EndowViewState.NOT_APPLIED
-            showNotAppliedState(count = 0)
+            val total = myVouchers.size + otherVouchers.size
+            showNotAppliedState(total)
         } else {
             currentState = EndowViewState.APPLIED
-            showAppliedState(appliedVouchers)
+            showAppliedState(selected)
         }
     }
 
@@ -66,19 +139,85 @@ class PRMEndowView @JvmOverloads constructor(
 
     fun getCurrentState(): EndowViewState = currentState
 
-    fun setOnUseVoucherClickListener(listener: () -> Unit) {
-        onUseVoucherClickListener = listener
+    // ─── Private: load vouchers ───────────────────────────────────────────────
+
+    private fun loadInitialVouchers() {
+        val scope = viewScope ?: return
+        scope.launch {
+            // ── Fake data ─────────────────────────────────────────────────────
+            val myList = FakeVoucherData.getMyVouchers(page = 0)
+            val otherList = FakeVoucherData.getOtherVouchers(page = 0)
+            val total = FakeVoucherData.getTotalMyVoucherCount() +
+                    FakeVoucherData.getTotalOtherVoucherCount()
+
+            myVouchers = myList
+            otherVouchers = otherList
+            hasLoadedInitial = true
+
+            // ── Auto-apply logic ──────────────────────────────────────────────
+            // Only auto-apply if the host has not already pushed a manual selection
+            if (appliedVouchers.isEmpty()) {
+                val autoApplied = (myList + otherList).firstOrNull { it.isAutoApplied }
+                    ?.let { listOf(it) }
+                    ?: emptyList()
+                if (autoApplied.isNotEmpty()) {
+                    appliedVouchers = autoApplied
+                    currentState = EndowViewState.APPLIED
+                    showAppliedState(autoApplied)
+                    onAutoApplied?.invoke(autoApplied)
+                } else {
+                    currentState = if (total > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
+                    showNotAppliedState(total)
+                }
+            }
+            // If appliedVouchers was already set before load finished, keep current APPLIED state
+
+            // ── API thật (uncomment khi sẵn sàng) ────────────────────────────
+            // val customerId = requestContextProvider.getCustomerId()
+            // if (customerId.isNullOrBlank()) {
+            //     onError?.invoke("missing_customer_id")
+            //     return@launch
+            // }
+            // runCatching {
+            //     repository.searchCustomerVouchers(
+            //         customerId = customerId,
+            //         keyword = null,
+            //         serviceCode = "vay",
+            //         sectionCode = null,
+            //         tab = null,
+            //         myVouchersPage = 0,
+            //         myVouchersSize = 10,
+            //         otherVouchersPage = 0,
+            //         otherVouchersSize = 10,
+            //     )
+            // }.onSuccess { response ->
+            //     myVouchers = response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
+            //     otherVouchers = response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
+            //     val total = (response?.myVouchers?.totalElements ?: myVouchers.size) +
+            //                 (response?.otherVouchers?.totalElements ?: otherVouchers.size)
+            //     hasLoadedInitial = true
+            //     if (appliedVouchers.isEmpty()) {
+            //         val autoApplied = (myVouchers + otherVouchers).firstOrNull { it.isAutoApplied }
+            //             ?.let { listOf(it) }
+            //             ?: emptyList()
+            //         if (autoApplied.isNotEmpty()) {
+            //             appliedVouchers = autoApplied
+            //             currentState = EndowViewState.APPLIED
+            //             showAppliedState(autoApplied)
+            //             onAutoApplied?.invoke(autoApplied)
+            //         } else {
+            //             currentState = if (total > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
+            //             showNotAppliedState(total)
+            //         }
+            //     }
+            // }.onFailure { throwable ->
+            //     hasLoadedInitial = true
+            //     onError?.invoke(throwable.toErrorCode())
+            // }
+        }
     }
 
-    fun setOnChangeVoucherClickListener(listener: () -> Unit) {
-        onChangeVoucherClickListener = listener
-    }
-
-    fun setOnVoucherItemClickListener(listener: (MyVoucherListItem) -> Unit) {
-        onVoucherItemClickListener = listener
-    }
-
-    // ─── Internal ─────────────────────────────────────────────────────────────
+    // ─── Private: UI helpers ──────────────────────────────────────────────────
 
     private fun setupRecyclerView() {
         binding.rcvEndow.apply {
@@ -90,8 +229,8 @@ class PRMEndowView @JvmOverloads constructor(
     private fun setupClickListeners() {
         binding.txtStatusEndow.setOnClickListener {
             when (currentState) {
-                EndowViewState.NOT_APPLIED -> onUseVoucherClickListener?.invoke()
-                EndowViewState.APPLIED -> onChangeVoucherClickListener?.invoke()
+                EndowViewState.NOT_APPLIED,
+                EndowViewState.APPLIED -> onOpenVoucherSelection?.invoke()
                 EndowViewState.EMPTY -> Unit
             }
         }
@@ -128,4 +267,7 @@ class PRMEndowView @JvmOverloads constructor(
         token?.actionTextColor?.let { binding.txtStatusEndow.applyTextColorIfSet(it) }
         applyPromotionAdapter.applyToken(token)
     }
+
+    private fun Throwable.toErrorCode(): String =
+        (this as? PromotionApiException)?.errorCode ?: message ?: "error_general"
 }

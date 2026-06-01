@@ -16,7 +16,7 @@ data class ChoosePromotionUiState(
     // my vouchers pagination
     val page: Int = 0,
     val size: Int = 10,
-    val isLastPage: Boolean = true,
+    val isLastPage: Boolean = false,
     // other vouchers pagination
     val otherPage: Int = 0,
     val otherSize: Int = 10,
