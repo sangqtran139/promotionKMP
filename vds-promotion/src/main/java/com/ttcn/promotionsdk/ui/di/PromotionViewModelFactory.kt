@@ -11,6 +11,7 @@ import com.ttcn.promotionsdk.ui.feature.promotion.RedemptionViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailViewModel
+import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionViewModel
 
 class PromotionViewModelFactory(
     private val promotionRepository: PromotionRepository,
@@ -49,8 +50,19 @@ class PromotionViewModelFactory(
 
             RedemptionViewModel::class.java -> {
                 RedemptionViewModel(
-                    validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(promotionRepository),
-                    createRedemptionSessionUseCase = CreateRedemptionSessionUseCase(promotionRepository),
+                    validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(
+                        promotionRepository
+                    ),
+                    createRedemptionSessionUseCase = CreateRedemptionSessionUseCase(
+                        promotionRepository
+                    ),
+                    requestContextProvider = requestContextProvider,
+                ) as T
+            }
+
+            SearchMyPromotionViewModel::class.java -> {
+                SearchMyPromotionViewModel(
+                    repository = promotionRepository,
                     requestContextProvider = requestContextProvider,
                 ) as T
             }

@@ -64,7 +64,8 @@ object PromotionThemeDisplay {
         val actionTextColor: String? = null,
     )
 
-    fun load(context: Context): Defaults = fromConfig(PromotionThemeDefaults.defaultConfig(context), context)
+    fun load(context: Context): Defaults =
+        fromConfig(PromotionThemeDefaults.defaultConfig(context), context)
 
     fun mergeWithSaved(context: Context, sdk: Defaults, saved: PromotionThemeConfig?): Defaults {
         if (saved == null) return sdk
@@ -82,12 +83,29 @@ object PromotionThemeDisplay {
     fun configFromDisplayValues(display: Defaults, sdk: Defaults): PromotionThemeConfig =
         PromotionThemeConfig(
             buttonToken = display.button.toToken().takeIf { display.button != sdk.button },
-            searchBarToken = display.searchBar.toToken().takeIf { display.searchBar != sdk.searchBar },
+            searchBarToken = display.searchBar.toToken()
+                .takeIf { display.searchBar != sdk.searchBar },
             listItemToken = display.listItem.toToken().takeIf { display.listItem != sdk.listItem },
             tabChipToken = display.tabChip.toToken().takeIf { display.tabChip != sdk.tabChip },
-            tabUnderlineToken = display.tabUnderline.toToken().takeIf { display.tabUnderline != sdk.tabUnderline },
-            discountBadgeToken = display.discountBadge.toToken().takeIf { display.discountBadge != sdk.discountBadge },
+            tabUnderlineToken = resolveTabUnderlineToken(display.tabUnderline, sdk.tabUnderline),
+            discountBadgeToken = display.discountBadge.toToken()
+                .takeIf { display.discountBadge != sdk.discountBadge },
         )
+
+    private fun resolveTabUnderlineToken(
+        display: TabUnderlineValues,
+        sdk: TabUnderlineValues,
+    ): TabUnderlineToken? {
+        if (display == sdk) return null
+        val displayToken = display.toToken()
+        val sdkToken = sdk.toToken()
+        return TabUnderlineToken(
+            indicatorColor = displayToken.indicatorColor ?: sdkToken.indicatorColor,
+            activeTextColor = displayToken.activeTextColor ?: sdkToken.activeTextColor,
+            inactiveTextColor = displayToken.inactiveTextColor ?: sdkToken.inactiveTextColor,
+            backgroundColor = displayToken.backgroundColor ?: sdkToken.backgroundColor,
+        )
+    }
 
     private fun fromConfig(config: PromotionThemeConfig, context: Context?): Defaults {
         fun hex(@androidx.annotation.ColorInt color: Int?) =
@@ -157,7 +175,8 @@ object PromotionThemeDisplay {
         usedBadgeTextColor = other.usedBadgeTextColor ?: usedBadgeTextColor,
         usedBadgeBackgroundColor = other.usedBadgeBackgroundColor ?: usedBadgeBackgroundColor,
         radioButtonStrokeColor = other.radioButtonStrokeColor ?: radioButtonStrokeColor,
-        radioButtonSelectedStrokeColor = other.radioButtonSelectedStrokeColor ?: radioButtonSelectedStrokeColor,
+        radioButtonSelectedStrokeColor = other.radioButtonSelectedStrokeColor
+            ?: radioButtonSelectedStrokeColor,
     )
 
     private fun TabChipValues.merge(other: TabChipValues) = copy(

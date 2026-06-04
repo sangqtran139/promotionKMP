@@ -1,19 +1,20 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
 import android.os.Bundle
-import android.text.Spanned
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.text.HtmlCompat
+import androidx.annotation.StringRes
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.di.inject
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
+import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.adapter.PrmCustomFragmentPagerAdapter
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.TabLayoutThemeApplier
 import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
@@ -28,6 +29,9 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         viewModelFactory
     }
 
+    private var tabMediator: TabLayoutMediator? = null
+    private var pagerBoundVoucherId: String? = null
+
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentDetailPromotionBinding.inflate(inflater, container, false)
 
@@ -39,7 +43,6 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             return
         }
         viewModel.handleAction(PromotionDetailAction.LoadDetail(voucherId))
-        TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
     }
 
     override fun observeData() {
@@ -48,14 +51,15 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             if (detail != null) {
                 binding.imgBanner.loadPromotionVoucherBanner(
                     detail.banner.orEmpty(),
-                    preferCache = false
+                    preferCache = false,
                 )
                 binding.circleLogo.background = null
                 binding.circleLogo.loadPromotionVoucherLogo(
                     detail.logo.orEmpty(),
-                    preferCache = true
+                    preferCache = true,
                 )
                 binding.txtVoucherName.text = detail.merchantName.orEmpty()
+                binding.tvContent.text = detail.title.orEmpty()
                 binding.tvExpired.text = getString(
                     R.string.prm_expiry_short_format,
                     detail.expirationDate.orEmpty().toVoucherDisplayDate(),
@@ -66,7 +70,17 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                     if (state.status == VoucherStatus.ACTIVE) getString(R.string.use_now)
                     else detail.displayStatusLabel.orEmpty()
                 }
-                binding.tvContent.text = resolveDetailContent(detail)
+                bindDetailTabsIfNeeded(
+                    voucherId = detail.voucherId,
+                    descriptionHtml = resolveHtmlContent(
+                        detail.description,
+                        R.string.prm_empty_detail_info,
+                    ),
+                    guidelineHtml = resolveHtmlContent(
+                        detail.guideline,
+                        R.string.prm_empty_usage_guide,
+                    ),
+                )
             }
         }
         collectFlow(viewModel.uiEffect) { effect ->
@@ -74,6 +88,13 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                 is PromotionDetailEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
             }
         }
+    }
+
+    override fun onDestroyView() {
+        tabMediator?.detach()
+        tabMediator = null
+        pagerBoundVoucherId = null
+        super.onDestroyView()
     }
 
     companion object {
@@ -88,15 +109,42 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         }
     }
 
-    private fun resolveDetailContent(detail: CustomerVoucherDetail): CharSequence {
-        val content = detail.title?.takeIf { it.isNotBlank() }
-            ?: detail.description.orEmpty()
-        return content.toHtmlText()
+    private fun bindDetailTabsIfNeeded(
+        voucherId: String,
+        descriptionHtml: String,
+        guidelineHtml: String,
+    ) {
+        if (pagerBoundVoucherId == voucherId && binding.viewPager.adapter != null) return
+        pagerBoundVoucherId = voucherId
+        tabMediator?.detach()
+
+        val adapter = PrmCustomFragmentPagerAdapter(requireActivity())
+        adapter.addFragment(
+            PrmContentDetailEndowFragment.newInstance(descriptionHtml),
+            getString(R.string.prm_tab_detail_info),
+        )
+        adapter.addFragment(
+            PrmContentDetailEndowFragment.newInstance(guidelineHtml),
+            getString(R.string.prm_tab_usage_guide),
+        )
+        binding.viewPager.adapter = adapter
+        tabMediator = TabLayoutMediator(binding.tabs, binding.viewPager) { tab, position ->
+            tab.text = adapter.getTitle(position)
+        }.also { it.attach() }
+
+        binding.tabs.tabMode = TabLayout.MODE_FIXED
+        binding.tabs.tabGravity = TabLayout.GRAVITY_FILL
+        binding.tabs.isTabIndicatorFullWidth = true
+        applyTabUnderlineTheme()
     }
 
-    private fun String.toHtmlText(): CharSequence {
-        val spanned: Spanned = HtmlCompat.fromHtml(this, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        return spanned.toString().ifBlank { this }
+    private fun applyTabUnderlineTheme() {
+        TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
+    }
+
+    private fun resolveHtmlContent(html: String?, @StringRes emptyRes: Int): String {
+        return html?.takeIf { it.isNotBlank() }
+            ?: "<p>${getString(emptyRes)}</p>"
     }
 
     private fun mapErrorMessage(error: String): String {

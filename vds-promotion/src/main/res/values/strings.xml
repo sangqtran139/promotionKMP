@@ -24,6 +24,8 @@
     <string name="discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
     <string name="search_result">Kết quả tìm kiếm</string>
     <string name="prm_search_hint">Nhập tên ưu đãi, ngành hàng, ...</string>
+    <string name="prm_search_no_result">Không tìm thấy kết quả phù hợp</string>
+    <string name="prm_search_input_empty">Nhập từ khóa để tìm kiếm ưu đãi</string>
     <string name="prm_slide_to_verify">Trượt để xác thực</string>
     <string name="prm_discount_amount_format">Giảm giá %1$sđ</string>
     <string name="prm_expiry_short_format">HSD %1$s</string>
@@ -38,4 +40,8 @@
     <string name="prn_endow_differebt">Ưu đãi khác</string>
     <string name="prm_see_more">Xem thêm</string>
     <string name="prm_collapse">Thu gọn</string>
+    <string name="prm_tab_detail_info">Thông tin chi tiết</string>
+    <string name="prm_tab_usage_guide">Hướng dẫn sử dụng</string>
+    <string name="prm_empty_detail_info">Chưa có thông tin chi tiết</string>
+    <string name="prm_empty_usage_guide">Chưa có hướng dẫn sử dụng</string>
 </resources>

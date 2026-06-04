@@ -1,13 +1,22 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import android.graphics.drawable.GradientDrawable
+import androidx.annotation.ColorInt
 import com.google.android.material.tabs.TabLayout
+import com.ttcn.promotionsdk.R
 
 object TabLayoutThemeApplier {
 
     fun apply(tabs: TabLayout, token: TabUnderlineToken?) {
-        token?.indicatorColor?.let { tabs.setSelectedTabIndicatorColor(it) }
-        val inactive = token?.inactiveTextColor
-        val active = token?.activeTextColor
+        if (token == null) return
+
+        token.indicatorColor?.let { color ->
+            tabs.setSelectedTabIndicatorColor(color)
+            tabs.setSelectedTabIndicator(createIndicatorDrawable(tabs, color))
+        }
+
+        val inactive = token.inactiveTextColor
+        val active = token.activeTextColor
         if (inactive != null || active != null) {
             val current = tabs.tabTextColors
             val defaultInactive = current?.defaultColor ?: 0
@@ -20,6 +29,19 @@ object TabLayoutThemeApplier {
                 active ?: defaultActive,
             )
         }
-        token?.backgroundColor?.let { tabs.setBackgroundColor(it) }
+
+        token.backgroundColor?.let { tabs.setBackgroundColor(it) }
+    }
+
+    private fun createIndicatorDrawable(
+        tabs: TabLayout,
+        @ColorInt color: Int,
+    ): GradientDrawable {
+        val indicatorHeight = tabs.resources.getDimensionPixelSize(R.dimen.view_size_2)
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(color)
+            setSize(-1, indicatorHeight)
+        }
     }
 }

@@ -37,4 +37,5 @@ dependencies {
     implementation(libs.material)
     implementation(libs.fragment.ktx)
     implementation(libs.constraintlayout)
+    implementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

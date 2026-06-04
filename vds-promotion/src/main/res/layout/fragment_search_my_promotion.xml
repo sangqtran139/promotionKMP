@@ -88,6 +88,7 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                android:id="@+id/tvNoResult"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/view_size_40"
@@ -96,7 +97,7 @@
                 android:fontFamily="@font/sf_pro_display_bold"
                 android:gravity="center"
                 android:lineHeight="@dimen/view_size_22"
-                android:text="@string/no_result"
+                android:text="@string/prm_search_input_empty"
                 android:textColor="@color/black"
                 android:textSize="@dimen/text_size_18"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -104,6 +105,7 @@
                 app:layout_constraintTop_toBottomOf="@id/imgNoData" />
 
             <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                android:id="@+id/tvNoResultSubtext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/view_size_40"
@@ -114,11 +116,22 @@
                 android:lineHeight="@dimen/view_size_22"
                 android:text="@string/discover_voucher"
                 android:textSize="@dimen/text_size_16"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/imgNoData" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <include
+            android:id="@+id/shimmer_provider"
+            layout="@layout/shimmer_my_promotion"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/view_size_70"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/sfEndow" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"

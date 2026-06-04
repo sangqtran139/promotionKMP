@@ -60,7 +60,7 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="@dimen/view_size_20">
+                android:paddingBottom="@dimen/view_size_24">
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMCircleImageView
                     android:id="@+id/circleLogo"
@@ -85,7 +85,7 @@
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
                     android:id="@+id/tvContent"
-                    style="@style/fontSfDisplayBold14"
+                    style="@style/fontSfDisplayBold16"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/view_size_7"
@@ -137,9 +137,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/color_FBFBFB"
-                    app:tabBackground="@drawable/prm_tab_indicator_color"
                     app:tabGravity="fill"
+                    app:tabIndicator="@drawable/prm_tab_indicator_color"
                     app:tabIndicatorColor="@color/color_red_EE0033"
+                    app:tabIndicatorHeight="@dimen/view_size_3"
                     app:tabMaxWidth="0dp"
                     app:tabMode="fixed"
                     app:tabRippleColor="@color/color_D3D3D3"
