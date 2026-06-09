@@ -10,14 +10,19 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountRequest
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerInfo
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.EndowViewState
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.FakeVoucherData
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.utils.applyTextColorIfSet
@@ -26,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class PRMEndowView @JvmOverloads constructor(
     context: Context,
@@ -37,6 +43,11 @@ class PRMEndowView @JvmOverloads constructor(
 
     private val binding: PrmViewEndowBinding =
         PrmViewEndowBinding.inflate(LayoutInflater.from(context), this, true)
+
+    /**
+     * [rcvEndow] luôn render từ [DiscountDetail] — kết quả từ
+     * validateStackableDiscounts, KHÔNG render từ MyVoucherListItem trực tiếp.
+     */
     private val applyPromotionAdapter = ApplyPromotionAdapter()
 
     // ─── Injected dependencies ────────────────────────────────────────────────
@@ -50,11 +61,17 @@ class PRMEndowView @JvmOverloads constructor(
     private var lastAppliedToken: DiscountBadgeToken? = null
     private var hasLoadedInitial = false
 
+    /** Raw data từ getCustomerVouchers — dùng để pass sang ChoosePromotionFragment */
     var myVouchers: List<MyVoucherListItem> = emptyList()
         private set
     var otherVouchers: List<MyVoucherListItem> = emptyList()
         private set
-    var appliedVouchers: List<MyVoucherListItem> = emptyList()
+
+    /**
+     * Kết quả hiện tại từ validateStackableDiscounts.
+     * [rcvEndow] render từ list này.
+     */
+    var discountDetails: List<DiscountDetail> = emptyList()
         private set
 
     // ─── Coroutine scope ──────────────────────────────────────────────────────
@@ -66,13 +83,6 @@ class PRMEndowView @JvmOverloads constructor(
     var onOpenVoucherSelection: (() -> Unit)? = null
     var onVoucherItemClick: ((MyVoucherListItem) -> Unit)? = null
     var onError: ((errorCode: String) -> Unit)? = null
-
-    /**
-     * Fired once after the initial load when ≥1 voucher has isAutoApplied = true.
-     * The host can use this to sync its own state (e.g. update order total).
-     * Not fired when the host calls [setAppliedVouchers] manually.
-     */
-    var onAutoApplied: ((autoApplied: List<MyVoucherListItem>) -> Unit)? = null
 
     // ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -88,20 +98,17 @@ class PRMEndowView @JvmOverloads constructor(
         super.onAttachedToWindow()
         applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
 
-        val lifecycleOwner = findViewTreeLifecycleOwner()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         viewScope = scope
 
-        lifecycleOwner?.lifecycle?.addObserver(object : DefaultLifecycleObserver {
+        findViewTreeLifecycleOwner()?.lifecycle?.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
                 scope.cancel()
                 viewScope = null
             }
         })
 
-        if (!hasLoadedInitial) {
-            loadInitialVouchers()
-        }
+        if (!hasLoadedInitial) loadInitialVouchers()
     }
 
     override fun onDetachedFromWindow() {
@@ -113,18 +120,23 @@ class PRMEndowView @JvmOverloads constructor(
     // ─── Public API ───────────────────────────────────────────────────────────
 
     /**
-     * Push the user's manual selection back into the view.
-     * Clears any previous auto-apply state.
+     * Nhận kết quả validateStackableDiscounts từ host (sau khi user apply ở
+     * ChoosePromotionFragment hoặc sau auto-apply lúc load initial).
+     *
+     * [rcvEndow] luôn render từ list này.
+     *
+     * - [DiscountDetail.valid] = true  → hiển thị bình thường
+     * - [DiscountDetail.valid] = false → hiển thị mờ/disabled
      */
-    fun setAppliedVouchers(selected: List<MyVoucherListItem>) {
-        appliedVouchers = selected
-        if (selected.isEmpty()) {
+    fun setDiscountDetails(details: List<DiscountDetail>) {
+        discountDetails = details
+        if (details.isEmpty()) {
             currentState = EndowViewState.NOT_APPLIED
             val total = myVouchers.size + otherVouchers.size
             showNotAppliedState(total)
         } else {
             currentState = EndowViewState.APPLIED
-            showAppliedState(selected)
+            showAppliedState(details)
         }
     }
 
@@ -141,79 +153,94 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Private: load vouchers ───────────────────────────────────────────────
 
+    /**
+     * Load lần đầu khi view attach.
+     *
+     * Sau khi load xong, nếu có voucher [isAutoApplied]=true thì tự gọi
+     * validateStackableDiscounts nội bộ — KHÔNG cần host tham gia.
+     * Kết quả validate → [setDiscountDetails] để [rcvEndow] render đúng.
+     */
     private fun loadInitialVouchers() {
         val scope = viewScope ?: return
         scope.launch {
-            // ── Fake data ─────────────────────────────────────────────────────
-            val myList = FakeVoucherData.getMyVouchers(page = 0)
-            val otherList = FakeVoucherData.getOtherVouchers(page = 0)
-            val total = FakeVoucherData.getTotalMyVoucherCount() +
-                    FakeVoucherData.getTotalOtherVoucherCount()
-
-            myVouchers = myList
-            otherVouchers = otherList
-            hasLoadedInitial = true
-
-            // ── Auto-apply logic ──────────────────────────────────────────────
-            // Only auto-apply if the host has not already pushed a manual selection
-            if (appliedVouchers.isEmpty()) {
-                val autoApplied = (myList + otherList).firstOrNull { it.isAutoApplied }
-                    ?.let { listOf(it) }
-                    ?: emptyList()
-                if (autoApplied.isNotEmpty()) {
-                    appliedVouchers = autoApplied
-                    currentState = EndowViewState.APPLIED
-                    showAppliedState(autoApplied)
-                    onAutoApplied?.invoke(autoApplied)
-                } else {
-                    currentState = if (total > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
-                    showNotAppliedState(total)
-                }
+            val customerId = requestContextProvider.getCustomerId()
+            if (customerId.isNullOrBlank()) {
+                onError?.invoke("missing_customer_id")
+                return@launch
             }
-            // If appliedVouchers was already set before load finished, keep current APPLIED state
 
-            // ── API thật (uncomment khi sẵn sàng) ────────────────────────────
-            // val customerId = requestContextProvider.getCustomerId()
-            // if (customerId.isNullOrBlank()) {
-            //     onError?.invoke("missing_customer_id")
-            //     return@launch
-            // }
-            // runCatching {
-            //     repository.searchCustomerVouchers(
-            //         customerId = customerId,
-            //         keyword = null,
-            //         serviceCode = "vay",
-            //         sectionCode = null,
-            //         tab = null,
-            //         myVouchersPage = 0,
-            //         myVouchersSize = 10,
-            //         otherVouchersPage = 0,
-            //         otherVouchersSize = 10,
-            //     )
-            // }.onSuccess { response ->
-            //     myVouchers = response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-            //     otherVouchers = response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-            //     val total = (response?.myVouchers?.totalElements ?: myVouchers.size) +
-            //                 (response?.otherVouchers?.totalElements ?: otherVouchers.size)
-            //     hasLoadedInitial = true
-            //     if (appliedVouchers.isEmpty()) {
-            //         val autoApplied = (myVouchers + otherVouchers).firstOrNull { it.isAutoApplied }
-            //             ?.let { listOf(it) }
-            //             ?: emptyList()
-            //         if (autoApplied.isNotEmpty()) {
-            //             appliedVouchers = autoApplied
-            //             currentState = EndowViewState.APPLIED
-            //             showAppliedState(autoApplied)
-            //             onAutoApplied?.invoke(autoApplied)
-            //         } else {
-            //             currentState = if (total > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
-            //             showNotAppliedState(total)
-            //         }
-            //     }
-            // }.onFailure { throwable ->
-            //     hasLoadedInitial = true
-            //     onError?.invoke(throwable.toErrorCode())
-            // }
+            runCatching {
+                repository.searchCustomerVouchers(
+                    customerId = customerId,
+                    keyword = null,
+                    serviceCode = "vay",
+                    sectionCode = null,
+                    tab = null,
+                    myVouchersPage = 0,
+                    myVouchersSize = 10,
+                    otherVouchersPage = 0,
+                    otherVouchersSize = 10,
+                )
+            }.onSuccess { response ->
+                myVouchers = response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
+                otherVouchers = response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
+                val total = (response?.myVouchers?.totalElements ?: myVouchers.size).toInt() +
+                        (response?.otherVouchers?.totalElements ?: otherVouchers.size).toInt()
+                hasLoadedInitial = true
+
+                if (discountDetails.isEmpty()) {
+                    val autoApplied = (myVouchers + otherVouchers).firstOrNull { it.isAutoApplied }
+                    if (autoApplied != null) {
+                        validateAndAutoApply(customerId, listOf(autoApplied))
+                    } else {
+                        currentState = if (total > 0) EndowViewState.NOT_APPLIED else EndowViewState.EMPTY
+                        showNotAppliedState(total)
+                    }
+                }
+            }.onFailure { throwable ->
+                hasLoadedInitial = true
+                onError?.invoke(throwable.toErrorCode())
+            }
+        }
+    }
+
+    /**
+     * Gọi validateStackableDiscounts nội bộ cho auto-apply lúc load initial.
+     * Kết quả được push thẳng vào [setDiscountDetails].
+     */
+    private fun validateAndAutoApply(
+        customerId: String,
+        vouchers: List<MyVoucherListItem>,
+    ) {
+        val scope = viewScope ?: return
+        scope.launch {
+            val request = StackableDiscountsRequest(
+                idempotencyKey = UUID.randomUUID().toString(),
+                customerInfo = StackableCustomerInfo(customerId = customerId),
+                orderInfo = StackableOrderInfo(
+                    orderId = requestContextProvider.getOrderId().orEmpty(),
+                    orderValue = requestContextProvider.getOrderValue().orEmpty(),
+                ),
+                discountRequests = vouchers.mapIndexed { index, voucher ->
+                    DiscountRequest(
+                        objectType = "CAMPAIGN",
+                        objectId = voucher.voucherId,
+                        priority = index + 1,
+                    )
+                },
+            )
+
+            runCatching { repository.validateStackableDiscounts(request) }
+                .onSuccess { response ->
+                    // ✅ Dùng thẳng discountDetails từ response, không map lại
+                    setDiscountDetails(response?.discountDetails.orEmpty())
+                }
+                .onFailure { throwable ->
+                    val total = myVouchers.size + otherVouchers.size
+                    currentState = EndowViewState.NOT_APPLIED
+                    showNotAppliedState(total)
+                    onError?.invoke(throwable.toErrorCode())
+                }
         }
     }
 
@@ -231,7 +258,7 @@ class PRMEndowView @JvmOverloads constructor(
             when (currentState) {
                 EndowViewState.NOT_APPLIED,
                 EndowViewState.APPLIED -> onOpenVoucherSelection?.invoke()
-                EndowViewState.EMPTY -> Unit
+                EndowViewState.EMPTY   -> Unit
             }
         }
     }
@@ -239,8 +266,8 @@ class PRMEndowView @JvmOverloads constructor(
     private fun showNotAppliedState(count: Int) {
         binding.apply {
             txtNumberEndow.text = when (count) {
-                0 -> context.getString(R.string.prm_no_endow)
-                1 -> context.getString(R.string.prm_one_endow)
+                0    -> context.getString(R.string.prm_no_endow)
+                1    -> context.getString(R.string.prm_one_endow)
                 else -> context.getString(R.string.prm_multiple_endow, count)
             }
             txtNumberEndow.visibility = VISIBLE
@@ -251,9 +278,9 @@ class PRMEndowView @JvmOverloads constructor(
         applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
     }
 
-    private fun showAppliedState(appliedVouchers: List<MyVoucherListItem>) {
+    private fun showAppliedState(details: List<DiscountDetail>) {
         binding.apply {
-            applyPromotionAdapter.submitList(appliedVouchers)
+            applyPromotionAdapter.submitList(details)
             txtNumberEndow.visibility = GONE
             rcvEndow.visibility = VISIBLE
             txtStatusEndow.visibility = VISIBLE

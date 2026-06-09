@@ -809,7 +809,7 @@ class ThemePreviewFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
-            setAppliedVouchers(FakeVoucherData.getMyVouchers(0))
+//            setAppliedVouchers(FakeVoucherData.getMyVouchers(0))
         }
         showBottomSheet(R.string.prm_theme_sheet_component_prm_endow, endow)
         endow.post { endow.applyToken(token) }

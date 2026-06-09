@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 
@@ -9,6 +10,7 @@ data class ChoosePromotionUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isLoadingMoreOther: Boolean = false,
+    val isValidating: Boolean = false,
     val isEmpty: Boolean = false,
     val tabs: List<TabItem> = emptyList(),
     val selectedTabCode: String? = null,
@@ -26,18 +28,36 @@ data class ChoosePromotionUiState(
 )
 
 sealed interface ChoosePromotionAction {
-    data class InitWithData(
+    data object LoadInitial : ChoosePromotionAction
+
+    /**
+     * Truyền data đã load sẵn từ PRMEndowView để tránh double API call.
+     * Nếu cả hai list đều rỗng → ViewModel sẽ tự gọi API.
+     */
+    data class PreloadVouchers(
         val myVouchers: List<MyVoucherListItem>,
         val otherVouchers: List<MyVoucherListItem>,
     ) : ChoosePromotionAction
-    data object LoadInitialIfNeeded : ChoosePromotionAction
+
     data object Refresh : ChoosePromotionAction
     data class SearchKeyword(val keyword: String) : ChoosePromotionAction
     data object LoadMoreMyVouchers : ChoosePromotionAction
     data object LoadMoreOtherVouchers : ChoosePromotionAction
+
+    data class ValidateAndApply(
+        val selected: List<MyVoucherListItem>,
+    ) : ChoosePromotionAction
 }
 
 sealed interface ChoosePromotionEffect {
     data class OpenVoucherDetail(val voucherId: String) : ChoosePromotionEffect
     data class ShowError(val errorCode: String) : ChoosePromotionEffect
+
+    /**
+     * validateStackableDiscounts thành công.
+     * [details] = list từ discountDetails của response.
+     */
+    data class ApplyValidatedVouchers(
+        val details: List<DiscountDetail>,
+    ) : ChoosePromotionEffect
 }

@@ -35,7 +35,7 @@ class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
                 PromotionSDKOptions(
                     config = PromotionSDKConfig(
                         apiKey = "demo",
-                        baseUrl = "https://example.com"
+                        baseUrl = "https://staging1.viettelmoney.vn"
                     ),
                     theme = savedTheme?.let { PromotionSDKTheme(config = it) }
                         ?: PromotionSDKTheme(),

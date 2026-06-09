@@ -15,7 +15,7 @@ import retrofit2.http.Query
 
 interface PromotionApiService {
 
-    @GET("promotion/promotion-bff-mobile/v1/customer-vouchers")
+    @GET("promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers")
     suspend fun searchCustomerVouchers(
         @Query("customerId") customerId: String,
         @Query("keyword") keyword: String?,
@@ -28,19 +28,19 @@ interface PromotionApiService {
         @Query("otherVouchers.size") otherVouchersSize: Int?,
     ): ApiResponseTemplate<SearchCustomerVouchersData>
 
-    @GET("promotion/promotion-bff-mobile/v1/customer-vouchers/{voucherId}")
+    @GET("promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}")
     suspend fun getCustomerVoucherDetail(
         @Path("voucherId") voucherId: String,
         @Query("customerId") customerId: String,
         @Query("service") service: String?,
     ): ApiResponseTemplate<CustomerVoucherDetail>
 
-    @POST("promotion/promotion-bff-mobile/v1/redemption/session")
+    @POST("promotion/promotion-vtm-bff/v1/redemption/session")
     suspend fun createRedemptionSession(
         @Body request: RedemptionSessionRequest,
     ): ApiResponseTemplate<RedemptionSessionResponse>
 
-    @POST("promotion/promotion-bff-mobile/v1/validate/stackable-discounts")
+    @POST("promotion/promotion-vtm-bff/api/v1/vtm/redemptions/validate/stackable-discounts")
     suspend fun validateStackableDiscounts(
         @Body request: StackableDiscountsRequest,
     ): ApiResponseTemplate<StackableDiscountsResponse>

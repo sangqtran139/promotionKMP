@@ -15,6 +15,7 @@ import com.ttcn.promotionsdk.databinding.PrmItemSeeMoreBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 
 sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
@@ -131,7 +132,7 @@ class ChoosePromotionMainAdapter(
                 tvContent.text = voucher.title
                 tvEndDate.text = ctx.getString(
                     R.string.prm_expiry_short_format,
-                    voucher.expirationDate.ifEmpty { ctx.getString(R.string.prm_demo_expiry_date) }
+                    voucher.expirationDate.toVoucherDisplayDate().ifEmpty { ctx.getString(R.string.prm_demo_expiry_date) }
                 )
 
                 cbUseVoucher.isChecked = voucher.isSelected

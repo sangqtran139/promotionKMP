@@ -113,10 +113,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/_minus7sdp"
                     android:src="@drawable/prm_bg_circle_gold"
+                    android:visibility="gone"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="@id/imgLine"
-                    app:layout_constraintStart_toStartOf="@id/imgLine"
-                    android:visibility="gone"/>
+                    app:layout_constraintStart_toStartOf="@id/imgLine" />
 
                 <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
                     android:id="@+id/imgLine"
@@ -182,33 +182,36 @@
                         style="@style/fontPRMRegular12"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textColor="@color/tokenDark60"
                         app:layout_constraintEnd_toStartOf="@id/lnDetail"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/tvContent"
+                        app:layout_goneMarginEnd="@dimen/_80sdp"
                         tools:text="HSD 18/10/2023" />
 
                     <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
                         android:id="@+id/txtExpired"
+                        style="@style/fontSfDisplayBold14"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:background="@drawable/prm_bg_item_endow_expired"
+                        android:paddingHorizontal="@dimen/_5sdp"
+                        android:paddingVertical="@dimen/_1sdp"
+                        android:text="@string/prm_is_used"
                         app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
                         app:layout_constraintEnd_toEndOf="parent"
-                        android:text="@string/prm_is_used"
-                        style="@style/fontSfDisplayBold14"
-                        android:background="@drawable/prm_bg_item_endow_expired"
-                        android:paddingVertical="@dimen/_1sdp"
-                        android:paddingHorizontal="@dimen/_5sdp"
-                        app:layout_constraintTop_toTopOf="@id/tvEndDate"/>
+                        app:layout_constraintTop_toTopOf="@id/tvEndDate" />
 
                     <LinearLayout
                         android:id="@+id/lnDetail"
                         android:layout_width="wrap_content"
                         android:layout_height="0dp"
+                        android:visibility="gone"
                         app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tvEndDate"
-                        android:visibility="gone">
+                        app:layout_constraintTop_toTopOf="@id/tvEndDate">
 
                         <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
                             android:id="@+id/tvDetail"

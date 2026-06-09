@@ -5,42 +5,51 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
 import com.ttcn.promotionsdk.databinding.ItemListPromotionApplyBinding
+import com.ttcn.promotionsdk.databinding.ItemListPromotionCountBinding
 import com.ttcn.promotionsdk.ui.theme.DiscountBadgeApplier
 import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.databinding.ItemListPromotionCountBinding
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 
+/**
+ * Adapter cho [rcvEndow] trong PRMEndowView.
+ *
+ * Luôn render từ [DiscountDetail] — dữ liệu trực tiếp từ discountDetails
+ * trong response của validateStackableDiscounts.
+ *
+ * - [DiscountDetail.valid] = true  → hiển thị bình thường
+ * - [DiscountDetail.valid] = false → hiển thị mờ/disabled
+ */
 class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val vouchers = mutableListOf<MyVoucherListItem>()
+    private val items = mutableListOf<DiscountDetail>()
     private val maxVisibleVouchers = 2
     private var badgeTokenOverride: DiscountBadgeToken? = null
 
     fun applyToken(token: DiscountBadgeToken?) {
         badgeTokenOverride = token
-        if (vouchers.isEmpty()) return
-        notifyItemRangeChanged(0, minOf(vouchers.size, maxVisibleVouchers))
+        if (items.isEmpty()) return
+        notifyItemRangeChanged(0, minOf(items.size, maxVisibleVouchers))
     }
 
     companion object {
         private const val VIEW_TYPE_VOUCHER = 0
-        private const val VIEW_TYPE_COUNT = 1
+        private const val VIEW_TYPE_COUNT   = 1
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun submitList(list: List<MyVoucherListItem>) {
-        vouchers.clear()
-        vouchers.addAll(list)
+    fun submitList(list: List<DiscountDetail>) {
+        items.clear()
+        items.addAll(list)
         notifyDataSetChanged()
     }
 
-    override fun getItemViewType(position: Int): Int {
-        return if (vouchers.size > maxVisibleVouchers && position == maxVisibleVouchers) VIEW_TYPE_COUNT
-        else VIEW_TYPE_VOUCHER
-    }
+    override fun getItemViewType(position: Int): Int =
+        if (items.size > maxVisibleVouchers && position == maxVisibleVouchers)
+            VIEW_TYPE_COUNT
+        else
+            VIEW_TYPE_VOUCHER
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -59,36 +68,44 @@ class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         when (holder) {
             is ApplyPromotionViewHolder -> {
                 val token = badgeTokenOverride ?: PromotionThemeRegistry.discountBadgeToken()
-                holder.bind(vouchers[position], token)
+                holder.bind(items[position], token)
             }
             is CountChoosePromotionViewHolder -> {
-                holder.bind(vouchers.size - maxVisibleVouchers)
+                holder.bind(items.size - maxVisibleVouchers)
             }
         }
     }
 
     override fun getItemCount(): Int = when {
-        vouchers.isEmpty() -> 0
-        vouchers.size <= maxVisibleVouchers -> vouchers.size
-        else -> maxVisibleVouchers + 1
+        items.isEmpty()                  -> 0
+        items.size <= maxVisibleVouchers -> items.size
+        else                             -> maxVisibleVouchers + 1
     }
 
+    // ─── ViewHolders ──────────────────────────────────────────────────────────
+
     private class ApplyPromotionViewHolder(
-        private val binding: ItemListPromotionApplyBinding
+        private val binding: ItemListPromotionApplyBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(voucher: MyVoucherListItem, token: DiscountBadgeToken?) {
-            binding.txtName.text = voucher.title
+
+        fun bind(item: DiscountDetail, token: DiscountBadgeToken?) {
+            binding.txtName.text = item.calculatedDiscount  // objectId làm label fallback
+
+            // valid=false → hiển thị mờ
+            binding.root.alpha = if (item.valid) 1f else 0.4f
+
             DiscountBadgeApplier.apply(
                 binding,
                 token,
-                available = voucher.status != VoucherStatus.EXPIRED
+                available = item.valid,
             )
         }
     }
 
     private class CountChoosePromotionViewHolder(
-        private val binding: ItemListPromotionCountBinding
+        private val binding: ItemListPromotionCountBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
+
         fun bind(count: Int) {
             binding.txtCount.text = binding.root.context.getString(
                 R.string.prm_vouchers_more_suffix, count

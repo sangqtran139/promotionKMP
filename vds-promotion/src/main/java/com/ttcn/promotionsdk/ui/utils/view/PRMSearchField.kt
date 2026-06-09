@@ -194,7 +194,7 @@ class PRMSearchField @JvmOverloads constructor(
 
     fun setOnDoneKeyboardListener(listener: OnClickListener?) {
         viewBinding.searchInput.setOnEditorActionListener { _, actionId, event ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_NEXT) {
                 hideSoftInput()
                 listener?.onClick(this)
                 true

@@ -8,10 +8,12 @@ data class PromotionSDKConfig(
 )
 
 interface PromotionRequestContextProvider {
-    fun getCustomerId(): String? = null
+    fun getCustomerId(): String? = "123"
     fun getService(): String? = null
     fun getAccessToken(): String? = null
     fun getLanguage(): String? = null
+    fun getOrderId(): String? = "123"
+    fun getOrderValue(): String? = "123"
 }
 
 class EmptyPromotionRequestContextProvider : PromotionRequestContextProvider

@@ -17,10 +17,12 @@ import com.google.gson.Gson
 import com.ttcn.promotionsdk.ui.utils.ViewGlobalConst
 import timber.log.Timber
 import java.text.Normalizer
+import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 import java.util.regex.Pattern
 
 fun Float.dpToPixel(): Int {

@@ -24,10 +24,16 @@ class PaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
     private fun openVoucherSelectionScreen() {
         val endowView = binding.endowView
         val fragment = ChoosePromotionFragment().apply {
+            // Truyền data đã load sẵn → tránh double API call
             initialMyVouchers = endowView.myVouchers
             initialOtherVouchers = endowView.otherVouchers
-            selectedVouchers = endowView.appliedVouchers
-            onApplyVoucher = { selected -> endowView.setAppliedVouchers(selected) }
+            // Pre-select từ discountDetails hiện tại (objectId của valid=true)
+            preSelectedVoucherIds = endowView.discountDetails
+                .filter { it.valid }
+                .map { it.objectId }
+                .toSet()
+            // Nhận DiscountDetail mới từ validateStackableDiscounts → push vào endowView
+            onApplyVoucher = { details -> endowView.setDiscountDetails(details) }
         }
         addFragment(fragment)
     }
