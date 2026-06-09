@@ -12,7 +12,7 @@ import com.ttcn.promotionsdk.databinding.FragmentSearchMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.PromotionListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
@@ -108,7 +108,10 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         binding.tvNoResultSubtext.text = getString(R.string.discover_voucher)
 
         searchListAdapter.submitList(
-            state.vouchers.map { PromotionListItem.Endow(it) },
+            buildPromotionListItems(
+                vouchers = state.vouchers,
+                isLoadingMore = state.isLoadingMore,
+            ),
         )
     }
 

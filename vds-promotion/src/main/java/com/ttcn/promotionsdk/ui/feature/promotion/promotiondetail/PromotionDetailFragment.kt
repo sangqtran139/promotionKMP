@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
+import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.di.inject
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
@@ -42,46 +43,26 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             showToast(getString(R.string.no_result))
             return
         }
+        showDetailLoading()
         viewModel.handleAction(PromotionDetailAction.LoadDetail(voucherId))
     }
 
     override fun observeData() {
         collectFlow(viewModel.uiState) { state ->
             val detail = state.detail
-            if (detail != null) {
-                binding.imgBanner.loadPromotionVoucherBanner(
-                    detail.banner.orEmpty(),
-                    preferCache = false,
-                )
-                binding.circleLogo.background = null
-                binding.circleLogo.loadPromotionVoucherLogo(
-                    detail.logo.orEmpty(),
-                    preferCache = true,
-                )
-                binding.txtVoucherName.text = detail.merchantName.orEmpty()
-                binding.tvContent.text = detail.title.orEmpty()
-                binding.tvExpired.text = getString(
-                    R.string.prm_expiry_short_format,
-                    detail.expirationDate.orEmpty().toVoucherDisplayDate(),
-                )
-                binding.tvUse.isVisible = state.actionVisible
-                binding.tvUse.isEnabled = state.actionEnabled
-                binding.tvUse.text = state.actionLabel.ifBlank {
-                    if (state.status == VoucherStatus.ACTIVE) getString(R.string.use_now)
-                    else detail.displayStatusLabel.orEmpty()
-                }
-                bindDetailTabsIfNeeded(
-                    voucherId = detail.voucherId,
-                    descriptionHtml = resolveHtmlContent(
-                        detail.description,
-                        R.string.prm_empty_detail_info,
-                    ),
-                    guidelineHtml = resolveHtmlContent(
-                        detail.guideline,
-                        R.string.prm_empty_usage_guide,
-                    ),
-                )
+
+            if (state.isLoading && detail == null) {
+                showDetailLoading()
+                return@collectFlow
             }
+
+            if (detail != null) {
+                bindDetailContent(state, detail)
+                hideDetailLoading()
+                return@collectFlow
+            }
+
+            hideDetailLoading(showContent = false)
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
@@ -95,6 +76,55 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         tabMediator = null
         pagerBoundVoucherId = null
         super.onDestroyView()
+    }
+
+    private fun showDetailLoading() {
+        binding.progressLoading.isVisible = true
+        binding.contentContainer.isVisible = false
+    }
+
+    private fun hideDetailLoading(showContent: Boolean = true) {
+        binding.progressLoading.isVisible = false
+        binding.contentContainer.isVisible = showContent
+    }
+
+    private fun bindDetailContent(
+        state: PromotionDetailUiState,
+        detail: CustomerVoucherDetail,
+    ) {
+        binding.imgBanner.loadPromotionVoucherBanner(
+            detail.banner.orEmpty(),
+            preferCache = false,
+        )
+        binding.circleLogo.background = null
+        binding.circleLogo.loadPromotionVoucherLogo(
+            detail.logo.orEmpty(),
+            preferCache = true,
+        )
+        binding.txtVoucherName.text = detail.merchantName.orEmpty()
+        binding.tvContent.text = detail.title.orEmpty()
+        binding.tvExpired.text = getString(
+            R.string.prm_expiry_short_format,
+            detail.expirationDate.orEmpty().toVoucherDisplayDate(),
+        )
+        binding.tvUse.isVisible = state.actionVisible
+        binding.tvUse.isEnabled = state.actionEnabled
+        binding.tvUse.text = state.actionLabel.ifBlank {
+            if (state.status == VoucherStatus.ACTIVE) getString(R.string.use_now)
+            else detail.displayStatusLabel.orEmpty()
+        }
+
+        bindDetailTabsIfNeeded(
+            voucherId = detail.voucherId,
+            descriptionHtml = resolveHtmlContent(
+                detail.description,
+                R.string.prm_empty_detail_info,
+            ),
+            guidelineHtml = resolveHtmlContent(
+                detail.guideline,
+                R.string.prm_empty_usage_guide,
+            ),
+        )
     }
 
     companion object {

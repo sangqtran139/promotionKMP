@@ -44,4 +44,5 @@
     <string name="prm_tab_usage_guide">Hướng dẫn sử dụng</string>
     <string name="prm_empty_detail_info">Chưa có thông tin chi tiết</string>
     <string name="prm_empty_usage_guide">Chưa có hướng dẫn sử dụng</string>
+    <string name="loading">Loading</string>
 </resources>

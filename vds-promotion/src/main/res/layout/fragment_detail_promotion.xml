@@ -168,6 +168,27 @@
             app:prmBtSize="large"
             app:prmBtText="@string/use_now" />
 
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/contentContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:constraint_referenced_ids="ctlTop,cardViewTop,ctlContent,tvUse"
+            tools:visibility="visible" />
+
+        <ProgressBar
+            android:id="@+id/progressLoading"
+            android:layout_width="@dimen/_24sdp"
+            android:layout_height="@dimen/_24sdp"
+            android:indeterminate="true"
+            android:indeterminateTint="@color/color_red_EE0033"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:visibility="visible" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </layout>

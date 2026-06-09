@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionTabAdapter
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.PromotionListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
 
@@ -84,7 +84,12 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
             binding.homeList.isVisible = !state.isLoading && state.vouchers.isNotEmpty()
 
             tabAdapter.submitTabs(state.tabs, state.selectedTabCode)
-            homeListAdapter.submitList(state.vouchers.map { PromotionListItem.Endow(it) })
+            homeListAdapter.submitList(
+                buildPromotionListItems(
+                    vouchers = state.vouchers,
+                    isLoadingMore = state.isLoadingMore,
+                ),
+            )
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {

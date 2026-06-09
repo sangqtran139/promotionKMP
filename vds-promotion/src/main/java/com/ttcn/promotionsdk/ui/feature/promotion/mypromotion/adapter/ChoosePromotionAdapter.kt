@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
+import com.ttcn.promotionsdk.databinding.ItemLoadingNotifyPrmBinding
 import com.ttcn.promotionsdk.databinding.ItemTitleMyEndowBinding
 import com.ttcn.promotionsdk.databinding.PrmItemPromotionBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
@@ -21,6 +22,8 @@ sealed class PromotionListItem {
     data class Endow(
         val data: MyVoucherListItem
     ) : PromotionListItem()
+
+    data object Loading : PromotionListItem()
 }
 
 class ChoosePromotionAdapter(
@@ -31,12 +34,14 @@ class ChoosePromotionAdapter(
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_VOUCHER = 1
+        private const val VIEW_TYPE_LOADING = 2
     }
 
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
             is PromotionListItem.Header -> VIEW_TYPE_HEADER
             is PromotionListItem.Endow -> VIEW_TYPE_VOUCHER
+            is PromotionListItem.Loading -> VIEW_TYPE_LOADING
         }
     }
 
@@ -53,10 +58,12 @@ class ChoosePromotionAdapter(
                 VoucherViewHolder(binding, onVoucherClick, onUseClick)
             }
 
-            else -> {
-                val binding = PrmItemPromotionBinding.inflate(inflater, parent, false)
-                VoucherViewHolder(binding, onVoucherClick, onUseClick)
+            VIEW_TYPE_LOADING -> {
+                val binding = ItemLoadingNotifyPrmBinding.inflate(inflater, parent, false)
+                LoadingViewHolder(binding)
             }
+
+            else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }
     }
 
@@ -64,8 +71,13 @@ class ChoosePromotionAdapter(
         when (val item = getItem(position)) {
             is PromotionListItem.Header -> (holder as HeaderViewHolder).bind(item)
             is PromotionListItem.Endow -> (holder as VoucherViewHolder).bind(item)
+            is PromotionListItem.Loading -> Unit
         }
     }
+
+    class LoadingViewHolder(
+        binding: ItemLoadingNotifyPrmBinding,
+    ) : RecyclerView.ViewHolder(binding.root)
 
     class HeaderViewHolder(
         private val binding: ItemTitleMyEndowBinding
@@ -123,6 +135,22 @@ class ChoosePromotionAdapter(
     }
 }
 
+fun buildPromotionListItems(
+    vouchers: List<MyVoucherListItem>,
+    isLoadingMore: Boolean,
+    headerTitle: String? = null,
+): List<PromotionListItem> {
+    return buildList {
+        if (!headerTitle.isNullOrBlank()) {
+            add(PromotionListItem.Header(headerTitle))
+        }
+        addAll(vouchers.map { PromotionListItem.Endow(it) })
+        if (isLoadingMore) {
+            add(PromotionListItem.Loading)
+        }
+    }
+}
+
 class VoucherDiffCallback : DiffUtil.ItemCallback<PromotionListItem>() {
     override fun areItemsTheSame(oldItem: PromotionListItem, newItem: PromotionListItem): Boolean {
         return when {
@@ -134,24 +162,18 @@ class VoucherDiffCallback : DiffUtil.ItemCallback<PromotionListItem>() {
                 oldItem.data.voucherId == newItem.data.voucherId
             }
 
+            oldItem is PromotionListItem.Loading && newItem is PromotionListItem.Loading -> {
+                true
+            }
+
             else -> false
         }
     }
 
     override fun areContentsTheSame(
         oldItem: PromotionListItem,
-        newItem: PromotionListItem
+        newItem: PromotionListItem,
     ): Boolean {
-        return when (oldItem) {
-            is PromotionListItem.Header if newItem is PromotionListItem.Header -> {
-                oldItem == newItem
-            }
-
-            is PromotionListItem.Endow if newItem is PromotionListItem.Endow -> {
-                oldItem.data == newItem.data
-            }
-
-            else -> false
-        }
+        return oldItem == newItem
     }
 }
