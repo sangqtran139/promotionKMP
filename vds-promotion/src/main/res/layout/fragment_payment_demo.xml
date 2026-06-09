@@ -16,5 +16,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <com.ttcn.promotionsdk.ui.utils.view.PRMButton
+            android:id="@+id/btnConfirmPayment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/_12sdp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_goneMarginTop="@dimen/_6sdp"
+            app:prmBtSize="large"
+            app:prmBtText="Xác nhận" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

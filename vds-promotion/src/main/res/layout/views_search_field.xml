@@ -17,6 +17,7 @@
             android:layout_weight="1"
             android:background="@null"
             android:gravity="center_vertical"
+            android:imeOptions="actionDone"
             android:includeFontPadding="false"
             android:lines="1"
             android:maxLines="1"
@@ -50,10 +51,10 @@
             android:padding="@dimen/_3sdp"
             android:scaleType="fitCenter"
             android:src="@drawable/prm_foundations_icon_clear"
-            app:prmIvEnableClickEffect="true"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="@+id/searchInput"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:prmIvEnableClickEffect="true" />
 
         <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
             android:id="@+id/buttonSearch"

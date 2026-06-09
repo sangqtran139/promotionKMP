@@ -13,7 +13,6 @@ import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
-import com.ttcn.promotionsdk.ui.feature.promotion.PaymentIntegrateFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 
 class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
@@ -34,7 +33,7 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         binding.btnOpenPaymentIntegrate.setOnClickListener {
             requireActivity().supportFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)
-                .replace(R.id.layoutRoot, PaymentIntegrateFragment())
+                .replace(R.id.layoutRoot, DemoPaymentIntegrateFragment())
                 .addToBackStack(null)
                 .commit()
         }

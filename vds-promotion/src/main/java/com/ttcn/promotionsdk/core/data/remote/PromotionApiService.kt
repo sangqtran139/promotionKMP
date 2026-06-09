@@ -35,7 +35,7 @@ interface PromotionApiService {
         @Query("service") service: String?,
     ): ApiResponseTemplate<CustomerVoucherDetail>
 
-    @POST("promotion/promotion-vtm-bff/v1/redemption/session")
+    @POST("promotion/promotion-vtm-bff/api/v1/vtm/redemptions/sessions")
     suspend fun createRedemptionSession(
         @Body request: RedemptionSessionRequest,
     ): ApiResponseTemplate<RedemptionSessionResponse>

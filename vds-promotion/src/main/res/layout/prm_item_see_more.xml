@@ -12,6 +12,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             style="@style/fontPRMDisPlayRegular14"
+            android:textColor="@color/color_7A7A7A"
             android:text="@string/prm_see_more"/>
 
         <ImageView
