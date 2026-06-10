@@ -8,7 +8,9 @@ object ViewModelModule {
     internal val module = module {
         single<PromotionViewModelFactory> {
             PromotionViewModelFactory(
-                promotionRepository = get(),
+                searchCustomerVouchersUseCase = get(),
+                validateStackableDiscountsUseCase = get(),
+                getCustomerVoucherDetailUseCase = get(),
                 requestContextProvider = get(),
             )
         }

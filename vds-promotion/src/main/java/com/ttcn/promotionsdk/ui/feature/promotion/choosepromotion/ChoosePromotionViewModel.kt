@@ -6,15 +6,19 @@ import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerIn
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.*
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplyValidatedVouchers
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 import java.util.UUID
 
 class ChoosePromotionViewModel(
-    private val repository: PromotionRepository,
+    private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
+    private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) : PRMBaseViewModel<ChoosePromotionUiState, ChoosePromotionAction, ChoosePromotionEffect>(
     ChoosePromotionUiState(),
@@ -88,16 +92,18 @@ class ChoosePromotionViewModel(
             }
 
             runCatching {
-                repository.searchCustomerVouchers(
-                    customerId = customerId,
-                    keyword = keyword.takeIf { it.isNotBlank() },
-                    serviceCode = serviceCode,
-                    sectionCode = null,
-                    tab = null,
-                    myVouchersPage = 0,
-                    myVouchersSize = currentState.size,
-                    otherVouchersPage = 0,
-                    otherVouchersSize = currentState.otherSize,
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
+                        customerId = customerId,
+                        keyword = keyword.takeIf { it.isNotBlank() },
+                        serviceCode = serviceCode,
+                        sectionCode = null,
+                        tab = null,
+                        myVouchersPage = 0,
+                        myVouchersSize = currentState.size,
+                        otherVouchersPage = 0,
+                        otherVouchersSize = currentState.otherSize,
+                    )
                 )
             }.onSuccess { response ->
                 val myVouchers =
@@ -169,16 +175,18 @@ class ChoosePromotionViewModel(
                 return@launch
             }
             runCatching {
-                repository.searchCustomerVouchers(
-                    customerId = customerId,
-                    keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                    serviceCode = "vay",
-                    tab = null,
-                    sectionCode = "my_vouchers",
-                    myVouchersPage = currentState.page,
-                    myVouchersSize = currentState.size,
-                    otherVouchersPage = null,
-                    otherVouchersSize = null,
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
+                        customerId = customerId,
+                        keyword = currentState.keyword.takeIf { it.isNotBlank() },
+                        serviceCode = "vay",
+                        tab = null,
+                        sectionCode = "my_vouchers",
+                        myVouchersPage = currentState.page,
+                        myVouchersSize = currentState.size,
+                        otherVouchersPage = null,
+                        otherVouchersSize = null,
+                    )
                 )
             }.onSuccess { response ->
                 val incoming =
@@ -211,7 +219,8 @@ class ChoosePromotionViewModel(
                 return@launch
             }
             runCatching {
-                repository.searchCustomerVouchers(
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
                     customerId = customerId,
                     keyword = currentState.keyword.takeIf { it.isNotBlank() },
                     serviceCode = "vay",
@@ -221,6 +230,7 @@ class ChoosePromotionViewModel(
                     myVouchersSize = null,
                     otherVouchersPage = currentState.otherPage,
                     otherVouchersSize = currentState.otherSize,
+                )
                 )
             }.onSuccess { response ->
                 val incoming =
@@ -283,7 +293,7 @@ class ChoosePromotionViewModel(
                 },
             )
 
-            runCatching { repository.validateStackableDiscounts(request) }
+            runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
                     // ✅ Dùng thẳng discountDetails từ response, không map lại
                     val details = response?.discountDetails.orEmpty()

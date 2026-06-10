@@ -2,11 +2,12 @@ package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
 class MyPromotionViewModel(
-    private val repository: PromotionRepository,
+    private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) :
     PRMBaseViewModel<MyPromotionUiState, MyPromotionAction, MyPromotionEffect>(
@@ -103,16 +104,18 @@ class MyPromotionViewModel(
             }
 
             runCatching {
-                repository.searchCustomerVouchers(
-                    customerId = customerId,
-                    keyword = keyword.takeIf { it.isNotBlank() },
-                    serviceCode = null,
-                    tab = selectedTabCode,
-                    sectionCode = if (reset) null else "my_vouchers",
-                    myVouchersPage = nextPage,
-                    myVouchersSize = currentState.size,
-                    otherVouchersPage = if (reset) 0 else null,
-                    otherVouchersSize = if (reset) currentState.size else null,
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
+                        customerId = customerId,
+                        keyword = keyword.takeIf { it.isNotBlank() },
+                        serviceCode = null,
+                        tab = selectedTabCode,
+                        sectionCode = if (reset) null else "my_vouchers",
+                        myVouchersPage = nextPage,
+                        myVouchersSize = currentState.size,
+                        otherVouchersPage = if (reset) 0 else null,
+                        otherVouchersSize = if (reset) currentState.size else null,
+                    )
                 )
             }.onSuccess { response ->
                 val incomingTabs = response?.tabs

@@ -10,8 +10,9 @@ import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerIn
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.di.inject
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
+import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.utils.view.PRMEndowView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,9 +27,12 @@ import java.util.UUID
  * Toàn bộ logic createRedemption / revalidate / update UI ẩn bên trong,
  * đối tác chỉ nhận callback [onSuccess] hoặc [onError].
  *
+ * Dùng [PromotionIntegrateManager.create] để khởi tạo — DI được resolve tự động bên trong,
+ * Fragment không cần biết gì về dependency.
+ *
  * ```kotlin
  * // Khởi tạo (trong Fragment.setupUI)
- * val promotionManager = PRMPromotionManager(binding.endowView)
+ * val promotionManager = PromotionIntegrateManager.create(binding.endowView)
  *
  * // Gọi khi bấm thanh toán
  * btnConfirmPayment.setOnClickListener {
@@ -47,12 +51,11 @@ import java.util.UUID
  */
 class PromotionIntegrateManager(
     private val endowView: PRMEndowView,
+    private val createRedemptionSessionUseCase: CreateRedemptionSessionUseCase,
+    private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
+    private val requestContextProvider: PromotionRequestContextProvider,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
-
-    private val repository: PromotionRepository by inject()
-    private val requestContextProvider: PromotionRequestContextProvider by inject()
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // ─── Public API ───────────────────────────────────────────────────────────
 
@@ -108,7 +111,7 @@ class PromotionIntegrateManager(
                 },
             )
 
-            runCatching { repository.createRedemptionSession(request) }
+            runCatching { createRedemptionSessionUseCase(request) }
                 .onSuccess { response ->
                     val hasBudgetError = response?.validationErrors
                         ?.any { it.code == "INSUFFICIENT_BUDGET" }
@@ -166,7 +169,7 @@ class PromotionIntegrateManager(
             },
         )
 
-        runCatching { repository.validateStackableDiscounts(request) }
+        runCatching { validateStackableDiscountsUseCase(request) }
             .onSuccess { response ->
                 // SDK tự update endowView — đối tác không cần làm gì
                 endowView.setDiscountDetails(response?.discountDetails.orEmpty())
@@ -179,4 +182,14 @@ class PromotionIntegrateManager(
 
     private fun Throwable.toErrorCode(): String =
         (this as? PromotionApiException)?.errorCode ?: message ?: "error_general"
+
+    companion object {
+        fun create(endowView: PRMEndowView): PromotionIntegrateManager =
+            PromotionIntegrateManager(
+                endowView = endowView,
+                createRedemptionSessionUseCase = get(),
+                validateStackableDiscountsUseCase = get(),
+                requestContextProvider = get(),
+            )
+    }
 }

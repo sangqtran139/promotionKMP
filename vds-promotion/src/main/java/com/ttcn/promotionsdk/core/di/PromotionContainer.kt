@@ -1,4 +1,3 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/core/di/PromotionContainer.kt
 package com.ttcn.promotionsdk.core.di
 
 import android.content.Context
@@ -7,6 +6,7 @@ import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiService
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
 import com.ttcn.promotionsdk.core.data.remote.RetrofitClient
+import com.ttcn.promotionsdk.core.domain.di.UseCaseModule
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
 object PromotionContainer {
@@ -25,6 +25,7 @@ object PromotionContainer {
             config = config,
             NetworkModule.module,
             RepositoryModule.module,
+            UseCaseModule.module
         )
     }
 

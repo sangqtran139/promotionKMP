@@ -3,11 +3,11 @@ package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
 class PromotionDetailViewModel(
-    private val repository: PromotionRepository,
+    private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) :
     PRMBaseViewModel<PromotionDetailUiState, PromotionDetailAction, PromotionDetailEffect>(
@@ -30,7 +30,7 @@ class PromotionDetailViewModel(
             }
 
             runCatching {
-                repository.getCustomerVoucherDetail(
+                getCustomerVoucherDetailUseCase(
                     voucherId = voucherId,
                     customerId = customerId,
                     service = requestContextProvider.getService(),

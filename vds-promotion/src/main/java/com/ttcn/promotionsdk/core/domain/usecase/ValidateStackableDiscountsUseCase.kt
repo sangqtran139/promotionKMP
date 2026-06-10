@@ -11,8 +11,6 @@ class ValidateStackableDiscountsUseCase(
     suspend operator fun invoke(
         request: StackableDiscountsRequest,
     ): StackableDiscountsResponse? {
-        return repository.validateStackableDiscounts(
-            request.copy(idempotencyKey = UUID.randomUUID().toString())
-        )
+        return repository.validateStackableDiscounts(request)
     }
 }

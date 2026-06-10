@@ -3,7 +3,8 @@ package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 import androidx.lifecycle.viewModelScope
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 import kotlinx.coroutines.Job
@@ -11,7 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SearchMyPromotionViewModel(
-    private val repository: PromotionRepository,
+    private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) : PRMBaseViewModel<SearchMyPromotionUiState, SearchMyPromotionAction, SearchMyPromotionEffect>(
     SearchMyPromotionUiState(),
@@ -157,16 +158,18 @@ class SearchMyPromotionViewModel(
             }
 
             runCatching {
-                repository.searchCustomerVouchers(
-                    customerId = customerId,
-                    keyword = keyword,
-                    serviceCode = null,
-                    tab = TAB_ALL,
-                    sectionCode = null,
-                    myVouchersPage = nextPage,
-                    myVouchersSize = currentState.pageSize,
-                    otherVouchersPage = null,
-                    otherVouchersSize = null,
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
+                        customerId = customerId,
+                        keyword = keyword,
+                        serviceCode = null,
+                        tab = TAB_ALL,
+                        sectionCode = null,
+                        myVouchersPage = nextPage,
+                        myVouchersSize = currentState.pageSize,
+                        otherVouchersPage = null,
+                        otherVouchersSize = null,
+                    )
                 )
             }.onSuccess { response ->
                 val incoming =

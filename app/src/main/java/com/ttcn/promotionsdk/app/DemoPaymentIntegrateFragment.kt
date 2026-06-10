@@ -17,7 +17,7 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     private lateinit var promotionIntegrateManager: PromotionIntegrateManager
 
     override fun setupUI() {
-        promotionIntegrateManager = PromotionIntegrateManager(binding.endowView)
+        promotionIntegrateManager = PromotionIntegrateManager.create(binding.endowView)
 
         // ─── Wire endowView callbacks ─────────────────────────────────────────
         binding.endowView.apply {
@@ -30,7 +30,7 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
         binding.btnConfirmPayment.setOnClickListener {
             promotionIntegrateManager.confirmRedemption(
                 onSuccess = { proceedPayment() },
-                onError   = { errorCode -> showToast(mapErrorMessage(errorCode)) },
+                onError = { errorCode -> showToast(mapErrorMessage(errorCode)) },
             )
         }
     }
@@ -45,7 +45,7 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     private fun openVoucherSelectionScreen() {
         val endowView = binding.endowView
         val fragment = ChoosePromotionFragment().apply {
-            initialMyVouchers    = endowView.myVouchers
+            initialMyVouchers = endowView.myVouchers
             initialOtherVouchers = endowView.otherVouchers
             preSelectedVoucherIds = endowView.discountDetails
                 .filter { it.valid }
@@ -65,6 +65,6 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     private fun mapErrorMessage(error: String): String = when (error) {
         "missing_customer_id" -> getString(R.string.prm_missing_customer_id)
         "INSUFFICIENT_BUDGET" -> getString(R.string.prm_budget_insufficient)
-        else                  -> getString(R.string.prm_error_general)
+        else -> getString(R.string.prm_error_general)
     }
 }
