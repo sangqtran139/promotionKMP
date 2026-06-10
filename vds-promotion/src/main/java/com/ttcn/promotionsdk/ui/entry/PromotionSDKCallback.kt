@@ -1,4 +1,15 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/ui/entry/PromotionSDKCallback.kt
 package com.ttcn.promotionsdk.ui.entry
 
-interface PromotionSDKCallback
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+
+interface PromotionSDKCallback {
+
+    /** Gọi khi user chọn và xác nhận áp dụng ưu đãi thành công. */
+    fun onVoucherApplied(discountDetails: List<DiscountDetail>) {}
+
+    /** Gọi khi SDK gặp lỗi không xử lý được ở tầng UI. */
+    fun onError(errorCode: String) {}
+
+    /** Gọi khi màn hình SDK được đóng (user back hoặc SDK release). */
+    fun onSDKClosed() {}
+}

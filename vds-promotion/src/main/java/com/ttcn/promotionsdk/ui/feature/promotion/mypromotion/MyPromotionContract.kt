@@ -1,8 +1,8 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherListItem
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherTabInfo
+import com.ttcn.promotionsdk.core.domain.model.VoucherItem
+import com.ttcn.promotionsdk.core.domain.model.VoucherTabItem
 
 data class MyPromotionUiState(
     val hasLoadedInitial: Boolean = false,
@@ -41,7 +41,8 @@ data class MyVoucherListItem(
     val expirationDate: String,
     val displayStatusLabel: String,
     val status: VoucherStatus,
-    var isSelected: Boolean = false,
+    val objectType: String = "CAMPAIGN",
+    val isSelected: Boolean = false,
     val isAutoApplied: Boolean = false,
 )
 
@@ -52,7 +53,7 @@ data class TabItem(
     val order: Int,
 )
 
-fun VoucherListItem.toMyVoucherListItem(): MyVoucherListItem {
+fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
     return MyVoucherListItem(
         voucherId = voucherId,
         merchantName = merchantName.orEmpty(),
@@ -62,10 +63,11 @@ fun VoucherListItem.toMyVoucherListItem(): MyVoucherListItem {
         expirationDate = expirationDate.orEmpty(),
         displayStatusLabel = displayStatusLabel.orEmpty(),
         status = VoucherStatus.from(status),
+        objectType = objectType,
     )
 }
 
-fun VoucherTabInfo.toMyVoucherTabUi(): TabItem {
+fun VoucherTabItem.toMyVoucherTabUi(): TabItem {
     return TabItem(
         code = code,
         label = label,

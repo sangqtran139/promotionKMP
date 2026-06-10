@@ -4,6 +4,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
+import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.mock.promotion.PromotionMockApi
 import com.ttcn.promotionsdk.app.theme.ThemePreferenceManager
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
@@ -34,6 +35,14 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
             requireActivity().supportFragmentManager.beginTransaction()
                 .setReorderingAllowed(true)
                 .replace(R.id.layoutRoot, DemoPaymentIntegrateFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+
+        binding.btnHeadlessDemo.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.layoutRoot, DemoHeadlessFragment.newInstance())
                 .addToBackStack(null)
                 .commit()
         }

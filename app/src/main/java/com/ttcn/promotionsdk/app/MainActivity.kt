@@ -7,6 +7,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
 import com.ttcn.promotionsdk.app.theme.ThemePreferenceManager
+import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.ui.base.PRMBaseActivity
@@ -35,7 +36,14 @@ class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
                 PromotionSDKOptions(
                     config = PromotionSDKConfig(
                         apiKey = "demo",
-                        baseUrl = "https://staging1.viettelmoney.vn"
+                        baseUrl = "https://staging1.viettelmoney.vn",
+                        requestContextProvider = object : PromotionRequestContextProvider {
+                            override fun getCustomerId(): String = "123"
+                            override fun getService(): String? = null
+                            override fun getLanguage(): String = "vi-VN"
+                            override fun getOrderId(): String? = "123"
+                            override fun getOrderValue(): String? = "123"
+                        },
                     ),
                     theme = savedTheme?.let { PromotionSDKTheme(config = it) }
                         ?: PromotionSDKTheme(),

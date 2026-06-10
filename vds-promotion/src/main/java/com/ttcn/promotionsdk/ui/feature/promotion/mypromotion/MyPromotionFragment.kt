@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
@@ -115,9 +116,9 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
     private fun mapErrorMessage(error: String): String {
         return when (error) {
-            "keyword_too_short" -> getString(R.string.prm_keyword_too_short)
-            "missing_customer_id" -> getString(R.string.prm_missing_customer_id)
-            "no_result" -> getString(R.string.no_result)
+            ErrorCodes.KEYWORD_TOO_SHORT -> getString(R.string.prm_keyword_too_short)
+            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
+            ErrorCodes.NO_RESULT -> getString(R.string.no_result)
             else -> getString(R.string.prm_error_general)
         }
     }

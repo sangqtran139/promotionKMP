@@ -13,6 +13,7 @@ import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
@@ -117,8 +118,8 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
 
     private fun mapErrorMessage(errorCode: String): String {
         return when (errorCode) {
-            "keyword_too_short" -> getString(R.string.prm_keyword_too_short)
-            "missing_customer_id" -> getString(R.string.prm_missing_customer_id)
+            ErrorCodes.KEYWORD_TOO_SHORT -> getString(R.string.prm_keyword_too_short)
+            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
             else -> getString(R.string.prm_error_general)
         }
     }

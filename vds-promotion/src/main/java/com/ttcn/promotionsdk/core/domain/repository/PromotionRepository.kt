@@ -1,12 +1,11 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/core/domain/repository/PromotionRepository.kt
 package com.ttcn.promotionsdk.core.domain.repository
 
 import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
 import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
-import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
-import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
+import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
 
 interface PromotionRepository {
     suspend fun searchCustomerVouchers(
@@ -19,13 +18,13 @@ interface PromotionRepository {
         myVouchersSize: Int?,
         otherVouchersPage: Int?,
         otherVouchersSize: Int?,
-    ): SearchCustomerVouchersData?
+    ): VoucherSearchResult?
 
     suspend fun getCustomerVoucherDetail(
         voucherId: String,
         customerId: String,
         service: String?,
-    ): CustomerVoucherDetail?
+    ): VoucherDetail?
 
     suspend fun createRedemptionSession(request: RedemptionSessionRequest): RedemptionSessionResponse?
 

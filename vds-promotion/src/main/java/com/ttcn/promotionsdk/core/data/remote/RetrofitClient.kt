@@ -11,31 +11,31 @@ object RetrofitClient {
     @Volatile
     private var retrofit: Retrofit? = null
 
-    fun promotionApiService(baseUrl: String, apiInterceptor: ApiInterceptor): PromotionApiService {
-        return instance(baseUrl, apiInterceptor).create(PromotionApiService::class.java)
+    fun promotionApiService(baseUrl: String, apiInterceptor: ApiInterceptor, isDebug: Boolean = false): PromotionApiService {
+        return instance(baseUrl, apiInterceptor, isDebug).create(PromotionApiService::class.java)
     }
 
     fun clear() {
         retrofit = null
     }
 
-    private fun instance(baseUrl: String, apiInterceptor: ApiInterceptor): Retrofit {
+    private fun instance(baseUrl: String, apiInterceptor: ApiInterceptor, isDebug: Boolean): Retrofit {
         return retrofit ?: synchronized(this) {
-            retrofit ?: buildRetrofit(baseUrl, apiInterceptor).also { retrofit = it }
+            retrofit ?: buildRetrofit(baseUrl, apiInterceptor, isDebug).also { retrofit = it }
         }
     }
 
-    private fun buildRetrofit(baseUrl: String, apiInterceptor: ApiInterceptor): Retrofit {
+    private fun buildRetrofit(baseUrl: String, apiInterceptor: ApiInterceptor, isDebug: Boolean): Retrofit {
         return Retrofit.Builder()
             .baseUrl(baseUrl.ensureTrailingSlash())
-            .client(buildOkHttpClient(apiInterceptor))
+            .client(buildOkHttpClient(apiInterceptor, isDebug))
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    private fun buildOkHttpClient(apiInterceptor: ApiInterceptor): OkHttpClient {
+    private fun buildOkHttpClient(apiInterceptor: ApiInterceptor, isDebug: Boolean): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (isDebug) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
 
         return OkHttpClient.Builder()

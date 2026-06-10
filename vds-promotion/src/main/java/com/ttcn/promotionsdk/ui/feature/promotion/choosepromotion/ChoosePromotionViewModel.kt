@@ -1,20 +1,17 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerInfo
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toStackableDiscountsRequest
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplyValidatedVouchers
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
-import java.util.UUID
 
 class ChoosePromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
@@ -27,7 +24,7 @@ class ChoosePromotionViewModel(
         when (action) {
             is ChoosePromotionAction.LoadInitial -> loadVouchers(
                 reset = true,
-                serviceCode = "vay",
+                serviceCode = requestContextProvider.getService(),
                 keyword = "",
             )
 
@@ -46,13 +43,17 @@ class ChoosePromotionViewModel(
                         )
                     }
                 } else {
-                    loadVouchers(reset = true, serviceCode = "vay", keyword = "")
+                    loadVouchers(
+                        reset = true,
+                        serviceCode = requestContextProvider.getService(),
+                        keyword = ""
+                    )
                 }
             }
 
             is ChoosePromotionAction.Refresh -> loadVouchers(
                 reset = true,
-                serviceCode = "vay",
+                serviceCode = requestContextProvider.getService(),
                 keyword = uiState.value.keyword,
                 isRefresh = true,
             )
@@ -87,7 +88,7 @@ class ChoosePromotionViewModel(
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
                 setState { copy(isLoading = false, isRefreshing = false) }
-                sendEffect(ShowError("missing_customer_id"))
+                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
 
@@ -155,10 +156,14 @@ class ChoosePromotionViewModel(
     private fun onSearch(keyword: String) {
         val trimmed = keyword.trim()
         if (trimmed.isNotEmpty() && trimmed.length < 2) {
-            sendEffect(ShowError("keyword_too_short"))
+            sendEffect(ShowError(ErrorCodes.KEYWORD_TOO_SHORT))
             return
         }
-        loadVouchers(reset = true, serviceCode = "vay", keyword = trimmed)
+        loadVouchers(
+            reset = true,
+            serviceCode = requestContextProvider.getService(),
+            keyword = trimmed
+        )
     }
 
     // ─── Load more ────────────────────────────────────────────────────────────
@@ -171,7 +176,7 @@ class ChoosePromotionViewModel(
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
                 setState { copy(isLoadingMore = false) }
-                sendEffect(ShowError("missing_customer_id"))
+                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
             runCatching {
@@ -179,10 +184,10 @@ class ChoosePromotionViewModel(
                     SearchCustomerVouchersRequest(
                         customerId = customerId,
                         keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                        serviceCode = "vay",
+                        serviceCode = requestContextProvider.getService(),
                         tab = null,
                         sectionCode = "my_vouchers",
-                        myVouchersPage = currentState.page,
+                        myVouchersPage = currentState.page + 1,
                         myVouchersSize = currentState.size,
                         otherVouchersPage = null,
                         otherVouchersSize = null,
@@ -215,22 +220,22 @@ class ChoosePromotionViewModel(
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
                 setState { copy(isLoadingMoreOther = false) }
-                sendEffect(ShowError("missing_customer_id"))
+                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
             runCatching {
                 searchCustomerVouchersUseCase(
                     SearchCustomerVouchersRequest(
-                    customerId = customerId,
-                    keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                    serviceCode = "vay",
-                    tab = null,
-                    sectionCode = "other_vouchers",
-                    myVouchersPage = null,
-                    myVouchersSize = null,
-                    otherVouchersPage = currentState.otherPage,
-                    otherVouchersSize = currentState.otherSize,
-                )
+                        customerId = customerId,
+                        keyword = currentState.keyword.takeIf { it.isNotBlank() },
+                        serviceCode = requestContextProvider.getService(),
+                        tab = null,
+                        sectionCode = "other_vouchers",
+                        myVouchersPage = null,
+                        myVouchersSize = null,
+                        otherVouchersPage = currentState.otherPage + 1,
+                        otherVouchersSize = currentState.otherSize,
+                    )
                 )
             }.onSuccess { response ->
                 val incoming =
@@ -273,24 +278,14 @@ class ChoosePromotionViewModel(
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
                 setState { copy(isValidating = false) }
-                sendEffect(ShowError("missing_customer_id"))
+                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
 
-            val request = StackableDiscountsRequest(
-                idempotencyKey = UUID.randomUUID().toString(),
-                customerInfo = StackableCustomerInfo(customerId = customerId),
-                orderInfo = StackableOrderInfo(
-                    orderId = requestContextProvider.getOrderId().orEmpty(),
-                    orderValue = requestContextProvider.getOrderValue().orEmpty(),
-                ),
-                discountRequests = selected.mapIndexed { index, voucher ->
-                    DiscountRequest(
-                        objectType = "CAMPAIGN",
-                        objectId = voucher.voucherId,
-                        priority = index + 1,
-                    )
-                },
+            val request = selected.toStackableDiscountsRequest(
+                customerId = customerId,
+                orderId = requestContextProvider.getOrderId().orEmpty(),
+                orderValue = requestContextProvider.getOrderValue().orEmpty(),
             )
 
             runCatching { validateStackableDiscountsUseCase(request) }
@@ -321,5 +316,5 @@ class ChoosePromotionViewModel(
     }
 
     private fun Throwable.toErrorCode(): String =
-        (this as? PromotionApiException)?.errorCode ?: message ?: "error_general"
+        (this as? PromotionApiException)?.errorCode ?: message ?: ErrorCodes.GENERAL
 }

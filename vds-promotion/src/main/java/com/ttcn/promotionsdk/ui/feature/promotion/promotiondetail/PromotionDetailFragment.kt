@@ -9,8 +9,9 @@ import androidx.fragment.app.viewModels
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
 import com.ttcn.promotionsdk.core.di.inject
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
@@ -90,7 +91,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
     private fun bindDetailContent(
         state: PromotionDetailUiState,
-        detail: CustomerVoucherDetail,
+        detail: VoucherDetail,
     ) {
         binding.imgBanner.loadPromotionVoucherBanner(
             detail.banner.orEmpty(),
@@ -179,7 +180,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
     private fun mapErrorMessage(error: String): String {
         return when (error) {
-            "missing_customer_id" -> getString(R.string.prm_missing_customer_id)
+            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
             "error_detail_unavailable" -> getString(R.string.no_result)
             else -> getString(R.string.prm_error_general)
         }

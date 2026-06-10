@@ -4,8 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/viewContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:visibility="gone">
 
         <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
             android:id="@+id/txtTitleEndow"

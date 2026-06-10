@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
 import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
@@ -126,7 +127,7 @@ class SearchMyPromotionViewModel(
                 isEmpty = false,
                 isLastPage = true,
                 page = 0,
-                validationError = VALIDATION_KEYWORD_TOO_SHORT,
+                validationError = ErrorCodes.KEYWORD_TOO_SHORT,
             )
         }
     }
@@ -153,7 +154,7 @@ class SearchMyPromotionViewModel(
                         isLoadingMore = false,
                     )
                 }
-                sendEffect(SearchMyPromotionEffect.ShowError(ERROR_MISSING_CUSTOMER_ID))
+                sendEffect(SearchMyPromotionEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
 
@@ -222,15 +223,12 @@ class SearchMyPromotionViewModel(
     private fun Throwable.toErrorCode(): String {
         return (this as? PromotionApiException)?.errorCode
             ?: message
-            ?: ERROR_GENERAL
+            ?: ErrorCodes.GENERAL
     }
 
     private companion object {
         private const val TAB_ALL = "all"
         private const val DEBOUNCE_MS = 400L
         private const val MIN_KEYWORD_LENGTH = 2
-        private const val VALIDATION_KEYWORD_TOO_SHORT = "keyword_too_short"
-        private const val ERROR_MISSING_CUSTOMER_ID = "missing_customer_id"
-        private const val ERROR_GENERAL = "error_general"
     }
 }

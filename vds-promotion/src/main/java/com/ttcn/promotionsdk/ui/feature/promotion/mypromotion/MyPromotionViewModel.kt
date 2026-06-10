@@ -3,6 +3,7 @@ package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
 import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
@@ -37,7 +38,7 @@ class MyPromotionViewModel(
             is MyPromotionAction.SearchKeyword -> {
                 val trimmedKeyword = action.keyword.trim()
                 if (trimmedKeyword.isNotEmpty() && trimmedKeyword.length < 2) {
-                    sendEffect(MyPromotionEffect.ShowError("keyword_too_short"))
+                    sendEffect(MyPromotionEffect.ShowError(ErrorCodes.KEYWORD_TOO_SHORT))
                 } else {
                     val requestKeyword = trimmedKeyword.takeIf { it.isNotBlank() }.orEmpty()
                     val allTabCode = uiState.value.tabs
@@ -99,7 +100,7 @@ class MyPromotionViewModel(
                         isLoadingMore = false,
                     )
                 }
-                sendEffect(MyPromotionEffect.ShowError("missing_customer_id"))
+                sendEffect(MyPromotionEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
 
@@ -190,6 +191,6 @@ class MyPromotionViewModel(
     private fun Throwable.toErrorCode(): String {
         return (this as? PromotionApiException)?.errorCode
             ?: message
-            ?: "error_general"
+            ?: ErrorCodes.GENERAL
     }
 }

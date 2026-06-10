@@ -76,5 +76,25 @@
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
             app:elevation="@dimen/view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnHeadlessDemo"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_16"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/view_size_14"
+            android:text="@string/app_launcher_btn_headless_demo"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
+            app:elevation="@dimen/view_size_2"
+            app:rippleColor="@color/app_launcher_btn_ripple" />
     </LinearLayout>
 </layout>

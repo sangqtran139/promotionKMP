@@ -1,4 +1,4 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/core/domain/usecase/IsFeatureEnabledUseCase.kt
 package com.ttcn.promotionsdk.core.domain.usecase
 
+// TODO: implement when FeatureFlagRepository and FeatureFlag model are ready
 class IsFeatureEnabledUseCase

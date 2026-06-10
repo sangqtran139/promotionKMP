@@ -6,7 +6,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMEndowView
+        <com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
             android:id="@+id/endowView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

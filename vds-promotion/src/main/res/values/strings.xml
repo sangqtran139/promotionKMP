@@ -37,7 +37,7 @@
     <string name="prm_missing_customer_id">Không tìm thấy thông tin khách hàng</string>
     <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
     <string name="prm_my_endow">Ưu đãi của tôi</string>
-    <string name="prn_endow_differebt">Ưu đãi khác</string>
+    <string name="prm_endow_different">Ưu đãi khác</string>
     <string name="prm_see_more">Xem thêm</string>
     <string name="prm_collapse">Thu gọn</string>
     <string name="prm_tab_detail_info">Thông tin chi tiết</string>
@@ -46,4 +46,6 @@
     <string name="prm_empty_usage_guide">Chưa có hướng dẫn sử dụng</string>
     <string name="loading">Loading</string>
     <string name="prm_budget_insufficient">Khuyến mãi đã hết lượt</string>
+    <string name="prm_cancel_voucher">Huỷ</string>
+    <string name="prm_selected_voucher_count">Đã chọn %d voucher</string>
 </resources>

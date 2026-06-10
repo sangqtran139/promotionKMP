@@ -5,15 +5,13 @@ import com.ttcn.promotionsdk.core.data.dto.redemption.CustomerInfo
 import com.ttcn.promotionsdk.core.data.dto.redemption.OrderInfo
 import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
 import com.ttcn.promotionsdk.core.data.dto.redemption.SelectedRedeemable
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerInfo
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
 import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
-import com.ttcn.promotionsdk.ui.utils.view.PRMEndowView
+import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toStackableDiscountsRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -88,7 +86,7 @@ class PromotionIntegrateManager(
 
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
-                onError("missing_customer_id")
+                onError(ErrorCodes.MISSING_CUSTOMER_ID)
                 return@launch
             }
 
@@ -114,7 +112,7 @@ class PromotionIntegrateManager(
             runCatching { createRedemptionSessionUseCase(request) }
                 .onSuccess { response ->
                     val hasBudgetError = response?.validationErrors
-                        ?.any { it.code == "INSUFFICIENT_BUDGET" }
+                        ?.any { it.code == ErrorCodes.INSUFFICIENT_BUDGET }
                         ?: false
 
                     if (hasBudgetError) {
@@ -125,7 +123,7 @@ class PromotionIntegrateManager(
                 }
                 .onFailure { throwable ->
                     val exception = throwable as? PromotionApiException
-                    if (exception?.status == 422 && exception.errorCode == "INSUFFICIENT_BUDGET") {
+                    if (exception?.status == 422 && exception.errorCode == ErrorCodes.INSUFFICIENT_BUDGET) {
                         revalidateAndUpdate(customerId, onError)
                     } else {
                         onError(throwable.toErrorCode())
@@ -153,27 +151,17 @@ class PromotionIntegrateManager(
     ) {
         val currentDetails = endowView.discountDetails
 
-        val request = StackableDiscountsRequest(
-            idempotencyKey = UUID.randomUUID().toString(),
-            customerInfo = StackableCustomerInfo(customerId = customerId),
-            orderInfo = StackableOrderInfo(
-                orderId = requestContextProvider.getOrderId().orEmpty(),
-                orderValue = requestContextProvider.getOrderValue().orEmpty(),
-            ),
-            discountRequests = currentDetails.mapIndexed { index, detail ->
-                DiscountRequest(
-                    objectType = detail.objectType,
-                    objectId = detail.objectId,
-                    priority = index + 1,
-                )
-            },
+        val request = currentDetails.toStackableDiscountsRequest(
+            customerId = customerId,
+            orderId = requestContextProvider.getOrderId().orEmpty(),
+            orderValue = requestContextProvider.getOrderValue().orEmpty(),
         )
 
         runCatching { validateStackableDiscountsUseCase(request) }
             .onSuccess { response ->
-                // SDK tự update endowView — đối tác không cần làm gì
-                endowView.setDiscountDetails(response?.discountDetails.orEmpty())
-                onError("INSUFFICIENT_BUDGET")
+                val newDetails = response?.discountDetails.orEmpty()
+                endowView.setDiscountDetails(newDetails)
+                onError(ErrorCodes.INSUFFICIENT_BUDGET)
             }
             .onFailure { throwable ->
                 onError(throwable.toErrorCode())
@@ -181,7 +169,7 @@ class PromotionIntegrateManager(
     }
 
     private fun Throwable.toErrorCode(): String =
-        (this as? PromotionApiException)?.errorCode ?: message ?: "error_general"
+        (this as? PromotionApiException)?.errorCode ?: message ?: ErrorCodes.GENERAL
 
     companion object {
         fun create(endowView: PRMEndowView): PromotionIntegrateManager =

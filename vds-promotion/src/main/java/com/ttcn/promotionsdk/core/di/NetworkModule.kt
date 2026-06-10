@@ -1,5 +1,7 @@
 package com.ttcn.promotionsdk.core.di
 
+import android.content.Context
+import android.content.pm.ApplicationInfo
 import com.ttcn.promotionsdk.core.config.EmptyPromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
@@ -22,9 +24,11 @@ object NetworkModule {
         }
 
         single<PromotionApiService> {
+            val isDebug = (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
             RetrofitClient.promotionApiService(
                 baseUrl = get<PromotionSDKConfig>().baseUrl,
                 apiInterceptor = get(),
+                isDebug = isDebug,
             )
         }
 

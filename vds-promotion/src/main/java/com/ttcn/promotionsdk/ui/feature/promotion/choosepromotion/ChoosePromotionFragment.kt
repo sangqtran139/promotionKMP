@@ -1,6 +1,5 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
-import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.view.isVisible
@@ -10,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
 import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
@@ -18,8 +18,6 @@ import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.Choose
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
-import java.text.NumberFormat
-import java.util.Locale
 
 class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>() {
 
@@ -173,7 +171,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         }
 
         if (state.otherVouchers.isNotEmpty()) {
-            items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prn_endow_differebt)))
+            items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
             state.otherVouchers.forEach { voucher ->
                 val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
                 items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
@@ -222,7 +220,6 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         )
     }
 
-    @SuppressLint("SetTextI18n")
     private fun updateApplyButtonState() {
         if (!isMultiSelection) {
             binding.layoutReducePrice.isVisible = false
@@ -231,7 +228,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         val hasSelected = currentSelectedVouchers.isNotEmpty()
         binding.layoutReducePrice.isVisible = hasSelected
         if (!hasSelected) return
-        binding.txtNumberChooseEndow.text = "Đã chọn ${currentSelectedVouchers.size} voucher"
+        binding.txtNumberChooseEndow.text = getString(R.string.prm_selected_voucher_count, currentSelectedVouchers.size)
     }
 
     // ─── Search ───────────────────────────────────────────────────────────────
@@ -239,35 +236,25 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupSearch() {
         binding.edtVoucher.apply {
             onTextChangeListener = { keyword ->
-                if (keyword.isEmpty()) {
-                    viewModel.handleAction(ChoosePromotionAction.SearchKeyword(keyword))
-                }
+                if (keyword.isEmpty()) triggerSearch(keyword)
             }
-            setOnSearchActionListener {
-                viewModel.handleAction(
-                    ChoosePromotionAction.SearchKeyword(getInputField().text?.toString().orEmpty())
-                )
-            }
-            setOnDoneKeyboardListener {
-                viewModel.handleAction(
-                    ChoosePromotionAction.SearchKeyword(getInputField().text?.toString().orEmpty())
-                )
-            }
+            setOnSearchActionListener { triggerSearch(getInputField().text?.toString().orEmpty()) }
+            setOnDoneKeyboardListener { triggerSearch(getInputField().text?.toString().orEmpty()) }
         }
+    }
+
+    private fun triggerSearch(keyword: String) {
+        viewModel.handleAction(ChoosePromotionAction.SearchKeyword(keyword))
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private fun mapErrorMessage(error: String) = when (error) {
-        "keyword_too_short"   -> getString(R.string.prm_keyword_too_short)
-        "missing_customer_id" -> getString(R.string.prm_missing_customer_id)
-        "no_result"           -> getString(R.string.no_result)
+        ErrorCodes.KEYWORD_TOO_SHORT -> getString(R.string.prm_keyword_too_short)
+        ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
+        ErrorCodes.NO_RESULT -> getString(R.string.no_result)
         else                  -> getString(R.string.prm_error_general)
     }
-
-    @Suppress("unused")
-    private fun formatMoney(amount: Long): String =
-        NumberFormat.getNumberInstance(Locale("vi", "VN")).format(amount)
 
     companion object {
         private const val COLLAPSED_COUNT = 2

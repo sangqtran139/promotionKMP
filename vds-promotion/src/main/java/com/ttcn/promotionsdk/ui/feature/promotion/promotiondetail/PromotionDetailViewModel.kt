@@ -3,6 +3,7 @@ package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
@@ -25,7 +26,7 @@ class PromotionDetailViewModel(
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
                 setState { copy(isLoading = false) }
-                sendEffect(PromotionDetailEffect.ShowError("missing_customer_id"))
+                sendEffect(PromotionDetailEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
 
@@ -97,7 +98,7 @@ class PromotionDetailViewModel(
     private fun Throwable.toErrorCode(): String {
         return (this as? PromotionApiException)?.errorCode
             ?: message
-            ?: "error_general"
+            ?: ErrorCodes.GENERAL
     }
 }
 

@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
 import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
 class SearchCustomerVouchersUseCase(
@@ -9,7 +9,7 @@ class SearchCustomerVouchersUseCase(
 ) {
     suspend operator fun invoke(
         request: SearchCustomerVouchersRequest,
-    ): SearchCustomerVouchersData? {
+    ): VoucherSearchResult? {
         return repository.searchCustomerVouchers(
             customerId = request.customerId,
             keyword = request.keyword,

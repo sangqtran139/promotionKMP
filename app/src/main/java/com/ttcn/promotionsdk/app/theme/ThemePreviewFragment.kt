@@ -33,7 +33,7 @@ import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.entry.PromotionTheme
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.FakeVoucherData
+import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay.Defaults
@@ -43,7 +43,6 @@ import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
 import com.ttcn.promotionsdk.ui.utils.extension.TokenColorParser
 import com.ttcn.promotionsdk.ui.utils.extension.TokenDrawableFactory
 import com.ttcn.promotionsdk.ui.utils.view.PRMButton
-import com.ttcn.promotionsdk.ui.utils.view.PRMEndowView
 import com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
 import kotlin.math.roundToInt
 import com.ttcn.promotionsdk.R as SdkR
@@ -809,7 +808,6 @@ class ThemePreviewFragment : Fragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
-//            setAppliedVouchers(FakeVoucherData.getMyVouchers(0))
         }
         showBottomSheet(R.string.prm_theme_sheet_component_prm_endow, endow)
         endow.post { endow.applyToken(token) }

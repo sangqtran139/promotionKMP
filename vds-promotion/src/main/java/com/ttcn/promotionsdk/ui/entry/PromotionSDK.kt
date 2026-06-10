@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.SdkDi
+import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.di.ViewModelModule
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
@@ -22,6 +24,17 @@ object PromotionSDK {
 
     @Volatile
     private var isUiDiLoaded: Boolean = false
+
+    /**
+     * Truy cập tất cả use case của SDK ở chế độ headless (tự build UI).
+     * Phải gọi [init] trước khi sử dụng.
+     *
+     * ```kotlin
+     * val result = PromotionSDK.useCases.searchVouchers(request)
+     * ```
+     */
+    @JvmStatic
+    val useCases: PromotionUseCases get() = get()
 
     /**
      * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]
