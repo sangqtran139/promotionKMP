@@ -8,6 +8,7 @@ data class MyPromotionUiState(
     val hasLoadedInitial: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    val isRefreshingTab: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isEmpty: Boolean = false,
     val tabs: List<TabItem> = emptyList(),
@@ -34,6 +35,7 @@ sealed interface MyPromotionEffect {
 
 data class MyVoucherListItem(
     val voucherId: String,
+    val campaignId: String = "",
     val merchantName: String,
     val title: String,
     val description: String,
@@ -56,6 +58,7 @@ data class TabItem(
 fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
     return MyVoucherListItem(
         voucherId = voucherId,
+        campaignId = campaignId.orEmpty(),
         merchantName = merchantName.orEmpty(),
         title = title.orEmpty(),
         description = description.orEmpty(),

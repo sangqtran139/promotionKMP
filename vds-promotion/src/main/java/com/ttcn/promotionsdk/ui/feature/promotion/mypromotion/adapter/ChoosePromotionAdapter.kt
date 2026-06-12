@@ -19,8 +19,10 @@ import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
 sealed class PromotionListItem {
     data class Header(val title: String) : PromotionListItem()
+
     data class Endow(
-        val data: MyVoucherListItem
+        val data: MyVoucherListItem,
+        val rowKey: String,
     ) : PromotionListItem()
 
     data object Loading : PromotionListItem()
@@ -98,7 +100,6 @@ class ChoosePromotionAdapter(
                 val voucher = item.data
                 val ctx = binding.root.context
 
-                // Hiển thị thông tin voucher
                 imgVoucher.loadPromotionVoucherLogo(voucher.logo)
                 txtVoucherName.text = voucher.merchantName
                 tvContent.text = voucher.title.ifBlank { voucher.description }
@@ -117,13 +118,18 @@ class ChoosePromotionAdapter(
                 txtExpired.isEnabled = !lnDetail.isVisible
                 txtExpired.isClickable = !lnDetail.isVisible
 
-                // Chỉ handle click ở root view
                 root.setOnClickListener {
-                    onVoucherClick(voucher, bindingAdapterPosition)
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        onVoucherClick(voucher, position)
+                    }
                 }
 
                 tvUse.setOnClickListener {
-                    onUseClick(voucher, bindingAdapterPosition)
+                    val position = bindingAdapterPosition
+                    if (position != RecyclerView.NO_POSITION) {
+                        onUseClick(voucher, position)
+                    }
                 }
 
                 PromotionListItemApplier.apply(
@@ -144,11 +150,31 @@ fun buildPromotionListItems(
         if (!headerTitle.isNullOrBlank()) {
             add(PromotionListItem.Header(headerTitle))
         }
-        addAll(vouchers.map { PromotionListItem.Endow(it) })
+        addAll(
+            vouchers.mapIndexed { index, voucher ->
+                PromotionListItem.Endow(
+                    data = voucher,
+                    rowKey = voucher.buildStableRowKey(index),
+                )
+            },
+        )
         if (isLoadingMore) {
             add(PromotionListItem.Loading)
         }
     }
+}
+
+private fun MyVoucherListItem.buildStableRowKey(index: Int): String {
+    return listOf(
+        voucherId,
+        campaignId,
+        merchantName,
+        title,
+        expirationDate,
+        status.name,
+        displayStatusLabel,
+        index.toString(),
+    ).joinToString(separator = "_")
 }
 
 class VoucherDiffCallback : DiffUtil.ItemCallback<PromotionListItem>() {
@@ -159,7 +185,7 @@ class VoucherDiffCallback : DiffUtil.ItemCallback<PromotionListItem>() {
             }
 
             oldItem is PromotionListItem.Endow && newItem is PromotionListItem.Endow -> {
-                oldItem.data.voucherId == newItem.data.voucherId
+                oldItem.rowKey == newItem.rowKey
             }
 
             oldItem is PromotionListItem.Loading && newItem is PromotionListItem.Loading -> {

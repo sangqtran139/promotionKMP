@@ -59,6 +59,7 @@ private fun VoucherListItem.toVoucherItem() = VoucherItem(
     expirationDate = expirationDate,
     status = status,
     displayStatusLabel = displayStatusLabel,
+    campaignId = campaignId,
     campaignType = campaignType,
     objectType = campaignType ?: "CAMPAIGN",
 )

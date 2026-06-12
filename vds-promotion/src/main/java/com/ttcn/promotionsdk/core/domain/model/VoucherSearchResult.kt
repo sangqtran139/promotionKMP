@@ -32,6 +32,7 @@ data class VoucherItem(
     val expirationDate: String? = null,
     val status: String? = null,
     val displayStatusLabel: String? = null,
+    val campaignId: String? = null,
     val campaignType: String? = null,
     val objectType: String = "CAMPAIGN",
 )

@@ -60,13 +60,29 @@ class MyPromotionTabAdapter(
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun submitTabs(items: List<TabItem>, selectedCode: String?) {
-        tabs = items
-        selectedPosition = if (tabs.isEmpty()) {
+        val newSelectedPosition = if (items.isEmpty()) {
             RecyclerView.NO_POSITION
         } else {
-            tabs.indexOfFirst { it.code == selectedCode }.takeIf { it >= 0 } ?: 0
+            items.indexOfFirst { it.code == selectedCode }.takeIf { it >= 0 } ?: 0
         }
-        notifyDataSetChanged()
+        val tabsChanged = tabs != items
+        val oldSelectedPosition = selectedPosition
+
+        tabs = items
+        selectedPosition = newSelectedPosition
+
+        when {
+            tabsChanged -> notifyDataSetChanged()
+            oldSelectedPosition != newSelectedPosition -> {
+                if (oldSelectedPosition != RecyclerView.NO_POSITION) {
+                    notifyItemChanged(oldSelectedPosition)
+                }
+                if (newSelectedPosition != RecyclerView.NO_POSITION) {
+                    notifyItemChanged(newSelectedPosition)
+                }
+            }
+        }
     }
 }
