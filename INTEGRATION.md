@@ -3,6 +3,7 @@
 ## Mục lục
 1. [Cài đặt](#1-cài-đặt)
 2. [Khởi tạo SDK](#2-khởi-tạo-sdk)
+   - [2.1 Tùy biến giao diện (Theme)](#21-tùy-biến-giao-diện-theme)
 3. [Chế độ Full UI](#3-chế-độ-full-ui)
 4. [Chế độ Headless](#4-chế-độ-headless)
 5. [API Reference](#5-api-reference)
@@ -62,6 +63,43 @@ Giải phóng khi không cần nữa (logout, kết thúc luồng thanh toán):
 ```kotlin
 PromotionSDK.release()
 ```
+
+### 2.1 Tùy biến giao diện (Theme)
+
+SDK cho phép tùy biến màu sắc/bo góc qua hệ thống **token**. Mọi field token đều tùy chọn —
+bỏ trống sẽ giữ giao diện mặc định của SDK.
+
+```kotlin
+val themeConfig = PromotionThemeConfig(
+    buttonToken       = ButtonToken(backgroundColor = Color.parseColor("#EE0033"), cornerRadius = 8f),
+    tabChipToken      = TabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
+    discountBadgeToken = DiscountBadgeToken(availableTextColor = ..., availableBackgroundColor = ...),
+)
+```
+
+Có **2 cách** cấu hình theme:
+
+```kotlin
+// Cách 1 (khuyến nghị): truyền vào options khi init
+PromotionSDK.init(
+    context = this,
+    options = PromotionSDKOptions(
+        config = PromotionSDKConfig(/* ... */),
+        theme  = PromotionSDKTheme(config = themeConfig),
+    ),
+)
+
+// Cách 2: gọi SAU init()
+PromotionSDK.init(context, PromotionSDKOptions(config = PromotionSDKConfig(/* ... */)))
+PromotionTheme.configure(themeConfig)
+```
+
+> ⚠️ **Quy tắc thứ tự bắt buộc:** `init()` luôn ghi đè theme bằng `options.theme` (mặc định rỗng).
+> Vì vậy **không** gọi `PromotionTheme.configure(themeConfig)` *trước* `init()` mà không truyền theme vào `options`
+> — nếu không, theme sẽ bị reset về mặc định. Hãy dùng **Cách 1** hoặc **Cách 2** ở trên.
+
+Token hỗ trợ: `ButtonToken`, `SearchBarToken`, `ListItemToken`, `TabChipToken`, `TabUnderlineToken`,
+`DiscountBadgeToken`. Chi tiết từng field và cơ chế áp dụng: xem `docs/Theming.md`.
 
 ---
 
