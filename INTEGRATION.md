@@ -94,9 +94,12 @@ PromotionSDK.init(context, PromotionSDKOptions(config = PromotionSDKConfig(/* ..
 PromotionTheme.configure(themeConfig)
 ```
 
-> ⚠️ **Quy tắc thứ tự bắt buộc:** `init()` luôn ghi đè theme bằng `options.theme` (mặc định rỗng).
-> Vì vậy **không** gọi `PromotionTheme.configure(themeConfig)` *trước* `init()` mà không truyền theme vào `options`
-> — nếu không, theme sẽ bị reset về mặc định. Hãy dùng **Cách 1** hoặc **Cách 2** ở trên.
+Cả hai cách đều hợp lệ — `init()` chỉ ghi đè theme khi bạn **thực sự truyền** `options.theme`; nếu để mặc định
+(rỗng), theme đã cấu hình trước đó bằng `PromotionTheme.configure()` vẫn được giữ. `options.theme` luôn là
+đường có ưu tiên cao nhất khi bạn muốn ghi đè.
+
+Bạn cũng có thể **đổi theme lúc runtime**: gọi `PromotionTheme.configure(newConfig)` bất kỳ lúc nào — các view
+đang hiển thị (nút, ô tìm kiếm, `PRMEndowView`) sẽ tự áp lại ngay; danh sách voucher cập nhật ở lần cuộn/refresh kế tiếp.
 
 Token hỗ trợ: `ButtonToken`, `SearchBarToken`, `ListItemToken`, `TabChipToken`, `TabUnderlineToken`,
 `DiscountBadgeToken`. Chi tiết từng field và cơ chế áp dụng: xem `docs/Theming.md`.
