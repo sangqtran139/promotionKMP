@@ -36,8 +36,7 @@ class SearchMyPromotionViewModel(
         val trimmedKeyword = keyword.trim()
         setState {
             copy(
-                keyword = keyword,
-                validationError = null,
+                keyword = keyword
             )
         }
 
@@ -76,8 +75,7 @@ class SearchMyPromotionViewModel(
                 isLoadingMore = false,
                 isEmpty = false,
                 isLastPage = true,
-                page = 0,
-                validationError = null,
+                page = 0
             )
         }
     }
@@ -111,8 +109,7 @@ class SearchMyPromotionViewModel(
                 isLoadingMore = false,
                 isEmpty = false,
                 isLastPage = true,
-                page = 0,
-                validationError = null,
+                page = 0
             )
         }
     }
@@ -126,8 +123,7 @@ class SearchMyPromotionViewModel(
                 isLoadingMore = false,
                 isEmpty = false,
                 isLastPage = true,
-                page = 0,
-                validationError = ErrorCodes.KEYWORD_TOO_SHORT,
+                page = 0
             )
         }
     }
@@ -141,7 +137,6 @@ class SearchMyPromotionViewModel(
                 copy(
                     isLoading = reset,
                     isLoadingMore = !reset,
-                    validationError = null,
                     isEmpty = if (reset) false else isEmpty,
                 )
             }
@@ -229,6 +224,6 @@ class SearchMyPromotionViewModel(
     private companion object {
         private const val TAB_ALL = "all"
         private const val DEBOUNCE_MS = 400L
-        private const val MIN_KEYWORD_LENGTH = 2
+        private const val MIN_KEYWORD_LENGTH = 1
     }
 }

@@ -172,7 +172,6 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
     private fun mapErrorMessage(error: String): String {
         return when (error) {
-            ErrorCodes.KEYWORD_TOO_SHORT -> getString(R.string.prm_keyword_too_short)
             ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
             ErrorCodes.NO_RESULT -> getString(R.string.no_result)
             else -> getString(R.string.prm_error_general)

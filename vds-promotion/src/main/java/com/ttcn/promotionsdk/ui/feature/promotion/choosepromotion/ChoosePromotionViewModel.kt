@@ -155,10 +155,6 @@ class ChoosePromotionViewModel(
 
     private fun onSearch(keyword: String) {
         val trimmed = keyword.trim()
-        if (trimmed.isNotEmpty() && trimmed.length < 2) {
-            sendEffect(ShowError(ErrorCodes.KEYWORD_TOO_SHORT))
-            return
-        }
         loadVouchers(
             reset = true,
             serviceCode = requestContextProvider.getService(),

@@ -86,23 +86,20 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
     private fun renderState(state: SearchMyPromotionUiState) {
         val trimmedKeyword = state.keyword.trim()
         val hasValidKeyword = trimmedKeyword.length >= MIN_KEYWORD_LENGTH
-        val showValidation = state.validationError != null
         val showNoResult = hasValidKeyword &&
                 !state.isLoading &&
-                state.isEmpty &&
-                !showValidation
+                state.isEmpty
         val showResults = hasValidKeyword && state.vouchers.isNotEmpty()
 
         binding.shimmerProvider.root.isVisible = state.isLoading && state.vouchers.isEmpty()
         binding.ctlSearch.isVisible = showResults || (hasValidKeyword && state.isLoading)
         binding.tvTitle.isVisible = showResults
         binding.rcvSearchList.isVisible = showResults
-        binding.ctlNoResult.isVisible = showValidation || showNoResult
+        binding.ctlNoResult.isVisible = showNoResult
         binding.imgNoData.isVisible = showNoResult
         binding.tvNoResultSubtext.isVisible = showNoResult
 
         binding.tvNoResult.text = when {
-            showValidation -> getString(R.string.prm_keyword_too_short)
             showNoResult -> getString(R.string.prm_search_no_result)
             else -> ""
         }
@@ -112,20 +109,20 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
             buildPromotionListItems(
                 vouchers = state.vouchers,
                 isLoadingMore = state.isLoadingMore,
+                keyword = state.keyword.trim(),
             ),
         )
     }
 
     private fun mapErrorMessage(errorCode: String): String {
         return when (errorCode) {
-            ErrorCodes.KEYWORD_TOO_SHORT -> getString(R.string.prm_keyword_too_short)
             ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
             else -> getString(R.string.prm_error_general)
         }
     }
 
     private companion object {
-        private const val MIN_KEYWORD_LENGTH = 2
+        private const val MIN_KEYWORD_LENGTH = 1
         private const val LOAD_MORE_THRESHOLD = 2
     }
 }

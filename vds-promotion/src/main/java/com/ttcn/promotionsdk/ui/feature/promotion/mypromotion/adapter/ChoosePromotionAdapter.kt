@@ -2,6 +2,7 @@ package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -14,6 +15,7 @@ import com.ttcn.promotionsdk.databinding.PrmItemPromotionBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.PromotionListItemApplier
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.utils.extension.toHighlightedSpannable
 import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
@@ -23,6 +25,7 @@ sealed class PromotionListItem {
     data class Endow(
         val data: MyVoucherListItem,
         val rowKey: String,
+        val highlightKeyword: String = "",
     ) : PromotionListItem()
 
     data object Loading : PromotionListItem()
@@ -99,16 +102,27 @@ class ChoosePromotionAdapter(
             binding.apply {
                 val voucher = item.data
                 val ctx = binding.root.context
+                val canUse = voucher.status == VoucherStatus.ACTIVE
 
                 imgVoucher.loadPromotionVoucherLogo(voucher.logo)
-                txtVoucherName.text = voucher.merchantName
-                tvContent.text = voucher.title.ifBlank { voucher.description }
+
+                val highlightColor = ContextCompat.getColor(ctx, R.color.color_EE0033)
+                val highlightKeyword = item.highlightKeyword
+                txtVoucherName.text = voucher.merchantName.toHighlightedSpannable(
+                    keyword = highlightKeyword,
+                    highlightColor = highlightColor,
+                )
+                tvContent.text = voucher.title
+                    .ifBlank { voucher.description }
+                    .toHighlightedSpannable(
+                        keyword = highlightKeyword,
+                        highlightColor = highlightColor,
+                    )
                 tvEndDate.text = ctx.getString(
                     R.string.prm_expiry_short_format,
                     voucher.expirationDate.toVoucherDisplayDate(),
                 )
 
-                val canUse = voucher.status == VoucherStatus.ACTIVE
                 ctlTop.alpha = if (canUse) 1f else 0.6f
                 txtExpired.isVisible = !canUse
                 txtExpired.text = voucher.displayStatusLabel.ifBlank {
@@ -145,6 +159,7 @@ fun buildPromotionListItems(
     vouchers: List<MyVoucherListItem>,
     isLoadingMore: Boolean,
     headerTitle: String? = null,
+    keyword: String = "",
 ): List<PromotionListItem> {
     return buildList {
         if (!headerTitle.isNullOrBlank()) {
@@ -155,6 +170,7 @@ fun buildPromotionListItems(
                 PromotionListItem.Endow(
                     data = voucher,
                     rowKey = voucher.buildStableRowKey(index),
+                    highlightKeyword = keyword,
                 )
             },
         )

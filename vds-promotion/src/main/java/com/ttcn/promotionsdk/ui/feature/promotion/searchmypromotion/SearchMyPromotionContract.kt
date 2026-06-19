@@ -10,8 +10,7 @@ data class SearchMyPromotionUiState(
     val isEmpty: Boolean = false,
     val isLastPage: Boolean = true,
     val page: Int = 0,
-    val pageSize: Int = DEFAULT_PAGE_SIZE,
-    val validationError: String? = null,
+    val pageSize: Int = DEFAULT_PAGE_SIZE
 ) {
     companion object {
         const val DEFAULT_PAGE_SIZE = 10
