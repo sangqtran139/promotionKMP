@@ -5,6 +5,8 @@ plugins {
     id("kotlin-parcelize")
 }
 
+val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+
 android {
     namespace = "com.ttcn.promotionsdk"
     compileSdk = 35
@@ -12,16 +14,24 @@ android {
     buildFeatures {
         dataBinding = true
         viewBinding = true
+        buildConfig = true
     }
 
     defaultConfig {
         minSdk = 24
+        targetSdk = 35
         consumerProguardFiles("consumer-rules.pro")
+        buildConfigField("String", "SDK_VERSION", "\"$sdkVersion\"")
     }
 
     kotlin {
         jvmToolchain(17)
     }
+}
+
+// Đặt tên file AAR theo phiên bản: vds-promotion-<version>.aar
+base {
+    archivesName = "vds-promotion-$sdkVersion"
 }
 
 dependencies {
