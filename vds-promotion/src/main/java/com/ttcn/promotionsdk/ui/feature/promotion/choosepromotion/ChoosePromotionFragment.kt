@@ -7,8 +7,8 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
-import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.core.di.internal.inject
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
@@ -40,10 +40,10 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     var preSelectedVoucherIds: Set<String> = emptySet()
 
     /**
-     * Callback trả về [DiscountDetail] từ validateStackableDiscounts mới cho host.
+     * Callback trả về [AppliedDiscount] từ validateStackableDiscounts mới cho host.
      * Host nhận → gọi [PRMEndowView.setDiscountDetails].
      */
-    var onApplyVoucher: ((List<DiscountDetail>) -> Unit)? = null
+    var onApplyVoucher: ((List<AppliedDiscount>) -> Unit)? = null
 
     // ─── Internal state ───────────────────────────────────────────────────────
 
@@ -89,7 +89,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                     addFragment(PromotionDetailFragment.newInstance(effect.voucherId))
                 }
 
-                // validateStackableDiscounts thành công → trả DiscountDetail về host rồi back
+                // validateStackableDiscounts thành công → trả AppliedDiscount về host rồi back
                 is ChoosePromotionEffect.ApplyValidatedVouchers -> {
                     if (effect.details.isEmpty()) {
                         return@collectFlow
@@ -251,7 +251,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     private fun mapErrorMessage(error: String) = when (error) {
         ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-        ErrorCodes.NO_RESULT -> getString(R.string.no_result)
+        ErrorCodes.NO_RESULT -> getString(R.string.prm_no_result)
         else                  -> getString(R.string.prm_error_general)
     }
 

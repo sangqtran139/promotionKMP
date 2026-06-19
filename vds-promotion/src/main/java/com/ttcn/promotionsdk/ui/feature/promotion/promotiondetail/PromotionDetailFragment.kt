@@ -10,15 +10,15 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
-import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.core.di.internal.inject
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.adapter.PrmCustomFragmentPagerAdapter
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.ui.theme.TabLayoutThemeApplier
+import com.ttcn.promotionsdk.ui.theme.applier.TabLayoutThemeApplier
 import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherBanner
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
@@ -41,7 +41,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         binding.imgBack.setOnClickListener { onBackFragment() }
         val voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty()
         if (voucherId.isBlank()) {
-            showToast(getString(R.string.no_result))
+            showToast(getString(R.string.prm_no_result))
             return
         }
         showDetailLoading()
@@ -111,7 +111,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         binding.tvUse.isVisible = state.actionVisible
         binding.tvUse.isEnabled = state.actionEnabled
         binding.tvUse.text = state.actionLabel.ifBlank {
-            if (state.status == VoucherStatus.ACTIVE) getString(R.string.use_now)
+            if (state.status == VoucherStatus.ACTIVE) getString(R.string.prm_use_now)
             else detail.displayStatusLabel.orEmpty()
         }
 
@@ -181,7 +181,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     private fun mapErrorMessage(error: String): String {
         return when (error) {
             ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            "error_detail_unavailable" -> getString(R.string.no_result)
+            "error_detail_unavailable" -> getString(R.string.prm_no_result)
             else -> getString(R.string.prm_error_general)
         }
     }

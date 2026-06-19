@@ -1,15 +1,15 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionResult
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
-class CreateRedemptionSessionUseCase(
+internal class CreateRedemptionSessionUseCase(
     private val repository: PromotionRepository,
 ) {
     suspend operator fun invoke(
-        request: RedemptionSessionRequest,
-    ): RedemptionSessionResponse? {
+        request: CreateRedemptionRequest,
+    ): CreateRedemptionResult? {
         return repository.createRedemptionSession(request)
     }
 }

@@ -1,23 +1,21 @@
 package com.ttcn.promotionsdk.ui.feature.promotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.dto.redemption.CustomerInfo
-import com.ttcn.promotionsdk.core.data.dto.redemption.OrderInfo
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
-import com.ttcn.promotionsdk.core.data.dto.redemption.SelectedRedeemable
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.core.di.internal.get
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.exception.PromotionException
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toStackableDiscountsRequest
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toCreateRedemptionRequest
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 /**
  * SDK Manager — đối tác khởi tạo 1 lần và gọi [confirmRedemption] khi user bấm thanh toán.
@@ -47,7 +45,7 @@ import java.util.UUID
  * }
  * ```
  */
-class PromotionIntegrateManager(
+class PromotionIntegrateManager internal constructor(
     private val endowView: PRMEndowView,
     private val createRedemptionSessionUseCase: CreateRedemptionSessionUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
@@ -90,23 +88,10 @@ class PromotionIntegrateManager(
                 return@launch
             }
 
-            val request = RedemptionSessionRequest(
-                idempotencyKey = UUID.randomUUID().toString(),
-                customerInfo = CustomerInfo(
-                    customerId = customerId,
-                ),
-                orderInfo = OrderInfo(
-                    orderId = requestContextProvider.getOrderId().orEmpty(),
-                    orderValue = requestContextProvider.getOrderValue().orEmpty(),
-                ),
-                selectedRedeemables = discountDetails.mapIndexed { index, detail ->
-                    SelectedRedeemable(
-                        objectType = detail.objectType,
-                        objectId = detail.objectId,
-                        priority = index + 1,
-                        expectedDiscount = detail.calculatedDiscount,
-                    )
-                },
+            val request = discountDetails.toCreateRedemptionRequest(
+                customerId = customerId,
+                orderId = requestContextProvider.getOrderId().orEmpty(),
+                orderValue = requestContextProvider.getOrderValue().orEmpty(),
             )
 
             runCatching { createRedemptionSessionUseCase(request) }
@@ -122,8 +107,8 @@ class PromotionIntegrateManager(
                     }
                 }
                 .onFailure { throwable ->
-                    val exception = throwable as? PromotionApiException
-                    if (exception?.status == 422 && exception.errorCode == ErrorCodes.INSUFFICIENT_BUDGET) {
+                    val exception = throwable as? PromotionException
+                    if (exception?.httpStatus == 422 && exception.errorCode == ErrorCodes.INSUFFICIENT_BUDGET) {
                         revalidateAndUpdate(customerId, onError)
                     } else {
                         onError(throwable.toErrorCode())
@@ -151,7 +136,7 @@ class PromotionIntegrateManager(
     ) {
         val currentDetails = endowView.discountDetails
 
-        val request = currentDetails.toStackableDiscountsRequest(
+        val request = currentDetails.toValidateDiscountsRequest(
             customerId = customerId,
             orderId = requestContextProvider.getOrderId().orEmpty(),
             orderValue = requestContextProvider.getOrderValue().orEmpty(),
@@ -159,7 +144,7 @@ class PromotionIntegrateManager(
 
         runCatching { validateStackableDiscountsUseCase(request) }
             .onSuccess { response ->
-                val newDetails = response?.discountDetails.orEmpty()
+                val newDetails = response?.items.orEmpty().toAppliedDiscounts()
                 endowView.setDiscountDetails(newDetails)
                 onError(ErrorCodes.INSUFFICIENT_BUDGET)
             }
@@ -167,9 +152,6 @@ class PromotionIntegrateManager(
                 onError(throwable.toErrorCode())
             }
     }
-
-    private fun Throwable.toErrorCode(): String =
-        (this as? PromotionApiException)?.errorCode ?: message ?: ErrorCodes.GENERAL
 
     companion object {
         fun create(endowView: PRMEndowView): PromotionIntegrateManager =

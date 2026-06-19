@@ -2,16 +2,16 @@ package com.ttcn.promotionsdk.ui.entry
 
 import android.content.Context
 import androidx.annotation.ColorInt
-import com.ttcn.promotionsdk.ui.theme.ButtonToken
+import com.ttcn.promotionsdk.ui.theme.token.ButtonToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDefaults
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
-import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
-import com.ttcn.promotionsdk.ui.theme.ListItemToken
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.token.ListItemToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.ui.theme.SearchBarToken
-import com.ttcn.promotionsdk.ui.theme.TabChipToken
-import com.ttcn.promotionsdk.ui.theme.TabUnderlineToken
+import com.ttcn.promotionsdk.ui.theme.token.SearchBarToken
+import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
+import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
 
 /**
  * Public theme API for host applications.

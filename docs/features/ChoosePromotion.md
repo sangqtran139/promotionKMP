@@ -30,7 +30,7 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 ### Effect — `ChoosePromotionEffect`
 - `OpenVoucherDetail(voucherId)`.
 - `ShowError(errorCode)`.
-- `ApplyValidatedVouchers(details: List<DiscountDetail>)` — phát khi `validateStackableDiscounts` thành công; `details` lấy từ `discountDetails` của response.
+- `ApplyValidatedVouchers(details: List<AppliedDiscount>)` — phát khi `validateStackableDiscounts` thành công; `details` map từ domain result sang model public `AppliedDiscount`.
 
 ---
 

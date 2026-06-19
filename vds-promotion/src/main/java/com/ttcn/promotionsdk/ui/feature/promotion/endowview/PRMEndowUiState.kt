@@ -1,12 +1,12 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.endowview
 
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 
 data class PRMEndowUiState(
     val myVouchers: List<MyVoucherListItem> = emptyList(),
     val otherVouchers: List<MyVoucherListItem> = emptyList(),
-    val discountDetails: List<DiscountDetail> = emptyList(),
+    val discountDetails: List<AppliedDiscount> = emptyList(),
     val discountUnavailable: Boolean = false,
     val totalVoucherCount: Int = 0,
     val hasLoadedInitial: Boolean = false,

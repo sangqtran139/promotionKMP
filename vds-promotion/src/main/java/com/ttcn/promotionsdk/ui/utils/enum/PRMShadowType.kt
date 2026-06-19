@@ -4,7 +4,7 @@ import android.graphics.Color
 import androidx.annotation.ColorRes
 import androidx.annotation.DimenRes
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.ui.utils.view.PRMCardView
+import com.ttcn.promotionsdk.ui.widget.PRMCardView
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 
 enum class PRMShadowType(

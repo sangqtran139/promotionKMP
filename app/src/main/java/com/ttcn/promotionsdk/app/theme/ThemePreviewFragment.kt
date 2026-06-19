@@ -39,11 +39,11 @@ import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay.Defaults
 import com.ttcn.promotionsdk.ui.theme.TabUnderlineTheme
 import com.ttcn.promotionsdk.ui.theme.toToken
-import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
-import com.ttcn.promotionsdk.ui.utils.extension.TokenColorParser
-import com.ttcn.promotionsdk.ui.utils.extension.TokenDrawableFactory
-import com.ttcn.promotionsdk.ui.utils.view.PRMButton
-import com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
+import com.ttcn.promotionsdk.ui.widget.PRMSearchType
+import com.ttcn.promotionsdk.ui.theme.TokenColorParser
+import com.ttcn.promotionsdk.ui.theme.TokenDrawableFactory
+import com.ttcn.promotionsdk.ui.widget.PRMButton
+import com.ttcn.promotionsdk.ui.widget.PRMSearchField
 import kotlin.math.roundToInt
 import com.ttcn.promotionsdk.R as SdkR
 

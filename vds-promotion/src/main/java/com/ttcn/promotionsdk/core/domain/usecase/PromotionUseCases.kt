@@ -1,32 +1,29 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-import com.ttcn.promotionsdk.core.data.dto.redemption.CustomerInfo
-import com.ttcn.promotionsdk.core.data.dto.redemption.OrderInfo
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
-import com.ttcn.promotionsdk.core.data.dto.redemption.SelectedRedeemable
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableCustomerInfo
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableOrderInfo
-import com.ttcn.promotionsdk.core.domain.model.CreateRedemptionRequest
-import com.ttcn.promotionsdk.core.domain.model.DiscountItemResult
-import com.ttcn.promotionsdk.core.domain.model.DiscountValidationResult
-import com.ttcn.promotionsdk.core.domain.model.RedemptionSessionResult
-import com.ttcn.promotionsdk.core.domain.model.RedemptionValidationError
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
-import java.util.UUID
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.exception.NetworkException
+import com.ttcn.promotionsdk.core.domain.exception.PromotionException
+import com.ttcn.promotionsdk.core.domain.model.PromotionResult
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionResult
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Tập hợp tất cả use case của Promotion SDK.
+ * Tập hợp tất cả use case của Promotion SDK (headless API).
  *
  * Lấy instance qua [com.ttcn.promotionsdk.ui.entry.PromotionSDK.useCases] sau khi đã gọi `init()`.
+ * Mọi hàm trả [PromotionResult] — không ném exception ra ngoài.
  *
  * ```kotlin
- * val useCases = PromotionSDK.useCases
- * val result = useCases.searchVouchers(SearchCustomerVouchersRequest(...))
+ * when (val r = PromotionSDK.useCases.searchVouchers(SearchCustomerVouchersRequest(...))) {
+ *     is PromotionResult.Success -> render(r.data)
+ *     is PromotionResult.Failure -> showError(r.errorCode)
+ * }
  * ```
  */
 class PromotionUseCases internal constructor(
@@ -41,7 +38,8 @@ class PromotionUseCases internal constructor(
      */
     suspend fun searchVouchers(
         request: SearchCustomerVouchersRequest,
-    ): VoucherSearchResult? = searchVouchersUseCase(request)
+    ): PromotionResult<SearchCustomerVouchersResult> =
+        headlessCall { searchVouchersUseCase(request) }
 
     /**
      * Lấy chi tiết một voucher.
@@ -50,81 +48,42 @@ class PromotionUseCases internal constructor(
         voucherId: String,
         customerId: String,
         service: String? = null,
-    ): VoucherDetail? = voucherDetailUseCase(voucherId, customerId, service)
+    ): PromotionResult<VoucherDetail> =
+        headlessCall { voucherDetailUseCase(voucherId, customerId, service) }
 
     /**
      * Validate danh sách voucher trước khi áp dụng vào đơn hàng.
      */
     suspend fun validateDiscounts(
         request: ValidateDiscountsRequest,
-    ): DiscountValidationResult? {
-        val response = validateDiscountsUseCase(request.toDto())
-        return response?.let {
-            DiscountValidationResult(
-                overallValid = it.validationResult.overallValid,
-                totalDiscountAmount = it.validationResult.totalDiscountAmount,
-                finalAmount = it.validationResult.finalAmount,
-                items = it.discountDetails.map { detail ->
-                    DiscountItemResult(
-                        objectId = detail.objectId,
-                        objectType = detail.objectType,
-                        valid = detail.valid,
-                        calculatedDiscount = detail.calculatedDiscount,
-                        eligibilityStatus = detail.eligibilityStatus,
-                    )
-                },
-            )
-        }
-    }
+    ): PromotionResult<ValidateDiscountsResult> =
+        headlessCall { validateDiscountsUseCase(request) }
 
     /**
      * Tạo redemption session để xác nhận thanh toán với voucher đã chọn.
      */
     suspend fun createRedemption(
         request: CreateRedemptionRequest,
-    ): RedemptionSessionResult? {
-        val response = createRedemptionUseCase(request.toDto())
-        return response?.let {
-            RedemptionSessionResult(
-                sessionId = it.sessionId,
-                totalDiscount = it.preview?.totalDiscount.orEmpty(),
-                finalAmount = it.preview?.finalAmount.orEmpty(),
-                validationErrors = it.validationErrors.map { error ->
-                    RedemptionValidationError(
-                        code = error.code,
-                        message = error.message,
-                    )
-                },
-            )
+    ): PromotionResult<CreateRedemptionResult> =
+        headlessCall { createRedemptionUseCase(request) }
+
+    /**
+     * Bọc một lệnh gọi use case thành [PromotionResult]: null → [ErrorCodes.NO_RESULT],
+     * [PromotionException] → [PromotionResult.Failure] (giữ errorCode/status), lỗi khác → [ErrorCodes.GENERAL].
+     */
+    private suspend fun <T : Any> headlessCall(
+        block: suspend () -> T?,
+    ): PromotionResult<T> =
+        try {
+            block()?.let { PromotionResult.Success(it) }
+                ?: PromotionResult.Failure(ErrorCodes.NO_RESULT)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: PromotionException) {
+            PromotionResult.Failure(e.errorCode ?: ErrorCodes.GENERAL, e.message, e.httpStatus)
+        } catch (e: NetworkException) {
+            PromotionResult.Failure(e.errorCode, e.message)
+        } catch (e: Throwable) {
+            PromotionResult.Failure(ErrorCodes.GENERAL, e.message)
         }
-    }
-
-    // ─── Internal mapping ─────────────────────────────────────────────────────
-
-    private fun ValidateDiscountsRequest.toDto() = StackableDiscountsRequest(
-        idempotencyKey = UUID.randomUUID().toString(),
-        customerInfo = StackableCustomerInfo(customerId = customerId),
-        orderInfo = StackableOrderInfo(orderId = orderId, orderValue = orderValue),
-        discountRequests = items.mapIndexed { index, item ->
-            DiscountRequest(
-                objectType = item.objectType,
-                objectId = item.objectId,
-                priority = index + 1,
-            )
-        },
-    )
-
-    private fun CreateRedemptionRequest.toDto() = RedemptionSessionRequest(
-        idempotencyKey = UUID.randomUUID().toString(),
-        customerInfo = CustomerInfo(customerId = customerId),
-        orderInfo = OrderInfo(orderId = orderId, orderValue = orderValue),
-        selectedRedeemables = items.mapIndexed { index, item ->
-            SelectedRedeemable(
-                objectType = item.objectType,
-                objectId = item.objectId,
-                priority = index + 1,
-                expectedDiscount = item.expectedDiscount ?: "",
-            )
-        },
-    )
 }

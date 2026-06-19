@@ -43,7 +43,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent">
 
-                        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                        <com.ttcn.promotionsdk.ui.widget.PRMImageView
                             android:id="@+id/imgVoucher"
                             android:layout_width="@dimen/_37sdp"
                             android:layout_height="@dimen/_37sdp"
@@ -51,7 +51,7 @@
                     </io.github.florent37.shapeofview.shapes.CircleView>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:id="@+id/imgCircleTop"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
                     app:layout_constraintStart_toStartOf="@id/imgLine"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:id="@+id/imgCircleBottom"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -71,7 +71,7 @@
                     app:layout_constraintEnd_toEndOf="@id/imgLine"
                     app:layout_constraintStart_toStartOf="@id/imgLine" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:id="@+id/imgLine"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
@@ -90,7 +90,7 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintWidth_percent="0.76">
 
-                    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                    <com.ttcn.promotionsdk.ui.widget.PRMTextView
                         android:id="@+id/txtVoucherName"
                         style="@style/fontPRMRegular12"
                         android:layout_width="0dp"
@@ -103,7 +103,7 @@
                         app:layout_constraintTop_toTopOf="parent"
                         tools:text="Viễn Thông" />
 
-                    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                    <com.ttcn.promotionsdk.ui.widget.PRMTextView
                         android:id="@+id/tvContent"
                         style="@style/fontPRMMedium16"
                         android:layout_width="0dp"
@@ -118,7 +118,7 @@
                         app:layout_constraintTop_toBottomOf="@+id/txtVoucherName"
                         tools:text="Tặng 1 trà sen vàng cho hoá đơn từ 59khjshvjkfshaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
 
-                    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                    <com.ttcn.promotionsdk.ui.widget.PRMTextView
                         android:id="@+id/tvEndDate"
                         style="@style/fontPRMRegular12"
                         android:layout_width="0dp"
@@ -131,7 +131,7 @@
                         app:layout_constraintTop_toBottomOf="@+id/tvContent"
                         tools:text="HSD 18/10/2023" />
 
-                    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                    <com.ttcn.promotionsdk.ui.widget.PRMTextView
                         android:id="@+id/txtExpired"
                         style="@style/fontSfDisplayBold11"
                         android:layout_width="wrap_content"
@@ -154,7 +154,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="@id/tvEndDate">
 
-                        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                        <com.ttcn.promotionsdk.ui.widget.PRMTextView
                             android:id="@+id/tvUse"
                             style="@style/fontPRMBold14"
                             android:layout_width="wrap_content"
@@ -163,7 +163,7 @@
                             android:text="@string/prm_use"
                             android:textColor="@color/color_EE0033" />
 
-                        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                        <com.ttcn.promotionsdk.ui.widget.PRMImageView
                             android:id="@+id/tvArrowDetail"
                             android:layout_width="@dimen/_12sdp"
                             android:layout_height="@dimen/_12sdp"

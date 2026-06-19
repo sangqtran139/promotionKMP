@@ -1,19 +1,20 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toStackableDiscountsRequest
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplyValidatedVouchers
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 
-class ChoosePromotionViewModel(
+internal class ChoosePromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
@@ -278,7 +279,7 @@ class ChoosePromotionViewModel(
                 return@launch
             }
 
-            val request = selected.toStackableDiscountsRequest(
+            val request = selected.toValidateDiscountsRequest(
                 customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
@@ -286,8 +287,8 @@ class ChoosePromotionViewModel(
 
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
-                    // ✅ Dùng thẳng discountDetails từ response, không map lại
-                    val details = response?.discountDetails.orEmpty()
+                    // Map domain result → AppliedDiscount cho public surface (callback/PRMEndowView)
+                    val details = response?.items.orEmpty().toAppliedDiscounts()
                     setState { copy(isValidating = false) }
                     sendEffect(ApplyValidatedVouchers(details))
                 }
@@ -310,7 +311,4 @@ class ChoosePromotionViewModel(
         }
         sendEffect(ShowError(throwable.toErrorCode()))
     }
-
-    private fun Throwable.toErrorCode(): String =
-        (this as? PromotionApiException)?.errorCode ?: message ?: ErrorCodes.GENERAL
 }

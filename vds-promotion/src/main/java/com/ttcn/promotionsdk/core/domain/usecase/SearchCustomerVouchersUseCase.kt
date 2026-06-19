@@ -1,15 +1,15 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
-class SearchCustomerVouchersUseCase(
+internal class SearchCustomerVouchersUseCase(
     private val repository: PromotionRepository,
 ) {
     suspend operator fun invoke(
         request: SearchCustomerVouchersRequest,
-    ): VoucherSearchResult? {
+    ): SearchCustomerVouchersResult? {
         return repository.searchCustomerVouchers(
             customerId = request.customerId,
             keyword = request.keyword,

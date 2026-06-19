@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 
 data class PromotionDetailUiState(
     val isLoading: Boolean = false,

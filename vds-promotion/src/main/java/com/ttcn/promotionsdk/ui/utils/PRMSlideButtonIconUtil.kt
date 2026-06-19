@@ -5,7 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.drawable.AnimatedVectorDrawable
 import android.graphics.drawable.Drawable
-import com.ttcn.promotionsdk.ui.utils.view.PRMSlideButton
+import com.ttcn.promotionsdk.ui.widget.PRMSlideButton
 
 internal object PRMSlideButtonIconUtil {
 

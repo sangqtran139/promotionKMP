@@ -2,12 +2,13 @@ package com.ttcn.promotionsdk.app.headless
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.domain.model.CreateRedemptionRequest
-import com.ttcn.promotionsdk.core.domain.model.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.RedemptionItemRequest
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.VoucherItem
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
+import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.core.domain.model.PromotionResult
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,31 +36,32 @@ class DemoHeadlessViewModel : ViewModel() {
     fun searchVouchers() {
         viewModelScope.launch {
             _isLoading.value = true
-            runCatching {
-                useCases.searchVouchers(
-                    SearchCustomerVouchersRequest(
-                        customerId = CUSTOMER_ID,
-                        serviceCode = SERVICE_CODE,
-                        keyword = null,
-                        tab = null,
-                        sectionCode = null,
-                        myVouchersPage = 0,
-                        myVouchersSize = 10,
-                        otherVouchersPage = 0,
-                        otherVouchersSize = 10,
-                    )
+            val result = useCases.searchVouchers(
+                SearchCustomerVouchersRequest(
+                    customerId = CUSTOMER_ID,
+                    serviceCode = SERVICE_CODE,
+                    keyword = null,
+                    tab = null,
+                    sectionCode = null,
+                    myVouchersPage = 0,
+                    myVouchersSize = 10,
+                    otherVouchersPage = 0,
+                    otherVouchersSize = 10,
                 )
-            }.onSuccess { result ->
-                val all: List<VoucherItem> = (result?.myVouchers?.content.orEmpty()) +
-                        (result?.otherVouchers?.content.orEmpty())
-                firstVoucherId = all.firstOrNull()?.voucherId
-                emit("✅ searchVouchers")
-                emit("   myVouchers  : ${result?.myVouchers?.content?.size ?: 0} items")
-                emit("   otherVouchers: ${result?.otherVouchers?.content?.size ?: 0} items")
-                all.take(3).forEach { emit("   - [${it.voucherId}] ${it.title}") }
-                if (all.size > 3) emit("   ... +${all.size - 3} more")
-            }.onFailure { e ->
-                emit("❌ searchVouchers: ${e.message}")
+            )
+            when (result) {
+                is PromotionResult.Success -> {
+                    val data = result.data
+                    val all: List<VoucherItem> = data.myVouchers?.content.orEmpty() +
+                            data.otherVouchers?.content.orEmpty()
+                    firstVoucherId = all.firstOrNull()?.voucherId
+                    emit("✅ searchVouchers")
+                    emit("   myVouchers  : ${data.myVouchers?.content?.size ?: 0} items")
+                    emit("   otherVouchers: ${data.otherVouchers?.content?.size ?: 0} items")
+                    all.take(3).forEach { emit("   - [${it.voucherId}] ${it.title}") }
+                    if (all.size > 3) emit("   ... +${all.size - 3} more")
+                }
+                is PromotionResult.Failure -> emit("❌ searchVouchers: ${result.errorCode}")
             }
             _isLoading.value = false
         }
@@ -73,19 +75,16 @@ class DemoHeadlessViewModel : ViewModel() {
         }
         viewModelScope.launch {
             _isLoading.value = true
-            runCatching {
-                useCases.getVoucherDetail(
-                    voucherId = voucherId,
-                    customerId = CUSTOMER_ID,
-                )
-            }.onSuccess { detail ->
-                emit("✅ getVoucherDetail [${detail?.voucherId}]")
-                emit("   title      : ${detail?.title}")
-                emit("   merchant   : ${detail?.merchantName}")
-                emit("   expires    : ${detail?.expirationDate}")
-                emit("   status     : ${detail?.status}")
-            }.onFailure { e ->
-                emit("❌ getVoucherDetail: ${e.message}")
+            when (val result = useCases.getVoucherDetail(voucherId = voucherId, customerId = CUSTOMER_ID)) {
+                is PromotionResult.Success -> {
+                    val detail = result.data
+                    emit("✅ getVoucherDetail [${detail.voucherId}]")
+                    emit("   title      : ${detail.title}")
+                    emit("   merchant   : ${detail.merchantName}")
+                    emit("   expires    : ${detail.expirationDate}")
+                    emit("   status     : ${detail.status}")
+                }
+                is PromotionResult.Failure -> emit("❌ getVoucherDetail: ${result.errorCode}")
             }
             _isLoading.value = false
         }
@@ -99,28 +98,27 @@ class DemoHeadlessViewModel : ViewModel() {
         }
         viewModelScope.launch {
             _isLoading.value = true
-            runCatching {
-                useCases.validateDiscounts(
-                    ValidateDiscountsRequest(
-                        customerId = CUSTOMER_ID,
-                        orderId = ORDER_ID,
-                        orderValue = ORDER_VALUE,
-                        items = listOf(DiscountItemRequest(objectId = voucherId)),
-                    )
+            val result = useCases.validateDiscounts(
+                ValidateDiscountsRequest(
+                    customerId = CUSTOMER_ID,
+                    orderId = ORDER_ID,
+                    orderValue = ORDER_VALUE,
+                    items = listOf(DiscountItemRequest(objectId = voucherId)),
                 )
-            }.onSuccess { result ->
-                validatedItems = result?.validItems
-                    ?.map { it.objectId to it.objectType }
-                    .orEmpty()
-                emit("✅ validateDiscounts")
-                emit("   overallValid       : ${result?.overallValid}")
-                emit("   totalDiscountAmount: ${result?.totalDiscountAmount}")
-                emit("   finalAmount        : ${result?.finalAmount}")
-                result?.items?.forEach { item ->
-                    emit("   [${item.objectId}] valid=${item.valid} discount=${item.calculatedDiscount}")
+            )
+            when (result) {
+                is PromotionResult.Success -> {
+                    val data = result.data
+                    validatedItems = data.validItems.map { it.objectId to it.objectType }
+                    emit("✅ validateDiscounts")
+                    emit("   overallValid       : ${data.overallValid}")
+                    emit("   totalDiscountAmount: ${data.totalDiscountAmount}")
+                    emit("   finalAmount        : ${data.finalAmount}")
+                    data.items.forEach { item ->
+                        emit("   [${item.objectId}] valid=${item.valid} discount=${item.calculatedDiscount}")
+                    }
                 }
-            }.onFailure { e ->
-                emit("❌ validateDiscounts: ${e.message}")
+                is PromotionResult.Failure -> emit("❌ validateDiscounts: ${result.errorCode}")
             }
             _isLoading.value = false
         }
@@ -134,28 +132,29 @@ class DemoHeadlessViewModel : ViewModel() {
         }
         viewModelScope.launch {
             _isLoading.value = true
-            runCatching {
-                useCases.createRedemption(
-                    CreateRedemptionRequest(
-                        customerId = CUSTOMER_ID,
-                        orderId = ORDER_ID,
-                        orderValue = ORDER_VALUE,
-                        items = validatedItems.map { (objectId, objectType) ->
-                            RedemptionItemRequest(objectId = objectId, objectType = objectType)
-                        },
-                    )
+            val result = useCases.createRedemption(
+                CreateRedemptionRequest(
+                    customerId = CUSTOMER_ID,
+                    orderId = ORDER_ID,
+                    orderValue = ORDER_VALUE,
+                    items = validatedItems.map { (objectId, objectType) ->
+                        RedemptionItemRequest(objectId = objectId, objectType = objectType)
+                    },
                 )
-            }.onSuccess { result ->
-                emit("✅ createRedemption")
-                emit("   sessionId   : ${result?.sessionId}")
-                emit("   totalDiscount: ${result?.totalDiscount}")
-                emit("   finalAmount : ${result?.finalAmount}")
-                emit("   hasErrors   : ${result?.hasErrors}")
-                result?.validationErrors?.forEach { err ->
-                    emit("   ⚠️ ${err.code}: ${err.message}")
+            )
+            when (result) {
+                is PromotionResult.Success -> {
+                    val data = result.data
+                    emit("✅ createRedemption")
+                    emit("   sessionId   : ${data.sessionId}")
+                    emit("   totalDiscount: ${data.totalDiscount}")
+                    emit("   finalAmount : ${data.finalAmount}")
+                    emit("   hasErrors   : ${data.hasErrors}")
+                    data.validationErrors.forEach { err ->
+                        emit("   ⚠️ ${err.code}: ${err.message}")
+                    }
                 }
-            }.onFailure { e ->
-                emit("❌ createRedemption: ${e.message}")
+                is PromotionResult.Failure -> emit("❌ createRedemption: ${result.errorCode}")
             }
             _isLoading.value = false
         }

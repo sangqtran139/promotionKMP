@@ -1,14 +1,15 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.endowview
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.core.di.internal.get
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toStackableDiscountsRequest
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 import kotlinx.coroutines.CoroutineScope
@@ -39,7 +40,7 @@ import kotlinx.coroutines.launch
  * )
  * ```
  */
-class PRMEndowViewModel(
+internal class PRMEndowViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
@@ -111,7 +112,7 @@ class PRMEndowViewModel(
         }
     }
 
-    fun applyDiscountDetails(details: List<DiscountDetail>, unavailable: Boolean = false) {
+    fun applyDiscountDetails(details: List<AppliedDiscount>, unavailable: Boolean = false) {
         _uiState.update {
             it.copy(
                 discountDetails = details,
@@ -148,7 +149,7 @@ class PRMEndowViewModel(
         vouchers: List<MyVoucherListItem>,
     ) {
         scope.launch {
-            val request = vouchers.toStackableDiscountsRequest(
+            val request = vouchers.toValidateDiscountsRequest(
                 customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
@@ -156,7 +157,7 @@ class PRMEndowViewModel(
 
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
-                    val details = response?.discountDetails.orEmpty()
+                    val details = response?.items.orEmpty().toAppliedDiscounts()
                     val hasInvalid = details.isNotEmpty() && details.any { !it.valid }
                     _uiState.update {
                         it.copy(
@@ -171,9 +172,6 @@ class PRMEndowViewModel(
                 }
         }
     }
-
-    private fun Throwable.toErrorCode(): String =
-        (this as? PromotionApiException)?.errorCode ?: message ?: ErrorCodes.GENERAL
 
     // ─── Factory ──────────────────────────────────────────────────────────────
 

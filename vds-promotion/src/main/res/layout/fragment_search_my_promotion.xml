@@ -24,7 +24,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/prm_ic_back_in_onboarding" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
+        <com.ttcn.promotionsdk.ui.widget.PRMSearchField
             android:id="@+id/sfEndow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -44,14 +44,14 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sfEndow">
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            <com.ttcn.promotionsdk.ui.widget.PRMTextView
                 android:id="@+id/tvTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/view_size_20"
                 android:layout_marginTop="@dimen/view_size_20"
                 android:fontFamily="@font/sf_pro_display_medium"
-                android:text="@string/search_result"
+                android:text="@string/prm_search_result"
                 android:textSize="@dimen/text_size_16"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -78,7 +78,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sfEndow">
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+            <com.ttcn.promotionsdk.ui.widget.PRMImageView
                 android:id="@+id/imgNoData"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -87,7 +87,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            <com.ttcn.promotionsdk.ui.widget.PRMTextView
                 android:id="@+id/tvNoResult"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -104,7 +104,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/imgNoData" />
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            <com.ttcn.promotionsdk.ui.widget.PRMTextView
                 android:id="@+id/tvNoResultSubtext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -114,7 +114,7 @@
                 android:fontFamily="@font/sf_pro_display_regular"
                 android:gravity="center"
                 android:lineHeight="@dimen/view_size_22"
-                android:text="@string/discover_voucher"
+                android:text="@string/prm_discover_voucher"
                 android:textSize="@dimen/text_size_16"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"

@@ -1,17 +1,21 @@
 package com.ttcn.promotionsdk.core.data.repository
 
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
-import com.ttcn.promotionsdk.core.data.dto.toVoucherDetail
-import com.ttcn.promotionsdk.core.data.dto.toVoucherSearchResult
+import com.ttcn.promotionsdk.core.data.dto.redemption.toRedemptionSessionRequest
+import com.ttcn.promotionsdk.core.data.dto.redemption.toCreateRedemptionResult
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.toValidateDiscountsResult
+import com.ttcn.promotionsdk.core.data.dto.stackablediscount.toStackableDiscountsRequest
+import com.ttcn.promotionsdk.core.data.dto.voucher.toVoucherDetail
+import com.ttcn.promotionsdk.core.data.dto.voucher.toSearchCustomerVouchersResult
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionResult
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
-class PromotionRepositoryImpl(
+internal class PromotionRepositoryImpl(
     private val remoteDataSource: PromotionRemoteDataSource,
 ) : PromotionRepository {
 
@@ -25,7 +29,7 @@ class PromotionRepositoryImpl(
         myVouchersSize: Int?,
         otherVouchersPage: Int?,
         otherVouchersSize: Int?,
-    ): VoucherSearchResult? {
+    ): SearchCustomerVouchersResult? {
         return remoteDataSource.searchCustomerVouchers(
             customerId = customerId,
             keyword = keyword,
@@ -36,7 +40,7 @@ class PromotionRepositoryImpl(
             myVouchersSize = myVouchersSize,
             otherVouchersPage = otherVouchersPage,
             otherVouchersSize = otherVouchersSize,
-        )?.toVoucherSearchResult()
+        )?.toSearchCustomerVouchersResult()
     }
 
     override suspend fun getCustomerVoucherDetail(
@@ -52,14 +56,16 @@ class PromotionRepositoryImpl(
     }
 
     override suspend fun createRedemptionSession(
-        request: RedemptionSessionRequest,
-    ): RedemptionSessionResponse? {
-        return remoteDataSource.createRedemptionSession(request)
+        request: CreateRedemptionRequest,
+    ): CreateRedemptionResult? {
+        return remoteDataSource.createRedemptionSession(request.toRedemptionSessionRequest())
+            ?.toCreateRedemptionResult()
     }
 
     override suspend fun validateStackableDiscounts(
-        request: StackableDiscountsRequest,
-    ): StackableDiscountsResponse? {
-        return remoteDataSource.validateStackableDiscounts(request)
+        request: ValidateDiscountsRequest,
+    ): ValidateDiscountsResult? {
+        return remoteDataSource.validateStackableDiscounts(request.toStackableDiscountsRequest())
+            ?.toValidateDiscountsResult()
     }
 }

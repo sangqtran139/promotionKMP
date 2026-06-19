@@ -9,7 +9,7 @@
         android:layout_marginEnd="@dimen/_5sdp"
         android:background="@drawable/prm_bg_apply_endow">
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+        <com.ttcn.promotionsdk.ui.widget.PRMTextView
             android:id="@+id/txtName"
             style="@style/fontPRMDisPlayRegular14"
             android:layout_width="wrap_content"

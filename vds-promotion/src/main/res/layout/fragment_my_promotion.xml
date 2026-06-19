@@ -42,17 +42,17 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/btnBack">
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/tvEndow"
                     style="@style/fontPRMSfDisplayBold22"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/my_promotion"
+                    android:text="@string/prm_my_promotion"
                     android:textColor="@color/black"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:layout_width="@dimen/tokenSizing32"
                     android:layout_height="@dimen/tokenSizing32"
                     android:layout_marginStart="@dimen/view_size_10"
@@ -61,7 +61,7 @@
                     app:layout_constraintStart_toEndOf="@+id/tvEndow"
                     app:layout_constraintTop_toTopOf="@+id/tvEndow" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:id="@+id/imgSearch"
                     android:layout_width="@dimen/tokenSizing32"
                     android:layout_height="@dimen/tokenSizing32"
@@ -129,7 +129,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/rvTabs">
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMImageView
                     android:id="@+id/imgNoData"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -138,7 +138,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/tvHotDeal"
                     style="@style/fontPRMSfDisplayBold18"
                     android:layout_width="match_parent"
@@ -148,13 +148,13 @@
                     android:layout_marginEnd="@dimen/view_size_40"
                     android:gravity="center"
                     android:lineHeight="@dimen/view_size_22"
-                    android:text="@string/deal_hot"
+                    android:text="@string/prm_deal_hot"
                     android:textColor="@color/black"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/imgNoData" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/tvContentText"
                     style="@style/fontPRMSfDisplayRegular16"
                     android:layout_width="match_parent"
@@ -164,12 +164,12 @@
                     android:layout_marginEnd="@dimen/view_size_40"
                     android:gravity="center"
                     android:lineHeight="@dimen/view_size_22"
-                    android:text="@string/hot_deal_description"
+                    android:text="@string/prm_hot_deal_description"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvHotDeal" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMButton
+                <com.ttcn.promotionsdk.ui.widget.PRMButton
                     android:id="@+id/btnEndow"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -180,7 +180,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvContentText"
                     app:prmBtSize="large"
-                    app:prmBtText="@string/get_now"
+                    app:prmBtText="@string/prm_get_now"
                     app:prmBtType="gradient" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>

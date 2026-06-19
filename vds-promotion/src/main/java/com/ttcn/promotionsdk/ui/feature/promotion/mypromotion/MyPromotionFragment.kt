@@ -7,14 +7,14 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.di.internal.inject
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionTabAdapter
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.PromotionListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
@@ -34,7 +34,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         },
     )
 
-    private val homeListAdapter = ChoosePromotionAdapter(
+    private val homeListAdapter = MyPromotionAdapter(
         onVoucherClick = { voucher, _ ->
             addFragment(PromotionDetailFragment.newInstance(voucher.voucherId))
         },
@@ -45,7 +45,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
     private var displayedTabCode: String? = null
     private var latestTabs: List<TabItem> = emptyList()
     private var latestSelectedTabCode: String? = null
-    private var latestSubmittedItems: List<PromotionListItem> = emptyList()
+    private var latestSubmittedItems: List<MyPromotionListItem> = emptyList()
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentMyPromotionBinding.inflate(inflater, container, false)
@@ -109,7 +109,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
                 isLoadingMore = state.isLoadingMore,
             )
             adapterItems.forEachIndexed { index, item ->
-                if (item is PromotionListItem.Endow) {
+                if (item is MyPromotionListItem.Endow) {
                     Timber.tag(TAG_VOUCHER_DIFF_DEBUG)
                         .d("index=$index voucherId=${item.data.voucherId} rowKey=${item.rowKey} title=${item.data.title}")
                 }
@@ -142,7 +142,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
     private fun submitVoucherItems(
         selectedTabCode: String?,
-        items: List<PromotionListItem>,
+        items: List<MyPromotionListItem>,
     ) {
         if (items == latestSubmittedItems) return
 
@@ -173,7 +173,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
     private fun mapErrorMessage(error: String): String {
         return when (error) {
             ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            ErrorCodes.NO_RESULT -> getString(R.string.no_result)
+            ErrorCodes.NO_RESULT -> getString(R.string.prm_no_result)
             else -> getString(R.string.prm_error_general)
         }
     }

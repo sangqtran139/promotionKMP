@@ -7,11 +7,11 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.di.inject
+import com.ttcn.promotionsdk.core.di.internal.inject
 import com.ttcn.promotionsdk.databinding.FragmentSearchMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.ChoosePromotionAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
@@ -24,7 +24,7 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         viewModelFactory
     }
 
-    private val searchListAdapter = ChoosePromotionAdapter(
+    private val searchListAdapter = MyPromotionAdapter(
         onVoucherClick = { voucher, _ ->
             addFragment(PromotionDetailFragment.newInstance(voucher.voucherId))
         },
@@ -103,7 +103,7 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
             showNoResult -> getString(R.string.prm_search_no_result)
             else -> ""
         }
-        binding.tvNoResultSubtext.text = getString(R.string.discover_voucher)
+        binding.tvNoResultSubtext.text = getString(R.string.prm_discover_voucher)
 
         searchListAdapter.submitList(
             buildPromotionListItems(

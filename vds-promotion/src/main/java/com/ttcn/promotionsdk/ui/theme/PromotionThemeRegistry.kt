@@ -1,5 +1,12 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.token.ButtonToken
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.token.ListItemToken
+import com.ttcn.promotionsdk.ui.theme.token.SearchBarToken
+import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
+import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
+
 internal object PromotionThemeRegistry {
 
     @Volatile

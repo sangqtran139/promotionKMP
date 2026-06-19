@@ -6,7 +6,8 @@ import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiService
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
 import com.ttcn.promotionsdk.core.data.remote.RetrofitClient
-import com.ttcn.promotionsdk.core.domain.di.UseCaseModule
+import com.ttcn.promotionsdk.core.di.internal.SdkDi
+import com.ttcn.promotionsdk.core.di.internal.get
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
 object PromotionContainer {
@@ -42,13 +43,13 @@ object PromotionContainer {
         "PromotionSDKConfig is unavailable. Call PromotionSDK.init() first."
     }
 
-    val promotionApiService: PromotionApiService
+    internal val promotionApiService: PromotionApiService
         get() = get()
 
-    val promotionRemoteDataSource: PromotionRemoteDataSource
+    internal val promotionRemoteDataSource: PromotionRemoteDataSource
         get() = get()
 
-    val promotionRepository: PromotionRepository
+    internal val promotionRepository: PromotionRepository
         get() = get()
 
     val requestContextProvider: PromotionRequestContextProvider

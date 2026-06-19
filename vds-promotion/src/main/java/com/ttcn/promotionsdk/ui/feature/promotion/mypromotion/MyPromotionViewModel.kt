@@ -1,13 +1,13 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
-class MyPromotionViewModel(
+internal class MyPromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) :
@@ -323,11 +323,5 @@ class MyPromotionViewModel(
 
     private companion object {
         private const val TAB_ALL = "all"
-    }
-
-    private fun Throwable.toErrorCode(): String {
-        return (this as? PromotionApiException)?.errorCode
-            ?: message
-            ?: ErrorCodes.GENERAL
     }
 }

@@ -5,7 +5,7 @@ import okhttp3.Interceptor
 import okhttp3.Response
 import java.util.UUID
 
-class ApiInterceptor(
+internal class ApiInterceptor(
     private val requestContextProvider: PromotionRequestContextProvider,
 ) : Interceptor {
 

@@ -8,7 +8,7 @@ import com.ttcn.promotionsdk.databinding.ItemTagMyPromotionBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDefaults
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.ui.theme.TabChipThemeApplier
+import com.ttcn.promotionsdk.ui.theme.applier.TabChipThemeApplier
 
 class MyPromotionTabAdapter(
     private val onTabSelected: (TabItem) -> Unit = {},

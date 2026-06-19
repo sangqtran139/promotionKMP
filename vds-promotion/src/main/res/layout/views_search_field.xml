@@ -9,7 +9,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMEditText
+        <com.ttcn.promotionsdk.ui.widget.PRMEditText
             android:id="@+id/searchInput"
             style="@style/fontPRMSfDisplayBold32"
             android:layout_width="0dp"
@@ -32,7 +32,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
             android:id="@+id/searchIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -42,7 +42,7 @@
             app:layout_constraintStart_toStartOf="@+id/searchInput"
             app:layout_constraintTop_toTopOf="@+id/searchInput" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
             android:id="@+id/buttonClear"
             android:layout_width="@dimen/_19sdp"
             android:layout_height="@dimen/_19sdp"
@@ -56,7 +56,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:prmIvEnableClickEffect="true" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
             android:id="@+id/buttonSearch"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/_32sdp"

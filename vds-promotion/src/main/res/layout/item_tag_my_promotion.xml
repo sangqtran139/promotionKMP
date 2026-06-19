@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     android:layout_marginEnd="@dimen/view_size_8">
 
-    <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+    <com.ttcn.promotionsdk.ui.widget.PRMTextView
         android:id="@+id/tvTag"
         style="@style/fontPRMSfDisplayRegular14"
         android:layout_width="wrap_content"

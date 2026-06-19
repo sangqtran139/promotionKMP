@@ -1,13 +1,13 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.dto.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 
-class PromotionDetailViewModel(
+internal class PromotionDetailViewModel(
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) :
@@ -93,12 +93,6 @@ class PromotionDetailViewModel(
                 label = displayStatusLabel,
             )
         }
-    }
-
-    private fun Throwable.toErrorCode(): String {
-        return (this as? PromotionApiException)?.errorCode
-            ?: message
-            ?: ErrorCodes.GENERAL
     }
 }
 

@@ -20,7 +20,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+            <com.ttcn.promotionsdk.ui.widget.PRMImageView
                 android:id="@+id/imgBanner"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/tokenSizing184"
@@ -42,7 +42,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/prm_ic_back_with_bg" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMCardView
+        <com.ttcn.promotionsdk.ui.widget.PRMCardView
             android:id="@+id/cardViewTop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="@dimen/view_size_24">
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMCircleImageView
+                <com.ttcn.promotionsdk.ui.widget.PRMCircleImageView
                     android:id="@+id/circleLogo"
                     android:layout_width="@dimen/view_size_24"
                     android:layout_height="@dimen/view_size_24"
@@ -72,7 +72,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/txtVoucherName"
                     style="@style/fontPRMDisPlayRegular14"
                     android:layout_width="wrap_content"
@@ -83,7 +83,7 @@
                     app:layout_constraintTop_toTopOf="@+id/circleLogo"
                     tools:text="Viettel Money" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/tvContent"
                     style="@style/fontSfDisplayBold16"
                     android:layout_width="0dp"
@@ -97,7 +97,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/circleLogo"
                     tools:text="Giảm 50k cho hóa đơn từ 200k áp dụng tại cửa hàng The Coffee House" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/tvExpired"
                     style="@style/fontPRMDisPlayRegular14"
                     android:layout_width="wrap_content"
@@ -110,7 +110,7 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-        </com.ttcn.promotionsdk.ui.utils.view.PRMCardView>
+        </com.ttcn.promotionsdk.ui.widget.PRMCardView>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ctlContent"
@@ -156,7 +156,7 @@
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMButton
+        <com.ttcn.promotionsdk.ui.widget.PRMButton
             android:id="@+id/tvUse"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -166,7 +166,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:prmBtSize="large"
-            app:prmBtText="@string/use_now" />
+            app:prmBtText="@string/prm_use_now" />
 
         <androidx.constraintlayout.widget.Group
             android:id="@+id/contentContainer"

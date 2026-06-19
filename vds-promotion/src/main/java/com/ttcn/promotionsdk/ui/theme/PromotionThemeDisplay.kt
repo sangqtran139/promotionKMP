@@ -1,7 +1,13 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.token.ButtonToken
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.token.ListItemToken
+import com.ttcn.promotionsdk.ui.theme.token.SearchBarToken
+import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
+import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
+
 import android.content.Context
-import com.ttcn.promotionsdk.ui.utils.extension.TokenColorParser
 
 /**
  * Hex-string display model for theme preview UI.

@@ -11,7 +11,7 @@ import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionViewMod
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionViewModel
 
-class PromotionViewModelFactory(
+internal class PromotionViewModelFactory(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,

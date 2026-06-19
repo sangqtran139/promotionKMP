@@ -1,8 +1,10 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.applier.DiscountBadgeApplier
+
 import com.ttcn.promotionsdk.databinding.ItemListPromotionApplyBinding
 
-object DiscountBadgeTheme {
+internal object DiscountBadgeTheme {
 
     fun applyToken(
         binding: ItemListPromotionApplyBinding,

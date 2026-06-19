@@ -2,7 +2,7 @@ package com.ttcn.promotionsdk.ui.utils
 
 import android.text.Editable
 import android.text.TextWatcher
-import com.ttcn.promotionsdk.ui.utils.view.itf.IPRMInput
+import com.ttcn.promotionsdk.ui.widget.itf.IPRMInput
 
 internal object PRMViewsDataProvider {
 

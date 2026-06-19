@@ -1,11 +1,11 @@
 package com.ttcn.promotionsdk.ui.entry
 
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 
 interface PromotionSDKCallback {
 
     /** Gọi khi user chọn và xác nhận áp dụng ưu đãi thành công. */
-    fun onVoucherApplied(discountDetails: List<DiscountDetail>) {}
+    fun onVoucherApplied(discountDetails: List<AppliedDiscount>) {}
 
     /** Gọi khi SDK gặp lỗi không xử lý được ở tầng UI. */
     fun onError(errorCode: String) {}

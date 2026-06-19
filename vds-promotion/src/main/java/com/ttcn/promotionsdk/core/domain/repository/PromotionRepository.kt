@@ -1,13 +1,13 @@
 package com.ttcn.promotionsdk.core.domain.repository
 
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
-import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.VoucherSearchResult
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionResult
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
 
-interface PromotionRepository {
+internal interface PromotionRepository {
     suspend fun searchCustomerVouchers(
         customerId: String,
         keyword: String?,
@@ -18,7 +18,7 @@ interface PromotionRepository {
         myVouchersSize: Int?,
         otherVouchersPage: Int?,
         otherVouchersSize: Int?,
-    ): VoucherSearchResult?
+    ): SearchCustomerVouchersResult?
 
     suspend fun getCustomerVoucherDetail(
         voucherId: String,
@@ -26,7 +26,7 @@ interface PromotionRepository {
         service: String?,
     ): VoucherDetail?
 
-    suspend fun createRedemptionSession(request: RedemptionSessionRequest): RedemptionSessionResponse?
+    suspend fun createRedemptionSession(request: CreateRedemptionRequest): CreateRedemptionResult?
 
-    suspend fun validateStackableDiscounts(request: StackableDiscountsRequest): StackableDiscountsResponse?
+    suspend fun validateStackableDiscounts(request: ValidateDiscountsRequest): ValidateDiscountsResult?
 }

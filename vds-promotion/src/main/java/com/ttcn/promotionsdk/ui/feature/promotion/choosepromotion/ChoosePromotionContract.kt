@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 
@@ -58,6 +58,6 @@ sealed interface ChoosePromotionEffect {
      * [details] = list từ discountDetails của response.
      */
     data class ApplyValidatedVouchers(
-        val details: List<DiscountDetail>,
+        val details: List<AppliedDiscount>,
     ) : ChoosePromotionEffect
 }

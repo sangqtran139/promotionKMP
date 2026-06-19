@@ -16,7 +16,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMButton
+        <com.ttcn.promotionsdk.ui.widget.PRMButton
             android:id="@+id/btnConfirmPayment"
             android:layout_width="match_parent"
             android:layout_height="0dp"

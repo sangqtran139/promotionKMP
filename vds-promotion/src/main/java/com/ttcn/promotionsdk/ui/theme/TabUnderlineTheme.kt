@@ -1,5 +1,7 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.applier.TabLayoutThemeApplier
+
 import com.google.android.material.tabs.TabLayout
 
 object TabUnderlineTheme {

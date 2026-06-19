@@ -9,6 +9,9 @@ import com.ttcn.promotionsdk.core.data.remote.ApiInterceptor
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiService
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
 import com.ttcn.promotionsdk.core.data.remote.RetrofitClient
+import com.ttcn.promotionsdk.core.di.internal.get
+import com.ttcn.promotionsdk.core.di.internal.module
+import com.ttcn.promotionsdk.core.di.internal.single
 
 object NetworkModule {
     internal val module = module {
@@ -24,7 +27,8 @@ object NetworkModule {
         }
 
         single<PromotionApiService> {
-            val isDebug = (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            val isDebug =
+                (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
             RetrofitClient.promotionApiService(
                 baseUrl = get<PromotionSDKConfig>().baseUrl,
                 apiInterceptor = get(),

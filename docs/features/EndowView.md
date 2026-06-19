@@ -83,5 +83,5 @@ Host bấm thanh toán
 - `PromotionIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật `INTEGRATION.md` + docs (AI_AGENT_RULES điều 7).
 - **Luôn** gọi `clear()` khi view/Fragment huỷ để giải phóng scope (tránh leak).
 - Giữ tối ưu `PreloadVouchers` để không gọi API trùng giữa Endow và Choose Promotion.
-- Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionApiException` (xem `../ErrorHandling.md`).
+- Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionException` (xem `../ErrorHandling.md`).
 - Liên quan: [ChoosePromotion.md](./ChoosePromotion.md).

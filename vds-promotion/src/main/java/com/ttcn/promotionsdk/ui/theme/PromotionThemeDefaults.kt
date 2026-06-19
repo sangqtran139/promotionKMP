@@ -1,11 +1,18 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.token.ButtonToken
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.token.ListItemToken
+import com.ttcn.promotionsdk.ui.theme.token.SearchBarToken
+import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
+import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
+
 import android.content.Context
 import android.graphics.Color
 import androidx.annotation.ColorInt
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonType
-import com.ttcn.promotionsdk.ui.utils.enum.PRMSearchType
+import com.ttcn.promotionsdk.ui.widget.PRMSearchType
 import com.ttcn.promotionsdk.ui.utils.extension.retrieveColor
 
 /**

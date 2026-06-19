@@ -17,12 +17,10 @@ import com.google.gson.Gson
 import com.ttcn.promotionsdk.ui.utils.ViewGlobalConst
 import timber.log.Timber
 import java.text.Normalizer
-import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
-import java.util.TimeZone
 import java.util.regex.Pattern
 
 fun Float.dpToPixel(): Int {
@@ -74,6 +72,8 @@ fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false): Vi
     return LayoutInflater.from(context).inflate(layout, this, attachToRoot)
 }
 
+// defaultDisplay/getRealSize deprecated (API 30) nhưng chưa có thay thế tương thích minSdk 24.
+@Suppress("DEPRECATION")
 fun Context.screenWidth(): Int {
     val windowManager = getSystemService(Context.WINDOW_SERVICE) as? WindowManager? ?: return -1
     val point = Point()
@@ -198,11 +198,18 @@ fun parseTimeToSeconds(timeString: String): Int? {
 
 fun String.toVoucherDisplayDate(): String {
     if (isBlank()) return ""
-    return runCatching {
-        OffsetDateTime.parse(this)
-            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()))
-    }.getOrElse {
-        take(10)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        runCatching {
+            OffsetDateTime.parse(this)
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.getDefault()))
+        }.getOrNull()?.let { return it }
+    }
+    val datePart = take(10)
+    val parts = datePart.split("-")
+    return if (parts.size == 3 && parts[0].length == 4) {
+        "${parts[2]}/${parts[1]}/${parts[0]}"
+    } else {
+        datePart
     }
 }
 

@@ -4,16 +4,15 @@ import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionRequest
 import com.ttcn.promotionsdk.core.data.dto.redemption.RedemptionSessionResponse
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsRequest
 import com.ttcn.promotionsdk.core.data.dto.stackablediscount.StackableDiscountsResponse
-import com.ttcn.promotionsdk.core.data.dto.voucher.ApiResponseTemplate
 import com.ttcn.promotionsdk.core.data.dto.voucher.CustomerVoucherDetail
-import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersData
+import com.ttcn.promotionsdk.core.data.dto.voucher.SearchCustomerVouchersResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
-interface PromotionApiService {
+internal interface PromotionApiService {
 
     @GET("promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers")
     suspend fun searchCustomerVouchers(
@@ -26,7 +25,7 @@ interface PromotionApiService {
         @Query("myVouchers.size") myVouchersSize: Int?,
         @Query("otherVouchers.page") otherVouchersPage: Int?,
         @Query("otherVouchers.size") otherVouchersSize: Int?,
-    ): ApiResponseTemplate<SearchCustomerVouchersData>
+    ): ApiResponseTemplate<SearchCustomerVouchersResponse>
 
     @GET("promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}")
     suspend fun getCustomerVoucherDetail(

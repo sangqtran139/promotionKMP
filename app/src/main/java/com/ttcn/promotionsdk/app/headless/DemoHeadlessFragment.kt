@@ -2,7 +2,6 @@ package com.ttcn.promotionsdk.app.headless
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentHeadlessDemoBinding

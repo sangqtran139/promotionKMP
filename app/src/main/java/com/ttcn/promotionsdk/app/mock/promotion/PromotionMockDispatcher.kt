@@ -1,12 +1,16 @@
 package com.ttcn.promotionsdk.app.mock.promotion
 
+import android.os.Build
 import android.util.Log
 import okhttp3.HttpUrl
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.RecordedRequest
+import java.text.SimpleDateFormat
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.min
@@ -306,6 +310,14 @@ internal class PromotionMockDispatcher : Dispatcher() {
             .setBody(body)
     }
 
+    /** Timestamp ISO-8601: java.time trên API 26+, SimpleDateFormat cho < 26. */
+    private fun nowIsoTimestamp(): String =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+        } else {
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US).format(Date())
+        }
+
     private fun errorResponse(status: Int, code: String, message: String): MockResponse {
         val body = """
             {
@@ -314,7 +326,7 @@ internal class PromotionMockDispatcher : Dispatcher() {
               "success": false,
               "message": "$message",
               "data": null,
-              "timestamp": "${OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)}"
+              "timestamp": "${nowIsoTimestamp()}"
             }
         """.trimIndent()
         return MockResponse()

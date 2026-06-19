@@ -1,5 +1,7 @@
 package com.ttcn.promotionsdk.ui.theme
 
+import com.ttcn.promotionsdk.ui.theme.applier.PromotionListItemApplier
+
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
 import com.ttcn.promotionsdk.databinding.PrmItemPromotionBinding
 

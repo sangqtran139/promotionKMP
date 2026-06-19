@@ -5,25 +5,25 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.databinding.ItemListPromotionApplyBinding
 import com.ttcn.promotionsdk.databinding.ItemListPromotionCountBinding
-import com.ttcn.promotionsdk.ui.theme.DiscountBadgeApplier
-import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.applier.DiscountBadgeApplier
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 
 /**
  * Adapter cho [rcvEndow] trong PRMEndowView.
  *
- * Luôn render từ [DiscountDetail] — dữ liệu trực tiếp từ discountDetails
+ * Luôn render từ [AppliedDiscount] — dữ liệu trực tiếp từ discountDetails
  * trong response của validateStackableDiscounts.
  *
- * - [DiscountDetail.valid] = true  → hiển thị bình thường
- * - [DiscountDetail.valid] = false → hiển thị mờ/disabled
+ * - [AppliedDiscount.valid] = true  → hiển thị bình thường
+ * - [AppliedDiscount.valid] = false → hiển thị mờ/disabled
  */
 class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val items = mutableListOf<DiscountDetail>()
+    private val items = mutableListOf<AppliedDiscount>()
     private val maxVisibleVouchers = 2
     private var badgeTokenOverride: DiscountBadgeToken? = null
 
@@ -39,7 +39,7 @@ class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun submitList(list: List<DiscountDetail>) {
+    fun submitList(list: List<AppliedDiscount>) {
         items.clear()
         items.addAll(list)
         notifyDataSetChanged()
@@ -88,7 +88,7 @@ class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         private val binding: ItemListPromotionApplyBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(item: DiscountDetail, token: DiscountBadgeToken?) {
+        fun bind(item: AppliedDiscount, token: DiscountBadgeToken?) {
             binding.txtName.text = item.calculatedDiscount  // objectId làm label fallback
 
             // valid=false → hiển thị mờ

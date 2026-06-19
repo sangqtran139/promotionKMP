@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMSlideButton
+        <com.ttcn.promotionsdk.ui.widget.PRMSlideButton
             android:id="@+id/buttonSlide"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,7 +41,7 @@
                 tools:src="@drawable/prm_foundations_icon_contacts" />
 
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+            <com.ttcn.promotionsdk.ui.widget.PRMTextView
                 android:id="@+id/buttonAction"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

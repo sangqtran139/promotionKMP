@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="promotion_example">Tặng 1 trà sen vàng cho hoá đơn từ 59k</string>
-    <string name="promotion_example_date">HSD 18/10/2023 dung luon</string>
-    <string name="use_now">Sử dụng ngay</string>
+    <string name="prm_promotion_example">Tặng 1 trà sen vàng cho hoá đơn từ 59k</string>
+    <string name="prm_promotion_example_date">HSD 18/10/2023 dung luon</string>
+    <string name="prm_use_now">Sử dụng ngay</string>
     <string name="prm_use">Sử dụng</string>
-    <string name="deal_hot">Ngàn deal HOT chờ bạn</string>
-    <string name="hot_deal_description">Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!</string>
-    <string name="my_promotion">Ưu đãi của tôi</string>
-    <string name="get_now">Săn ngay</string>
+    <string name="prm_deal_hot">Ngàn deal HOT chờ bạn</string>
+    <string name="prm_hot_deal_description">Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!</string>
+    <string name="prm_my_promotion">Ưu đãi của tôi</string>
+    <string name="prm_get_now">Săn ngay</string>
     <string name="prm_detail">Chi tiết</string>
     <string name="prm_choose_endow">Chọn ưu đãi</string>
     <string name="prm_check">Kiểm tra</string>
@@ -20,9 +20,9 @@
     <string name="prm_use_voucher">Sử dụng</string>
     <string name="prm_change_voucher">Chọn lại</string>
     <string name="prm_is_used">Đã dùng hết</string>
-    <string name="no_result">Không tìm thấy kết quả phù hợp</string>
-    <string name="discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
-    <string name="search_result">Kết quả tìm kiếm</string>
+    <string name="prm_no_result">Không tìm thấy kết quả phù hợp</string>
+    <string name="prm_discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
+    <string name="prm_search_result">Kết quả tìm kiếm</string>
     <string name="prm_search_hint">Nhập tên ưu đãi, ngành hàng, ...</string>
     <string name="prm_search_no_result">Không tìm thấy kết quả phù hợp</string>
     <string name="prm_search_input_empty">Nhập từ khóa để tìm kiếm ưu đãi</string>
@@ -44,7 +44,7 @@
     <string name="prm_tab_usage_guide">Hướng dẫn sử dụng</string>
     <string name="prm_empty_detail_info">Chưa có thông tin chi tiết</string>
     <string name="prm_empty_usage_guide">Chưa có hướng dẫn sử dụng</string>
-    <string name="loading">Loading</string>
+    <string name="prm_loading">Loading</string>
     <string name="prm_budget_insufficient">Khuyến mãi đã hết lượt</string>
     <string name="prm_cancel_voucher">Huỷ</string>
     <string name="prm_selected_voucher_count">Đã chọn %d voucher</string>

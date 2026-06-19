@@ -1,4 +1,4 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
 // TODO: implement when FeatureFlagRepository and FeatureFlag model are ready
-class IsFeatureEnabledUseCase
+internal class IsFeatureEnabledUseCase

@@ -9,11 +9,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.data.dto.stackablediscount.DiscountDetail
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
-import com.ttcn.promotionsdk.ui.theme.DiscountBadgeToken
+import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.utils.applyTextColorIfSet
 import kotlinx.coroutines.CoroutineScope
@@ -53,7 +53,7 @@ class PRMEndowView @JvmOverloads constructor(
     val otherVouchers: List<MyVoucherListItem>
         get() = viewModel?.uiState?.value?.otherVouchers ?: emptyList()
 
-    val discountDetails: List<DiscountDetail>
+    val discountDetails: List<AppliedDiscount>
         get() = viewModel?.uiState?.value?.discountDetails ?: emptyList()
 
     // ─── Public callbacks ─────────────────────────────────────────────────────
@@ -112,9 +112,9 @@ class PRMEndowView @JvmOverloads constructor(
 
     /**
      * Nhận kết quả validateStackableDiscounts từ host.
-     * SDK tự xác định trạng thái UNAVAILABLE nếu bất kỳ item nào có [DiscountDetail.valid] == false.
+     * SDK tự xác định trạng thái UNAVAILABLE nếu bất kỳ item nào có [AppliedDiscount.valid] == false.
      */
-    fun setDiscountDetails(details: List<DiscountDetail>) {
+    fun setDiscountDetails(details: List<AppliedDiscount>) {
         val hasInvalid = details.isNotEmpty() && details.any { !it.valid }
         viewModel?.applyDiscountDetails(details, unavailable = hasInvalid)
     }
@@ -210,7 +210,7 @@ class PRMEndowView @JvmOverloads constructor(
     }
 
     /** Đã chọn ưu đãi → hiển thị danh sách + nút "Hủy" */
-    private fun showAppliedState(details: List<DiscountDetail>) {
+    private fun showAppliedState(details: List<AppliedDiscount>) {
         binding.apply {
             viewContainer.visibility = VISIBLE
             applyPromotionAdapter.submitList(details)
@@ -223,7 +223,7 @@ class PRMEndowView @JvmOverloads constructor(
     }
 
     /** Ưu đãi đã chọn không còn khả dụng → hiển thị danh sách mờ + nút "Chọn lại" */
-    private fun showUnavailableState(details: List<DiscountDetail>) {
+    private fun showUnavailableState(details: List<AppliedDiscount>) {
         binding.apply {
             viewContainer.visibility = VISIBLE
             applyPromotionAdapter.submitList(details)

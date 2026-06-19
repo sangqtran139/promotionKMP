@@ -3,17 +3,17 @@ package com.ttcn.promotionsdk.core.data.dto.stackablediscount
 import com.google.gson.annotations.SerializedName
 
 data class StackableDiscountsResponse(
-    @SerializedName("validationResult") val validationResult: ValidationResult,
+    @SerializedName("validationResult") val validationResult: StackingValidationResult,
     @SerializedName("decisionToken") val decisionToken: String? = null,
     @SerializedName("sessionId") val sessionId: String? = null,
     @SerializedName("stackingAnalysis") val stackingAnalysis: StackingAnalysis? = null,
     @SerializedName("discountDetails") val discountDetails: List<DiscountDetail> = emptyList(),
-    @SerializedName("optimization") val optimization: Optimization? = null,
+    @SerializedName("optimization") val optimization: StackingOptimization? = null,
     @SerializedName("warnings") val warnings: List<String> = emptyList(),
     @SerializedName("businessRuleViolations") val businessRuleViolations: List<BusinessRuleViolation> = emptyList(),
 )
 
-data class ValidationResult(
+data class StackingValidationResult(
     @SerializedName("overallValid") val overallValid: Boolean,
     @SerializedName("canStack") val canStack: Boolean,
     @SerializedName("totalDiscountAmount") val totalDiscountAmount: String = "",
@@ -58,7 +58,7 @@ data class DiscountDetail(
     @SerializedName("metadata") val metadata: Map<String, Any> = emptyMap(),
 )
 
-data class Optimization(
+data class StackingOptimization(
     @SerializedName("recommendedOrder") val recommendedOrder: List<String> = emptyList(),
     @SerializedName("alternativeStacks") val alternativeStacks: List<Any> = emptyList(),
     @SerializedName("maxPossibleDiscount") val maxPossibleDiscount: String = "",

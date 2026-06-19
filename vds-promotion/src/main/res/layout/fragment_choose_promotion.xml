@@ -22,7 +22,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMImageView
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
             android:id="@+id/btnBack"
             android:layout_width="@dimen/_24sdp"
             android:layout_height="@dimen/_24sdp"
@@ -34,7 +34,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/prm_ic_back" />
 
-        <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+        <com.ttcn.promotionsdk.ui.widget.PRMTextView
             android:id="@+id/tvEndow"
             style="@style/fontPRMBold16"
             android:layout_width="wrap_content"
@@ -59,7 +59,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tvEndow">
 
-            <com.ttcn.promotionsdk.ui.utils.view.PRMSearchField
+            <com.ttcn.promotionsdk.ui.widget.PRMSearchField
                 android:id="@+id/edtVoucher"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -96,7 +96,7 @@
                 android:layout_marginHorizontal="@dimen/_12sdp"
                 android:paddingBottom="@dimen/_38sdp">
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/txtNumberChooseEndow"
                     style="@style/fontPRMRegular16"
                     android:layout_width="wrap_content"
@@ -107,7 +107,7 @@
                     app:layout_constraintTop_toTopOf="@id/txtReducedPrice"
                     tools:text="Đã chọn 4 voucher" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMTextView
+                <com.ttcn.promotionsdk.ui.widget.PRMTextView
                     android:id="@+id/txtReducedPrice"
                     style="@style/fontPRMSfDisplayBold18"
                     android:layout_width="wrap_content"
@@ -124,7 +124,7 @@
                     android:layout_height="wrap_content"
                     app:constraint_referenced_ids="txtNumberChooseEndow, txtReducedPrice" />
 
-                <com.ttcn.promotionsdk.ui.utils.view.PRMButton
+                <com.ttcn.promotionsdk.ui.widget.PRMButton
                     android:id="@+id/btnApply"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"

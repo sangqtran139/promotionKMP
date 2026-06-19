@@ -76,7 +76,7 @@ vds-promotion/src/main/
 | Repository mới | interface ở `core/domain/repository/`, impl ở `core/data/repository/`, đăng ký ở `core/di/RepositoryModule.kt` |
 | API endpoint mới | thêm vào `core/data/remote/PromotionApiService.kt` + `PromotionRemoteDataSource` |
 | DTO mới | `core/data/dto/<nhóm>/` kèm hàm mapping `toDomainModel()` |
-| Domain model mới | `core/domain/model/` |
+| Domain model mới | `core/domain/model/<nhóm>/` (theo feature: `voucher/`, `redemption/`, `stackablediscount/`, `featureflag/`) |
 | Custom view / extension dùng chung | `ui/utils/view/` hoặc `ui/utils/extension/` |
 | Public API thay đổi | `ui/entry/` — **thận trọng**, cập nhật docs + ghi breaking change |
 

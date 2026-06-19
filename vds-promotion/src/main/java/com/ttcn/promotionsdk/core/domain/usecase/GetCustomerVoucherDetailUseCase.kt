@@ -1,9 +1,9 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-import com.ttcn.promotionsdk.core.domain.model.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.domain.repository.PromotionRepository
 
-class GetCustomerVoucherDetailUseCase(
+internal class GetCustomerVoucherDetailUseCase(
     private val repository: PromotionRepository,
 ) {
     suspend operator fun invoke(

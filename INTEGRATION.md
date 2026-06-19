@@ -9,6 +9,7 @@
 5. [API Reference](#5-api-reference)
 6. [Models](#6-models)
 7. [Xử lý lỗi](#7-xử-lý-lỗi)
+8. [Public API surface](#8-public-api-surface)
 
 ---
 
@@ -165,7 +166,7 @@ Nhận callback khi user áp dụng voucher:
 PromotionSDKOptions(
     config = ...,
     callback = object : PromotionSDKCallback {
-        override fun onVoucherApplied(discountDetails: List<DiscountDetail>) {
+        override fun onVoucherApplied(discountDetails: List<AppliedDiscount>) {
             // Cập nhật UI đơn hàng với discount
         }
         override fun onError(errorCode: String) {
@@ -328,6 +329,10 @@ viewModelScope.launch {
 
 ## 6. Models
 
+> **Package (từ bản này):** domain model được chia theo feature trong `com.ttcn.promotionsdk.core.domain.model.<feature>`:
+> `…model.voucher.*` (voucher), `…model.redemption.*`, `…model.stackablediscount.*`.
+> Nếu nâng cấp từ bản cũ (model phẳng ở `…core.domain.model.*`), cập nhật lại `import` tương ứng.
+
 ### Request models
 
 ```kotlin
@@ -372,7 +377,7 @@ RedemptionItemRequest(
 ### Response models
 
 ```kotlin
-VoucherSearchResult(
+SearchCustomerVouchersResult(
     tabs: List<VoucherTabItem>,
     selectedTab: String?,
     defaultTab: String?,
@@ -400,7 +405,7 @@ VoucherItem(
     objectType: String,
 )
 
-DiscountValidationResult(
+ValidateDiscountsResult(
     overallValid: Boolean,
     totalDiscountAmount: String,
     finalAmount: String,
@@ -409,7 +414,7 @@ DiscountValidationResult(
     invalidItems: List<DiscountItemResult>, // computed
 )
 
-RedemptionSessionResult(
+CreateRedemptionResult(
     sessionId: String,
     totalDiscount: String,
     finalAmount: String,
@@ -423,18 +428,13 @@ RedemptionSessionResult(
 
 ## 7. Xử lý lỗi
 
-Tất cả use case đều throw exception khi API lỗi. Dùng `runCatching` để bắt:
+Mọi hàm của `useCases` trả `PromotionResult<T>` (`com.ttcn.promotionsdk.core.domain.model.PromotionResult`) —
+**không ném exception**. Xử lý bằng `when`:
 
 ```kotlin
-runCatching {
-    useCases.validateDiscounts(request)
-}.onSuccess { result ->
-    // xử lý kết quả
-}.onFailure { throwable ->
-    when (throwable) {
-        is PromotionApiException -> handleApiError(throwable.errorCode)
-        else                     -> showGenericError()
-    }
+when (val result = useCases.validateDiscounts(request)) {
+    is PromotionResult.Success -> handle(result.data)
+    is PromotionResult.Failure -> handleApiError(result.errorCode) // + result.message, result.httpStatus
 }
 ```
 
@@ -445,4 +445,25 @@ runCatching {
 | `missing_customer_id` | Chưa cung cấp customerId |
 | `INSUFFICIENT_BUDGET` | Voucher hết ngân sách, cần validate lại |
 | `no_result` | Không tìm thấy kết quả |
+| `network_error` | Mất mạng / không kết nối được (nên gợi ý kiểm tra kết nối) |
+| `timeout` | Hết thời gian chờ (nên cho thử lại) |
 | `error_general` | Lỗi chung |
+
+---
+
+## 8. Public API surface
+
+Host **chỉ** nên phụ thuộc các kiểu dưới đây. Mọi kiểu khác (DTO `core/data/*`, mapper, datasource,
+class `internal`) là **nội bộ SDK**, có thể đổi bất kỳ lúc nào — đừng import.
+
+| Nhóm | Kiểu công khai |
+|------|----------------|
+| Entry | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSDKCallback`, `PromotionTheme` |
+| Headless | `PromotionSDK.useCases` (`PromotionUseCases`) |
+| Kết quả headless | `PromotionResult<T>` (`Success`/`Failure`) — `core/domain/model/PromotionResult` |
+| Model nghiệp vụ | `core/domain/model/<feature>/*` — request + result (vd `SearchCustomerVouchersRequest`/`...Result`, `ValidateDiscountsRequest`/`...Result`, `CreateRedemptionRequest`/`...Result`, `VoucherDetail`) |
+| Discount áp dụng | `AppliedDiscount` (`ui/entry`) — dùng ở callback & `PRMEndowView` |
+| UI nhúng | `PRMEndowView`, `ChoosePromotionFragment`, `PromotionIntegrateManager`, các `PRM*` view/base |
+
+> **Ổn định:** chỉ các kiểu trong bảng này được giữ ổn định giữa các phiên bản. SDK chưa release
+> chính thức (1.0.0) nên các bản trước đó có thể còn breaking; từ bản phát hành đầu tiên sẽ theo semver.

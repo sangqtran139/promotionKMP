@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.bplus.vtpay.util.SimpleSpanBuilder
+import com.ttcn.promotionsdk.core.utils.PRMSimpleSpanBuilder
 import com.ttcn.promotionsdk.databinding.FragmentContentDetailEndowPrmBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 
@@ -49,7 +49,7 @@ class PrmContentDetailEndowFragment :
     }
 
     private fun buildHtmlContent(content: String): String {
-        val simpleSpanBuilder = SimpleSpanBuilder()
+        val simpleSpanBuilder = PRMSimpleSpanBuilder()
 
         simpleSpanBuilder.append(
             """

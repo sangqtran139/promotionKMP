@@ -5,4 +5,6 @@ internal object ErrorCodes {
     const val NO_RESULT = "no_result"
     const val INSUFFICIENT_BUDGET = "INSUFFICIENT_BUDGET"
     const val GENERAL = "error_general"
+    const val NETWORK_ERROR = "network_error"
+    const val TIMEOUT = "timeout"
 }

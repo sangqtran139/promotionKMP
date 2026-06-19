@@ -14,7 +14,7 @@ TTCN Promotion SDK gọi API bằng **Retrofit + OkHttp + Gson**. Toàn bộ net
 | ApiService | `core/data/remote/PromotionApiService.kt`, `FeatureFlagApiService.kt` | Khai báo endpoint (Retrofit interface) |
 | RemoteDataSource | `core/data/remote/PromotionRemoteDataSource.kt` | Gọi ApiService, là ranh giới giữa Data ↔ network |
 | Interceptor | `core/data/remote/ApiInterceptor.kt` | Gắn header/context dùng chung cho mọi request |
-| Exception | `core/data/remote/PromotionApiException.kt` | Lỗi tầng API |
+| Exception | `core/domain/exception/PromotionException.kt` | Lỗi API (domain) — `errorCode`/`status`, do RemoteDataSource ném |
 | Converter | Gson (`converter-gson`) | Serialize/deserialize JSON |
 
 ---
@@ -69,7 +69,7 @@ Quy tắc:
 - DTO đặt trong `core/data/dto/<nhóm>/`, đặt tên `XxxRequest` / `XxxResponse`.
 - Field map JSON dùng `@SerializedName` khi tên JSON khác tên Kotlin.
 - **Mapping DTO → domain model** thực hiện ở Data layer (hàm `toXxx()`), trước khi trả lên Domain.
-  Ví dụ: `toVoucherSearchResult()`, `toVoucherDetail()` trong repository.
+  Ví dụ: `toSearchCustomerVouchersResult()`, `toVoucherDetail()` trong repository.
 - **Không** để DTO rò rỉ lên Domain/Presentation.
 
 ---
@@ -96,8 +96,8 @@ ViewModel
 
 ## 8. Xử lý lỗi network
 
-- Lỗi tầng API ném/đóng gói qua `PromotionApiException` và các exception ở `core/domain/exception/`
-  (`NetworkException`, `PromotionException`) với mã trong `ErrorCodes`.
+- Lỗi tầng API được `PromotionRemoteDataSource` ném dưới dạng exception domain ở `core/domain/exception/`
+  (`PromotionException` mang `errorCode`/`status`, `NetworkException`) với mã trong `ErrorCodes`.
 - Repository/UseCase chuyển lỗi network thành exception/giá trị domain rõ ràng (không nuốt lỗi âm thầm).
 - UI nhận lỗi qua `Effect` (vd `ShowError(errorCode)`) và tra cứu thông điệp hiển thị.
 - Chi tiết phân loại & hiển thị: xem `ErrorHandling.md`.

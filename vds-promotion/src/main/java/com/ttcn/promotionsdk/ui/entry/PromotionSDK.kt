@@ -4,8 +4,8 @@ package com.ttcn.promotionsdk.ui.entry
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.di.SdkDi
-import com.ttcn.promotionsdk.core.di.get
+import com.ttcn.promotionsdk.core.di.internal.SdkDi
+import com.ttcn.promotionsdk.core.di.internal.get
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.di.ViewModelModule
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme

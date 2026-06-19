@@ -26,6 +26,11 @@ android {
 
     kotlin {
         jvmToolchain(17)
+        compilerOptions {
+            // KT-73255: annotation trên constructor param (vd @ColorInt) áp cho cả param + field —
+            // opt-in hành vi mặc định tương lai, tắt cảnh báo một lần cho toàn module.
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
     }
 }
 

@@ -11,25 +11,25 @@ Quy ước phân loại, lan truyền và hiển thị lỗi trong TTCN Promotio
 
 | File | Dùng cho |
 |------|----------|
-| `NetworkException` | Lỗi mạng/kết nối/timeout/HTTP |
-| `PromotionException` | Lỗi nghiệp vụ promotion (voucher không hợp lệ, hết hạn…) |
+| `PromotionException` | Lỗi nghiệp vụ/HTTP từ server — mang `errorCode` / `message` / `httpStatus` |
+| `NetworkException` | Lỗi transport (mất mạng, timeout, không phân giải host) — mang `errorCode` (`NETWORK_ERROR`/`TIMEOUT`) |
 | `FeatureFlagException` | Lỗi liên quan feature flag |
 | `ErrorCodes` | Tập hằng số mã lỗi dùng chung |
-| `PromotionApiException` (`core/data/remote`) | Lỗi tầng API thô (status, body lỗi) trước khi map lên domain |
 
-Nguyên tắc: lỗi **tầng Data/API** (`PromotionApiException`) được chuyển thành **exception domain**
-(`NetworkException`/`PromotionException`) kèm **mã trong `ErrorCodes`** trước khi lên Domain/Presentation.
+Nguyên tắc: `PromotionRemoteDataSource.apiCall` chuẩn hoá mọi lỗi sang exception **domain**:
+- Body lỗi (HTTP 200, `success=false`/status≠2xx) hoặc `HttpException` (4xx/5xx, parse error body) → `PromotionException` (giữ `errorCode`/`httpStatus` của server).
+- `SocketTimeoutException` → `NetworkException(TIMEOUT)`; `IOException` khác → `NetworkException(NETWORK_ERROR)`.
+
+Nhờ đó Presentation/host đọc `errorCode` mà **không** phụ thuộc kiểu transport (Retrofit/OkHttp).
 
 ---
 
 ## 2. Luồng lan truyền lỗi
 
 ```
-ApiService / RemoteDataSource  → PromotionApiException (data)
-        │ Repository map
-        ▼
-NetworkException / PromotionException (domain, có errorCode)
-        │ UseCase trả lên (ném hoặc trả kết quả lỗi)
+ApiService → (HttpException / IOException / body lỗi)
+        │ RemoteDataSource.apiCall map → PromotionException | NetworkException (domain)
+        │ Repository & UseCase truyền thẳng
         ▼
 ViewModel.launch { } → CoroutineExceptionHandler → onError(throwable)
         │
@@ -60,7 +60,7 @@ override fun onError(throwable: Throwable) {
 
 ## 4. Quy tắc ở Repository / UseCase
 
-- Repository bắt lỗi từ data source, **map sang exception domain** có `errorCode`; không để DTO/HTTP raw rò lên Domain.
+- Data source ném sẵn `PromotionException` (domain) có `errorCode`; Repository/UseCase truyền thẳng, không để DTO/HTTP raw rò lên Domain.
 - UseCase giữ logic nghiệp vụ; có thể chuyển exception thành kết quả domain (vd `null`, sealed result) nếu phù hợp contract.
 - Không log dữ liệu nhạy cảm khi xử lý lỗi (token, thông tin khách hàng).
 

@@ -2,9 +2,9 @@ package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import androidx.lifecycle.viewModelScope
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.data.remote.PromotionApiException
-import com.ttcn.promotionsdk.core.domain.model.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
@@ -12,7 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-class SearchMyPromotionViewModel(
+internal class SearchMyPromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
 ) : PRMBaseViewModel<SearchMyPromotionUiState, SearchMyPromotionAction, SearchMyPromotionEffect>(
@@ -213,12 +213,6 @@ class SearchMyPromotionViewModel(
             )
         }
         sendEffect(SearchMyPromotionEffect.ShowError(throwable.toErrorCode()))
-    }
-
-    private fun Throwable.toErrorCode(): String {
-        return (this as? PromotionApiException)?.errorCode
-            ?: message
-            ?: ErrorCodes.GENERAL
     }
 
     private companion object {
