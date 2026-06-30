@@ -38,7 +38,8 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         onVoucherClick = { voucher, _ ->
             addFragment(PromotionDetailFragment.newInstance(voucher.voucherId))
         },
-        onUseClick = { _, _ ->
+        onUseClick = { voucher, _ ->
+            viewModel.handleAction(MyPromotionAction.OpenServiceSelector(voucher))
         },
     )
     private var latestState: MyPromotionUiState = MyPromotionUiState()
@@ -135,6 +136,10 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
             when (effect) {
                 is MyPromotionEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
                 is MyPromotionEffect.OpenVoucherDetail -> Unit
+                is MyPromotionEffect.ShowServiceSelector -> showServiceSelector(
+                    voucher = effect.voucher,
+                    services = effect.services,
+                )
             }
         }
         viewModel.handleAction(MyPromotionAction.LoadInitialIfNeeded)
@@ -154,6 +159,16 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
         latestSubmittedItems = items
         homeListAdapter.submitList(items)
+    }
+
+    private fun showServiceSelector(voucher: MyVoucherListItem, services: List<ServiceSelectorUiItem>) {
+        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
+        ServiceSelectorBottomSheet.newInstance(
+            services = services,
+            onServiceSelected = { service ->
+                viewModel.handleAction(MyPromotionAction.ServiceSelected(voucher, service))
+            },
+        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
     }
 
     private fun openSearchMyPromotion() {

@@ -3,6 +3,7 @@ package com.ttcn.promotionsdk.ui.di
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
@@ -16,6 +17,7 @@ internal class PromotionViewModelFactory(
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
+    private val config: PromotionSDKConfig,
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -24,11 +26,13 @@ internal class PromotionViewModelFactory(
             MyPromotionViewModel::class.java -> MyPromotionViewModel(
                 searchCustomerVouchersUseCase = searchCustomerVouchersUseCase,
                 requestContextProvider = requestContextProvider,
+                config = config,
             ) as T
 
             PromotionDetailViewModel::class.java -> PromotionDetailViewModel(
                 getCustomerVoucherDetailUseCase = getCustomerVoucherDetailUseCase,
                 requestContextProvider = requestContextProvider,
+                config = config,
             ) as T
 
             ChoosePromotionViewModel::class.java -> ChoosePromotionViewModel(

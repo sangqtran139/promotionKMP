@@ -1,12 +1,14 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.ext
 
-import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.core.config.AvailableService
 import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemResult
 import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 
 /**
  * Mapper tầng presentation: dựng **domain request** từ model UI/[AppliedDiscount], và map
@@ -75,3 +77,9 @@ internal fun DiscountItemResult.toAppliedDiscount(): AppliedDiscount = AppliedDi
 
 internal fun List<DiscountItemResult>.toAppliedDiscounts(): List<AppliedDiscount> =
     map { it.toAppliedDiscount() }
+
+internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem = ServiceSelectorUiItem(
+    serviceCode = serviceCode,
+    serviceName = serviceName,
+    iconUrl = iconUrl,
+)

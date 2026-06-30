@@ -9,13 +9,15 @@ import androidx.fragment.app.viewModels
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.di.internal.inject
+import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorBottomSheet
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.adapter.PrmCustomFragmentPagerAdapter
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.applier.TabLayoutThemeApplier
@@ -39,6 +41,9 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
     override fun setupUI() {
         binding.imgBack.setOnClickListener { onBackFragment() }
+        binding.tvUse.setOnClickListener {
+            viewModel.handleAction(PromotionDetailAction.OpenServiceSelector)
+        }
         val voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty()
         if (voucherId.isBlank()) {
             showToast(getString(R.string.prm_no_result))
@@ -68,6 +73,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
                 is PromotionDetailEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
+                is PromotionDetailEffect.ShowServiceSelector -> showServiceSelector(effect.services)
             }
         }
     }
@@ -176,6 +182,16 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     private fun resolveHtmlContent(html: String?, @StringRes emptyRes: Int): String {
         return html?.takeIf { it.isNotBlank() }
             ?: "<p>${getString(emptyRes)}</p>"
+    }
+
+    private fun showServiceSelector(services: List<ServiceSelectorUiItem>) {
+        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
+        ServiceSelectorBottomSheet.newInstance(
+            services = services,
+            onServiceSelected = { service ->
+                viewModel.handleAction(PromotionDetailAction.ServiceSelected(service))
+            },
+        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
     }
 
     private fun mapErrorMessage(error: String): String {

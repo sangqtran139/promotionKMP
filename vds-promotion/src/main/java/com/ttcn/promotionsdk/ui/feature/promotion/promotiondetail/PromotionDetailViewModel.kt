@@ -1,15 +1,18 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
 
 internal class PromotionDetailViewModel(
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
+    private val config: PromotionSDKConfig,
 ) :
     PRMBaseViewModel<PromotionDetailUiState, PromotionDetailAction, PromotionDetailEffect>(
         PromotionDetailUiState(),
@@ -17,7 +20,22 @@ internal class PromotionDetailViewModel(
     override fun handleAction(action: PromotionDetailAction) {
         when (action) {
             is PromotionDetailAction.LoadDetail -> loadDetail(action.voucherId)
+            PromotionDetailAction.OpenServiceSelector -> openServiceSelector()
+            is PromotionDetailAction.ServiceSelected -> Unit // TODO: navigate when destination is ready
         }
+    }
+
+    private fun openServiceSelector() {
+        val applicableProductIds = uiState.value.detail
+            ?.applicableProducts
+            .orEmpty()
+            .map { it.productId }
+            .toSet()
+        val services = config.availableServices
+            .filter { it.serviceCode in applicableProductIds }
+            .distinctBy { it.serviceCode }
+            .map { it.toServiceSelectorUiItem() }
+        sendEffect(PromotionDetailEffect.ShowServiceSelector(services))
     }
 
     private fun loadDetail(voucherId: String) {
@@ -74,7 +92,7 @@ internal class PromotionDetailViewModel(
             VoucherStatus.ACTIVE -> VoucherActionUiState(
                 visible = true,
                 enabled = true,
-                label = displayStatusLabel,
+                label = "",
             )
 
             VoucherStatus.RESERVED,

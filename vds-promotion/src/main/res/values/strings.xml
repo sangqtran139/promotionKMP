@@ -2,6 +2,8 @@
 <resources>
     <string name="prm_promotion_example">Tặng 1 trà sen vàng cho hoá đơn từ 59k</string>
     <string name="prm_promotion_example_date">HSD 18/10/2023 dung luon</string>
+    <string name="prm_select_service">Chọn dịch vụ</string>
+    <string name="prm_no_applicable_service">Không có dịch vụ thoả mãn</string>
     <string name="prm_use_now">Sử dụng ngay</string>
     <string name="prm_use">Sử dụng</string>
     <string name="prm_deal_hot">Ngàn deal HOT chờ bạn</string>

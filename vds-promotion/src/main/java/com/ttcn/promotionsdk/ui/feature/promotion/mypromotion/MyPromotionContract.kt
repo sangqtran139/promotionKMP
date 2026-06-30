@@ -1,7 +1,8 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
 
 data class MyPromotionUiState(
@@ -26,11 +27,20 @@ sealed interface MyPromotionAction {
     data class SelectTab(val tabCode: String) : MyPromotionAction
     data class SearchKeyword(val keyword: String) : MyPromotionAction
     data object LoadMore : MyPromotionAction
+    data class OpenServiceSelector(val voucher: MyVoucherListItem) : MyPromotionAction
+    data class ServiceSelected(
+        val voucher: MyVoucherListItem,
+        val service: ServiceSelectorUiItem,
+    ) : MyPromotionAction
 }
 
 sealed interface MyPromotionEffect {
     data class OpenVoucherDetail(val voucherId: String) : MyPromotionEffect
     data class ShowError(val errorCode: String) : MyPromotionEffect
+    data class ShowServiceSelector(
+        val voucher: MyVoucherListItem,
+        val services: List<ServiceSelectorUiItem>,
+    ) : MyPromotionEffect
 }
 
 data class MyVoucherListItem(
@@ -46,6 +56,7 @@ data class MyVoucherListItem(
     val objectType: String = "CAMPAIGN",
     val isSelected: Boolean = false,
     val isAutoApplied: Boolean = false,
+    val applicableProducts: List<ApplicableProduct> = emptyList(),
 )
 
 data class TabItem(
@@ -68,6 +79,7 @@ fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
         displayStatusLabel = displayStatusLabel.orEmpty(),
         status = VoucherStatus.from(status),
         objectType = objectType,
+        applicableProducts = applicableProducts,
     )
 }
 

@@ -1,7 +1,8 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 
 data class PromotionDetailUiState(
     val isLoading: Boolean = false,
@@ -14,8 +15,11 @@ data class PromotionDetailUiState(
 
 sealed interface PromotionDetailAction {
     data class LoadDetail(val voucherId: String) : PromotionDetailAction
+    data object OpenServiceSelector : PromotionDetailAction
+    data class ServiceSelected(val service: ServiceSelectorUiItem) : PromotionDetailAction
 }
 
 sealed interface PromotionDetailEffect {
     data class ShowError(val errorCode: String) : PromotionDetailEffect
+    data class ShowServiceSelector(val services: List<ServiceSelectorUiItem>) : PromotionDetailEffect
 }

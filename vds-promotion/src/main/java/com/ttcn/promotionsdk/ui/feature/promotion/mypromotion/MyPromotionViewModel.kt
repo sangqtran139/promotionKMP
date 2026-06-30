@@ -1,15 +1,18 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.mypromotion
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
 
 internal class MyPromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
+    private val config: PromotionSDKConfig,
 ) :
     PRMBaseViewModel<MyPromotionUiState, MyPromotionAction, MyPromotionEffect>(
         MyPromotionUiState(),
@@ -66,7 +69,21 @@ internal class MyPromotionViewModel(
                 reset = false,
                 keyword = uiState.value.keyword,
             )
+
+            is MyPromotionAction.OpenServiceSelector -> openServiceSelector(action.voucher)
+            is MyPromotionAction.ServiceSelected -> Unit // TODO: navigate to service screen when destination is ready
         }
+    }
+
+    private fun openServiceSelector(voucher: MyVoucherListItem) {
+        val applicableProductIds = voucher.applicableProducts
+            .map { it.productId }
+            .toSet()
+        val services = config.availableServices
+            .filter { it.serviceCode in applicableProductIds }
+            .distinctBy { it.serviceCode }
+            .map { it.toServiceSelectorUiItem() }
+        sendEffect(MyPromotionEffect.ShowServiceSelector(voucher = voucher, services = services))
     }
 
     private fun onTabSelected(tabCode: String) {

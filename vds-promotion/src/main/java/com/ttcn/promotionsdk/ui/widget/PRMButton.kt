@@ -365,6 +365,14 @@ class PRMButton : PRMAbstractButton {
         super.setEnabled(enabled)
         viewBinding?.buttonAction?.isEnabled = enabled
         viewBinding?.buttonSlide?.isEnabled = enabled
+        // viewBinding and buttonType are null during super-constructor call — skip background update
+        val binding = viewBinding ?: return
+        val bgRes = if (!enabled && buttonType == PRMCoreButtonType.PRIMARY) {
+            R.drawable.prm_bg_button_primary_disabled
+        } else {
+            buttonType.backgroundRes
+        }
+        binding.buttonContainer.setBackgroundResource(bgRes)
     }
 
     fun resetSlide() {

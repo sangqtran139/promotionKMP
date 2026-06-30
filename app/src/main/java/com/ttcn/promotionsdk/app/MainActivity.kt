@@ -7,6 +7,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
 import com.ttcn.promotionsdk.app.theme.ThemePreferenceManager
+import com.ttcn.promotionsdk.core.config.AvailableService
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.di.PromotionContainer
@@ -38,12 +39,32 @@ class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
                         apiKey = "demo",
                         baseUrl = "https://staging1.viettelmoney.vn",
                         requestContextProvider = object : PromotionRequestContextProvider {
-                            override fun getCustomerId(): String = "123"
+                            override fun getCustomerId(): String = "CUST-001"
                             override fun getService(): String? = null
                             override fun getLanguage(): String = "vi-VN"
                             override fun getOrderId(): String? = "123"
                             override fun getOrderValue(): String? = "123"
                         },
+                        availableServices = listOf(
+                            AvailableService(
+                                serviceCode = "P-FOOD-001",
+                                serviceName = "Mua đồ ăn 1",
+                                serviceType = "SKU-FOOD-001",
+                                iconUrl = "https://cdn.promix.test/products/food-001.png"
+                            ),
+                            AvailableService(
+                                serviceCode = "P-FOOD-002",
+                                serviceName = "Mua đồ ăn 1",
+                                serviceType = "SKU-FOOD-002",
+                                iconUrl = "https://cdn.promix.test/products/food-002.png"
+                            ),
+                            AvailableService(
+                                serviceCode = "P-ALC-001",
+                                serviceName = "Mua rượu",
+                                serviceType = "SKU-ALCOHOL-001",
+                                iconUrl = "https://cdn.promix.test/products/alcohol-001.png"
+                            ),
+                        ),
                     ),
                     theme = savedTheme?.let { PromotionSDKTheme(config = it) }
                         ?: PromotionSDKTheme(),
