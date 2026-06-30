@@ -47,8 +47,15 @@ Lỗi → onError → sendEffect(ShowError)
 
 ---
 
-## 3. Lưu ý khi sửa
+## 3. API backend
+
+- Dùng chung endpoint với MyPromotion: `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers`
+- Search luôn truyền `tab=all`; keyword free search (không giới hạn độ dài tối thiểu).
+- Response: flat `content[]` + pagination (`number`, `size`, `last`).
+
+## 4. Lưu ý khi sửa
 
 - `DEFAULT_PAGE_SIZE` khai báo trong `companion object` của state — đổi ở đây, không hardcode rải rác.
-- Debounce/throttle khi gõ (nếu thêm) xử lý ở ViewModel, không ở Fragment.
-- Hiển thị trạng thái rỗng/lỗi dựa trên `isEmpty` / `validationError` + `Effect.ShowError`.
+- Debounce search xử lý trong ViewModel (`DEBOUNCE_MS = 400ms`), không ở Fragment.
+- Keyword rỗng sau trim → reset kết quả về rỗng, không gọi API.
+- Hiển thị trạng thái rỗng/lỗi dựa trên `isEmpty` + `Effect.ShowError`.

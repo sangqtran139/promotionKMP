@@ -15,6 +15,7 @@ import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotio
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
+import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
 
@@ -37,7 +38,10 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         FragmentSearchMyPromotionBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
-        binding.imgBack.setOnClickListener { onBackFragment() }
+        binding.imgBack.setOnClickListener {
+            requireActivity().hideSoftInput()
+            onBackFragment()
+        }
 
         binding.sfEndow.onTextChangeListener = { keyword ->
             viewModel.handleAction(SearchMyPromotionAction.QueryChanged(keyword))

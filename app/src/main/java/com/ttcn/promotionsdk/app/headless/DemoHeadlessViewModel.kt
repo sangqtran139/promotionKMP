@@ -42,22 +42,17 @@ class DemoHeadlessViewModel : ViewModel() {
                     serviceCode = SERVICE_CODE,
                     keyword = null,
                     tab = null,
-                    sectionCode = null,
-                    myVouchersPage = 0,
-                    myVouchersSize = 10,
-                    otherVouchersPage = 0,
-                    otherVouchersSize = 10,
+                    page = 0,
+                    size = 10,
                 )
             )
             when (result) {
                 is PromotionResult.Success -> {
                     val data = result.data
-                    val all: List<VoucherItem> = data.myVouchers?.content.orEmpty() +
-                            data.otherVouchers?.content.orEmpty()
+                    val all: List<VoucherItem> = data.content
                     firstVoucherId = all.firstOrNull()?.voucherId
                     emit("✅ searchVouchers")
-                    emit("   myVouchers  : ${data.myVouchers?.content?.size ?: 0} items")
-                    emit("   otherVouchers: ${data.otherVouchers?.content?.size ?: 0} items")
+                    emit("   vouchers: ${all.size} items (total=${data.totalElements})")
                     all.take(3).forEach { emit("   - [${it.voucherId}] ${it.title}") }
                     if (all.size > 3) emit("   ... +${all.size - 3} more")
                 }

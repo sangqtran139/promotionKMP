@@ -33,28 +33,25 @@ internal class SearchMyPromotionViewModel(
 
     private fun onQueryChanged(keyword: String) {
         debounceJob?.cancel()
-        val trimmedKeyword = keyword.trim()
-        setState {
-            copy(
-                keyword = keyword
-            )
-        }
+        setState { copy(keyword = keyword) }
 
-        when {
-            trimmedKeyword.isEmpty() -> resetSearchResults()
-            trimmedKeyword.length < MIN_KEYWORD_LENGTH -> showKeywordTooShort()
-            else -> scheduleDebouncedSearch(trimmedKeyword)
+        val trimmedKeyword = keyword.trim()
+        if (trimmedKeyword.isEmpty()) {
+            resetSearchResults()
+        } else {
+            scheduleDebouncedSearch(trimmedKeyword)
         }
     }
 
     private fun performSearch(immediate: Boolean) {
         debounceJob?.cancel()
         val trimmedKeyword = uiState.value.keyword.trim()
-        when {
-            trimmedKeyword.isEmpty() -> resetSearchResults()
-            trimmedKeyword.length < MIN_KEYWORD_LENGTH -> showKeywordTooShort()
-            immediate -> search(reset = true, keyword = trimmedKeyword)
-            else -> scheduleDebouncedSearch(trimmedKeyword)
+        if (trimmedKeyword.isEmpty()) {
+            resetSearchResults()
+        } else if (immediate) {
+            search(reset = true, keyword = trimmedKeyword)
+        } else {
+            scheduleDebouncedSearch(trimmedKeyword)
         }
     }
 
@@ -75,28 +72,22 @@ internal class SearchMyPromotionViewModel(
                 isLoadingMore = false,
                 isEmpty = false,
                 isLastPage = true,
-                page = 0
+                page = 0,
             )
         }
     }
 
     private fun retrySearch() {
         val trimmedKeyword = uiState.value.keyword.trim()
-        if (trimmedKeyword.length < MIN_KEYWORD_LENGTH) return
+        if (trimmedKeyword.isEmpty()) return
         search(reset = true, keyword = trimmedKeyword)
     }
 
     private fun loadMore() {
         val currentState = uiState.value
         val trimmedKeyword = currentState.keyword.trim()
-        if (trimmedKeyword.length < MIN_KEYWORD_LENGTH) return
-        if (
-            currentState.isLastPage ||
-            currentState.isLoadingMore ||
-            currentState.isLoading
-        ) {
-            return
-        }
+        if (trimmedKeyword.isEmpty()) return
+        if (currentState.isLastPage || currentState.isLoadingMore || currentState.isLoading) return
         search(reset = false, keyword = trimmedKeyword)
     }
 
@@ -109,21 +100,7 @@ internal class SearchMyPromotionViewModel(
                 isLoadingMore = false,
                 isEmpty = false,
                 isLastPage = true,
-                page = 0
-            )
-        }
-    }
-
-    private fun showKeywordTooShort() {
-        debounceJob?.cancel()
-        setState {
-            copy(
-                vouchers = emptyList(),
-                isLoading = false,
-                isLoadingMore = false,
-                isEmpty = false,
-                isLastPage = true,
-                page = 0
+                page = 0,
             )
         }
     }
@@ -143,12 +120,7 @@ internal class SearchMyPromotionViewModel(
 
             val customerId = requestContextProvider.getCustomerId()
             if (customerId.isNullOrBlank()) {
-                setState {
-                    copy(
-                        isLoading = false,
-                        isLoadingMore = false,
-                    )
-                }
+                setState { copy(isLoading = false, isLoadingMore = false) }
                 sendEffect(SearchMyPromotionEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
                 return@launch
             }
@@ -160,18 +132,13 @@ internal class SearchMyPromotionViewModel(
                         keyword = keyword,
                         serviceCode = null,
                         tab = TAB_ALL,
-                        sectionCode = null,
-                        myVouchersPage = nextPage,
-                        myVouchersSize = currentState.pageSize,
-                        otherVouchersPage = null,
-                        otherVouchersSize = null,
+                        page = nextPage,
+                        size = currentState.pageSize,
                     )
                 )
             }.onSuccess { response ->
-                val incoming =
-                    response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
+                val incoming = response?.content.orEmpty().map { it.toMyVoucherListItem() }
                 val merged = if (reset) incoming else currentState.vouchers + incoming
-                val pageInfo = response?.myVouchers
 
                 setState {
                     copy(
@@ -179,9 +146,9 @@ internal class SearchMyPromotionViewModel(
                         isLoadingMore = false,
                         vouchers = merged,
                         isEmpty = merged.isEmpty(),
-                        page = pageInfo?.number ?: nextPage,
-                        pageSize = pageInfo?.size ?: pageSize,
-                        isLastPage = pageInfo?.last ?: true,
+                        page = response?.number ?: nextPage,
+                        pageSize = response?.size ?: pageSize,
+                        isLastPage = response?.last ?: true,
                     )
                 }
             }.onFailure { throwable ->
@@ -194,10 +161,7 @@ internal class SearchMyPromotionViewModel(
                             isEmpty = true,
                         )
                     } else {
-                        copy(
-                            isLoading = false,
-                            isLoadingMore = false,
-                        )
+                        copy(isLoading = false, isLoadingMore = false)
                     }
                 }
                 sendEffect(SearchMyPromotionEffect.ShowError(throwable.toErrorCode()))
@@ -206,18 +170,12 @@ internal class SearchMyPromotionViewModel(
     }
 
     override fun onError(throwable: Throwable) {
-        setState {
-            copy(
-                isLoading = false,
-                isLoadingMore = false,
-            )
-        }
+        setState { copy(isLoading = false, isLoadingMore = false) }
         sendEffect(SearchMyPromotionEffect.ShowError(throwable.toErrorCode()))
     }
 
     private companion object {
         private const val TAB_ALL = "all"
         private const val DEBOUNCE_MS = 400L
-        private const val MIN_KEYWORD_LENGTH = 1
     }
 }

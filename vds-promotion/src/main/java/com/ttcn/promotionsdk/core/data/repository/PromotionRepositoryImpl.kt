@@ -24,22 +24,16 @@ internal class PromotionRepositoryImpl(
         keyword: String?,
         serviceCode: String?,
         tab: String?,
-        sectionCode: String?,
-        myVouchersPage: Int?,
-        myVouchersSize: Int?,
-        otherVouchersPage: Int?,
-        otherVouchersSize: Int?,
+        page: Int?,
+        size: Int?,
     ): SearchCustomerVouchersResult? {
         return remoteDataSource.searchCustomerVouchers(
             customerId = customerId,
             keyword = keyword,
             serviceCode = serviceCode,
             tab = tab,
-            sectionCode = sectionCode,
-            myVouchersPage = myVouchersPage,
-            myVouchersSize = myVouchersSize,
-            otherVouchersPage = otherVouchersPage,
-            otherVouchersSize = otherVouchersSize,
+            page = page,
+            size = size,
         )?.toSearchCustomerVouchersResult()
     }
 

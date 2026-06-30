@@ -57,9 +57,18 @@ Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở d
 
 ---
 
-## 4. Lưu ý khi sửa
+## 4. API backend
+
+- **Endpoint:** `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers`
+- **Request params:** `customerId`, `keyword`, `serviceCode`, `tab`, `page` (0-based), `size`
+- **Response:** Spring Page phẳng — `content[]` + `number`, `size`, `last`, `totalElements`; kèm `tabs[]` động (mỗi tab có `code`, `label`, `count`, `order`, `default`).
+- **Không còn:** `myVouchers`/`otherVouchers`/`sectionCode` (đã bỏ từ v1.3).
+- Search keyword: free search, không giới hạn độ dài tối thiểu; rỗng/whitespace = không filter.
+
+## 5. Lưu ý khi sửa
 
 - Đổi tham số tìm kiếm/phân trang → đồng bộ qua use case `SearchCustomerVouchersUseCase`, **không** gọi thẳng repository.
 - Thêm trạng thái UI → thêm field vào `MyPromotionUiState` (immutable, có default).
 - Click voucher → phát `Effect.OpenVoucherDetail`, không tự điều hướng trong ViewModel.
+- Tab mặc định xác định qua `VoucherTabItem.isDefault` từ response (không hardcode).
 - Liên quan: [ChoosePromotion.md](./ChoosePromotion.md) (dùng lại `MyVoucherListItem`, `TabItem`).

@@ -62,6 +62,15 @@ Quy tắc:
 - Request body dùng DTO `*Request`. Dùng `@Query`/`@Path`/`@Body` đúng ngữ nghĩa.
 - Endpoint mới phải đi kèm hàm tương ứng trong `PromotionRemoteDataSource`.
 
+### Endpoint hiện tại (voucher)
+
+| Operation | Method | Path |
+|-----------|--------|------|
+| Search Customer Vouchers | GET | `promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers` |
+| Get Customer Voucher Detail | GET | `promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}` |
+| Create Redemption Session | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/sessions` |
+| Validate Stackable Discounts | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/validate/stackable-discounts` |
+
 ---
 
 ## 6. DTO & mapping

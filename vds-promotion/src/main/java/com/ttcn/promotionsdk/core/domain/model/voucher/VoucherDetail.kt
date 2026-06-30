@@ -12,4 +12,8 @@ data class VoucherDetail(
     val expirationDate: String? = null,
     val status: String? = null,
     val displayStatusLabel: String? = null,
+    val campaignId: String? = null,
+    val campaignType: String? = null,
+    val campaignStatus: String? = null,
+    val applicableProducts: List<ApplicableProduct> = emptyList(),
 )

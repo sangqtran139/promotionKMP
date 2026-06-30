@@ -5,6 +5,7 @@ import com.google.gson.annotations.SerializedName
 /**
  * Payload trả về của API chi tiết voucher (`GET .../customer-vouchers/{voucherId}`).
  * Map sang domain `VoucherDetail` qua [VoucherMapper].
+ * Phiên bản v1.1+: thêm campaignId, campaignType, campaignStatus, applicableProducts.
  */
 data class CustomerVoucherDetail(
     @SerializedName("voucherId") val voucherId: String,
@@ -20,6 +21,10 @@ data class CustomerVoucherDetail(
     @SerializedName("timeSlot") val timeSlot: String? = null,
     @SerializedName("status") val status: String? = null,
     @SerializedName("displayStatusLabel") val displayStatusLabel: String? = null,
+    @SerializedName("campaignId") val campaignId: String? = null,
+    @SerializedName("campaignType") val campaignType: String? = null,
+    @SerializedName("campaignStatus") val campaignStatus: String? = null,
+    @SerializedName("applicableProducts") val applicableProducts: List<ApplicableProductDto> = emptyList(),
     @SerializedName("discountType") val discountType: DiscountInfo? = null,
     @SerializedName("conditions") val conditions: VoucherConditions? = null,
 )

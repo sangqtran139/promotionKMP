@@ -53,6 +53,7 @@ data class TabItem(
     val label: String,
     val count: Int,
     val order: Int,
+    val isDefault: Boolean = false,
 )
 
 fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
@@ -76,5 +77,6 @@ fun VoucherTabItem.toMyVoucherTabUi(): TabItem {
         label = label,
         count = count ?: 0,
         order = order ?: Int.MAX_VALUE,
+        isDefault = isDefault,
     )
 }

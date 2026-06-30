@@ -1,17 +1,22 @@
 package com.ttcn.promotionsdk.core.data.dto.voucher
 
+import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherListPage
 import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
 
 internal fun SearchCustomerVouchersResponse.toSearchCustomerVouchersResult() = SearchCustomerVouchersResult(
+    keyword = keyword,
+    serviceCode = serviceCode,
     tabs = tabs.map { it.toVoucherTabItem() },
     defaultTab = defaultTab,
     selectedTab = selectedTab,
-    myVouchers = myVouchers?.toVoucherListPage(),
-    otherVouchers = otherVouchers?.toVoucherListPage(),
+    content = content.map { it.toVoucherItem() },
+    number = number,
+    size = size,
+    last = last,
+    totalElements = totalElements,
 )
 
 internal fun CustomerVoucherDetail.toVoucherDetail() = VoucherDetail(
@@ -26,6 +31,10 @@ internal fun CustomerVoucherDetail.toVoucherDetail() = VoucherDetail(
     expirationDate = expirationDate,
     status = status,
     displayStatusLabel = displayStatusLabel,
+    campaignId = campaignId,
+    campaignType = campaignType,
+    campaignStatus = campaignStatus,
+    applicableProducts = applicableProducts.map { it.toApplicableProduct() },
 )
 
 private fun VoucherTabInfo.toVoucherTabItem() = VoucherTabItem(
@@ -33,14 +42,7 @@ private fun VoucherTabInfo.toVoucherTabItem() = VoucherTabItem(
     label = label,
     count = count,
     order = order,
-)
-
-private fun VoucherPage.toVoucherListPage() = VoucherListPage(
-    content = content.map { it.toVoucherItem() },
-    number = number,
-    size = size,
-    last = last,
-    totalElements = totalElements,
+    isDefault = default ?: false,
 )
 
 private fun VoucherListItem.toVoucherItem() = VoucherItem(
@@ -55,4 +57,13 @@ private fun VoucherListItem.toVoucherItem() = VoucherItem(
     campaignId = campaignId,
     campaignType = campaignType,
     objectType = campaignType ?: "CAMPAIGN",
+    applicableProducts = applicableProducts.map { it.toApplicableProduct() },
+)
+
+private fun ApplicableProductDto.toApplicableProduct() = ApplicableProduct(
+    productId = productId,
+    sku = sku,
+    name = name,
+    image = image,
+    type = type,
 )

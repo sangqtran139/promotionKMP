@@ -20,11 +20,8 @@ internal interface PromotionApiService {
         @Query("keyword") keyword: String?,
         @Query("serviceCode") serviceCode: String?,
         @Query("tab") tab: String?,
-        @Query("sectionCode") sectionCode: String?,
-        @Query("myVouchers.page") myVouchersPage: Int?,
-        @Query("myVouchers.size") myVouchersSize: Int?,
-        @Query("otherVouchers.page") otherVouchersPage: Int?,
-        @Query("otherVouchers.size") otherVouchersSize: Int?,
+        @Query("page") page: Int?,
+        @Query("size") size: Int?,
     ): ApiResponseTemplate<SearchCustomerVouchersResponse>
 
     @GET("promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}")

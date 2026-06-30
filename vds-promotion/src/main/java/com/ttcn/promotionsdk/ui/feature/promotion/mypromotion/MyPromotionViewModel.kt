@@ -198,11 +198,8 @@ internal class MyPromotionViewModel(
                         keyword = keyword.takeIf { it.isNotBlank() },
                         serviceCode = null,
                         tab = requestTabCode,
-                        sectionCode = if (reset) null else "my_vouchers",
-                        myVouchersPage = nextPage,
-                        myVouchersSize = currentState.size,
-                        otherVouchersPage = if (reset) 0 else null,
-                        otherVouchersSize = if (reset) currentState.size else null,
+                        page = nextPage,
+                        size = currentState.size,
                     )
                 )
             }.onSuccess { response ->
@@ -217,11 +214,9 @@ internal class MyPromotionViewModel(
                     ?: response?.defaultTab
                     ?: requestTabCode
                     ?: tabs.firstOrNull()?.code
-                val incoming =
-                    response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val pageInfo = response?.myVouchers
-                val resolvedPage = pageInfo?.number ?: nextPage
-                val resolvedIsLastPage = pageInfo?.last ?: true
+                val incoming = response?.content.orEmpty().map { it.toMyVoucherListItem() }
+                val resolvedPage = response?.number ?: nextPage
+                val resolvedIsLastPage = response?.last ?: true
 
                 val merged = if (reset) {
                     incoming.toList()
@@ -249,7 +244,7 @@ internal class MyPromotionViewModel(
                         selectedTabCode = selected,
                         vouchers = merged.toList(),
                         page = resolvedPage,
-                        size = pageInfo?.size ?: currentState.size,
+                        size = response?.size ?: currentState.size,
                         isLastPage = resolvedIsLastPage,
                         hasLoadedInitial = true,
                     )

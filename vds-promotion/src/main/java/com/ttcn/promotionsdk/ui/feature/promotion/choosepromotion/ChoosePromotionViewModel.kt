@@ -47,7 +47,7 @@ internal class ChoosePromotionViewModel(
                     loadVouchers(
                         reset = true,
                         serviceCode = requestContextProvider.getService(),
-                        keyword = ""
+                        keyword = "",
                     )
                 }
             }
@@ -61,7 +61,7 @@ internal class ChoosePromotionViewModel(
 
             is ChoosePromotionAction.SearchKeyword -> onSearch(action.keyword)
             is ChoosePromotionAction.LoadMoreMyVouchers -> loadMoreMyVouchers()
-            is ChoosePromotionAction.LoadMoreOtherVouchers -> loadMoreOtherVouchers()
+            is ChoosePromotionAction.LoadMoreOtherVouchers -> Unit // otherVouchers no longer supported by API
             is ChoosePromotionAction.ValidateAndApply -> validateAndApply(action.selected)
         }
     }
@@ -99,38 +99,28 @@ internal class ChoosePromotionViewModel(
                         customerId = customerId,
                         keyword = keyword.takeIf { it.isNotBlank() },
                         serviceCode = serviceCode,
-                        sectionCode = null,
                         tab = null,
-                        myVouchersPage = 0,
-                        myVouchersSize = currentState.size,
-                        otherVouchersPage = 0,
-                        otherVouchersSize = currentState.otherSize,
+                        page = 0,
+                        size = currentState.size,
                     )
                 )
             }.onSuccess { response ->
-                val myVouchers =
-                    response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val otherVouchers =
-                    response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val myPageInfo = response?.myVouchers
-                val otherPageInfo = response?.otherVouchers
+                val vouchers = response?.content.orEmpty().map { it.toMyVoucherListItem() }
                 setState {
                     copy(
                         isLoading = false,
                         isRefreshing = false,
                         isLoadingMore = false,
                         isLoadingMoreOther = false,
-                        isEmpty = myVouchers.isEmpty() && otherVouchers.isEmpty(),
+                        isEmpty = vouchers.isEmpty(),
                         tabs = emptyList(),
                         selectedTabCode = null,
-                        vouchers = myVouchers,
-                        otherVouchers = otherVouchers,
-                        page = myPageInfo?.number ?: 0,
-                        size = myPageInfo?.size ?: currentState.size,
-                        isLastPage = myPageInfo?.last ?: false,
-                        otherPage = otherPageInfo?.number ?: 0,
-                        otherSize = otherPageInfo?.size ?: currentState.otherSize,
-                        isLastOtherPage = otherPageInfo?.last ?: true,
+                        vouchers = vouchers,
+                        otherVouchers = emptyList(),
+                        page = response?.number ?: 0,
+                        size = response?.size ?: currentState.size,
+                        isLastPage = response?.last ?: true,
+                        isLastOtherPage = true,
                         hasLoadedInitial = true,
                     )
                 }
@@ -155,11 +145,10 @@ internal class ChoosePromotionViewModel(
     // ─── Search ───────────────────────────────────────────────────────────────
 
     private fun onSearch(keyword: String) {
-        val trimmed = keyword.trim()
         loadVouchers(
             reset = true,
             serviceCode = requestContextProvider.getService(),
-            keyword = trimmed
+            keyword = keyword.trim(),
         )
     }
 
@@ -183,71 +172,22 @@ internal class ChoosePromotionViewModel(
                         keyword = currentState.keyword.takeIf { it.isNotBlank() },
                         serviceCode = requestContextProvider.getService(),
                         tab = null,
-                        sectionCode = "my_vouchers",
-                        myVouchersPage = currentState.page + 1,
-                        myVouchersSize = currentState.size,
-                        otherVouchersPage = null,
-                        otherVouchersSize = null,
+                        page = currentState.page + 1,
+                        size = currentState.size,
                     )
                 )
             }.onSuccess { response ->
-                val incoming =
-                    response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val pageInfo = response?.myVouchers
+                val incoming = response?.content.orEmpty().map { it.toMyVoucherListItem() }
                 setState {
                     copy(
                         isLoadingMore = false,
                         vouchers = currentState.vouchers + incoming,
-                        page = pageInfo?.number ?: currentState.page,
-                        isLastPage = pageInfo?.last ?: false,
+                        page = response?.number ?: currentState.page,
+                        isLastPage = response?.last ?: true,
                     )
                 }
             }.onFailure { throwable ->
                 setState { copy(isLoadingMore = false) }
-                sendEffect(ShowError(throwable.toErrorCode()))
-            }
-        }
-    }
-
-    private fun loadMoreOtherVouchers() {
-        val currentState = uiState.value
-        if (currentState.isLastOtherPage || currentState.isLoadingMoreOther || currentState.isLoading) return
-        launch {
-            setState { copy(isLoadingMoreOther = true) }
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isLoadingMoreOther = false) }
-                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-            runCatching {
-                searchCustomerVouchersUseCase(
-                    SearchCustomerVouchersRequest(
-                        customerId = customerId,
-                        keyword = currentState.keyword.takeIf { it.isNotBlank() },
-                        serviceCode = requestContextProvider.getService(),
-                        tab = null,
-                        sectionCode = "other_vouchers",
-                        myVouchersPage = null,
-                        myVouchersSize = null,
-                        otherVouchersPage = currentState.otherPage + 1,
-                        otherVouchersSize = currentState.otherSize,
-                    )
-                )
-            }.onSuccess { response ->
-                val incoming =
-                    response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val pageInfo = response?.otherVouchers
-                setState {
-                    copy(
-                        isLoadingMoreOther = false,
-                        otherVouchers = currentState.otherVouchers + incoming,
-                        otherPage = pageInfo?.number ?: currentState.otherPage,
-                        isLastOtherPage = pageInfo?.last ?: true,
-                    )
-                }
-            }.onFailure { throwable ->
-                setState { copy(isLoadingMoreOther = false) }
                 sendEffect(ShowError(throwable.toErrorCode()))
             }
         }
@@ -261,8 +201,6 @@ internal class ChoosePromotionViewModel(
      * Response trả về [discountDetails]:
      *  - [valid] = true  → voucher áp dụng thành công
      *  - [valid] = false → voucher thất bại (conflict, hết budget, v.v.)
-     *
-     * Dùng thẳng discountDetails từ response, không map lại.
      */
     private fun validateAndApply(selected: List<MyVoucherListItem>) {
         if (selected.isEmpty()) {
@@ -287,7 +225,6 @@ internal class ChoosePromotionViewModel(
 
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
-                    // Map domain result → AppliedDiscount cho public surface (callback/PRMEndowView)
                     val details = response?.items.orEmpty().toAppliedDiscounts()
                     setState { copy(isValidating = false) }
                     sendEffect(ApplyValidatedVouchers(details))

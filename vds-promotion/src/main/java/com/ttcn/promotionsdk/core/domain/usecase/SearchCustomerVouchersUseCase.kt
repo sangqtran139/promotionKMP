@@ -14,12 +14,9 @@ internal class SearchCustomerVouchersUseCase(
             customerId = request.customerId,
             keyword = request.keyword,
             serviceCode = request.serviceCode,
-            sectionCode = request.sectionCode,
             tab = request.tab,
-            myVouchersPage = request.myVouchersPage,
-            myVouchersSize = request.myVouchersSize,
-            otherVouchersPage = request.otherVouchersPage,
-            otherVouchersSize = request.otherVouchersSize,
+            page = request.page,
+            size = request.size,
         )
     }
 }

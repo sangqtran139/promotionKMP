@@ -53,7 +53,14 @@ Fragment: render thông tin + cấu hình nút theo state
 
 ---
 
-## 4. Lưu ý khi sửa
+## 4. API backend
+
+- **Endpoint:** `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}`
+- **Query params:** `customerId` (bắt buộc), `service` (tuỳ chọn — dịch vụ đang thanh toán).
+- **Response fields mới (v1.1):** `campaignId`, `campaignType`, `campaignStatus`, `applicableProducts[]` (gồm `productId`, `sku`, `name`, `image`, `type=INCLUDED|EXCLUDED`).
+
+## 5. Lưu ý khi sửa
 
 - Mapping/field mới của chi tiết voucher → cập nhật `VoucherDetail` (domain) + `toVoucherDetail()` (data).
 - Logic enable/label nút theo trạng thái mới → bổ sung vào `VoucherStatus` và phần suy luận trong ViewModel.
+- `campaignStatus` ảnh hưởng tới khả năng dùng voucher (DISABLED/EXPIRED/DELETED → không dùng được dù `status=ACTIVE`).

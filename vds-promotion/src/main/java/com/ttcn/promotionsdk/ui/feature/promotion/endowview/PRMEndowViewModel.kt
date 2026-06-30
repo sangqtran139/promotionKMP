@@ -69,28 +69,19 @@ internal class PRMEndowViewModel(
                         customerId = customerId,
                         keyword = null,
                         serviceCode = requestContextProvider.getService() ?: "vay",
-                        sectionCode = null,
                         tab = null,
-                        myVouchersPage = 0,
-                        myVouchersSize = 10,
-                        otherVouchersPage = 0,
-                        otherVouchersSize = 10,
+                        page = 0,
+                        size = 10,
                     )
                 )
             }.onSuccess { response ->
-                val myVouchers =
-                    response?.myVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val otherVouchers =
-                    response?.otherVouchers?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val total =
-                    (response?.myVouchers?.totalElements ?: myVouchers.size.toLong()).toInt() +
-                            (response?.otherVouchers?.totalElements
-                                ?: otherVouchers.size.toLong()).toInt()
+                val vouchers = response?.content.orEmpty().map { it.toMyVoucherListItem() }
+                val total = (response?.totalElements ?: vouchers.size.toLong()).toInt()
 
                 _uiState.update {
                     it.copy(
-                        myVouchers = myVouchers,
-                        otherVouchers = otherVouchers,
+                        myVouchers = vouchers,
+                        otherVouchers = emptyList(),
                         totalVoucherCount = total,
                         hasLoadedInitial = true,
                         error = null,
@@ -99,7 +90,7 @@ internal class PRMEndowViewModel(
 
                 // Auto-apply nếu discountDetails chưa có và có voucher isAutoApplied
                 if (_uiState.value.discountDetails.isEmpty()) {
-                    val autoApplied = (myVouchers + otherVouchers).firstOrNull { it.isAutoApplied }
+                    val autoApplied = vouchers.firstOrNull { it.isAutoApplied }
                     if (autoApplied != null) {
                         validateAndAutoApply(customerId, listOf(autoApplied))
                     }

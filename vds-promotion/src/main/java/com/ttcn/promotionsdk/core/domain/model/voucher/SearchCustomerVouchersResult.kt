@@ -1,11 +1,16 @@
 package com.ttcn.promotionsdk.core.domain.model.voucher
 
 data class SearchCustomerVouchersResult(
+    val keyword: String? = null,
+    val serviceCode: String? = null,
     val tabs: List<VoucherTabItem> = emptyList(),
     val defaultTab: String? = null,
     val selectedTab: String? = null,
-    val myVouchers: VoucherListPage? = null,
-    val otherVouchers: VoucherListPage? = null,
+    val content: List<VoucherItem> = emptyList(),
+    val number: Int? = null,
+    val size: Int? = null,
+    val last: Boolean? = null,
+    val totalElements: Long? = null,
 )
 
 data class VoucherTabItem(
@@ -13,14 +18,7 @@ data class VoucherTabItem(
     val label: String,
     val count: Int? = null,
     val order: Int? = null,
-)
-
-data class VoucherListPage(
-    val content: List<VoucherItem> = emptyList(),
-    val number: Int? = null,
-    val size: Int? = null,
-    val last: Boolean? = null,
-    val totalElements: Long? = null,
+    val isDefault: Boolean = false,
 )
 
 data class VoucherItem(
@@ -35,4 +33,5 @@ data class VoucherItem(
     val campaignId: String? = null,
     val campaignType: String? = null,
     val objectType: String = "CAMPAIGN",
+    val applicableProducts: List<ApplicableProduct> = emptyList(),
 )
