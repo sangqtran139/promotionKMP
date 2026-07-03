@@ -1,4 +1,9 @@
 package com.ttcn.promotionsdk.core.domain.usecase
 
-// TODO: implement when FeatureFlagRepository and FeatureFlag model are ready
-internal class IsFeatureEnabledUseCase
+import com.ttcn.promotionsdk.core.domain.repository.FeatureFlagRepository
+
+internal class IsFeatureEnabledUseCase(
+    private val repository: FeatureFlagRepository,
+) {
+    operator fun invoke(featureName: String): Boolean = repository.isEnabled(featureName)
+}

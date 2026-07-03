@@ -6,6 +6,8 @@ import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.internal.SdkDi
 import com.ttcn.promotionsdk.core.di.internal.get
+import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
+import com.ttcn.promotionsdk.core.domain.usecase.GetPromotionFeatureFlagsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.di.ViewModelModule
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
@@ -35,6 +37,18 @@ object PromotionSDK {
      */
     @JvmStatic
     val useCases: PromotionUseCases get() = get()
+
+    /**
+     * Trạng thái feature flags hiện tại từ Unleash.
+     * Phải gọi [init] trước khi sử dụng.
+     *
+     * ```kotlin
+     * val flags = PromotionSDK.featureFlags
+     * if (flags.isEnabled(PromotionFeatureFlag.VOUCHER_LIST)) { ... }
+     * ```
+     */
+    @JvmStatic
+    val featureFlags: PromotionFeatureFlags get() = get<GetPromotionFeatureFlagsUseCase>()()
 
     /**
      * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]

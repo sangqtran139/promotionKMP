@@ -4,7 +4,7 @@
     <dimen name="prm_theme_header_side_margin">30dp</dimen>
     <dimen name="prm_theme_title_text_size">24sp</dimen>
     <dimen name="prm_theme_subheader_text_size">20sp</dimen>
-    <dimen name="prm_theme_content_horizontal_margin">30dp</dimen>
+    <dimen name="prm_theme_content_horizontal_margin">16dp</dimen>
     <dimen name="prm_theme_card_corner_radius">30dp</dimen>
     <dimen name="prm_theme_card_padding">16dp</dimen>
     <dimen name="prm_theme_card_margin_top">30dp</dimen>

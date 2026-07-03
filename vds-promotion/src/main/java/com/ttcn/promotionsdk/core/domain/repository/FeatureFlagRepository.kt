@@ -1,4 +1,8 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/core/domain/repository/FeatureFlagRepository.kt
 package com.ttcn.promotionsdk.core.domain.repository
 
-internal interface FeatureFlagRepository
+import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
+
+internal interface FeatureFlagRepository {
+    fun isEnabled(featureName: String): Boolean
+    fun getPromotionFeatureFlags(): PromotionFeatureFlags
+}

@@ -26,7 +26,8 @@ object PromotionContainer {
             config = config,
             NetworkModule.module,
             RepositoryModule.module,
-            UseCaseModule.module
+            UseCaseModule.module,
+            FeatureFlagModule.module,
         )
     }
 
