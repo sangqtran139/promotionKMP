@@ -9,19 +9,17 @@ import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.token.ListItemToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
 import com.ttcn.promotionsdk.ui.theme.token.SearchBarToken
 import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
 import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
 
-/**
- * Public theme API for host applications.
- * Re-exports token types from the UI theme package.
- */
 object PromotionTheme {
 
     fun configure(config: PromotionThemeConfig) {
         PromotionThemeRegistry.configure(config)
         PromotionSDK.syncThemeConfig(config)
+        PromotionThemeStore.save(config)
     }
 
     fun currentConfig(): PromotionThemeConfig? = PromotionThemeRegistry.currentConfig()
@@ -29,6 +27,7 @@ object PromotionTheme {
     fun clear() {
         PromotionThemeRegistry.configure(null)
         PromotionSDK.syncThemeConfig(null)
+        PromotionThemeStore.clear()
     }
 
     /** SDK-internal default values for theme preview / documentation. */

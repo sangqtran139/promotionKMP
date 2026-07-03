@@ -168,21 +168,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvHotDeal" />
-
-                <com.ttcn.promotionsdk.ui.widget.PRMButton
-                    android:id="@+id/btnEndow"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="@dimen/view_size_75"
-                    android:layout_marginTop="@dimen/view_size_20"
-                    android:layout_marginEnd="@dimen/view_size_75"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvContentText"
-                    app:prmBtSize="large"
-                    app:prmBtText="@string/prm_get_now"
-                    app:prmBtType="gradient" />
-
             </androidx.constraintlayout.widget.ConstraintLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 

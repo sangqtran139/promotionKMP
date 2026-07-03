@@ -63,8 +63,8 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             }
 
             if (detail != null) {
-                bindDetailContent(state, detail)
                 hideDetailLoading()
+                bindDetailContent(state, detail)
                 return@collectFlow
             }
 
@@ -86,12 +86,14 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     }
 
     private fun showDetailLoading() {
-        binding.progressLoading.isVisible = true
+        binding.shimmerProvider.shimmerDetail.startShimmer()
+        binding.shimmerProvider.root.isVisible = true
         binding.contentContainer.isVisible = false
     }
 
     private fun hideDetailLoading(showContent: Boolean = true) {
-        binding.progressLoading.isVisible = false
+        binding.shimmerProvider.shimmerDetail.stopShimmer()
+        binding.shimmerProvider.root.isVisible = false
         binding.contentContainer.isVisible = showContent
     }
 
@@ -123,14 +125,8 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
         bindDetailTabsIfNeeded(
             voucherId = detail.voucherId,
-            descriptionHtml = resolveHtmlContent(
-                detail.description,
-                R.string.prm_empty_detail_info,
-            ),
-            guidelineHtml = resolveHtmlContent(
-                detail.guideline,
-                R.string.prm_empty_usage_guide,
-            ),
+            descriptionHtml = resolveHtmlContent(detail.description),
+            guidelineHtml = resolveHtmlContent(detail.guideline),
         )
     }
 
@@ -179,9 +175,8 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
     }
 
-    private fun resolveHtmlContent(html: String?, @StringRes emptyRes: Int): String {
-        return html?.takeIf { it.isNotBlank() }
-            ?: "<p>${getString(emptyRes)}</p>"
+    private fun resolveHtmlContent(html: String?): String {
+        return html?.takeIf { it.isNotBlank() }.orEmpty()
     }
 
     private fun showServiceSelector(services: List<ServiceSelectorUiItem>) {

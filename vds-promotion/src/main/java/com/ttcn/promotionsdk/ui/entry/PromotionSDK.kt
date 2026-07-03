@@ -16,6 +16,7 @@ import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragmen
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
 
 object PromotionSDK {
 
@@ -64,10 +65,13 @@ object PromotionSDK {
 
     @JvmStatic
     fun init(context: Context, options: PromotionSDKOptions) {
-        theme = options.theme
-        PromotionThemeRegistry.configure(options.theme.config)
         callback = options.callback
         PromotionContainer.init(context, options.config)
+        PromotionThemeStore.init(context)
+        val resolvedConfig = PromotionThemeStore.load() ?: options.theme.config
+        val resolvedTheme = PromotionSDKTheme(config = resolvedConfig)
+        theme = resolvedTheme
+        PromotionThemeRegistry.configure(resolvedConfig)
         ensureUiDiLoaded()
     }
 
@@ -113,6 +117,7 @@ object PromotionSDK {
     fun release() {
         PromotionContainer.clear()
         PromotionThemeRegistry.configure(null)
+        PromotionThemeStore.clear()
         syncThemeConfig(null)
         callback = null
         isUiDiLoaded = false

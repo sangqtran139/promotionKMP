@@ -73,8 +73,8 @@
             android:id="@+id/ctlNoResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/view_size_150"
             android:visibility="gone"
+            android:layout_marginTop="@dimen/view_size_120"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sfEndow">
 
@@ -125,7 +125,7 @@
 
         <include
             android:id="@+id/shimmer_provider"
-            layout="@layout/shimmer_my_promotion"
+            layout="@layout/shimmer_search_my_promotion"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="@dimen/view_size_70"

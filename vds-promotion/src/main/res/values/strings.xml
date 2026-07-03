@@ -44,8 +44,6 @@
     <string name="prm_collapse">Thu gọn</string>
     <string name="prm_tab_detail_info">Thông tin chi tiết</string>
     <string name="prm_tab_usage_guide">Hướng dẫn sử dụng</string>
-    <string name="prm_empty_detail_info">Chưa có thông tin chi tiết</string>
-    <string name="prm_empty_usage_guide">Chưa có hướng dẫn sử dụng</string>
     <string name="prm_loading">Loading</string>
     <string name="prm_budget_insufficient">Khuyến mãi đã hết lượt</string>
     <string name="prm_cancel_voucher">Huỷ</string>

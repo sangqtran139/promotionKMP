@@ -99,12 +99,7 @@ internal class PromotionDetailViewModel(
             VoucherStatus.REDEEMED,
             VoucherStatus.EXPIRED,
             VoucherStatus.REVOKED,
-            VoucherStatus.SUSPENDED -> VoucherActionUiState(
-                visible = true,
-                enabled = false,
-                label = displayStatusLabel,
-            )
-
+            VoucherStatus.SUSPENDED,
             VoucherStatus.UNKNOWN -> VoucherActionUiState(
                 visible = false,
                 enabled = false,
