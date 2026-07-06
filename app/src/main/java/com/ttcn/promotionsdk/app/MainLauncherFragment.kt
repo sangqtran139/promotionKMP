@@ -115,8 +115,7 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
                         override fun getLanguage(): String = "vi-VN"
                     },
                 ),
-                theme = savedTheme?.let { PromotionSDKTheme(config = it) }
-                    ?: PromotionSDK.getTheme(),
+                theme = savedTheme?.let(PromotionSDKTheme::from) ?: PromotionSDK.getTheme(),
             ),
         )
         Log.d(TAG, "PromotionSDK.init done with baseUrl=$baseUrl")

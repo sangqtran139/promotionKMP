@@ -1,4 +1,3 @@
-// vds-promotion/src/main/java/com/ttcn/promotionsdk/ui/entry/PromotionSDK.kt
 package com.ttcn.promotionsdk.ui.entry
 
 import android.content.Context
@@ -17,6 +16,7 @@ import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
+import com.ttcn.promotionsdk.ui.theme.toThemeConfig
 
 object PromotionSDK {
 
@@ -57,10 +57,7 @@ object PromotionSDK {
      */
     @JvmStatic
     internal fun syncThemeConfig(config: PromotionThemeConfig?) {
-        theme = when (config) {
-            null -> PromotionSDKTheme()
-            else -> PromotionSDKTheme(config = config)
-        }
+        theme = config?.let(PromotionSDKTheme::from) ?: PromotionSDKTheme()
     }
 
     @JvmStatic
@@ -68,10 +65,10 @@ object PromotionSDK {
         callback = options.callback
         PromotionContainer.init(context, options.config)
         PromotionThemeStore.init(context)
-        val resolvedConfig = PromotionThemeStore.load() ?: options.theme.config
-        val resolvedTheme = PromotionSDKTheme(config = resolvedConfig)
-        theme = resolvedTheme
-        PromotionThemeRegistry.configure(resolvedConfig)
+        theme = options.theme
+        val themeConfig = options.theme.toThemeConfig()
+        PromotionThemeRegistry.configure(themeConfig)
+        PromotionThemeStore.save(themeConfig)
         ensureUiDiLoaded()
     }
 

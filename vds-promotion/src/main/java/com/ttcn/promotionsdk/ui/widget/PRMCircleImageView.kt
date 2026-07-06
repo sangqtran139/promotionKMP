@@ -218,19 +218,14 @@ class PRMCircleImageView @JvmOverloads constructor(
         if (drawable is BitmapDrawable) return drawable.bitmap
 
         return try {
-            val bitmap = if (drawable is ColorDrawable) {
-                Bitmap.createBitmap(COLORDRAWABLE_DIMENSION, COLORDRAWABLE_DIMENSION, BITMAP_CONFIG)
-            } else {
-                Bitmap.createBitmap(
-                    drawable.intrinsicWidth, drawable.intrinsicHeight, BITMAP_CONFIG
-                )
-            }
+            val bitmapWidth = drawable.intrinsicWidth.takeIf { it > 0 } ?: COLORDRAWABLE_DIMENSION
+            val bitmapHeight = drawable.intrinsicHeight.takeIf { it > 0 } ?: COLORDRAWABLE_DIMENSION
+            val bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, BITMAP_CONFIG)
             val canvas = Canvas(bitmap)
             drawable.setBounds(0, 0, canvas.width, canvas.height)
             drawable.draw(canvas)
             bitmap
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }

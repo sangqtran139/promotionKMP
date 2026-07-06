@@ -98,6 +98,8 @@ class PRMEndowView @JvmOverloads constructor(
             }
         }
 
+        binding.shimmerEndow.startShimmer()
+
         vm.loadInitialVouchers()
     }
 
@@ -145,6 +147,9 @@ class PRMEndowView @JvmOverloads constructor(
         }
 
         if (!state.hasLoadedInitial) return
+
+        binding.shimmerEndow.stopShimmer()
+        binding.shimmerEndow.visibility = GONE
 
         when {
             // Ưu đãi đã áp dụng nhưng không còn khả dụng → UNAVAILABLE
@@ -196,7 +201,6 @@ class PRMEndowView @JvmOverloads constructor(
     /** Chưa chọn ưu đãi, còn ưu đãi khả dụng → hiển thị nút "Sử dụng" */
     private fun showNotAppliedState(count: Int) {
         binding.apply {
-            viewContainer.visibility = VISIBLE
             txtNumberEndow.text = when (count) {
                 1 -> context.getString(R.string.prm_one_endow)
                 else -> context.getString(R.string.prm_multiple_endow, count)
@@ -212,7 +216,6 @@ class PRMEndowView @JvmOverloads constructor(
     /** Đã chọn ưu đãi → hiển thị danh sách + nút "Hủy" */
     private fun showAppliedState(details: List<AppliedDiscount>) {
         binding.apply {
-            viewContainer.visibility = VISIBLE
             applyPromotionAdapter.submitList(details)
             txtNumberEndow.visibility = GONE
             rcvEndow.visibility = VISIBLE
@@ -225,7 +228,6 @@ class PRMEndowView @JvmOverloads constructor(
     /** Ưu đãi đã chọn không còn khả dụng → hiển thị danh sách mờ + nút "Chọn lại" */
     private fun showUnavailableState(details: List<AppliedDiscount>) {
         binding.apply {
-            viewContainer.visibility = VISIBLE
             applyPromotionAdapter.submitList(details)
             txtNumberEndow.visibility = GONE
             rcvEndow.visibility = VISIBLE
@@ -238,7 +240,6 @@ class PRMEndowView @JvmOverloads constructor(
     /** Không có ưu đãi nào → ẩn nút hành động */
     private fun showEmptyState() {
         binding.apply {
-            viewContainer.visibility = VISIBLE
             txtNumberEndow.text = context.getString(R.string.prm_no_endow)
             txtNumberEndow.visibility = VISIBLE
             rcvEndow.visibility = GONE

@@ -23,8 +23,8 @@ private fun promotionVoucherLogoBaseOptions(): RequestOptions =
 
 private fun promotionVoucherLogoUiOptions(): RequestOptions =
     promotionVoucherLogoBaseOptions()
-        .placeholder(R.drawable.prm_ic_launcher)
-        .error(R.drawable.prm_ic_launcher)
+        .placeholder(R.drawable.prm_bg_image_placeholder)
+        .error(R.drawable.prm_bg_image_placeholder)
 
 private fun promotionVoucherBannerBaseOptions(): RequestOptions =
     RequestOptions()
@@ -33,8 +33,8 @@ private fun promotionVoucherBannerBaseOptions(): RequestOptions =
 
 private fun promotionVoucherBannerUiOptions(): RequestOptions =
     promotionVoucherBannerBaseOptions()
-        .placeholder(R.drawable.prm_bg_load_image_endow_default)
-        .error(R.drawable.prm_bg_load_image_endow_default)
+        .placeholder(R.drawable.prm_bg_image_placeholder)
+        .error(R.drawable.prm_bg_image_placeholder)
 
 // ─── Generic loader ───────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ fun ImageView.loadPromotionVoucherLogo(urlLogo: String, preferCache: Boolean = f
         url = urlLogo,
         baseOptions = promotionVoucherLogoBaseOptions(),
         uiOptions = promotionVoucherLogoUiOptions(),
-        fallbackRes = R.drawable.prm_ic_launcher,
+        fallbackRes = R.drawable.prm_bg_image_placeholder,
         preferCache = preferCache,
     )
 
@@ -109,6 +109,6 @@ fun ImageView.loadPromotionVoucherBanner(urlBanner: String, preferCache: Boolean
         url = urlBanner,
         baseOptions = promotionVoucherBannerBaseOptions(),
         uiOptions = promotionVoucherBannerUiOptions(),
-        fallbackRes = R.drawable.prm_bg_load_image_endow_default,
+        fallbackRes = R.drawable.prm_bg_image_placeholder,
         preferCache = preferCache,
     )

@@ -2,6 +2,7 @@ package com.ttcn.promotionsdk.app.headless
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
 import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
@@ -21,6 +22,12 @@ class DemoHeadlessViewModel : ViewModel() {
     // ─── Lấy use cases từ SDK — đây là tất cả những gì partner cần ───────────
     private val useCases = PromotionSDK.useCases
 
+    // ─── Đọc context được init vào SDK ───────────────────────────────────────
+    private val ctx get() = PromotionContainer.requestContextProvider
+    private val customerId get() = ctx.getCustomerId().orEmpty()
+    private val orderId get() = ctx.getOrderId().orEmpty()
+    private val orderValue get() = ctx.getOrderValue().orEmpty()
+
     // ─── State ────────────────────────────────────────────────────────────────
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -32,14 +39,26 @@ class DemoHeadlessViewModel : ViewModel() {
     private var firstVoucherId: String? = null
     private var validatedItems: List<Pair<String, String>> = emptyList() // objectId, objectType
 
+    init {
+        viewModelScope.launch {
+            emit("── SDK context ──────────────────────")
+            emit("   customerId : ${ctx.getCustomerId() ?: "(null)"}")
+            emit("   orderId    : ${ctx.getOrderId() ?: "(null)"}")
+            emit("   orderValue : ${ctx.getOrderValue() ?: "(null)"}")
+            emit("   service    : ${ctx.getService() ?: "(null)"}")
+            emit("   language   : ${ctx.getLanguage() ?: "(null)"}")
+            emit("─────────────────────────────────────")
+        }
+    }
+
     // ─── Step 1: Search vouchers ──────────────────────────────────────────────
     fun searchVouchers() {
         viewModelScope.launch {
             _isLoading.value = true
             val result = useCases.searchVouchers(
                 SearchCustomerVouchersRequest(
-                    customerId = CUSTOMER_ID,
-                    serviceCode = SERVICE_CODE,
+                    customerId = customerId,
+                    serviceCode = null,
                     keyword = null,
                     tab = null,
                     page = 0,
@@ -70,7 +89,7 @@ class DemoHeadlessViewModel : ViewModel() {
         }
         viewModelScope.launch {
             _isLoading.value = true
-            when (val result = useCases.getVoucherDetail(voucherId = voucherId, customerId = CUSTOMER_ID)) {
+            when (val result = useCases.getVoucherDetail(voucherId = voucherId, customerId = customerId)) {
                 is PromotionResult.Success -> {
                     val detail = result.data
                     emit("✅ getVoucherDetail [${detail.voucherId}]")
@@ -95,9 +114,9 @@ class DemoHeadlessViewModel : ViewModel() {
             _isLoading.value = true
             val result = useCases.validateDiscounts(
                 ValidateDiscountsRequest(
-                    customerId = CUSTOMER_ID,
-                    orderId = ORDER_ID,
-                    orderValue = ORDER_VALUE,
+                    customerId = customerId,
+                    orderId = orderId,
+                    orderValue = orderValue,
                     items = listOf(DiscountItemRequest(objectId = voucherId)),
                 )
             )
@@ -129,9 +148,9 @@ class DemoHeadlessViewModel : ViewModel() {
             _isLoading.value = true
             val result = useCases.createRedemption(
                 CreateRedemptionRequest(
-                    customerId = CUSTOMER_ID,
-                    orderId = ORDER_ID,
-                    orderValue = ORDER_VALUE,
+                    customerId = customerId,
+                    orderId = orderId,
+                    orderValue = orderValue,
                     items = validatedItems.map { (objectId, objectType) ->
                         RedemptionItemRequest(objectId = objectId, objectType = objectType)
                     },
@@ -156,11 +175,4 @@ class DemoHeadlessViewModel : ViewModel() {
     }
 
     private suspend fun emit(msg: String) = _log.emit(msg)
-
-    companion object {
-        private const val CUSTOMER_ID = "CUS-001"
-        private const val SERVICE_CODE = "vay"
-        private const val ORDER_ID = "ORD-001"
-        private const val ORDER_VALUE = "500000"
-    }
 }

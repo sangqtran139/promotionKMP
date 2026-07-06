@@ -83,7 +83,7 @@
                             android:id="@+id/imgVoucher"
                             android:layout_width="@dimen/_37sdp"
                             android:layout_height="@dimen/_37sdp"
-                            android:src="@drawable/prm_ic_launcher" />
+                            android:src="@drawable/prm_bg_image_placeholder" />
                     </io.github.florent37.shapeofview.shapes.CircleView>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

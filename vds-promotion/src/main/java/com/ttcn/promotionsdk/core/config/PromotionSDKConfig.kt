@@ -10,6 +10,7 @@ data class AvailableService(
 data class PromotionSDKConfig(
     val apiKey: String,
     val baseUrl: String,
+    val token: String? = null,
     val requestContextProvider: PromotionRequestContextProvider? = null,
     val environment: SdkEnvironment = SdkEnvironment.PROD,
     val availableServices: List<AvailableService> = emptyList()
