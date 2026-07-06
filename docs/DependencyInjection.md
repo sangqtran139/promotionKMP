@@ -68,10 +68,10 @@ PromotionSDK.init(context, options)
 
 | Module | Đăng ký gì |
 |--------|------------|
-| `NetworkModule` | `ApiInterceptor`, `PromotionApiService`, `PromotionRemoteDataSource`, `RequestContextProvider` |
-| `RepositoryModule` | `PromotionRepository` → `PromotionRepositoryImpl`, `FeatureFlagRepository` → impl |
-| `UseCaseModule` (`core/domain/di`) | Các use case + `PromotionUseCases` |
-| `FeatureFlagModule` | Phụ thuộc cho feature flag |
+| `NetworkModule` | `ApiInterceptor`, `PromotionApiService`, `PromotionRemoteDataSource`, `RequestContextProvider`, `FeatureFlagApiService`, `FeatureFlagRemoteDataSource` |
+| `RepositoryModule` | `PromotionRepository` → `PromotionRepositoryImpl`; `FeatureFlagRepository` → `FeatureFlagRepositoryImpl` (trigger `fetchFlags()` ngay sau khởi tạo) |
+| `UseCaseModule` (`core/di`) | Các use case + `PromotionUseCases` |
+| `FeatureFlagModule` | Use case feature flag: `FetchFeatureFlagsUseCase`, `IsFeatureEnabledUseCase`, `GetFeatureFlagsUseCase`, `GetPromotionFeatureFlagsUseCase` |
 | `ViewModelModule` (`ui/di`) | Binding tạo ViewModel; dùng cùng `PromotionViewModelFactory` |
 
 Bind interface → impl: `single<PromotionRepository> { PromotionRepositoryImpl(get()) }`.

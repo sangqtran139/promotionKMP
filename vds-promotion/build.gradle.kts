@@ -40,9 +40,6 @@ base {
 }
 
 dependencies {
-    // Feature flag
-    implementation(libs.unleash.android)
-
     // Core dependencies
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)

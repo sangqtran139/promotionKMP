@@ -6,6 +6,8 @@ import com.ttcn.promotionsdk.core.config.EmptyPromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.data.remote.ApiInterceptor
+import com.ttcn.promotionsdk.core.data.remote.FeatureFlagApiService
+import com.ttcn.promotionsdk.core.data.remote.FeatureFlagRemoteDataSource
 import com.ttcn.promotionsdk.core.data.remote.PromotionApiService
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
 import com.ttcn.promotionsdk.core.data.remote.RetrofitClient
@@ -21,9 +23,7 @@ object NetworkModule {
         }
 
         single<ApiInterceptor> {
-            ApiInterceptor(
-                requestContextProvider = get(),
-            )
+            ApiInterceptor(requestContextProvider = get())
         }
 
         single<PromotionApiService> {
@@ -37,9 +37,21 @@ object NetworkModule {
         }
 
         single<PromotionRemoteDataSource> {
-            PromotionRemoteDataSource(
-                apiService = get(),
+            PromotionRemoteDataSource(apiService = get())
+        }
+
+        single<FeatureFlagApiService> {
+            val isDebug =
+                (get<Context>().applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            RetrofitClient.featureFlagApiService(
+                baseUrl = get<PromotionSDKConfig>().baseUrl,
+                apiInterceptor = get(),
+                isDebug = isDebug,
             )
+        }
+
+        single<FeatureFlagRemoteDataSource> {
+            FeatureFlagRemoteDataSource(apiService = get())
         }
     }
 }

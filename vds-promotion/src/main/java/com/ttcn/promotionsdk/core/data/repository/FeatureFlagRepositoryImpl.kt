@@ -1,22 +1,37 @@
 package com.ttcn.promotionsdk.core.data.repository
 
-import io.getunleash.android.DefaultUnleash
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.data.dto.featureflag.toPromotionFeatureFlags
+import com.ttcn.promotionsdk.core.data.local.FeatureFlagLocalDataSource
+import com.ttcn.promotionsdk.core.data.remote.FeatureFlagRemoteDataSource
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.core.domain.repository.FeatureFlagRepository
 
 internal class FeatureFlagRepositoryImpl(
-    private val unleash: DefaultUnleash,
+    private val remoteDataSource: FeatureFlagRemoteDataSource,
+    private val localDataSource: FeatureFlagLocalDataSource,
+    private val contextProvider: PromotionRequestContextProvider,
 ) : FeatureFlagRepository {
 
-    override fun isEnabled(featureName: String): Boolean = unleash.isEnabled(featureName)
+    @Volatile
+    private var cachedFlags: PromotionFeatureFlags = localDataSource.load()
 
-    override fun getPromotionFeatureFlags(): PromotionFeatureFlags = PromotionFeatureFlags(
-        enableAll = unleash.isEnabled(PromotionFeatureFlag.ENABLE_ALL),
-        voucherApply = unleash.isEnabled(PromotionFeatureFlag.VOUCHER_APPLY),
-        voucherRedeem = unleash.isEnabled(PromotionFeatureFlag.VOUCHER_REDEEM),
-        voucherSelection = unleash.isEnabled(PromotionFeatureFlag.VOUCHER_SELECTION),
-        voucherDetail = unleash.isEnabled(PromotionFeatureFlag.VOUCHER_DETAIL),
-        voucherList = unleash.isEnabled(PromotionFeatureFlag.VOUCHER_LIST),
-    )
+    override suspend fun fetchFlags() {
+        runCatching {
+            remoteDataSource.getFeatureFlags(
+                sessionId = "",
+                userId = contextProvider.getCustomerId().orEmpty(),
+            )
+        }
+            .getOrNull()
+            ?.let { response ->
+                val flags = response.toPromotionFeatureFlags()
+                localDataSource.save(flags)
+                cachedFlags = flags
+            }
+    }
+
+    override fun isEnabled(featureName: String): Boolean = cachedFlags.isEnabled(featureName)
+
+    override fun getPromotionFeatureFlags(): PromotionFeatureFlags = cachedFlags
 }

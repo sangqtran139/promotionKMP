@@ -60,9 +60,9 @@ Quy tắc:
 - Mọi endpoint khai báo trong `PromotionApiService` (hoặc `FeatureFlagApiService`) là **interface Retrofit**.
 - Hàm endpoint là `suspend`, trả về **DTO** (`*Response`), không trả domain model.
 - Request body dùng DTO `*Request`. Dùng `@Query`/`@Path`/`@Body` đúng ngữ nghĩa.
-- Endpoint mới phải đi kèm hàm tương ứng trong `PromotionRemoteDataSource`.
+- Endpoint mới phải đi kèm hàm tương ứng trong `RemoteDataSource` tương ứng.
 
-### Endpoint hiện tại (voucher)
+### Endpoint hiện tại (voucher — `PromotionApiService` / `PromotionRemoteDataSource`)
 
 | Operation | Method | Path |
 |-----------|--------|------|
@@ -70,6 +70,16 @@ Quy tắc:
 | Get Customer Voucher Detail | GET | `promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}` |
 | Create Redemption Session | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/sessions` |
 | Validate Stackable Discounts | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/validate/stackable-discounts` |
+
+### Endpoint hiện tại (feature flag — `FeatureFlagApiService` / `FeatureFlagRemoteDataSource`)
+
+| Operation | Method | Path | Body | Response |
+|-----------|--------|------|------|---------|
+| Get Feature Flags | POST | `promotion/promotion-vtm-bff/api/v1/vtm/feature-flag/list` | `{}` | `ApiResponseTemplate<List<FeatureFlagItemResponse>>` |
+
+- Kết quả được cache trong `FeatureFlagRepositoryImpl`; đọc đồng bộ qua `isEnabled()` / `getPromotionFeatureFlags()`.
+- Lỗi fetch tự động fallback về default (tất cả flag = `false`) — không crash.
+- Lỗi API → `FeatureFlagException`; lỗi transport → `NetworkException`.
 
 ---
 

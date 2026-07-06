@@ -15,6 +15,10 @@ internal object RetrofitClient {
         return instance(baseUrl, apiInterceptor, isDebug).create(PromotionApiService::class.java)
     }
 
+    fun featureFlagApiService(baseUrl: String, apiInterceptor: ApiInterceptor, isDebug: Boolean = false): FeatureFlagApiService {
+        return instance(baseUrl, apiInterceptor, isDebug).create(FeatureFlagApiService::class.java)
+    }
+
     fun clear() {
         retrofit = null
     }

@@ -19,7 +19,6 @@ timber = "5.0.1"
 appcompatVersion = "1.7.1"
 shimmer = "0.5.0"
 constraintlayoutVersion = "2.2.1"
-unleash = "3.2.3"
 
 [libraries]
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
@@ -45,7 +44,6 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 shimmer = { group = "com.facebook.shimmer", name = "shimmer", version.ref = "shimmer" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompatVersion" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayoutVersion" }
-unleash-android = { module = "io.getunleash:unleash-android", version.ref = "unleash" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

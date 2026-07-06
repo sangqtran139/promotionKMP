@@ -24,6 +24,7 @@ object PromotionContainer {
         SdkDi.getInstance().start(
             context = context.applicationContext,
             config = config,
+            LocalModule.module,
             NetworkModule.module,
             RepositoryModule.module,
             UseCaseModule.module,

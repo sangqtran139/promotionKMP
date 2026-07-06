@@ -6,6 +6,7 @@ import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.internal.SdkDi
 import com.ttcn.promotionsdk.core.di.internal.get
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
+import com.ttcn.promotionsdk.core.domain.usecase.FetchFeatureFlagsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.GetPromotionFeatureFlagsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.di.ViewModelModule
@@ -17,6 +18,11 @@ import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
 import com.ttcn.promotionsdk.ui.theme.toThemeConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 object PromotionSDK {
 
@@ -24,6 +30,7 @@ object PromotionSDK {
 
     private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
+    private var sdkScope: CoroutineScope? = null
 
     @Volatile
     private var isUiDiLoaded: Boolean = false
@@ -70,6 +77,8 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(themeConfig)
         PromotionThemeStore.save(themeConfig)
         ensureUiDiLoaded()
+        sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        sdkScope?.launch { get<FetchFeatureFlagsUseCase>()() }
     }
 
     @JvmStatic
@@ -112,6 +121,8 @@ object PromotionSDK {
 
     @JvmStatic
     fun release() {
+        sdkScope?.cancel()
+        sdkScope = null
         PromotionContainer.clear()
         PromotionThemeRegistry.configure(null)
         PromotionThemeStore.clear()
