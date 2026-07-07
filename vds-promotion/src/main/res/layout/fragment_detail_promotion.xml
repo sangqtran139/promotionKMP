@@ -139,6 +139,7 @@
                     android:layout_marginHorizontal="@dimen/_10sdp">
 
                     <View
+                        android:id="@+id/vIndicator"
                         android:layout_width="match_parent"
                         android:layout_height="@dimen/view_size_3"
                         android:layout_gravity="bottom"

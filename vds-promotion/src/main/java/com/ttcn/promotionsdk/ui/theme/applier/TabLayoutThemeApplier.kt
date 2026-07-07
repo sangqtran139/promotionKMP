@@ -32,10 +32,6 @@ internal object TabLayoutThemeApplier {
             )
         }
 
-        token.backgroundColor?.let { color ->
-            tabs.setSelectedTabIndicatorColor(color)
-            tabs.setSelectedTabIndicator(createIndicatorDrawable(tabs, color))
-        }
     }
 
     private fun createIndicatorDrawable(

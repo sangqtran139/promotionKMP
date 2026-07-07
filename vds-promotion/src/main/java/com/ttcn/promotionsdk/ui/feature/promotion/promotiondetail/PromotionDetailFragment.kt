@@ -172,7 +172,9 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     }
 
     private fun applyTabUnderlineTheme() {
-        TabLayoutThemeApplier.apply(binding.tabs, PromotionThemeRegistry.tabUnderlineToken())
+        val token = PromotionThemeRegistry.tabUnderlineToken()
+        TabLayoutThemeApplier.apply(binding.tabs, token)
+        token?.backgroundColor?.let { binding.vIndicator.setBackgroundColor(it) }
     }
 
     private fun resolveHtmlContent(html: String?): String {

@@ -792,12 +792,29 @@ class ThemePreviewFragment : Fragment() {
 
     private fun showTabUnderlinePreview() {
         syncFieldsFromViews()
+        val indicatorHeight = resources.getDimensionPixelSize(SdkR.dimen.view_size_3)
+        val vIndicator = View(requireContext()).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                indicatorHeight,
+            ).also { it.gravity = android.view.Gravity.BOTTOM }
+            setBackgroundColor(
+                themeDisplay.tabUnderline.backgroundColor
+                    ?.let { TokenColorParser.parse(it) }
+                    ?: ContextCompat.getColor(requireContext(), SdkR.color.color_D3D3D3),
+            )
+        }
         val tabs = TabLayout(requireContext()).apply {
             addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_info)))
             addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_guide)))
+            setBackgroundColor(android.graphics.Color.TRANSPARENT)
             TabUnderlineTheme.applyToken(this, themeDisplay.tabUnderline)
         }
-        showBottomSheet(R.string.prm_theme_sheet_component_tabs, tabs)
+        val container = FrameLayout(requireContext()).apply {
+            addView(vIndicator)
+            addView(tabs)
+        }
+        showBottomSheet(R.string.prm_theme_sheet_component_tabs, container)
     }
 
     private fun showEndowPreview() {

@@ -37,5 +37,10 @@ dependencies {
     implementation(libs.material)
     implementation(libs.fragment.ktx)
     implementation(libs.constraintlayout)
-    implementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    // Test login manager
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp.logging)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.lifecycle.runtime.ktx)
 }
