@@ -1,131 +1,187 @@
 # NetworkingGuide — Quy tắc Networking
 
-TTCN Promotion SDK gọi API bằng **Retrofit + OkHttp + Gson**. Toàn bộ networking nằm ở **Data layer**
-(`core/data/remote/`) và được cấu hình qua **Custom DI** (`core/di/NetworkModule.kt`).
+TTCN Promotion SDK gọi API bằng **Ktor Client + kotlinx.serialization**. Toàn bộ networking nằm ở
+**Data layer** của `:promotionLogic`, `commonMain`.
+
+> Bản Android cũ dùng Retrofit + OkHttp + Gson; bản iOS cũ dùng Alamofire + SwiftyJSON.
+> Cả hai đều JVM/Apple-only. §7 ghi lại ánh xạ để đọc code cũ.
 
 ---
 
-## 1. Stack & thành phần
+## 1. Engine theo nền tảng
 
-| Thành phần | File | Vai trò |
-|------------|------|---------|
-| Retrofit | `core/data/remote/RetrofitClient.kt` | Khởi tạo `Retrofit` (singleton, lazy, thread-safe) |
-| OkHttp | trong `RetrofitClient` | Client + timeout + interceptor |
-| ApiService | `core/data/remote/PromotionApiService.kt`, `FeatureFlagApiService.kt` | Khai báo endpoint (Retrofit interface) |
-| RemoteDataSource | `core/data/remote/PromotionRemoteDataSource.kt` | Gọi ApiService, là ranh giới giữa Data ↔ network |
-| Interceptor | `core/data/remote/ApiInterceptor.kt` | Gắn header/context dùng chung cho mọi request |
-| Exception | `core/domain/exception/PromotionException.kt` | Lỗi API (domain) — `errorCode`/`status`, do RemoteDataSource ném |
-| Converter | Gson (`converter-gson`) | Serialize/deserialize JSON |
+`PromotionHttpClient.create(...)` dựng `HttpClient` **không chỉ định engine**. Ktor tự chọn theo
+artifact có trên classpath:
+
+| Source set | Artifact | Engine |
+|---|---|---|
+| `androidMain` | `ktor-client-okhttp` | OkHttp |
+| `iosMain` | `ktor-client-darwin` | NSURLSession |
+
+Vì thế `PromotionHttpClient` **không cần** `expect`/`actual`.
 
 ---
 
-## 2. Cấu hình client (RetrofitClient)
+## 2. Cấu hình client
 
 ```kotlin
-OkHttpClient.Builder()
-    .connectTimeout(30, TimeUnit.SECONDS)
-    .readTimeout(30, TimeUnit.SECONDS)
-    .addInterceptor(apiInterceptor)   // header/context
-    .addInterceptor(logging)          // log
-    .build()
+HttpClient {
+    expectSuccess = true                       // 4xx/5xx → ném ResponseException
+
+    install(ContentNegotiation) { json(json) }
+
+    install(HttpTimeout) {                     // 30s cho cả ba
+        connectTimeoutMillis = 30_000
+        requestTimeoutMillis = 30_000
+        socketTimeoutMillis  = 30_000
+    }
+
+    install(Logging) { level = if (isDebug) LogLevel.BODY else LogLevel.NONE }
+
+    defaultRequest {
+        url(baseUrl.ensureTrailingSlash())
+        // Bearer token, X-Request-ID (UUID mới mỗi request), Accept-Language, Accept
+    }
+}
 ```
 
-Quy tắc:
-- **Timeout mặc định 30s** (connect & read). Giữ nhất quán, chỉ chỉnh khi có lý do nghiệp vụ.
-- `baseUrl` lấy từ `PromotionSDKConfig.baseUrl`, tự đảm bảo có dấu `/` cuối (`ensureTrailingSlash`).
-- Retrofit là **singleton lazy** (`@Volatile` + double-checked). Không tạo nhiều instance Retrofit.
-- `GsonConverterFactory` là converter chuẩn. Không trộn converter khác trừ khi được yêu cầu.
+### Cấu hình `Json` — hai cờ bắt buộc
 
----
-
-## 3. Logging
-
-- Mức log HTTP phụ thuộc cờ debuggable của host app:
-  `HttpLoggingInterceptor.Level.BODY` khi debug, `Level.NONE` khi release (xem `NetworkModule`).
-- **Không** bật log BODY ở release; tránh lộ token/PII trong logcat.
-
----
-
-## 4. Header & request context
-
-- Header/context dùng chung (vd token, thông tin phiên) gắn tại `ApiInterceptor` qua
-  `PromotionRequestContextProvider` (lấy từ `PromotionSDKConfig.requestContextProvider`,
-  fallback `EmptyPromotionRequestContextProvider`).
-- **Không** tự gắn header riêng lẻ trong từng `@GET/@POST` nếu đó là header dùng chung — thêm vào interceptor/provider.
-
----
-
-## 5. Khai báo endpoint (ApiService)
-
-- Mọi endpoint khai báo trong `PromotionApiService` (hoặc `FeatureFlagApiService`) là **interface Retrofit**.
-- Hàm endpoint là `suspend`, trả về **DTO** (`*Response`), không trả domain model.
-- Request body dùng DTO `*Request`. Dùng `@Query`/`@Path`/`@Body` đúng ngữ nghĩa.
-- Endpoint mới phải đi kèm hàm tương ứng trong `RemoteDataSource` tương ứng.
-
-### Endpoint hiện tại (voucher — `PromotionApiService` / `PromotionRemoteDataSource`)
-
-| Operation | Method | Path |
-|-----------|--------|------|
-| Search Customer Vouchers | GET | `promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers` |
-| Get Customer Voucher Detail | GET | `promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}` |
-| Create Redemption Session | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/sessions` |
-| Validate Stackable Discounts | POST | `promotion/promotion-vtm-bff/api/v1/vtm/redemptions/validate/stackable-discounts` |
-
-### Endpoint hiện tại (feature flag — `FeatureFlagApiService` / `FeatureFlagRemoteDataSource`)
-
-| Operation | Method | Path | Body | Response |
-|-----------|--------|------|------|---------|
-| Get Feature Flags | POST | `promotion/promotion-vtm-bff/api/v1/vtm/feature-flag/list` | `{}` | `ApiResponseTemplate<List<FeatureFlagItemResponse>>` |
-
-- Kết quả được cache trong `FeatureFlagRepositoryImpl`; đọc đồng bộ qua `isEnabled()` / `getPromotionFeatureFlags()`.
-- Lỗi fetch tự động fallback về default (tất cả flag = `false`) — không crash.
-- Lỗi API → `FeatureFlagException`; lỗi transport → `NetworkException`.
-
----
-
-## 6. DTO & mapping
-
-- DTO đặt trong `core/data/dto/<nhóm>/`, đặt tên `XxxRequest` / `XxxResponse`.
-- Field map JSON dùng `@SerializedName` khi tên JSON khác tên Kotlin.
-- **Mapping DTO → domain model** thực hiện ở Data layer (hàm `toXxx()`), trước khi trả lên Domain.
-  Ví dụ: `toSearchCustomerVouchersResult()`, `toVoucherDetail()` trong repository.
-- **Không** để DTO rò rỉ lên Domain/Presentation.
-
----
-
-## 7. Luồng gọi API chuẩn
-
-```
-ViewModel
-  → UseCase (suspend)
-    → Repository (interface, domain)
-      → RepositoryImpl (data)
-        → RemoteDataSource
-          → ApiService (Retrofit)  → JSON
-        ← Response DTO
-      ← map toDomainModel()
-    ← domain model
-  ← domain model → setState / sendEffect
+```kotlin
+private val json = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false      // bỏ field null, giống Gson
+    encodeDefaults = true      // ghi giá trị mặc định, giống Gson
+}
 ```
 
-- ViewModel **không** gọi thẳng `RemoteDataSource`/`ApiService` (phải qua use case → repository).
-- Coroutine chạy trong `launch { }` của `PRMBaseViewModel` (đã có exception handler).
+**Đừng bỏ hai cờ này.** Mặc định kotlinx.serialization ghi `null` và **bỏ qua** giá trị mặc định.
+Không có `encodeDefaults = true`, request `createRedemption` sẽ thiếu `sessionOptions` và
+`timeoutSeconds` — server nhận payload khác hẳn bản Retrofit. Có test khoá hành vi này.
+
+### Header (thay cho `ApiInterceptor` của OkHttp)
+
+`defaultRequest` chạy **mỗi request**, nên `X-Request-ID` là UUID mới mỗi lần.
+Dùng `appendIfNameAbsent` để không ghi đè header do caller tự đặt.
+
+| Header | Nguồn | Ghi chú |
+|---|---|---|
+| `Authorization` | `requestContextProvider.getAccessToken()` | Tự thêm tiền tố `Bearer ` nếu chưa có |
+| `X-Request-ID` | `randomUuidString()` | `kotlin.uuid.Uuid`, không phải `java.util.UUID` |
+| `Accept-Language` | `getLanguage()` | Mặc định `vi-VN` |
+| `Accept` | — | `application/json` |
+| `Content-Type` | `contentType(...)` ở POST | `application/json` |
 
 ---
 
-## 8. Xử lý lỗi network
+## 3. ApiService — viết tay, không sinh tự động
 
-- Lỗi tầng API được `PromotionRemoteDataSource` ném dưới dạng exception domain ở `core/domain/exception/`
-  (`PromotionException` mang `errorCode`/`status`, `NetworkException`) với mã trong `ErrorCodes`.
-- Repository/UseCase chuyển lỗi network thành exception/giá trị domain rõ ràng (không nuốt lỗi âm thầm).
-- UI nhận lỗi qua `Effect` (vd `ShowError(errorCode)`) và tra cứu thông điệp hiển thị.
-- Chi tiết phân loại & hiển thị: xem `ErrorHandling.md`.
+Retrofit sinh implementation của interface `@GET`/`@POST` lúc runtime bằng **dynamic proxy**.
+Kotlin/Native không có cơ chế đó, nên `KtorPromotionApiService` được **viết tay**:
+
+```kotlin
+override suspend fun searchCustomerVouchers(
+    customerId: String, keyword: String?, /* … */
+): ApiResponseTemplate<SearchCustomerVouchersResponse> =
+    client.get("$BASE_PATH/customer-vouchers") {
+        parameter("customerId", customerId)
+        parameter("keyword", keyword)          // null → tự bỏ qua, giống @Query
+    }.body()
+```
+
+`BASE_PATH = "promotion/promotion-vtm-bff/api/v1/vtm"`.
+
+> ⚠️ `findEligibleCampaigns` dùng `redemption/eligible` — **số ít**, khác `redemptions/sessions`
+> và `redemptions/validate/...` của hai API kia. Không phải lỗi chính tả.
 
 ---
 
-## 9. Khi thay đổi API — bắt buộc
+## 4. Envelope và bóc dữ liệu
 
-Theo AI_AGENT_RULES điều 7, mọi thay đổi endpoint/DTO/header/timeout phải:
-- Cập nhật `PromotionApiService` + `RemoteDataSource` + DTO + mapping.
-- **Cập nhật file này** nếu thay đổi quy tắc chung (timeout, interceptor, converter, base URL).
-- Không thêm thư viện networking mới (Ktor, Volley…) — đã chuẩn hoá Retrofit/OkHttp (điều 4).
+Mọi response bọc trong `ApiResponseTemplate<T>`:
+
+```kotlin
+@Serializable
+data class ApiResponseTemplate<T>(
+    val status: Int? = null,
+    val code: String? = null,
+    val success: Boolean? = null,
+    val message: String? = null,
+    val timestamp: String? = null,
+    val metadata: ResponseMetadata? = null,
+    val data: T? = null,
+)
+```
+
+`PromotionRemoteDataSource.requireData()` ném `PromotionException` khi `success == false` hoặc
+`status` ngoài `200..299` — kể cả khi HTTP là 200.
+
+---
+
+## 5. Ánh xạ lỗi
+
+`apiCall { }` chuẩn hoá mọi lỗi transport sang exception **domain**:
+
+| Bắt được | Ném ra |
+|---|---|
+| `PromotionException` | giữ nguyên |
+| `ResponseException` (4xx/5xx) | `PromotionException` — parse error body lấy `code`/`message` của server |
+| `HttpRequestTimeoutException` / `ConnectTimeoutException` / `SocketTimeoutException` | `NetworkException(TIMEOUT)` |
+| `IOException` khác | `NetworkException(NETWORK_ERROR)` |
+
+**Thứ tự `catch` quan trọng:** cả ba loại timeout của Ktor đều là con của `IOException`, nên phải
+bắt trước. Xem [ErrorHandling.md](./ErrorHandling.md).
+
+`FeatureFlagRemoteDataSource` khác một điểm: mọi lỗi HTTP gộp về `FeatureFlagException` không mang
+error code — cờ tính năng không hiển thị lỗi cho người dùng, chỉ rơi về cache/mặc định.
+
+---
+
+## 6. DTO
+
+- Đặt ở `core/data/dto/<nhóm>/`: `voucher/`, `redemption/`, `stackablediscount/`, `eligible/`, `featureflag/`.
+- Mỗi DTO đánh `@Serializable`, dùng `@SerialName("...")` (không phải `@SerializedName`).
+- Mỗi nhóm có `XxxMapper.kt` với hàm `toXxx()` map DTO → domain model.
+- **Domain không được thấy DTO.**
+
+### Hai bẫy khi chuyển từ Gson
+
+**`Any` không serialize được.** kotlinx.serialization cần kiểu tĩnh:
+
+| Gson | kotlinx.serialization |
+|---|---|
+| `metadata: Map<String, Any>` | `metadata: JsonObject` |
+| `alternativeStacks: List<Any>` | `alternativeStacks: List<JsonElement>` |
+
+JSON trên dây không đổi; chỉ chữ ký Kotlin đổi.
+
+**Field non-null thiếu trong response.** Gson gán `null` vào biến non-null bằng reflection (unsafe);
+kotlinx.serialization ném `MissingFieldException`. Vì vậy các field như `createdAt`, `expiresAt`,
+`canStack` được cho **giá trị mặc định**. Khi thêm DTO mới, cân nhắc đặt default cho field mà server
+có thể bỏ trống.
+
+---
+
+## 7. Ánh xạ với code cũ
+
+| Bản Android cũ | Bản iOS cũ | Bản KMP |
+|---|---|---|
+| Retrofit interface `@GET`/`@POST` | `VDSNetwork.get/post` (Alamofire) | `KtorPromotionApiService` (viết tay) |
+| `RetrofitClient` | `ServiceUrl` + `VDSNetwork` | `PromotionHttpClient` |
+| `ApiInterceptor` (OkHttp) | tham số `token:` từng request | `defaultRequest { }` |
+| Gson `@SerializedName` | `Codable` + SwiftyJSON | kotlinx.serialization `@SerialName` |
+| `HttpException` | `NSError` từ closure `failure` | `ResponseException` |
+| `java.util.UUID` | `UUID()` | `kotlin.uuid.Uuid` |
+
+---
+
+## 8. Quy tắc
+
+1. Thêm endpoint → sửa `PromotionApiService` (interface) **và** `KtorPromotionApiService` (impl),
+   rồi thêm hàm ở `PromotionRemoteDataSource` bọc trong `apiCall { }`.
+2. Không gọi `HttpClient` trực tiếp từ Repository/UseCase/UI.
+3. Không bắt `Exception` chung trong data source — bắt đúng loại và map sang exception domain.
+4. Không log token. `LogLevel.BODY` chỉ bật khi `isDebug`.
+5. Mọi endpoint mới phải có test `commonTest` dùng `MockEngine`, kiểm cả **payload gửi lên** lẫn
+   **kết quả map xuống**. Xem [TestingGuide.md](./TestingGuide.md).
+6. Đổi endpoint/DTO/xử lý lỗi → cập nhật file này + [HeadlessAPI.md](./HeadlessAPI.md).

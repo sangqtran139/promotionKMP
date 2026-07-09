@@ -1,21 +1,30 @@
 # CodingStandards — Quy ước viết code
 
-Quy ước code cho TTCN Promotion SDK (Kotlin). Tuân thủ trước khi commit (AI_AGENT_RULES checklist Pre-commit).
+Quy ước code cho TTCN Promotion SDK. Tuân thủ trước khi commit (AI_AGENT_RULES checklist Pre-commit).
+Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và **Swift** (UI iOS).
 
 ---
 
-## 1. Ngôn ngữ & style chung
+## 1. Kotlin — style chung
 
-- **Kotlin** là ngôn ngữ chính. Tuân theo [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html) và Android Kotlin style.
-- Thụt lề **4 space**, không dùng tab.
-- Ưu tiên `val` hơn `var`; dữ liệu UI state là **immutable** (`data class` + `copy()`).
+- Tuân theo [Kotlin Coding Conventions](https://kotlinlang.org/docs/coding-conventions.html).
+- Thụt lề **4 space**, không tab.
+- Ưu tiên `val` hơn `var`; UI state là **immutable** (`data class` + `copy()`).
 - Tránh `!!`. Dùng `?.`, `?:`, `requireNotNull`, hoặc xử lý null tường minh.
-- Hàm ngắn, đơn nhiệm. Tách logic dùng chung thành extension/use case (AI_AGENT_RULES điều 5).
-- JVM toolchain 17, Kotlin 2.2 — được dùng tính năng ngôn ngữ hiện đại (sealed interface, `data object`…).
+- Hàm ngắn, đơn nhiệm. Tách logic dùng chung thành extension/use case (AI_AGENT_RULES điều 7).
+- Kotlin 2.4, JVM target 11 cho `:promotionLogic` — dùng được `sealed interface`, `data object`,
+  `kotlin.uuid.Uuid`, `kotlin.concurrent.Volatile`.
+
+### Riêng cho `commonMain`
+
+- **Không** import `android.*` hay `platform.*`. Cần API nền tảng → `expect`/`actual`.
+- **Không** dùng `java.util.*`, `java.io.*`, `synchronized`, `@Volatile` (của JVM).
+  Thay bằng `kotlin.uuid.Uuid`, `kotlinx.io.IOException`, `SdkLock`, `kotlin.concurrent.Volatile`.
+- **Không** đặt chuỗi hiển thị (tiếng Việt) — copy thuộc tầng UI.
 
 ---
 
-## 2. Quy ước đặt tên
+## 2. Quy ước đặt tên — Kotlin
 
 | Thành phần | Quy ước | Ví dụ |
 |------------|---------|-------|
@@ -26,25 +35,26 @@ Quy ước code cho TTCN Promotion SDK (Kotlin). Tuân thủ trước khi commit
 | Use case | `<Động từ><Đối tượng>UseCase` | `CreateRedemptionSessionUseCase` |
 | Repository | interface `XxxRepository`, impl `XxxRepositoryImpl` | `PromotionRepository(Impl)` |
 | DTO | hậu tố `Request` / `Response` | `RedemptionSessionRequest` |
+| ApiService bản Ktor | tiền tố `Ktor` | `KtorPromotionApiService` |
 | DI module | hậu tố `Module` | `NetworkModule` |
 | MVI contract | `XxxUiState` / `XxxAction` / `XxxEffect` | `MyPromotionUiState` |
 
-### Tiền tố `PRM`
-Nhiều thành phần public/base trong SDK dùng tiền tố **`PRM`** (Promotion) để tránh trùng tên khi nhúng vào host app:
-`PRMBaseActivity`, `PRMBaseFragment`, `PRMBaseViewModel`, `PRMEditText`, `PRMEndowViewModel`…
-**Giữ nguyên quy ước này** khi thêm base class / custom view dùng chung.
+### Tiền tố
+
+- **Lõi `:promotionLogic`**: *không* prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
+- **UI Android**: base class và custom view public dùng **`PRM`** — `PRMBaseFragment`, `PRMEndowView`.
+- **UI iOS**: type public dùng **`VDS`** — `VDSPromotion`, `VDSButton`.
+
+Mục đích của prefix là tránh trùng tên khi nhúng vào host app.
 
 ---
 
-## 3. Tổ chức MVI contract
-
-Mỗi feature định nghĩa rõ 3 thành phần (xem `MyPromotionContract.kt` làm mẫu):
+## 3. MVI contract (UI Android)
 
 ```kotlin
 data class MyPromotionUiState(
     val isLoading: Boolean = false,
     val vouchers: List<MyVoucherListItem> = emptyList(),
-    // ... immutable, có default
 )
 
 sealed interface MyPromotionAction {
@@ -58,46 +68,70 @@ sealed interface MyPromotionEffect {
 }
 ```
 
-- State: dùng `data class`, field có default, cập nhật bằng `copy()`.
-- Action/Effect: `sealed interface` + `data object`/`data class`.
-- Hàm mapping DTO/domain → UI item đặt cùng file contract dưới dạng extension (`fun VoucherItem.toMyVoucherListItem()`).
+- State: `data class`, field có default, cập nhật bằng `copy()`.
+- Action/Effect: `sealed interface` + `data object` / `data class`.
+- Mapping domain → UI item đặt cùng file contract dưới dạng extension
+  (`fun VoucherItem.toMyVoucherListItem()`). **Không** dùng thẳng DTO ở UI.
 
 ---
 
 ## 4. Coroutines & Flow
 
-- Dùng `viewModelScope` qua hàm `launch { }` của `PRMBaseViewModel` (đã có `CoroutineExceptionHandler`).
-- Use case `suspend`; repository/data source `suspend`. Không block main thread.
-- UI quan sát qua `StateFlow` (state) và `SharedFlow` (effect) bằng `repeatOnLifecycle`/`flowWithLifecycle`.
-- Không `GlobalScope`. Không nuốt exception trong coroutine — để `onError`/handler xử lý.
+- UI Android dùng `launch { }` của `PRMBaseViewModel` (đã có `CoroutineExceptionHandler`).
+- Use case / repository / data source đều `suspend`. Không block main thread.
+- UI quan sát `StateFlow` (state) và `SharedFlow` (effect) qua `repeatOnLifecycle`.
+- Không `GlobalScope`. Không nuốt exception trong coroutine.
+- Luôn rethrow `CancellationException` khi bắt `Throwable` chung.
 
 ---
 
-## 5. Tổ chức import & visibility
+## 5. Visibility
 
-- Thành phần nội bộ SDK dùng `internal` khi không thuộc public API (vd: DI helper `internal inline fun get()`).
-- Chỉ những gì host cần mới để `public` — tập trung ở `ui/entry/`.
-- Không import wildcard tùy tiện; theo cấu hình IDE của project.
-
----
-
-## 6. Comment & tài liệu
-
-- Comment bằng tiếng Việt cho logic nghiệp vụ phức tạp; KDoc cho public API (xem `PromotionUseCases`).
-- Không để code chết, biến không dùng, `TODO` mơ hồ không ngữ cảnh.
-- Khi sửa public API → cập nhật KDoc **và** docs liên quan.
+- Thành phần nội bộ dùng `internal` (DI helper, DTO, data source, use case đơn lẻ).
+- Chỉ những gì host cần mới `public`. Bề mặt public của `:promotionLogic` gồm:
+  `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`,
+  `PromotionResult`, và các domain model.
+- Lưu ý KMP: **inline function không truy cập được `private`**. Trong `SdkDi`, `registry` để
+  visibility mặc định của class `internal` chính vì lý do này.
+- Không import wildcard tuỳ tiện.
 
 ---
 
-## 7. Resource (XML) — tóm tắt
+## 6. Swift — tóm tắt
 
-- Tên resource snake_case có tiền tố theo loại/feature (vd: `prm_fragment_my_promotion.xml`).
-- Dùng `dimen` (sdp) cho kích thước responsive; không hardcode dp rải rác.
-- Chi tiết ở `XMLViewGuide.md`.
+- Tuân theo SwiftLint (`.swiftlint.yml` ở repo iOS).
+- Chữ ký `public` chỉ dùng type Foundation/UIKit — không lộ RxSwift hay type Kotlin.
+- `weak` cho `viewController` / `navigator` trong Router.
+- Mọi subscription `.disposed(by: disposeBag)`.
+- Chi tiết: [IosUIGuide.md](./IosUIGuide.md).
 
 ---
 
-## 8. Format & build
+## 7. Comment & tài liệu
 
-- Đảm bảo build pass trước khi commit: `./gradlew :vds-promotion:assemble`.
-- Giữ diff tối thiểu, đúng phong cách code xung quanh (mật độ comment, cách đặt tên, idiom).
+- Comment tiếng Việt cho logic nghiệp vụ phức tạp; KDoc/DocC cho public API.
+- Comment chỉ nêu **ràng buộc mà code không tự nói được** (vì sao phải reentrant lock, vì sao
+  `encodeDefaults = true`), không mô tả lại dòng bên dưới.
+- Không để code chết, biến không dùng, `TODO` mơ hồ.
+- Sửa public API → cập nhật KDoc **và** docs liên quan (AI_AGENT_RULES điều 8).
+
+---
+
+## 8. Resource (XML) — tóm tắt
+
+- Tên resource snake_case, tiền tố `prm_` (vd `prm_fragment_my_promotion.xml`).
+- Dùng `dimen` (sdp) cho kích thước responsive; không hardcode dp.
+- Chi tiết: [AndroidUIGuide.md](./AndroidUIGuide.md).
+
+---
+
+## 9. Format & build
+
+Trước khi commit, build và test **cả hai nền tảng**:
+
+```bash
+./gradlew :promotionLogic:assemble
+./gradlew :promotionLogic:testAndroidHostTest :promotionLogic:iosSimulatorArm64Test
+```
+
+Giữ diff tối thiểu, đúng phong cách code xung quanh (mật độ comment, cách đặt tên, idiom).

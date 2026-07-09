@@ -5,13 +5,12 @@ import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
+import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,15 +32,18 @@ import kotlinx.coroutines.launch
  *
  * // Test
  * val viewModel = PRMEndowViewModel(
- *     searchCustomerVouchersUseCase = fakeSearchUseCase,
+ *     findEligibleCampaignsUseCase = fakeFindEligibleUseCase,
  *     validateStackableDiscountsUseCase = fakeValidateUseCase,
  *     requestContextProvider = fakeContextProvider,
  *     scope = TestScope(),
  * )
  * ```
+ *
+ * Dùng `findEligible` (ưu đãi đủ điều kiện cho đơn hàng) chứ không phải `searchVouchers`
+ * (voucher khách đã sở hữu) — xem ghi chú ở [ChoosePromotionViewModel].
  */
 internal class PRMEndowViewModel(
-    private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
+    private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
@@ -64,37 +66,37 @@ internal class PRMEndowViewModel(
             }
 
             runCatching {
-                searchCustomerVouchersUseCase(
-                    SearchCustomerVouchersRequest(
+                findEligibleCampaignsUseCase(
+                    FindEligibleCampaignsRequest(
                         customerId = customerId,
-                        keyword = null,
-                        serviceCode = requestContextProvider.getService() ?: "vay",
-                        tab = null,
-                        page = 0,
-                        size = 10,
+                        orderId = requestContextProvider.getOrderId().orEmpty(),
+                        orderValue = requestContextProvider.getOrderValue().orEmpty(),
+                        // TODO(order-items): xem ghi chú cùng tên ở ChoosePromotionViewModel.
+                        items = emptyList(),
+                        mySize = PAGE_SIZE,
+                        otherSize = PAGE_SIZE,
                     )
                 )
-            }.onSuccess { response ->
-                val vouchers = response?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val total = (response?.totalElements ?: vouchers.size.toLong()).toInt()
+            }.onSuccess { result ->
+                val myOffers = result?.myOffers.orEmpty()
+                val otherOffers = result?.otherOffers.orEmpty()
+                val total = (result?.myTotalElements ?: myOffers.size.toLong()) +
+                    (result?.otherTotalElements ?: otherOffers.size.toLong())
 
                 _uiState.update {
                     it.copy(
-                        myVouchers = vouchers,
-                        otherVouchers = emptyList(),
-                        totalVoucherCount = total,
+                        myVouchers = myOffers,
+                        otherVouchers = otherOffers,
+                        totalVoucherCount = total.toInt(),
                         hasLoadedInitial = true,
                         error = null,
                     )
                 }
 
-                // Auto-apply nếu discountDetails chưa có và có voucher isAutoApplied
-                if (_uiState.value.discountDetails.isEmpty()) {
-                    val autoApplied = vouchers.firstOrNull { it.isAutoApplied }
-                    if (autoApplied != null) {
-                        validateAndAutoApply(customerId, listOf(autoApplied))
-                    }
-                }
+                // TODO(auto-apply): `findEligible` không trả `isAutoApplied` — xem ghi chú ở
+                // `EligibleOfferMapper`. Voucher tự-áp-dụng vì thế không chạy ở luồng checkout,
+                // trên cả Android lẫn iOS (`PromotionSDKImpl.autoApply`). Khi backend bổ sung
+                // field, gọi lại [validateAndAutoApply] với offer đầu tiên có cờ bật.
             }.onFailure { throwable ->
                 _uiState.update {
                     it.copy(hasLoadedInitial = true, error = throwable.toErrorCode())
@@ -135,12 +137,13 @@ internal class PRMEndowViewModel(
 
     // ─── Internal ─────────────────────────────────────────────────────────────
 
+    @Suppress("unused") // Bật lại khi `findEligible` trả `isAutoApplied` — xem TODO(auto-apply).
     private fun validateAndAutoApply(
         customerId: String,
-        vouchers: List<MyVoucherListItem>,
+        offers: List<EligibleOffer>,
     ) {
         scope.launch {
-            val request = vouchers.toValidateDiscountsRequest(
+            val request = offers.toValidateDiscountsRequest(
                 customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
@@ -167,13 +170,16 @@ internal class PRMEndowViewModel(
     // ─── Factory ──────────────────────────────────────────────────────────────
 
     companion object {
+        /** Trùng `pageSize` của `ChoosePromotionViewModel` bên iOS. */
+        private const val PAGE_SIZE = 10
+
         /**
          * Tạo instance; use case tự lấy repository từ đồ thị đã init.
          * [scope] được truyền từ [PRMEndowView] (gắn với View lifecycle).
          */
         fun create(scope: CoroutineScope): PRMEndowViewModel =
             PRMEndowViewModel(
-                searchCustomerVouchersUseCase = SearchCustomerVouchersUseCase(),
+                findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
                 validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),
                 requestContextProvider = PromotionContainer.requestContextProvider,
                 scope = scope,

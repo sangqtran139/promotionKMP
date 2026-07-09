@@ -13,6 +13,9 @@ object PromotionErrorCodes {
     const val GENERAL = "error_general"
     const val NETWORK_ERROR = "network_error"
     const val TIMEOUT = "timeout"
+
+    /** Tính năng đang TẮT qua feature flag. Trùng mã popup `PRM_MOB_021` của iOS. */
+    const val FEATURE_DISABLED = "PRM_MOB_021"
 }
 
 /**

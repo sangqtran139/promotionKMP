@@ -19,9 +19,10 @@ public final class PromotionSDK {
         didSet { wireCallbacks() }
     }
 
-    /// Headless API for order integration (validate discounts, create redemptions).
-    public private(set) lazy var useCases: PromotionSDKUseCases = {
-        impl.makeUseCases()
+    /// Bề mặt headless cho host tự dựng UI (lấy voucher, validate, tạo redemption).
+    /// Không phải use case — xem [PromotionSDKApi].
+    public private(set) lazy var api: PromotionSDKApi = {
+        impl.makeApi()
     }()
 
     // MARK: - Private
@@ -66,29 +67,23 @@ public final class PromotionSDK {
 
     // MARK: - Public API
 
-    // MARK: - Feature flag (bật/tắt SDK)
-
-    /// Hỏi SDK có đang được bật hay không (cờ master `PROMOTION.ENABLE_ALL`).
-    ///
-    /// Cờ tải bất đồng bộ: `completion` gọi lại trên **main thread** ngay khi cờ đã sẵn sàng
-    /// (gọi luôn nếu đã tải xong). Trước khi Unleash xác nhận, giá trị là `false` (fail-closed).
-    /// Host nên gọi hàm này để quyết định hiện/ẩn UI ưu đãi.
-    public func isEnabled(completion: @escaping (Bool) -> Void) {
-        impl.isEnabled(completion)
-    }
-
-    /// Hỏi một tính năng cụ thể có đang được bật hay không (đã gate ngầm bởi cờ master).
-    /// `completion` chạy trên **main thread**; fail-closed khi chưa tải xong.
-    public func isEnabled(feature: PromotionSDKFeature, completion: @escaping (Bool) -> Void) {
-        impl.isEnabled(feature: feature, completion)
-    }
+    // MARK: - Feature flag
+    //
+    // SDK **không** phơi API hỏi cờ ra ngoài. Host không cần biết cờ nào đang bật: mọi điểm vào
+    // đều tự gác (`openMyPromotion`, `openPromotionDetail`, widget), và khi bị chặn thì SDK hiện
+    // popup PRM_MOB_021 rồi báo host qua `vdsPromotion(_:didUpdateAvailability:)`.
+    //
+    // Logic quyết định nằm ở `PromotionFeatureGate` trong `promotionLogic`, dùng chung với Android.
+    // Kể cả khi muốn phơi ra, type Kotlin **không thể** xuất hiện ở API public: nó sẽ kéo
+    // `PromotionKit` vào `.swiftinterface` của framework, khiến app host không build được
+    // (`error: Unable to find module dependency: 'PromotionKit'`).
 
     /// Show the "My Promotions" list screen.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
     /// Cờ `VOUCHER_LIST` TẮT → hiện popup lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `vdsPromotion(_:didUpdateAvailability:)`.
     public func openMyPromotion(from viewController: UIViewController) {
-        impl.isEnabled(feature: .voucherList) { [weak self] enabled in
+        impl.canOpenVoucherList { [weak self] enabled in
             guard let self else { return }
             guard enabled else {
                 self.impl.showFeatureDisabledDialog(on: viewController)

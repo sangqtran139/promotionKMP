@@ -67,3 +67,38 @@ class VoucherStatusTest {
         assertEquals(VoucherStatus.UNKNOWN, VoucherStatus.from(null))
     }
 }
+
+/**
+ * Hỏi thẳng công tắc tổng phải trả đúng giá trị của nó.
+ *
+ * Bug cũ: `when (flag)` không có nhánh `ENABLE_ALL` nên rơi vào `else -> false`;
+ * `isEnabled(ENABLE_ALL)` luôn `false` ngay cả khi cờ tổng đang bật.
+ */
+class EnableAllFlagTest {
+
+    private fun flags(enableAll: Boolean) =
+        com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags(
+            enableAll = enableAll,
+            voucherApply = true, voucherRedeem = true, voucherSelection = true,
+            voucherDetail = true, voucherList = true,
+        )
+
+    @Test
+    fun enableAllOn_queriedDirectly_isTrue() {
+        val name = com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag.ENABLE_ALL
+        kotlin.test.assertTrue(flags(enableAll = true).isEnabled(name))
+    }
+
+    @Test
+    fun enableAllOff_queriedDirectly_isFalse() {
+        val name = com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag.ENABLE_ALL
+        kotlin.test.assertFalse(flags(enableAll = false).isEnabled(name))
+    }
+
+    @Test
+    fun enableAllOff_disablesChildFlags() {
+        val name = com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag.VOUCHER_LIST
+        kotlin.test.assertFalse(flags(enableAll = false).isEnabled(name))
+        kotlin.test.assertTrue(flags(enableAll = true).isEnabled(name))
+    }
+}

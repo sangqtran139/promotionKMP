@@ -233,7 +233,7 @@ final class APIPlaygroundViewController: UIViewController {
     private func callGetVouchers(cardIndex: Int) {
         setLoading(true, at: cardIndex)
         let myPage = getVouchersMyPage
-        sdk.useCases.getVouchers(
+        sdk.api.getVouchers(
             myPage: myPage,
             mySize: 10
         ) { [weak self] result in
@@ -264,7 +264,7 @@ final class APIPlaygroundViewController: UIViewController {
         setLoading(true, at: cardIndex)
         let myPage = findEligibleMyPage
         let items = [PromotionOrderItem(skuId: "SKU-01", productId: "P-01", quantity: 1, unitPrice: "500000")]
-        sdk.useCases.findEligible(
+        sdk.api.findEligible(
             orderId: "ORDER-1234",
             orderValue: "500000",
             items: items,
@@ -306,7 +306,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callGetVoucherDetail(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.useCases.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
+        sdk.api.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let d):
@@ -327,7 +327,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callValidateDiscounts(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.useCases.validateDiscounts(
+        sdk.api.validateDiscounts(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -358,7 +358,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callCreateRedemption(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.useCases.createRedemption(
+        sdk.api.createRedemption(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -448,7 +448,7 @@ extension APIPlaygroundViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         let card = cards[section]
-        return "[\(card.method)] sdk.useCases.\(card.title)(...)"
+        return "[\(card.method)] sdk.api.\(card.title)(...)"
     }
 }
 

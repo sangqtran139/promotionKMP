@@ -1,135 +1,155 @@
 # Architecture — Kiến trúc tổng thể
 
-TTCN Promotion SDK áp dụng **Clean Architecture** kết hợp mô hình **MVI** cho tầng giao diện.
-Mục tiêu: tách bạch trách nhiệm, giúp test dễ, và giữ public API của SDK ổn định.
+TTCN Promotion SDK áp dụng **Clean Architecture**. Điểm khác biệt so với một app thông thường:
+tầng Data + Domain được chia sẻ giữa Android và iOS qua Kotlin Multiplatform, còn tầng Presentation
+**không** chia sẻ — mỗi nền tảng giữ mô hình UI native của mình.
 
 ---
 
-## 1. Tổng quan 3 layer
+## 1. Tổng quan
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│ PRESENTATION (ui/)                                         │
-│   Activity / Fragment / Custom View  ←→  ViewModel (MVI)   │
-│   - PRMBaseActivity / PRMBaseFragment / PRMBaseViewModel   │
-│   - State / Action / Effect                                │
-└───────────────▲───────────────────────────────────────────┘
-                │ gọi UseCase, nhận domain model
-┌───────────────┴───────────────────────────────────────────┐
-│ DOMAIN (core/domain/)                                      │
-│   UseCase  →  Repository (interface)  →  Domain Model      │
-│   - Thuần Kotlin, KHÔNG phụ thuộc Android / Retrofit / Room│
-└───────────────▲───────────────────────────────────────────┘
-                │ implement interface, map DTO → domain
-┌───────────────┴───────────────────────────────────────────┐
-│ DATA (core/data/)                                          │
-│   RepositoryImpl → RemoteDataSource (Retrofit) / Local     │
-│   - DTO, ApiService, RetrofitClient, Dao, SharedPref       │
-└───────────────────────────────────────────────────────────┘
+┌──────────────────────────────┐   ┌──────────────────────────────┐
+│ PRESENTATION — Android       │   │ PRESENTATION — iOS           │
+│ Fragment/View ←→ ViewModel   │   │ ViewController ←→ ViewModel  │
+│ MVI: State / Action / Effect │   │ MVVM + Builder + Router      │
+│ XML View, Data/View Binding  │   │ UIKit XIB, RxSwift           │
+└──────────────┬───────────────┘   └──────────────┬───────────────┘
+               │      gọi UseCase, nhận domain model
+               └──────────────┬───────────────────┘
+                              ▼
+      ┌────────────────────────────────────────────────┐
+      │ DOMAIN — :promotionLogic / commonMain          │
+      │   UseCase → Repository (interface) → Model     │
+      │   Thuần Kotlin. KHÔNG Android, KHÔNG iOS,      │
+      │   KHÔNG Ktor, KHÔNG kotlinx.serialization      │
+      └──────────────────────▲─────────────────────────┘
+                             │ implement interface, map DTO → domain
+      ┌──────────────────────┴─────────────────────────┐
+      │ DATA — :promotionLogic / commonMain            │
+      │   RepositoryImpl → RemoteDataSource (Ktor)     │
+      │   DTO, ApiService, HttpClient, LocalDataSource │
+      └────────────────────────────────────────────────┘
+                             │ expect / actual
+              ┌──────────────┴──────────────┐
+              ▼                             ▼
+      androidMain                       iosMain
+      OkHttp engine                     Darwin engine
+      SharedPreferences                 NSUserDefaults
+      ReentrantLock                     NSRecursiveLock
 ```
 
-**Quy tắc phụ thuộc (Dependency Rule):** phụ thuộc luôn hướng **vào trong** (Presentation → Domain ← Data).
-Domain là trung tâm, **không biết** gì về Android, Retrofit hay Room.
+**Quy tắc phụ thuộc:** phụ thuộc luôn hướng **vào trong** (Presentation → Domain ← Data).
+Domain là trung tâm, **không biết** gì về Android, iOS, Ktor hay kotlinx.serialization.
 
 ---
 
-## 2. Mô tả từng layer
+## 2. Lõi dùng chung — `:promotionLogic`
 
 ### 2.1. Data layer — `core/data/`
-Chịu trách nhiệm lấy/lưu dữ liệu và chuyển đổi dữ liệu thô (DTO) sang model domain.
 
-- `data/dto/` — Data Transfer Object khớp với JSON từ API (voucher, redemption, stackablediscount…). Có hàm mapping `toXxx()` sang domain model.
-- `data/remote/` — `PromotionApiService` (Retrofit interface), `PromotionRemoteDataSource`, `RetrofitClient`, `ApiInterceptor`. Khi response lỗi, data source **ném `PromotionException` (domain exception)** mang theo `errorCode`/`status` — không định nghĩa exception riêng ở data layer.
-- `data/local/` — `PromotionDatabase`, các `Dao`, `SharedPrefStorage` (cache cục bộ).
-- `data/repository/` — `PromotionRepositoryImpl`, `FeatureFlagRepositoryImpl` — **implement** interface của Domain, gọi data source và map DTO → domain.
+- `data/dto/` — DTO khớp JSON của API, chia sub-package theo feature: `voucher/`, `redemption/`,
+  `stackablediscount/`, `eligible/`, `featureflag/`. Mỗi package có Request/Response + Mapper `toXxx()`.
+  Envelope chung `ApiResponseTemplate` đặt ở `core/data/remote/ApiResponse.kt`.
+- `data/remote/` — `PromotionApiService` / `FeatureFlagApiService` (interface) và bản Ktor
+  `KtorPromotionApiService` / `KtorFeatureFlagApiService`; `PromotionHttpClient`; các `RemoteDataSource`.
+  Khi response lỗi, data source ném **exception domain** (`PromotionException` / `NetworkException`)
+  mang theo `errorCode` / `httpStatus`.
+- `data/local/` — `KeyValueStorage` (expect/actual) và `FeatureFlagLocalDataSource`.
+- `data/repository/` — `PromotionRepositoryImpl`, `FeatureFlagRepositoryImpl` — implement interface
+  của Domain, gọi data source và map DTO → domain.
+
+> Retrofit sinh implementation của interface lúc runtime bằng dynamic proxy. Kotlin/Native không có
+> cơ chế đó, nên ở đây `KtorPromotionApiService` được **viết tay**.
 
 ### 2.2. Domain layer — `core/domain/`
-Logic nghiệp vụ thuần, độc lập framework. **Không** import Android/Retrofit/Room.
 
-- `domain/model/` — model nghiệp vụ, chia sub-package theo feature: `voucher/` (`VoucherDetail`, `SearchCustomerVouchersResult`, `SearchCustomerVouchersRequest`, `VoucherStatus`), `redemption/`, `stackablediscount/`, `featureflag/`.
+Logic nghiệp vụ thuần, độc lập framework.
+
+- `domain/model/` — model nghiệp vụ theo feature: `voucher/`, `redemption/`, `stackablediscount/`,
+  `eligible/`, `featureflag/`, cùng `PromotionResult`.
 - `domain/repository/` — **interface** repository (`PromotionRepository`, `FeatureFlagRepository`).
-- `domain/usecase/` — use case đơn nhiệm (`SearchCustomerVouchersUseCase`, `CreateRedemptionSessionUseCase`…) và `PromotionUseCases` gom nhóm cho headless API.
-- `domain/exception/` — exception và error code nghiệp vụ. `PromotionException` mang `errorCode`/`message`/`status`, do data layer ném ra và Presentation đọc trực tiếp (không phụ thuộc kiểu exception của data layer).
+- `domain/usecase/` — use case đơn nhiệm, và hai facade công khai gom nhóm cho headless API:
+  `PromotionUseCases`, `PromotionFeatureFlagUseCases`.
+- `domain/exception/` — `PromotionException`, `NetworkException`, `FeatureFlagException`, `ErrorCodes`.
 
-### 2.3. Presentation layer — `ui/`
-Hiển thị và xử lý tương tác người dùng theo **MVI**.
+### 2.3. Hạ tầng nền tảng — `expect` / `actual`
 
-- `ui/base/` — `PRMBaseActivity`, `PRMBaseFragment`, `PRMBaseViewModel<S, A, E>`.
-- `ui/feature/` — từng màn hình (mypromotion, choosepromotion, promotiondetail, searchmypromotion, endowview, featureflag). Mỗi feature có Fragment + ViewModel + Contract (State/Action/Effect) + Adapter.
-- `ui/entry/` — **public API** của SDK: `PromotionSDK`, `PromotionSDKOptions`, `PromotionSDKConfig`, `PromotionSDKCallback`, theme.
-- `ui/di/` — đăng ký ViewModel (`ViewModelModule`, `PromotionViewModelFactory`).
-- `ui/utils/`, `ui/theme/` — extension, custom view, theme.
+Chỉ ba chỗ cần biết nền tảng, tất cả nằm ngoài Domain:
 
----
+| Trừu tượng | androidMain | iosMain | Vì sao |
+|---|---|---|---|
+| `SdkLock` | `ReentrantLock` | `NSRecursiveLock` | `synchronized` là JVM-only; DI cần khoá **reentrant** vì `resolve()` gọi đệ quy |
+| `KeyValueStorage` | `SharedPreferences` | `NSUserDefaults` | Cache feature flag |
+| `clearPlatformState()` | nhả `applicationContext` | no-op | Dọn khi `PromotionContainer.clear()` |
 
-## 3. Mô hình MVI — luồng dữ liệu
-
-Base: `PRMBaseViewModel<S, A, E>` với 3 generic:
-- **S = State** — `data class …UiState` (immutable, nguồn sự thật duy nhất cho UI).
-- **A = Action** — `sealed interface …Action` (ý định người dùng / sự kiện).
-- **E = Effect** — `sealed interface …Effect` (sự kiện một lần: điều hướng, toast, lỗi).
-
-```
-   User tương tác
-        │  gửi Action
-        ▼
-  ViewModel.handleAction(action)
-        │
-        ├─ launch { useCase(...) }        // gọi Domain, IO an toàn
-        │        │
-        │        ▼
-        │   Domain → Data → trả domain model
-        │
-        ├─ setState { copy(...) }          // cập nhật State (StateFlow)
-        └─ sendEffect(Effect.Xxx)          // bắn Effect (SharedFlow, one-shot)
-        ▼
-  UI collect uiState  → render
-  UI collect uiEffect → điều hướng / hiển thị thông báo
-```
-
-Cơ chế trong `PRMBaseViewModel`:
-- `uiState: StateFlow<S>` — UI quan sát để render; cập nhật qua `setState { ... }`.
-- `uiEffect: SharedFlow<E>` — sự kiện một lần; phát qua `sendEffect(...)`.
-- `handleAction(action: A)` — điểm vào duy nhất xử lý Action (UI **không** gọi business logic trực tiếp).
-- `launch { }` — coroutine có sẵn `CoroutineExceptionHandler` → gọi `onError(throwable)`.
-
-> Ví dụ contract thực tế: `MyPromotionUiState` / `MyPromotionAction` / `MyPromotionEffect`
-> trong `ui/feature/promotion/mypromotion/MyPromotionContract.kt`.
+Engine của Ktor **không** cần `expect`/`actual`: Ktor tự chọn theo artifact có trên classpath
+(`ktor-client-okhttp` ở androidMain, `ktor-client-darwin` ở iosMain).
 
 ---
 
-## 4. Luồng một request điển hình (ví dụ: tìm voucher)
+## 3. Luồng một request điển hình
 
-1. Fragment gửi `MyPromotionAction.LoadInitialIfNeeded` → `viewModel.handleAction(...)`.
-2. ViewModel `setState { copy(isLoading = true) }` rồi `launch { searchVouchersUseCase(request) }`.
+Ví dụ: tìm voucher của khách.
+
+1. UI gửi ý định (Android: `handleAction(LoadInitialIfNeeded)`; iOS: `transform(input:)`).
+2. ViewModel gọi thẳng `SearchCustomerVouchersUseCase()` (facade `PromotionUseCases()` chỉ dành cho headless).
 3. `SearchCustomerVouchersUseCase` gọi `PromotionRepository.searchCustomerVouchers(...)`.
-4. `PromotionRepositoryImpl` gọi `PromotionRemoteDataSource` → `PromotionApiService` (Retrofit).
+4. `PromotionRepositoryImpl` gọi `PromotionRemoteDataSource` → `KtorPromotionApiService` (Ktor).
 5. DTO trả về được map `toSearchCustomerVouchersResult()` → domain model.
-6. ViewModel `setState { copy(isLoading = false, vouchers = ...) }`; nếu lỗi → `sendEffect(ShowError(code))`.
-7. Fragment render danh sách / hiển thị lỗi.
+6. `PromotionUseCases` bọc kết quả thành `PromotionResult.Success` hoặc `PromotionResult.Failure`
+   — **không ném exception ra ngoài**.
+7. UI render danh sách hoặc hiển thị lỗi theo `errorCode`.
 
 ---
 
-## 5. Hai chế độ sử dụng SDK
+## 4. Mô hình UI — Android (MVI)
 
-- **UI mode** — host nhúng Fragment/màn hình của SDK (`PromotionSDK.init(...)` rồi mở UI).
-- **Headless mode** — host tự dựng UI, chỉ gọi nghiệp vụ qua `PromotionSDK.useCases` (`PromotionUseCases`).
+`PRMBaseViewModel<S, A, E>` với ba generic: **S**tate (immutable, nguồn sự thật duy nhất),
+**A**ction (ý định người dùng), **E**ffect (sự kiện một lần: điều hướng, toast, lỗi).
 
-Cả hai dùng chung Domain + Data, chia sẻ qua Custom DI (xem `DependencyInjection.md`).
+```
+User tương tác → handleAction(action)
+     ├─ launch { useCase(...) }        // gọi Domain
+     ├─ setState { copy(...) }         // StateFlow
+     └─ sendEffect(Effect.Xxx)         // SharedFlow, one-shot
+UI collect uiState  → render
+UI collect uiEffect → điều hướng / thông báo
+```
+
+Chi tiết: [AndroidUIGuide.md](./AndroidUIGuide.md).
+
+## 5. Mô hình UI — iOS (MVVM + Builder/Router)
+
+- **Builder** (`BaseBuilder`): lắp ráp VC + VM + Router, inject dependency.
+- **Router** (`BaseRouter`): điều hướng (push/pop/present).
+- **ViewModel** (`BaseViewModel`): theo `ViewModelType` với `transform(input:) -> Output`, dùng RxSwift.
+- **ViewController** (`BaseViewController`): bind UI, load XIB theo tên class.
+
+Public facade `VDSPromotion` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
+(RxSwift, domain model) — tránh crash đệ quy `deserializeClass`.
+
+Chi tiết: [IosUIGuide.md](./IosUIGuide.md).
 
 ---
 
-## 6. Ràng buộc kiến trúc (không vi phạm)
+## 6. Hai chế độ sử dụng SDK
+
+- **Headless mode** — host tự dựng UI, chỉ gọi `PromotionUseCases()` / `PromotionFeatureFlagUseCases()`.
+- **UI mode** — host nhúng màn hình sẵn có của `promotionUI` (Fragment trên Android,
+  ViewController trên iOS).
+
+Cả hai dùng chung Domain + Data qua Custom DI (xem [DependencyInjection.md](./DependencyInjection.md)).
+
+---
+
+## 7. Ràng buộc kiến trúc (không vi phạm)
 
 - Presentation **chỉ** gọi Domain qua **use case**, không gọi thẳng Repository/DataSource.
-- Domain **không** import `android.*`, `retrofit2.*`, `androidx.room.*`, **và không import `core.data.dto.*`**.
-  → Mọi method của `PromotionRepository` (kể cả validate/redemption) nhận & trả **domain model**, không phải DTO.
-- Data map DTO ↔ domain model **trước khi** trả lên Domain. Mỗi feature có sub-package riêng trong
-  `core/data/dto/` gồm Request/Response + Mapper: `voucher/` (`VoucherSearchResponse`,
-  `VoucherDetailResponse`, `VoucherMapper`), `stackablediscount/`, `redemption/` — hàm `toXxx()`.
-  Envelope chung `ApiResponseTemplate` đặt ở `core/data/remote/ApiResponse.kt`.
-- **Public model cho discount:** callback `PromotionSDKCallback.onVoucherApplied` và `PRMEndowView` dùng
-  model công khai `AppliedDiscount` (`ui/entry/`) — **không** phải DTO data layer. Map domain
-  `DiscountItemResult` → `AppliedDiscount` ở **presentation** (`ui/feature/promotion/ext/PromotionUiMapper.kt`).
-  DTO `DiscountDetail` chỉ còn dùng nội bộ data layer (response).
-- Mọi thay đổi kiến trúc/luồng dữ liệu phải cập nhật file này (AI_AGENT_RULES điều 3 & 7).
+- `commonMain` **không** import `android.*` hay `platform.*`. Cần API nền tảng → `expect`/`actual`.
+- Domain **không** import Ktor, kotlinx.serialization, hay `core.data.dto.*`.
+  Mọi method của `PromotionRepository` nhận & trả **domain model**, không phải DTO.
+- Data map DTO ↔ domain model **trước khi** trả lên Domain.
+- **Không chuỗi hiển thị trong lõi.** Ví dụ: `EligibleOffer` trả `minOrderValue` và `unmatchedRules`;
+  câu "Đơn tối thiểu 1.000.000đ để áp dụng" do UI dựng, vì đó là copy và phụ thuộc locale.
+- Mọi thay đổi kiến trúc/luồng dữ liệu phải cập nhật file này (AI_AGENT_RULES điều 5 & 8).

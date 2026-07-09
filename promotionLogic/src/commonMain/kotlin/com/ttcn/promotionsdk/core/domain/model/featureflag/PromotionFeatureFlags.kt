@@ -22,10 +22,16 @@ data class PromotionFeatureFlags(
     val voucherDetail: Boolean,
     val voucherList: Boolean,
 ) {
-    /** [PromotionFeatureFlag.ENABLE_ALL] là công tắc tổng: tắt nó thì mọi cờ con đều tắt. */
+    /**
+     * [PromotionFeatureFlag.ENABLE_ALL] là công tắc tổng: tắt nó thì mọi cờ con đều tắt.
+     *
+     * Hỏi thẳng `ENABLE_ALL` phải trả về chính [enableAll]. Trước đây nó không có nhánh riêng nên
+     * rơi vào `else -> false` — tức là **luôn `false`**, kể cả khi công tắc tổng đang bật.
+     */
     fun isEnabled(flag: String): Boolean {
         if (!enableAll) return false
         return when (flag) {
+            PromotionFeatureFlag.ENABLE_ALL -> enableAll
             PromotionFeatureFlag.VOUCHER_APPLY -> voucherApply
             PromotionFeatureFlag.VOUCHER_REDEEM -> voucherRedeem
             PromotionFeatureFlag.VOUCHER_SELECTION -> voucherSelection

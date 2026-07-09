@@ -39,7 +39,7 @@ Màn hình hiển thị **danh sách voucher của khách hàng** với tab, ph�
 ```
 Fragment → handleAction(LoadInitialIfNeeded)
   ViewModel: setState(isLoading=true)
-           → launch { searchVouchersUseCase(request) }   // Domain → Data → Retrofit
+           → launch { useCases.searchVouchers(request) }  // :promotionLogic — Domain → Data → Ktor
            → DTO map toMyVoucherListItem()/toMyVoucherTabUi()
            → setState(vouchers=..., tabs=..., isLoading=false)
   Lỗi → onError → setState(isLoading=false) + sendEffect(ShowError)

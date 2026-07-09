@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
@@ -16,6 +17,7 @@ internal class PromotionViewModelFactory(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
+    private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
     private val requestContextProvider: PromotionRequestContextProvider,
     private val config: PromotionSDKConfig,
 ) : ViewModelProvider.Factory {
@@ -36,7 +38,7 @@ internal class PromotionViewModelFactory(
             ) as T
 
             ChoosePromotionViewModel::class.java -> ChoosePromotionViewModel(
-                searchCustomerVouchersUseCase = searchCustomerVouchersUseCase,
+                findEligibleCampaignsUseCase = findEligibleCampaignsUseCase,
                 validateStackableDiscountsUseCase = validateStackableDiscountsUseCase,
                 requestContextProvider = requestContextProvider,
             ) as T

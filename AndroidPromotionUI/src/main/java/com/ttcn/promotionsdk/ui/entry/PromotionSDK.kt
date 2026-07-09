@@ -1,12 +1,15 @@
 package com.ttcn.promotionsdk.ui.entry
 
 import android.content.Context
+import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import com.ttcn.promotionsdk.core.di.initialize
+import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
-import com.ttcn.promotionsdk.core.domain.usecase.FetchFeatureFlagsUseCase
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.core.domain.usecase.GetPromotionFeatureFlagsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
@@ -42,17 +45,10 @@ object PromotionSDK {
     @JvmStatic
     val useCases: PromotionUseCases get() = PromotionUseCases()
 
-    /**
-     * Trạng thái feature flags hiện tại từ Unleash.
-     * Phải gọi [init] trước khi sử dụng.
-     *
-     * ```kotlin
-     * val flags = PromotionSDK.featureFlags
-     * if (flags.isEnabled(PromotionFeatureFlag.VOUCHER_LIST)) { ... }
-     * ```
-     */
-    @JvmStatic
-    val featureFlags: PromotionFeatureFlags get() = GetPromotionFeatureFlagsUseCase()()
+    // SDK **không** phơi API hỏi feature flag ra host. Host không cần biết cờ nào đang bật: mọi
+    // điểm vào đều tự gác qua `PromotionFeatureGate` của `promotionLogic` — `openMyPromotion`,
+    // `PRMBaseFragment.openPromotionDetail`, `PRMEndowView` — và hiện thông báo PRM_MOB_021 khi bị
+    // chặn. Trước đây có `PromotionSDK.featureFlags`, nhưng không nơi nào dùng.
 
     /**
      * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]
@@ -73,7 +69,8 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(themeConfig)
         PromotionThemeStore.save(themeConfig)
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        sdkScope?.launch { FetchFeatureFlagsUseCase()() }
+        // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
+        sdkScope?.launch { PromotionFeatureGate.refresh() }
     }
 
     @JvmStatic
@@ -84,6 +81,9 @@ object PromotionSDK {
 
     /**
      * Hiển thị màn "Ưu đãi của tôi" ([MyPromotionFragment]).
+     *
+     * Gác bởi cờ [PromotionFeatureFlag.VOUCHER_LIST]: TẮT → hiện thông báo PRM_MOB_021 và **không**
+     * mở màn, y như `PromotionSDK.openMyPromotions` bên iOS.
      *
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
      * @param containerViewId Nếu khác null, dùng FragmentTransaction.replace trên container này;
@@ -96,6 +96,10 @@ object PromotionSDK {
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null) {
         check(PromotionContainer.isInitialized()) {
             "PromotionSDK.init() must be called before openMyPromotion()."
+        }
+        if (!PromotionFeatureGate.canOpenVoucherList()) {
+            Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            return
         }
         val fm = activity.supportFragmentManager
         if (fm.findFragmentByTag(TAG_MY_PROMOTION) != null) return

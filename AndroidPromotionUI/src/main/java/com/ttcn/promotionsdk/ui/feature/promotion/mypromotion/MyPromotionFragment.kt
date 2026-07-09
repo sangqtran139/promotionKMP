@@ -16,7 +16,6 @@ import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotio
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionTabAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
-import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
 import timber.log.Timber
 
@@ -36,7 +35,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
 
     private val homeListAdapter = MyPromotionAdapter(
         onVoucherClick = { voucher, _ ->
-            addFragment(PromotionDetailFragment.newInstance(voucher.voucherId))
+            openPromotionDetail(voucher.voucherId)
         },
         onUseClick = { voucher, _ ->
             viewModel.handleAction(MyPromotionAction.OpenServiceSelector(voucher))

@@ -10,13 +10,13 @@ import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.databinding.FragmentChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
-import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
 
 class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>() {
@@ -27,11 +27,11 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     // ─── Input từ host ────────────────────────────────────────────────────────
 
     /**
-     * Data đã load sẵn từ PRMEndowView — truyền vào để tránh double API call.
+     * Data đã load sẵn từ [PRMEndowView] — truyền vào để tránh double API call.
      * Nếu không truyền (rỗng) thì ViewModel sẽ tự gọi API.
      */
-    var initialMyVouchers: List<MyVoucherListItem> = emptyList()
-    var initialOtherVouchers: List<MyVoucherListItem> = emptyList()
+    var initialMyOffers: List<EligibleOffer> = emptyList()
+    var initialOtherOffers: List<EligibleOffer> = emptyList()
 
     /**
      * Set objectId của các voucher cần pre-select (valid=true từ discountDetails trước đó).
@@ -86,7 +86,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                     showToast(mapErrorMessage(effect.errorCode))
 
                 is ChoosePromotionEffect.OpenVoucherDetail -> {
-                    addFragment(PromotionDetailFragment.newInstance(effect.voucherId))
+                    openPromotionDetail(effect.voucherId)
                 }
 
                 // validateStackableDiscounts thành công → trả AppliedDiscount về host rồi back
@@ -103,8 +103,8 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         // Truyền data đã load sẵn; nếu rỗng → ViewModel tự gọi API
         viewModel.handleAction(
             ChoosePromotionAction.PreloadVouchers(
-                myVouchers = initialMyVouchers,
-                otherVouchers = initialOtherVouchers,
+                myOffers = initialMyOffers,
+                otherOffers = initialOtherOffers,
             )
         )
     }
@@ -114,7 +114,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
             onVoucherClick = { handleVoucherSelection(it) },
-            onDetailClick  = { addFragment(PromotionDetailFragment.newInstance(it.voucherId)) },
+            onDetailClick  = { openPromotionDetail(it.voucherId) },
             onSeeMoreMyVoucher = {
                 val state = viewModel.uiState.value
                 if (!isMyVoucherExpanded) {
@@ -233,18 +233,19 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     // ─── Search ───────────────────────────────────────────────────────────────
 
+    /** Cùng khuôn với `SearchMyPromotionFragment`: gõ mỗi ký tự → `QueryChanged` (ViewModel tự debounce). */
     private fun setupSearch() {
         binding.edtVoucher.apply {
             onTextChangeListener = { keyword ->
-                if (keyword.isEmpty()) triggerSearch(keyword)
+                if (keyword.isEmpty()) {
+                    viewModel.handleAction(ChoosePromotionAction.ClearKeyword)
+                } else {
+                    viewModel.handleAction(ChoosePromotionAction.QueryChanged(keyword))
+                }
             }
-            setOnSearchActionListener { triggerSearch(getInputField().text?.toString().orEmpty()) }
-            setOnDoneKeyboardListener { triggerSearch(getInputField().text?.toString().orEmpty()) }
+            setOnSearchActionListener { viewModel.handleAction(ChoosePromotionAction.Search) }
+            setOnDoneKeyboardListener { viewModel.handleAction(ChoosePromotionAction.Search) }
         }
-    }
-
-    private fun triggerSearch(keyword: String) {
-        viewModel.handleAction(ChoosePromotionAction.SearchKeyword(keyword))
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

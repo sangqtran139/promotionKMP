@@ -1,87 +1,114 @@
 # TestingGuide — Quy ước Testing
 
-Hướng dẫn viết test cho TTCN Promotion SDK. Kiến trúc Clean + MVI giúp phần lớn logic test được ở mức **unit**
-mà không cần thiết bị/UI.
+Nguyên tắc chính: **logic dùng chung thì test dùng chung**. Test của `:promotionLogic` viết một lần
+trong `commonTest` và chạy trên **cả** JVM lẫn Kotlin/Native. Một test chỉ pass trên JVM không chứng
+minh được gì về iOS.
 
 ---
 
-## 1. Phân tầng test (ưu tiên từ trên xuống)
-
-| Loại | Vị trí | Test gì |
-|------|--------|---------|
-| **Unit test** (JVM) | `vds-promotion/src/test/` | UseCase, Repository (mock data source), mapping DTO↔domain, reducer/`handleAction` của ViewModel |
-| **Instrumentation test** | `vds-promotion/src/androidTest/` | Room DAO thật, custom view, luồng UI quan trọng |
-| **Tích hợp qua app demo** | `app/` | Smoke test tích hợp SDK end-to-end (mock API có sẵn trong `app/mock/`) |
-
-> Ưu tiên unit test vì Domain thuần Kotlin, không phụ thuộc Android.
-
----
-
-## 2. Trọng tâm cần test
-
-1. **UseCase** — logic nghiệp vụ, mapping request → DTO (vd `PromotionUseCases.toDto()`), xử lý kết quả/null.
-2. **Repository** — đúng gọi data source và **map DTO → domain** (mock `RemoteDataSource`).
-3. **Mapping** — các hàm `toVoucherDetail()`, `toMyVoucherListItem()`… (đầu vào null/thiếu field → giá trị mặc định đúng).
-4. **ViewModel (MVI)** — gửi `Action` → kiểm tra `uiState` thay đổi đúng và `uiEffect` phát đúng.
-5. **Xử lý lỗi** — `onError` tắt loading + phát `Effect.ShowError` với mã đúng (xem `ErrorHandling.md`).
-
----
-
-## 3. Test ViewModel MVI
-
-Vì `PRMBaseViewModel` dùng `StateFlow`/`SharedFlow` + `viewModelScope`:
-
-- Đặt `Dispatchers.Main` test (vd `Dispatchers.setMain(testDispatcher)`), dùng coroutines-test (`runTest`).
-- Mô hình: **Given** state đầu → **When** `handleAction(...)` → **Then** assert `uiState.value` và effect thu được.
-- Inject **fake/mock use case** vào ViewModel (constructor injection), không gọi mạng thật.
-
-```
-Given: state mặc định
-When : viewModel.handleAction(Action.Refresh)
-Then : uiState.value.isLoading == true (lúc bắt đầu)
-       sau khi use case trả về → vouchers cập nhật, isLoading == false
-```
-
----
-
-## 4. Test Repository / Networking
-
-- **Mock `PromotionRemoteDataSource`** để test `PromotionRepositoryImpl` (kiểm tra gọi đúng tham số + map đúng).
-- Nếu cần test tầng Retrofit thật: dùng `MockWebServer` (OkHttp) — **chỉ thêm dependency test khi được yêu cầu**.
-- App demo đã có sẵn cơ chế **mock API** (`app/mock/promotion/`) cho test tích hợp thủ công.
-
----
-
-## 5. Test Room (khi triển khai DB)
-
-- Test DAO bằng **instrumentation test** với `Room.inMemoryDatabaseBuilder(...)`.
-- Kiểm tra insert/query/update + migration khi đổi schema (xem `DatabaseGuide.md`).
-
----
-
-## 6. Quy ước viết test
-
-- Đặt tên test rõ ràng: `methodName_condition_expectedResult` hoặc backtick mô tả (vi/eng nhất quán theo file hiện có).
-- Mỗi test một hành vi; arrange-act-assert rõ ràng.
-- Không phụ thuộc thứ tự test, không dùng dữ liệu thật/PII.
-- Dùng test double (fake/mock) cho dependency ngoài; tái dùng builder/fixture chung thay vì lặp.
-
----
-
-## 7. Chạy test
+## 1. Chạy test
 
 ```bash
-# Unit test module SDK
-./gradlew :vds-promotion:testDebugUnitTest
+./gradlew :promotionLogic:testAndroidHostTest      # JVM (Android host)
+./gradlew :promotionLogic:iosSimulatorArm64Test    # Kotlin/Native (iOS simulator)
+```
 
-# Instrumentation test (cần thiết bị/emulator)
-./gradlew :vds-promotion:connectedDebugAndroidTest
+> Tên task đến từ AGP KMP plugin (`com.android.kotlin.multiplatform.library`), **không** phải
+> `testDebugUnitTest` như module Android thường.
+
+### Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"
+
+Gradle báo thành công cả khi không có test nào chạy (up-to-date, hoặc bị lọc hết).
+
+```bash
+grep -ho 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' \
+  promotionLogic/build/test-results/testAndroidHostTest/*.xml
 ```
 
 ---
 
-## 8. Lưu ý về dependency test
+## 2. Cấu trúc hiện tại
 
-- Hiện version catalog tập trung vào runtime. **Không tự thêm** thư viện test mới (JUnit5, MockK, Turbine,
-  coroutines-test, MockWebServer…) nếu chưa được yêu cầu (AI_AGENT_RULES điều 4). Khi được yêu cầu, thêm vào
-  `libs.versions.toml` và cập nhật file này.
+| File (`commonTest`) | Bao gì |
+|---|---|
+| `PromotionPipelineTest` | JSON → DTO → domain; header; lỗi HTTP; lỗi nghiệp vụ; payload `createRedemption` |
+| `EligibleCampaignsTest` | `findEligible`: map hai nhóm, sort tab, payload pagination/section |
+| `FeatureFlagTest` | cache, `ENABLE_ALL` là công tắc tổng, `refresh()` không ném khi API lỗi |
+| `PromotionContainerTest` | DI: init, singleton, fallback provider, clear, re-init |
+
+---
+
+## 3. Test networking bằng `MockEngine`
+
+`PromotionHttpClient.configure(...)` được tách khỏi `create(...)` để test dựng **cùng cấu hình** trên
+`MockEngine` — nếu test dùng client khác cấu hình thì nó không kiểm chứng được gì.
+
+```kotlin
+val engine = MockEngine { request ->
+    captured.add(request)
+    respond(responseJson, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+}
+val client = HttpClient(engine) {
+    with(PromotionHttpClient) { configure(BASE_URL, provider, isDebug = false) }
+}
+```
+
+### Kiểm cả hai chiều
+
+Một test API tốt kiểm **payload gửi lên** lẫn **kết quả map xuống**:
+
+```kotlin
+// chiều lên — bắt lỗi encodeDefaults / explicitNulls
+val body = (captured.single().body as TextContent).text
+assertTrue("\"timeoutSeconds\":300" in body)
+assertTrue("sectionCode" !in body)          // null phải bị bỏ
+
+// chiều xuống — bắt lỗi mapper
+assertEquals("v-1", data.myOffers.single().id)
+```
+
+Payload gửi lên đặc biệt quan trọng: nếu ai đó bỏ `encodeDefaults = true` trong `Json`, code vẫn
+compile và test map-xuống vẫn xanh, nhưng **server nhận thiếu field**. Chỉ test payload bắt được.
+
+---
+
+## 4. Test storage
+
+Đừng dùng `SharedPreferences` hay `NSUserDefaults` thật trong `commonTest` — dùng fake:
+
+```kotlin
+private class InMemoryStorage : KeyValueStorage {
+    private val map = mutableMapOf<String, Boolean>()
+    override fun putBoolean(key: String, value: Boolean) { map[key] = value }
+    override fun getBoolean(key: String, default: Boolean) = map[key] ?: default
+    override fun contains(key: String) = map.containsKey(key)
+    override fun remove(key: String) { map.remove(key) }
+    override fun clear() = map.clear()
+}
+```
+
+---
+
+## 5. Quy tắc
+
+1. **Test đặt ở `commonTest`**, không phải `androidHostTest`, trừ khi test đúng phần `actual` của Android.
+2. Mọi endpoint mới → một test `MockEngine` kiểm payload + mapping.
+3. Mọi hành vi lỗi (timeout, 4xx, `success=false`) → một test riêng, khẳng định đúng `errorCode`.
+4. Dùng `runTest` của `kotlinx-coroutines-test` cho hàm `suspend`.
+5. Không test qua network thật. Không test phụ thuộc thời gian thực.
+6. Đặt tên test theo `hànhVi_điềuKiện_kếtQuả`, ví dụ
+   `refresh_onHttpError_keepsPreviousFlags_andDoesNotThrow`.
+7. **Chạy cả hai nền tảng trước khi commit.** Kotlin/Native có khác biệt về freeze, thread và
+   khởi tạo lazy mà JVM không lộ ra.
+
+---
+
+## 6. Test UI
+
+`:promotionLogic` không có UI nên không có test UI ở đây.
+
+- **Android** (`promotionUI`): ViewModel test bằng JUnit + `kotlinx-coroutines-test`, fake `PromotionUseCases`.
+  Instrumentation test cho Fragment nếu cần.
+- **iOS** (`promotionUI`): XCTest cho ViewModel, dùng `RxTest`/`RxBlocking` cho stream.
+
+Khi hai module UI được tạo, bổ sung mục này (AI_AGENT_RULES điều 8).

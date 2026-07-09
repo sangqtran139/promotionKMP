@@ -1,3 +1,4 @@
+
 # Theming — Hệ thống theme & token
 
 TTCN Promotion SDK cho phép host app **tùy biến giao diện** (màu, bo góc…) thông qua hệ thống **token**.

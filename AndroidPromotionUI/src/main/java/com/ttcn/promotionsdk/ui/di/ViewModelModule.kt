@@ -1,6 +1,7 @@
 package com.ttcn.promotionsdk.ui.di
 
 import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
@@ -17,6 +18,7 @@ internal fun promotionViewModelFactory(): PromotionViewModelFactory =
         searchCustomerVouchersUseCase = SearchCustomerVouchersUseCase(),
         validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),
         getCustomerVoucherDetailUseCase = GetCustomerVoucherDetailUseCase(),
+        findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
         requestContextProvider = PromotionContainer.requestContextProvider,
         config = PromotionContainer.requireConfig(),
     )

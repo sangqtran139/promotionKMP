@@ -21,12 +21,16 @@ BUILD_DIR="${1:-$ROOT/build}"
 OUT="$BUILD_DIR/PromotionSDKUI.xcframework"
 
 KOTLIN_XCF="$ROOT/Frameworks/PromotionLogic.xcframework"
-if [[ ! -d "$KOTLIN_XCF" ]]; then
-  echo "▶︎ Chưa có $KOTLIN_XCF — build từ Gradle"
-  (cd "$REPO" && ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework)
-  rm -rf "$KOTLIN_XCF"
-  cp -R "$REPO/promotionLogic/build/XCFrameworks/release/PromotionLogic.xcframework" "$ROOT/Frameworks/"
-fi
+# Luôn dựng lại và đồng bộ, KHÔNG chỉ khi thiếu.
+#
+# Bản cũ chỉ copy khi thư mục chưa tồn tại. Sửa Kotlin xong chạy script này thì Swift vẫn compile
+# với header cũ, và lỗi hiện ra ở tận `SwiftCompile` với thông báo "cannot find ... in scope" —
+# rất khó lần ra nguyên nhân. Gradle đã có up-to-date check nên gọi lại không tốn gì.
+echo "▶︎ Đồng bộ PromotionLogic.xcframework từ Gradle"
+(cd "$REPO" && ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework)
+rm -rf "$KOTLIN_XCF"
+mkdir -p "$ROOT/Frameworks"
+cp -R "$REPO/promotionLogic/build/XCFrameworks/release/PromotionLogic.xcframework" "$ROOT/Frameworks/"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"

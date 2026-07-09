@@ -11,6 +11,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewbinding.ViewBinding
+import com.ttcn.promotionsdk.R
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
@@ -57,6 +60,21 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
 
     protected fun showToast(message: CharSequence?) {
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Mở màn "Chi tiết ưu đãi", gác bởi cờ `VOUCHER_DETAIL`.
+     * Cờ TẮT → thông báo PRM_MOB_021 và không điều hướng.
+     *
+     * Song sinh của `BaseRouter.canRouteToDetail()` bên iOS: gom về base để cả ba màn gọi
+     * (Ưu đãi của tôi, Tìm kiếm, Chọn ưu đãi) không thể quên gác.
+     */
+    protected fun openPromotionDetail(voucherId: String) {
+        if (!PromotionFeatureGate.canOpenVoucherDetail()) {
+            showToast(getString(R.string.prm_feature_disabled))
+            return
+        }
+        addFragment(PromotionDetailFragment.newInstance(voucherId))
     }
 
     protected fun addFragment(

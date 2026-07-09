@@ -36,10 +36,10 @@ final class PromotionSDKImpl: NSObject {
     var orderValue: String?
     /// Dòng đơn hàng host truyền vào — cần cho Find Eligible Campaigns (orderInfo.items[]).
     var orderItems: [PromotionOrderItem]
-    private let getMyPromotionUseCase: SearchCustomerVouchersUseCase
+    // Chỉ hai use case này còn dùng trực tiếp — cho widget checkout. Luồng headless đi qua
+    // `PromotionSDKApi`, và lớp đó gọi `PromotionUseCases` của lõi.
     private let findEligibleUseCase: FindEligibleCampaignsUseCase
     private let validateDiscountsUseCase: ValidateStackableDiscountsUseCase
-    private let createRedemptionUseCase: CreateRedemptionSessionUseCase
     let disposeBag = DisposeBag()
 
     var cachedListModel: EligibleOffersResult?
@@ -64,18 +64,18 @@ final class PromotionSDKImpl: NSObject {
                 requestContextProvider: HostRequestContextProvider(customerId: customerId, token: token),
                 environment: SdkEnvironment.prod,
                 availableServices: [],
-                isDebug: false
+                // Bản DEBUG in toàn bộ request/response của Ktor ra console — cần để đối chiếu
+                // schema thật của server với DTO. Bản Release tắt hẳn (không log token).
+                isDebug: PromotionSDKImpl.isDebugBuild
             )
         )
         // Lưu danh mục dịch vụ khả dụng cho bottom sheet "Chọn dịch vụ" (parity Android config.availableServices).
         PromotionSessionConfig.availableServices = availableServices
-        self.getMyPromotionUseCase = SearchCustomerVouchersUseCase()
         self.findEligibleUseCase = FindEligibleCampaignsUseCase()
         self.validateDiscountsUseCase = ValidateStackableDiscountsUseCase()
-        self.createRedemptionUseCase = CreateRedemptionSessionUseCase()
         super.init()
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
-        Task { try? await PromotionFeatureFlagUseCases().refresh() }
+        Task { try? await PromotionFeatureGate.shared.refresh() }
         // Nối callback chọn dịch vụ từ các màn nội bộ → map sang delegate public (facade set onServiceSelected).
         PromotionSessionConfig.onServiceSelected = { [weak self] voucherId, service in
             self?.onServiceSelected?(
@@ -203,15 +203,10 @@ final class PromotionSDKImpl: NSObject {
         )
     }
 
-    func makeUseCases() -> PromotionSDKUseCases {
-        PromotionSDKUseCases(
-            customerId: customerId,
-            token: token,
-            getMyPromotionUseCase: getMyPromotionUseCase,
-            findEligibleUseCase: findEligibleUseCase,
-            validateDiscountsUseCase: validateDiscountsUseCase,
-            createRedemptionUseCase: createRedemptionUseCase
-        )
+    /// Facade headless chỉ cần `customerId`/`token`: nó gọi thẳng `PromotionUseCases` của lõi Kotlin,
+    /// không nhận use case tiêm từ ngoài nữa.
+    func makeApi() -> PromotionSDKApi {
+        PromotionSDKApi(customerId: customerId, token: token)
     }
 
     /// Cập nhật order cho luồng widget thanh toán (eligible + validate dùng các giá trị này).
@@ -236,26 +231,18 @@ final class PromotionSDKImpl: NSObject {
         }
     }
 
-    /// Map feature công khai → cờ Unleash nội bộ.
-    private func internalFeature(_ feature: PromotionSDKFeature) -> PromotionFeature {
-        switch feature {
-        case .voucherList:      return .voucherList
-        case .voucherDetail:    return .voucherDetail
-        case .voucherSelection: return .voucherSelection
-        case .voucherApply:     return .voucherApply
-        case .voucherRedeem:    return .voucherRedeem
-        }
-    }
-
-    /// Hỏi trạng thái master (ENABLE_ALL) của SDK. Callback trên main thread; gọi ngay nếu cờ sẵn sàng.
-    func isEnabled(_ completion: @escaping (Bool) -> Void) {
-        let enabled = PromotionFeatureFlagUseCases().isEnabled(featureName: PromotionFeature.enableAll.flagName)
+    /// Hai điểm gác của tầng UI, uỷ quyền cho `PromotionFeatureGate` của lõi Kotlin (dùng chung với
+    /// Android). Cờ đọc từ cache đồng bộ, không gọi mạng; `completion` về main thread để chỗ gọi
+    /// push/present được ngay.
+    ///
+    /// Tên tính năng chỉ tồn tại ở `PromotionFeatureFlag` bên Kotlin — không có enum nào bên Swift.
+    func canOpenVoucherList(_ completion: @escaping (Bool) -> Void) {
+        let enabled = PromotionFeatureGate.shared.canOpenVoucherList()
         DispatchQueue.main.async { completion(enabled) }
     }
 
-    /// Hỏi trạng thái một tính năng cụ thể (đã gate bởi master).
-    func isEnabled(feature: PromotionSDKFeature, _ completion: @escaping (Bool) -> Void) {
-        let enabled = PromotionFeatureFlagUseCases().isEnabled(featureName: internalFeature(feature).flagName)
+    func canOpenVoucherDetail(_ completion: @escaping (Bool) -> Void) {
+        let enabled = PromotionFeatureGate.shared.canOpenVoucherDetail()
         DispatchQueue.main.async { completion(enabled) }
     }
 
@@ -270,7 +257,7 @@ final class PromotionSDKImpl: NSObject {
     /// Gate bởi cờ `VOUCHER_DETAIL` (đã gate ngầm bởi master): TẮT → popup lỗi PRM_MOB_021 + báo host.
     /// Có navigationController → push, ngược lại → present modal.
     func openPromotionDetail(voucherId: String, on viewController: UIViewController, navigator: UINavigationController?) {
-        isEnabled(feature: .voucherDetail) { [weak self] enabled in
+        canOpenVoucherDetail { [weak self] enabled in
             guard let self else { return }
             guard enabled else {
                 self.showFeatureDisabledDialog(on: viewController)
@@ -335,16 +322,28 @@ final class PromotionSDKImpl: NSObject {
             ])
         }
 
-        let flags = PromotionFeatureFlagUseCases()
-        let featureName = PromotionFeature.voucherSelection.flagName
+        let gate = PromotionFeatureGate.shared
         // Gọi ngay với cache hiện có (chưa có cache → bật lạc quan).
-        applyFlag(flags.isEnabled(featureName: featureName))
+        applyFlag(gate.canShowVoucherSelection())
         // Rồi làm mới từ server và gọi lại nếu giá trị đổi.
         Task { @MainActor in
-            try? await flags.refresh()
-            applyFlag(flags.isEnabled(featureName: featureName))
+            try? await gate.refresh()
+            applyFlag(gate.canShowVoucherSelection())
         }
         return container
+    }
+
+    /// Bật log body HTTP của lõi Kotlin.
+    ///
+    /// **Không** dùng `#if DEBUG`: xcframework luôn được archive ở cấu hình Release, nên cờ đó
+    /// vĩnh viễn là `false` bên trong SDK dù app host build Debug. Đọc biến môi trường của tiến
+    /// trình để bật được cả trên bản phát hành khi cần chẩn đoán:
+    ///
+    ///     xcrun simctl launch --console booted <bundle-id> PROMOTION_SDK_DEBUG=1
+    ///
+    /// Mặc định tắt — log body sẽ in cả `Authorization`.
+    private static var isDebugBuild: Bool {
+        ProcessInfo.processInfo.environment["PROMOTION_SDK_DEBUG"] == "1"
     }
 
     // Stored weakly to avoid retain cycles — these are UIKit types (fine in module interface context)

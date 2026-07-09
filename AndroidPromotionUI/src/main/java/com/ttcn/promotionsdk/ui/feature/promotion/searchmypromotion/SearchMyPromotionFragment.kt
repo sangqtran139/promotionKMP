@@ -14,7 +14,6 @@ import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
@@ -27,7 +26,7 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
 
     private val searchListAdapter = MyPromotionAdapter(
         onVoucherClick = { voucher, _ ->
-            addFragment(PromotionDetailFragment.newInstance(voucher.voucherId))
+            openPromotionDetail(voucher.voucherId)
         },
         onUseClick = { _, _ -> },
     )

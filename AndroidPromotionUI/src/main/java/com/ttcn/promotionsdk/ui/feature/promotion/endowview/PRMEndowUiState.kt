@@ -1,11 +1,12 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.endowview
 
+import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
-import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 
 data class PRMEndowUiState(
-    val myVouchers: List<MyVoucherListItem> = emptyList(),
-    val otherVouchers: List<MyVoucherListItem> = emptyList(),
+    /** Ưu đãi từ `findEligible`, truyền thẳng sang màn "Chọn ưu đãi" để khỏi gọi API hai lần. */
+    val myVouchers: List<EligibleOffer> = emptyList(),
+    val otherVouchers: List<EligibleOffer> = emptyList(),
     val discountDetails: List<AppliedDiscount> = emptyList(),
     val discountUnavailable: Boolean = false,
     val totalVoucherCount: Int = 0,

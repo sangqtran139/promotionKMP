@@ -18,12 +18,27 @@
 ### State — `PRMEndowUiState`
 | Field | Ý nghĩa |
 |-------|---------|
-| `myVouchers` / `otherVouchers` | Danh sách voucher đã nạp sẵn (truyền sang Choose Promotion để tránh gọi API lại) |
+| `myVouchers` / `otherVouchers` | `List<EligibleOffer>` đã nạp sẵn (truyền sang Choose Promotion để tránh gọi API lại) |
 | `discountDetails` | Chi tiết giảm giá sau khi áp dụng |
 | `discountUnavailable` | Có voucher nhưng không đủ điều kiện áp dụng |
-| `totalVoucherCount` | Tổng số voucher |
+| `totalVoucherCount` | Tổng số ưu đãi = `myTotalElements + otherTotalElements` |
 | `hasLoadedInitial` | Đã nạp lần đầu |
 | `error` | Lỗi (nếu có) |
+
+### Nguồn dữ liệu và feature flag
+
+Widget gọi `FindEligibleCampaignsUseCase` (giống `PromotionSDKImpl` bên iOS), **không** phải
+`searchVouchers`. Nó tự ẩn (`isVisible = false`) nếu cờ `VOUCHER_SELECTION` tắt: áp cache hiện có
+ngay khi attach, rồi `PromotionFeatureGate.refresh()` và áp lại nếu giá trị đổi — đúng thứ tự của
+`applyFlag` bên iOS. Cờ tắt thì **không** gọi API.
+
+### Auto-apply hiện đang tắt
+
+`findEligible` chưa trả `isAutoApplied` (không có ở `EligibleOfferDto` lẫn các DTO lồng bên trong),
+nên voucher tự-áp-dụng **không chạy** ở luồng checkout — trên cả Android lẫn iOS. Trước đây Android
+lấy cờ này từ `searchVouchers` và nhánh auto-apply có chạy; đổi sang `findEligible` là đánh đổi có
+chủ đích để hai nền tảng khớp nhau. `validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
+Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
 ### `EndowViewState` (trạng thái hiển thị)
 - `EMPTY` — chưa có voucher.

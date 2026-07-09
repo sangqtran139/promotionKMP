@@ -181,7 +181,7 @@ final class PromotionManager: NSObject, PromotionServing {
                        myPage: Int = 0,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void) {
         guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.useCases.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
+        sdk.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
                                  myPage: myPage) { result in
             switch result {
             case .success(let r):
@@ -197,7 +197,7 @@ final class PromotionManager: NSObject, PromotionServing {
     func validate(order: OrderContext, voucherIds: [String],
                   completion: @escaping (Result<ValidationSummary, Error>) -> Void) {
         guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.useCases.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
+        sdk.api.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
             switch result {
             case .success(let r):
                 completion(.success(ValidationSummary(isValid: r.overallValid,
@@ -210,7 +210,7 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func createRedemption(order: OrderContext, voucherId: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.useCases.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
+        sdk.api.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
             switch result {
             case .success(let r): completion(.success(r.sessionId))   // map type SDK → String cho app
             case .failure(let error): completion(.failure(error))

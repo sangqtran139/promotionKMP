@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
+import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
@@ -33,14 +34,29 @@ sealed interface ChoosePromotionAction {
     /**
      * Truyền data đã load sẵn từ PRMEndowView để tránh double API call.
      * Nếu cả hai list đều rỗng → ViewModel sẽ tự gọi API.
+     *
+     * Mang [EligibleOffer] chứ không phải model UI: ô tìm kiếm lọc trên `campaignName` của
+     * bản gốc, và `findEligible` không nhận `keyword` để lọc phía server.
      */
     data class PreloadVouchers(
-        val myVouchers: List<MyVoucherListItem>,
-        val otherVouchers: List<MyVoucherListItem>,
+        val myOffers: List<EligibleOffer>,
+        val otherOffers: List<EligibleOffer>,
     ) : ChoosePromotionAction
 
     data object Refresh : ChoosePromotionAction
-    data class SearchKeyword(val keyword: String) : ChoosePromotionAction
+
+    /**
+     * Người dùng gõ một ký tự. Debounce rồi lọc — cùng khuôn với `SearchMyPromotionAction.QueryChanged`.
+     * Khác ở chỗ màn này lọc **trong bộ nhớ**: `findEligible` không nhận `keyword`.
+     */
+    data class QueryChanged(val keyword: String) : ChoosePromotionAction
+
+    /** Bấm Enter / nút tìm: lọc ngay, bỏ qua debounce. */
+    data object Search : ChoosePromotionAction
+
+    /** Xoá trắng ô tìm kiếm → hiện lại toàn bộ danh sách đã tải. */
+    data object ClearKeyword : ChoosePromotionAction
+
     data object LoadMoreMyVouchers : ChoosePromotionAction
     data object LoadMoreOtherVouchers : ChoosePromotionAction
 

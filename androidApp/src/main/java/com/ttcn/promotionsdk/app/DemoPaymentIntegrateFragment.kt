@@ -45,8 +45,8 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     private fun openVoucherSelectionScreen() {
         val endowView = binding.endowView
         val fragment = ChoosePromotionFragment().apply {
-            initialMyVouchers = endowView.myVouchers
-            initialOtherVouchers = endowView.otherVouchers
+            initialMyOffers = endowView.myVouchers
+            initialOtherOffers = endowView.otherVouchers
             preSelectedVoucherIds = endowView.discountDetails
                 .filter { it.valid }
                 .map { it.objectId }

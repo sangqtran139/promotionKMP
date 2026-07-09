@@ -1,68 +1,83 @@
 # ProjectStructure — Cấu trúc project
 
-Mô tả cấu trúc thư mục và vai trò từng package để biết **file nằm ở đâu** và **đặt file mới vào đâu cho đúng**.
+Biết **file nằm ở đâu** và **đặt file mới vào đâu cho đúng**.
 
 ---
 
-## 1. Cấu trúc cấp cao (multi-module)
+## 1. Repo hiện tại
 
 ```
-ttcn-promotion-android-sdk/
-├── settings.gradle.kts          # include :vds-promotion, :app
-├── build.gradle.kts             # cấu hình root
-├── gradle/libs.versions.toml    # Version catalog (nguồn duy nhất của dependency)
-├── docs/                        # Tài liệu nền tảng (file này)
-├── vds-promotion/               # 📦 Module SDK chính (com.android.library)
-└── app/                         # 🧪 Module demo tích hợp (com.android.application)
+MyApplication13/
+├── settings.gradle.kts        # include :androidApp, :sharedLogic, :sharedUI, :promotionLogic
+├── gradle/libs.versions.toml  # Version catalog — nguồn duy nhất của dependency
+├── docs/                      # Tài liệu nền tảng (file này)
+├── promotionLogic/            # 📦 Lõi KMP headless — data / domain / usecase
+├── iosApp/                    # Entry point iOS (Xcode)
+├── androidApp/                # App Android demo/host
+├── sharedLogic/               # Scaffold KMP mặc định (chưa dùng cho Promotion)
+└── sharedUI/                  # Scaffold Compose Multiplatform (chưa dùng cho Promotion)
 ```
 
-- **`vds-promotion`** — sản phẩm thật, namespace `com.ttcn.promotionsdk`. Mọi thay đổi nghiệp vụ ở đây.
-- **`app`** — chỉ để demo/test tích hợp (mock API, theme preview, headless demo). **Không** đặt logic SDK ở đây.
+- **`promotionLogic`** — sản phẩm thật, namespace `com.ttcn.promotionsdk`. Mọi thay đổi nghiệp vụ ở đây.
+- **`sharedLogic` / `sharedUI`** — scaffold do template KMP sinh ra, **chưa** liên quan Promotion SDK.
+  Không đặt logic Promotion vào đó.
+
+### Module dự kiến (chưa tạo)
+
+| Module | Nội dung | Nguồn |
+|---|---|---|
+| `:promotionUI` (Android) | Fragment, XML, adapter, theme, MVI | `ttcn-promotion-android-sdk/vds-promotion/ui/` |
+| `promotionUI` (iOS) | ViewController, XIB, MVVM/Router, RxSwift | `ttcn-promotion-ios-sdk/VDSPromotion` + `Packages/PromotionUI` |
 
 ---
 
-## 2. Cấu trúc module `vds-promotion`
+## 2. Cấu trúc `promotionLogic`
 
 ```
-vds-promotion/src/main/
-├── java/com/ttcn/promotionsdk/
-│   ├── core/                         # Tầng lõi (không phụ thuộc UI feature)
-│   │   ├── config/                   # PromotionSDKConfig, RequestContextProvider
-│   │   ├── di/                       # Custom DI
-│   │   │   ├── SdkDi.kt              # Container + DSL (module/single/factory/get/inject)
-│   │   │   ├── PromotionContainer.kt # Khởi tạo & load modules
-│   │   │   ├── NetworkModule.kt      # Đăng ký Retrofit/DataSource
-│   │   │   ├── RepositoryModule.kt   # Đăng ký Repository
-│   │   │   ├── FeatureFlagModule.kt
-│   │   │   └── internal/             # ComponentRegistry, DiKey
-│   │   ├── data/                     # DATA layer
-│   │   │   ├── dto/                  # DTO + mapping toXxx() (voucher, redemption, stackablediscount)
-│   │   │   ├── remote/               # ApiService, RemoteDataSource, RetrofitClient, ApiInterceptor
-│   │   │   ├── local/                # PromotionDatabase, Dao, SharedPrefStorage
-│   │   │   └── repository/           # RepositoryImpl
-│   │   ├── domain/                   # DOMAIN layer
-│   │   │   ├── model/                # Domain model
-│   │   │   ├── repository/           # Repository interface
-│   │   │   ├── usecase/              # UseCase + PromotionUseCases
-│   │   │   ├── di/                   # UseCaseModule
-│   │   │   └── exception/            # NetworkException, PromotionException, ErrorCodes
-│   │   └── utils/                    # Tiện ích lõi
-│   └── ui/                           # PRESENTATION layer
-│       ├── base/                     # PRMBaseActivity / PRMBaseFragment / PRMBaseViewModel
-│       ├── entry/                    # PUBLIC API: PromotionSDK, Options, Config, Callback, Theme
-│       ├── di/                       # ViewModelModule, PromotionViewModelFactory
-│       ├── feature/                  # Từng màn hình
-│       │   ├── promotion/
-│       │   │   ├── mypromotion/      # Fragment + ViewModel + Contract + adapter
-│       │   │   ├── choosepromotion/
-│       │   │   ├── promotiondetail/
-│       │   │   ├── searchmypromotion/
-│       │   │   ├── endowview/
-│       │   │   └── ext/
-│       │   └── featureflag/
-│       ├── theme/                    # PromotionSDKTheme, registry
-│       └── utils/                    # extension/, enum/, view/ (custom view)
-└── res/                              # layout/, drawable*, values/, font/, animator/, xml/
+promotionLogic/src/
+├── commonMain/kotlin/com/ttcn/promotionsdk/core/
+│   ├── config/                  # PromotionSDKConfig, PromotionRequestContextProvider
+│   ├── di/                      # Custom DI
+│   │   ├── PromotionContainer.kt     # PUBLIC entry: init / clear / useCases / featureFlags
+│   │   ├── NetworkModule.kt          # HttpClient, ApiService, RemoteDataSource
+│   │   ├── LocalModule.kt            # KeyValueStorage, FeatureFlagLocalDataSource
+│   │   ├── RepositoryModule.kt
+│   │   ├── UseCaseModule.kt
+│   │   ├── FeatureFlagModule.kt
+│   │   ├── PlatformState.kt          # expect clearPlatformState()
+│   │   └── internal/                 # SdkDi, ComponentRegistry, DiKey
+│   ├── data/
+│   │   ├── dto/                 # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
+│   │   │                        #   mỗi nhóm: Request + Response + Mapper
+│   │   ├── remote/              # ApiService (+ Ktor impl), RemoteDataSource,
+│   │   │                        #   PromotionHttpClient, ApiResponse (envelope)
+│   │   ├── local/               # KeyValueStorage (expect), FeatureFlagLocalDataSource
+│   │   └── repository/          # PromotionRepositoryImpl, FeatureFlagRepositoryImpl
+│   ├── domain/
+│   │   ├── model/               # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
+│   │   │                        #   + PromotionResult
+│   │   ├── repository/          # PromotionRepository, FeatureFlagRepository (interface)
+│   │   ├── usecase/             # 5 use case + PromotionUseCases
+│   │   │                        #   4 use case flag + PromotionFeatureFlagUseCases
+│   │   └── exception/           # PromotionException, NetworkException, ErrorCodes
+│   └── util/                    # SdkLock (expect), Uuid
+│
+├── androidMain/kotlin/com/ttcn/promotionsdk/core/
+│   ├── di/PromotionContainerAndroid.kt        # init(context, config) — BẮT BUỘC trên Android
+│   ├── di/PlatformState.android.kt
+│   ├── data/local/KeyValueStorage.android.kt  # SharedPrefStorage + AndroidContextHolder
+│   └── util/SdkLock.android.kt                # ReentrantLock
+│
+├── iosMain/kotlin/com/ttcn/promotionsdk/core/
+│   ├── di/PlatformState.ios.kt
+│   ├── data/local/KeyValueStorage.ios.kt      # UserDefaultsStorage
+│   └── util/SdkLock.ios.kt                    # NSRecursiveLock
+│
+└── commonTest/kotlin/com/ttcn/promotionsdk/core/
+    ├── PromotionPipelineTest.kt
+    ├── EligibleCampaignsTest.kt
+    ├── FeatureFlagTest.kt
+    └── PromotionContainerTest.kt
 ```
 
 ---
@@ -71,28 +86,45 @@ vds-promotion/src/main/
 
 | Loại file | Đặt ở đâu |
 |-----------|-----------|
-| Màn hình mới | `ui/feature/<tên_feature>/` gồm `XxxFragment`, `XxxViewModel`, `XxxContract` (State/Action/Effect), `adapter/` nếu cần — và thêm tài liệu vào [`docs/features/`](./features/README.md) |
-| Use case mới | `core/domain/usecase/`, đăng ký trong `core/domain/di/UseCaseModule.kt` |
-| Repository mới | interface ở `core/domain/repository/`, impl ở `core/data/repository/`, đăng ký ở `core/di/RepositoryModule.kt` |
-| API endpoint mới | thêm vào `core/data/remote/PromotionApiService.kt` + `PromotionRemoteDataSource` |
-| DTO mới | `core/data/dto/<nhóm>/` kèm hàm mapping `toDomainModel()` |
-| Domain model mới | `core/domain/model/<nhóm>/` (theo feature: `voucher/`, `redemption/`, `stackablediscount/`, `featureflag/`) |
-| Custom view / extension dùng chung | `ui/utils/view/` hoặc `ui/utils/extension/` |
-| Public API thay đổi | `ui/entry/` — **thận trọng**, cập nhật docs + ghi breaking change |
+| API endpoint mới | `core/data/remote/PromotionApiService.kt` (interface + Ktor impl) + `PromotionRemoteDataSource` |
+| DTO mới | `core/data/dto/<nhóm>/` kèm hàm mapping `toXxx()` |
+| Domain model mới | `core/domain/model/<nhóm>/` |
+| Use case mới | `core/domain/usecase/`, đăng ký ở `core/di/UseCaseModule.kt`, phơi qua `PromotionUseCases` |
+| Repository mới | interface ở `core/domain/repository/`, impl ở `core/data/repository/`, đăng ký ở `RepositoryModule` |
+| Cần API riêng nền tảng | `expect` ở `commonMain`, `actual` ở `androidMain` **và** `iosMain` |
+| Test | `commonTest/` — chạy trên cả hai nền tảng |
+| Màn hình Android mới | `:promotionUI` — `feature/<tên>/` với Fragment + ViewModel + Contract |
+| Màn hình iOS mới | `promotionUI` — bộ Builder / Router / ViewModel / ViewController |
 
 ---
 
-## 4. Quy ước đặt tên file (xem chi tiết `CodingStandards.md`)
+## 4. Quy ước đặt tên
 
-- Base class & nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEditText`…).
-- Feature contract tách thành: `XxxUiState` / `XxxAction` (hoặc `XxxUIAction`) / `XxxEffect`, có thể gộp trong `XxxContract.kt`.
-- DTO kết thúc bằng `Request` / `Response`. Domain model dùng tên nghiệp vụ (`VoucherDetail`).
-- Module DI kết thúc bằng `Module` (`NetworkModule`, `RepositoryModule`).
+- **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
+- **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
+- **UI iOS**: public type dùng tiền tố **`VDS`** (`VDSPromotion`, `VDSButton`).
+- DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
+- Module DI kết thúc bằng `Module`. Bản Ktor của ApiService bắt đầu bằng `Ktor`.
+- Feature contract Android: `XxxUiState` / `XxxAction` / `XxxEffect`, gộp trong `XxxContract.kt`.
 
 ---
 
 ## 5. Nơi KHÔNG nên chạm nếu không cần
 
-- `core/di/internal/` — cơ chế DI lõi; chỉ sửa khi thay đổi cách hoạt động DI (và cập nhật `DependencyInjection.md`).
-- `ui/entry/` — public API; thay đổi = breaking cho host app.
-- `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 4).
+- `core/di/internal/` — cơ chế DI lõi. Sửa thì phải cập nhật `DependencyInjection.md`.
+- `core/util/SdkLock.kt` — đổi sang khoá không reentrant sẽ deadlock lúc init.
+- `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
+  — **public API**; thay đổi = breaking cho host app.
+- `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
+- `sharedLogic/`, `sharedUI/` — scaffold template, không phải nơi đặt logic Promotion.
+
+---
+
+## 6. Repo nguồn (chỉ đọc)
+
+| Repo | Vai trò |
+|---|---|
+| `~/Personal/ttcn-promotion-android-sdk` | SDK Android gốc — nguồn của UI Android và của `core/` đã port |
+| `~/IosProject/ttcn-promotion-ios-sdk` | SDK iOS gốc — nguồn của UI iOS và của `findEligible` |
+
+Không sửa hai repo này từ project hiện tại.

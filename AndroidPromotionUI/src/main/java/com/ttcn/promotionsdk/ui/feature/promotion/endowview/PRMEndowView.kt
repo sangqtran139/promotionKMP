@@ -12,6 +12,9 @@ import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
+import androidx.core.view.isVisible
+import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.theme.token.DiscountBadgeToken
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
@@ -47,10 +50,11 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Public read-only accessors (delegate to ViewModel state) ─────────────
 
-    val myVouchers: List<MyVoucherListItem>
+    /** Truyền vào `ChoosePromotionFragment.initialMyOffers` để màn đó khỏi gọi lại `findEligible`. */
+    val myVouchers: List<EligibleOffer>
         get() = viewModel?.uiState?.value?.myVouchers ?: emptyList()
 
-    val otherVouchers: List<MyVoucherListItem>
+    val otherVouchers: List<EligibleOffer>
         get() = viewModel?.uiState?.value?.otherVouchers ?: emptyList()
 
     val discountDetails: List<AppliedDiscount>
@@ -100,7 +104,19 @@ class PRMEndowView @JvmOverloads constructor(
 
         binding.shimmerEndow.startShimmer()
 
-        vm.loadInitialVouchers()
+        // Gác bởi cờ VOUCHER_SELECTION, y như `PromotionSDKImpl.applyFlag` bên iOS: áp cache hiện
+        // có ngay lập tức (chưa có cache → bật lạc quan), rồi làm mới từ server và áp lại nếu đổi.
+        applyFeatureFlag(PromotionFeatureGate.canShowVoucherSelection(), vm)
+        scope.launch {
+            PromotionFeatureGate.refresh()
+            applyFeatureFlag(PromotionFeatureGate.canShowVoucherSelection(), vm)
+        }
+    }
+
+    /** Cờ TẮT → ẩn widget và không gọi API. Cờ BẬT → hiện và nạp ưu đãi (chỉ nạp một lần). */
+    private fun applyFeatureFlag(enabled: Boolean, vm: PRMEndowViewModel) {
+        isVisible = enabled
+        if (enabled) vm.loadInitialVouchers()
     }
 
     override fun onDetachedFromWindow() {
