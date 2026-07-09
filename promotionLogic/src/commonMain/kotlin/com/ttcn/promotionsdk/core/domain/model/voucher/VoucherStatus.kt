@@ -1,0 +1,73 @@
+package com.ttcn.promotionsdk.core.domain.model.voucher
+
+/**
+ * Mã trạng thái thô của voucher do server trả.
+ *
+ * Trước đây Android chỉ biết 7 giá trị, còn iOS biết thêm 6 giá trị nữa và tự `switch` trên chuỗi
+ * trong `PromotionModel.displayState()`. Hệ quả: voucher `AVAILABLE_TO_CLAIM` dùng được trên iOS
+ * nhưng bị khoá trên Android. Gộp về một chỗ để hai nền tảng không thể lệch nữa.
+ */
+enum class VoucherStatus {
+    // Dùng được
+    ACTIVE,
+    AVAILABLE,
+    USABLE,
+
+    /** Ưu đãi công khai khách chưa nhận — vẫn cho chọn và dùng. */
+    AVAILABLE_TO_CLAIM,
+
+    // Đã dùng
+    REDEEMED,
+    USED,
+
+    // Hết hạn
+    EXPIRED,
+
+    // Không đủ điều kiện / đang bị giữ
+    RESERVED,
+    REVOKED,
+    SUSPENDED,
+    INELIGIBLE,
+    NOT_ELIGIBLE,
+
+    /** Server trả mã lạ. Xử lý **fail-closed**: xem như không dùng được. */
+    UNKNOWN;
+
+    fun displayState(): VoucherDisplayState = when (this) {
+        ACTIVE, AVAILABLE, USABLE, AVAILABLE_TO_CLAIM -> VoucherDisplayState.USABLE
+        REDEEMED, USED -> VoucherDisplayState.USED
+        EXPIRED -> VoucherDisplayState.EXPIRED
+        RESERVED, REVOKED, SUSPENDED, INELIGIBLE, NOT_ELIGIBLE -> VoucherDisplayState.INELIGIBLE
+        // Không suy đoán từ dữ liệu khác: mã lạ thì không cho dùng, tránh áp nhầm ưu đãi vào đơn.
+        UNKNOWN -> VoucherDisplayState.INELIGIBLE
+    }
+
+    companion object {
+        fun from(raw: String?): VoucherStatus =
+            entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: UNKNOWN
+    }
+}
+
+/**
+ * Trạng thái hiển thị, dùng chung cho `AndroidPromotionUI` và `iosPromotionUI`.
+ * Thay cho `PromotionDisplayState` (Swift) và phép so sánh `status == ACTIVE` (Android).
+ */
+enum class VoucherDisplayState {
+    /** Còn dùng được → hiện nút "Dùng ngay". */
+    USABLE,
+    USED,
+    EXPIRED,
+
+    /** Hiển thị mờ, không cho chọn. */
+    INELIGIBLE;
+
+    val isUsable: Boolean get() = this == USABLE
+}
+
+/**
+ * Trạng thái hiển thị của một voucher. **Không** kiểm tra hạn dùng ở client
+ * (`expirationDate < now`) — hoàn toàn dựa vào `status` của server.
+ */
+fun VoucherItem.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()
+
+fun VoucherDetail.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()

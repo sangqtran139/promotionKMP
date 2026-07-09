@@ -1,0 +1,22 @@
+package com.ttcn.promotionsdk.core.domain.exception
+
+/**
+ * Mã lỗi công khai, dùng chung cho `AndroidPromotionUI` và `iosPromotionUI`.
+ *
+ * `PromotionResult.Failure.errorCode` luôn là một trong các mã này, hoặc mã nghiệp vụ do server trả.
+ * UI tra chuỗi hiển thị theo mã — **lõi không chứa chuỗi tiếng Việt**.
+ */
+object PromotionErrorCodes {
+    const val MISSING_CUSTOMER_ID = "missing_customer_id"
+    const val NO_RESULT = "no_result"
+    const val INSUFFICIENT_BUDGET = "INSUFFICIENT_BUDGET"
+    const val GENERAL = "error_general"
+    const val NETWORK_ERROR = "network_error"
+    const val TIMEOUT = "timeout"
+}
+
+/**
+ * Tên cũ, giữ để `AndroidPromotionUI` và `iosPromotionUI` không phải sửa import khi bê UI sang.
+ * Code mới nên dùng [PromotionErrorCodes].
+ */
+typealias ErrorCodes = PromotionErrorCodes
