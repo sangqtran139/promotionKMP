@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/prm_color_picker_sheet_bg" />
+    <corners
+        android:bottomLeftRadius="@dimen/prm_color_picker_sheet_radius_bottom"
+        android:bottomRightRadius="@dimen/prm_color_picker_sheet_radius_bottom"
+        android:topLeftRadius="@dimen/prm_color_picker_sheet_radius_top"
+        android:topRightRadius="@dimen/prm_color_picker_sheet_radius_top" />
+</shape>

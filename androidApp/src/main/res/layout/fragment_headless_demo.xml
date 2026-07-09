@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/view_size_24"
+        android:paddingVertical="@dimen/view_size_24">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@null"
+                android:padding="@dimen/view_size_8"
+                android:src="@drawable/prm_ic_back_theme" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_8"
+                android:text="@string/demo_headless_title"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSearchVouchers"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_16"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/view_size_14"
+            android:text="@string/demo_btn_search_vouchers"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
+            app:elevation="@dimen/view_size_2"
+            app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGetDetail"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_16"
+            android:enabled="false"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/view_size_14"
+            android:text="@string/demo_btn_get_detail"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
+            app:elevation="@dimen/view_size_2"
+            app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnValidate"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_16"
+            android:enabled="false"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/view_size_14"
+            android:text="@string/demo_btn_validate"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
+            app:elevation="@dimen/view_size_2"
+            app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCreateRedemption"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/view_size_16"
+            android:enabled="false"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/view_size_14"
+            android:text="@string/demo_btn_create_redemption"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="@android:color/white"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
+            app:elevation="@dimen/view_size_2"
+            app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClearLog"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginTop="@dimen/view_size_8"
+            android:text="@string/demo_btn_clear_log" />
+
+        <!-- Log output -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#F5F5F5">
+
+            <TextView
+                android:id="@+id/tvLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:padding="@dimen/view_size_12"
+                android:textSize="12sp" />
+        </ScrollView>
+
+    </LinearLayout>
+</layout>

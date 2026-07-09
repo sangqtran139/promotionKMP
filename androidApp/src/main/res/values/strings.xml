@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_launcher_btn_custom_theme">Theme preview</string>
+    <string name="app_launcher_btn_payment_integrate">Payment integrate</string>
+    <string name="app_launcher_btn_my_promotion">My promotion</string>
+    <string name="app_launcher_btn_headless_demo">Headless API Demo</string>
+
+    <string name="demo_headless_title">Headless API Demo</string>
+    <string name="demo_btn_search_vouchers">1. Search Vouchers</string>
+    <string name="demo_btn_get_detail">2. Get Voucher Detail</string>
+    <string name="demo_btn_validate">3. Validate Discounts</string>
+    <string name="demo_btn_create_redemption">4. Create Redemption</string>
+    <string name="demo_btn_clear_log">Clear log</string>
+</resources>
