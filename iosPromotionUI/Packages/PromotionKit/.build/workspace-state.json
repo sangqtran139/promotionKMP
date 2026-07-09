@@ -1,0 +1,44 @@
+{
+  "object" : {
+    "artifacts" : [
+      {
+        "kind" : {
+          "xcframework" : {
+
+          }
+        },
+        "packageRef" : {
+          "identity" : "promotionkit",
+          "kind" : "root",
+          "location" : "/Users/sangtran/AndroidStudioProjects/MyApplication13/iosPromotionUI/Packages/PromotionKit",
+          "name" : "PromotionKit"
+        },
+        "path" : "/Users/sangtran/AndroidStudioProjects/MyApplication13/iosPromotionUI/Frameworks/PromotionLogic.xcframework",
+        "source" : {
+          "type" : "local"
+        },
+        "targetName" : "PromotionLogic"
+      }
+    ],
+    "dependencies" : [
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "utility",
+          "kind" : "fileSystem",
+          "location" : "/Users/sangtran/AndroidStudioProjects/MyApplication13/iosPromotionUI/Packages/Utility",
+          "name" : "Utility"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/sangtran/AndroidStudioProjects/MyApplication13/iosPromotionUI/Packages/Utility"
+        },
+        "subpath" : "utility"
+      }
+    ],
+    "prebuilts" : [
+
+    ]
+  },
+  "version" : 7
+}

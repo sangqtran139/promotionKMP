@@ -1,0 +1,38 @@
+//
+//  MyPromotionBuilder.swift
+//  PromotionSDK
+//
+//  Created by thachlh on 6/5/26.
+//
+
+import UIKit
+
+final class MyPromotionBuilder: BaseBuilder<MyPromotionViewController, MyPromotionViewModel, MyPromotionRouter, MyPromotionBuilder.DataModel> {
+    
+    struct DataModel {
+        let customerId: String
+        let token: String?
+
+        init(customerId: String, token: String? = nil) {
+            self.customerId = customerId
+            self.token = token
+        }
+    }
+    
+    static func build(with data: DataModel, navigator: UINavigationController? = nil) -> MyPromotionViewController {
+        let builder = MyPromotionBuilder()
+        return builder.build(with: data, navigator: navigator)
+    }
+    
+    override func createRouter() -> MyPromotionRouter {
+        return MyPromotionRouter()
+    }
+    
+    override func createViewModel(router: MyPromotionRouter, data: DataModel) -> MyPromotionViewModel {
+        return MyPromotionViewModel(router: router, data: data)
+    }
+    
+    override func createViewController(viewModel: MyPromotionViewModel) -> MyPromotionViewController {
+        return MyPromotionViewController(viewModel: viewModel)
+    }
+}

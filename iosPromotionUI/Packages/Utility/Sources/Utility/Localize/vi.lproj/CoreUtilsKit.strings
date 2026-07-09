@@ -1,0 +1,15 @@
+/* 
+  CoreUtilsKit.strings
+  CoreUtilsKit
+
+  Created by Natariannn on 11/11/20.
+  Copyright © 2020 ViettelPay App Team. All rights reserved.
+*/
+
+"currency_unit" = "đ";
+"currency_thousand" = "k";
+"currency_million" = "tr";
+"currency_billion" = "tỷ";
+"point_unit" = "điểm";
+"required_touch_id" = "Vui lòng quét vân tay để đăng nhập ứng dụng";
+"required_face_id" = "Vui lòng quét khuôn mặt để đăng nhập ứng dụng";
