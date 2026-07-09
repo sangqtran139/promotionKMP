@@ -1,7 +1,29 @@
-.gradle/
-build/
-.idea/
 *.iml
+.kotlin
+.gradle
+**/build/
+xcuserdata
+!src/**/build/
 local.properties
-*.log
+.idea
 .DS_Store
+captures
+.externalNativeBuild
+.cxx
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+node_modules/
+
+# SwiftPM scratch/cache directory
+.spm/
+
+# Build outputs of :promotionLogic and :AndroidPromotionUI.
+# Regenerate with:
+#   ./gradlew :promotionLogic:assembleRelease :AndroidPromotionUI:assembleRelease
+#   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
+*.aar
+*.xcframework/
