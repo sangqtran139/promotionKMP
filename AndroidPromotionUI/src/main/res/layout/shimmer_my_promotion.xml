@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:app="http://schemas.android.com/apk/res-auto"
+  xmlns:tools="http://schemas.android.com/tools">
+  <LinearLayout
+    android:id="@+id/viewShimmer"
+    android:background="@color/white"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.facebook.shimmer.ShimmerFrameLayout
+      android:id="@+id/shimmer_my_endow_list"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      app:shimmer_base_color="@color/colorWhite"
+      app:shimmer_colored="false"
+      app:shimmer_duration="@integer/shimmer_duration"
+      app:shimmer_highlight_color="@color/colorWhite"
+      app:shimmer_repeat_delay="@integer/shimmer_repeat_delay"
+      tools:visibility="visible">
+
+      <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:orientation="horizontal"
+          android:layout_marginTop="@dimen/view_size_7"
+          android:paddingStart="@dimen/view_size_10"
+          android:paddingEnd="@dimen/view_size_10">
+
+          <View
+            android:layout_width="@dimen/view_size_60"
+            android:layout_height="@dimen/view_size_36"
+            android:layout_marginEnd="@dimen/view_size_8"
+            android:background="@drawable/prm_background_shimmer" />
+
+          <View
+            android:layout_width="@dimen/view_size_80"
+            android:layout_height="@dimen/view_size_36"
+            android:layout_marginEnd="@dimen/view_size_8"
+            android:background="@drawable/prm_background_shimmer" />
+
+          <View
+            android:layout_width="@dimen/view_size_80"
+            android:layout_height="@dimen/view_size_36"
+            android:background="@drawable/prm_background_shimmer" />
+
+        </LinearLayout>
+
+        <include layout="@layout/item_shimmer_my_promotion" />
+
+        <include layout="@layout/item_shimmer_my_promotion" />
+
+        <include layout="@layout/item_shimmer_my_promotion" />
+
+        <include layout="@layout/item_shimmer_my_promotion" />
+
+      </LinearLayout>
+    </com.facebook.shimmer.ShimmerFrameLayout>
+
+  </LinearLayout>
+</layout>

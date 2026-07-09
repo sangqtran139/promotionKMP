@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="IAMConstraintLayout">
+        <attr name="prmIsGravityTop" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMEditText">
+        <!--  Prevent keyboard dismiss when focus on this EditText  -->
+        <attr name="prmEtPreventKeyboardDismiss" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="app">
+        <attr name="prmChecked" format="boolean" />
+        <attr name="prmColorOn" format="color" />
+        <attr name="prmColorOff" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMImageView">
+        <!--  Alpha pressed effect  -->
+        <attr name="prmIvEnableClickEffect" format="boolean" />
+        <!--  Prevent clicking too fast  -->
+        <attr name="prmIvPreventFastClick" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMCheckBox">
+        <!--  String resource id for CheckBox  -->
+        <attr name="prmCbText" format="reference" />
+        <attr name="prmCbIsPadding" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMTextView">
+        <!--  String resource id for TextView  -->
+        <attr name="prmTvText" format="reference" />
+        <!--  Prevent clicking too fast  -->
+        <attr name="prmTvPreventFastClick" format="boolean" />
+        <!--  Alpha pressed effect  -->
+        <attr name="prmTvEnableClickEffect" format="boolean" />
+        <!--  Auto scroll for long horizontal text  -->
+        <attr name="prmTvEnableAutoScroll" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMCircleImageView">
+        <attr name="prm_civ_border_width" format="dimension" />
+        <attr name="prm_civ_border_color" format="color" />
+        <attr name="prm_civ_border_overlay" format="boolean" />
+        <attr name="prm_civ_fill_color" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMSearchField">
+        <!--  Hint string or resource id  -->
+        <attr name="prmSfHint" format="string" />
+        <!--  Define various type of search field  -->
+        <attr name="prmSvType" format="enum">
+            <enum name="basic" value="0" />
+            <enum name="navigation" value="1" />
+            <enum name="basic_icon" value="2" />
+        </attr>
+        <attr name="prmSfAllowVietnamese" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMDivider">
+        <attr name="prmDDirection" format="enum">
+            <enum name="horizontal" value="0" />
+            <enum name="vertical" value="1" />
+        </attr>
+        <attr name="prmDSize" format="enum">
+            <enum name="one" value="0" />
+            <enum name="eight" value="1" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="PRMCardView">
+        <!-- Corner radius for CardView. -->
+        <attr name="prmCvCornerRadius" format="dimension" />
+        <!-- Corner top left radius for CardView. -->
+        <attr name="prmCvTopLeftRadius" format="dimension" />
+        <!-- Corner top right radius for CardView. -->
+        <attr name="prmCvTopRightRadius" format="dimension" />
+        <!-- Corner bottom right radius for CardView. -->
+        <attr name="prmCvBottomRightRadius" format="dimension" />
+        <!-- Corner bottom left radius for CardView. -->
+        <attr name="prmCvBottomLeftRadius" format="dimension" />
+        <!--  Margin surround CardView cause of shadow layer.  -->
+        <attr name="prmCvShadowMargin" format="dimension" />
+        <!--  Margin left CardView cause of shadow layer  -->
+        <attr name="prmCvShadowMarginLeft" format="dimension" />
+        <!--  Margin top CardView cause of shadow layer  -->
+        <attr name="prmCvShadowMarginTop" format="dimension" />
+        <!--  Margin right CardView cause of shadow layer  -->
+        <attr name="prmCvShadowMarginRight" format="dimension" />
+        <!--  Margin bottom CardView cause of shadow layer  -->
+        <attr name="prmCvShadowMarginBottom" format="dimension" />
+        <!--  CardView type based on usages.  -->
+        <attr name="prmShadowType" format="enum">
+            <enum name="none" value="0" />
+            <enum name="card" value="1" />
+            <enum name="bottom_tab" value="2" />
+            <enum name="button_large" value="3" />
+            <enum name="button_medium" value="4" />
+            <enum name="button_small" value="5" />
+            <enum name="voucher" value="6" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="PRMAbstractButton">
+        <attr name="prmAbtState" format="enum">
+            <enum name="idle" value="0" />
+            <enum name="loading" value="1" />
+            <enum name="disable" value="2" />
+        </attr>
+    </declare-styleable>
+
+    <declare-styleable name="PRMSlideButtonViewTheme">
+        <attr name="prmSlideButtonViewStyle" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMButton">
+        <!--  String or resource id text for button  -->
+        <attr name="prmBtText" format="reference|string" />
+        <!--  Define various button size  -->
+        <attr name="prmBtSize" format="enum">
+            <enum name="small" value="0" />
+            <enum name="medium" value="1" />
+            <enum name="large" value="2" />
+        </attr>
+        <!--  Define various button type  -->
+        <attr name="prmBtType" format="enum">
+            <enum name="gradient" value="0" />
+            <enum name="outline" value="1" />
+            <enum name="white_solid" value="2" />
+            <enum name="tet" value="3" />
+            <enum name="white_outline" value="4" />
+            <enum name="tet_2023_active" value="5" />
+            <enum name="ver_68_inactive" value="6" />
+            <enum name="slide" value="7" />
+        </attr>
+        <!--  Apply shadow padding space for type outline, white_solid and tet  -->
+        <attr name="prmBtWithShadowPadding" format="boolean" />
+        <attr name="prmBtPrefixIcon" format="reference" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMSlideButton">
+        <attr name="prmSlideText" format="string" />
+        <attr name="prmTextSize" format="dimension" />
+        <attr name="prmTextStyle" format="enum">
+            <enum name="normal" value="0" />
+            <enum name="bold" value="1" />
+            <enum name="italic" value="2" />
+        </attr>
+        <attr name="prmAreaMargin" format="dimension" />
+        <attr name="prmIconMargin" format="dimension" />
+        <attr name="prmInnerColor" format="color" />
+        <attr name="prmOuterColor" format="color" />
+        <attr name="prmTextColor" format="color" />
+        <attr name="prmBorderRadius" format="dimension" />
+        <attr name="prmSliderHeight" format="dimension" />
+        <attr name="prmAnimationDuration" format="integer" />
+        <attr name="prmBumpVibration" format="integer" />
+        <attr name="prmSliderLocked" format="boolean" />
+        <attr name="prmSliderReversed" format="boolean" />
+        <attr name="prmSliderIcon" format="reference" />
+        <attr name="prmSliderIconColor" format="color" />
+        <attr name="prmRotateIcon" format="boolean" />
+        <attr name="prmAnimateCompletion" format="boolean" />
+        <attr name="prmTextAppearance" format="reference" />
+        <attr name="prmCompleteIcon" format="reference" />
+        <attr name="prmStateComplete" format="boolean" />
+        <attr name="prmBounceOnStart" format="boolean" />
+        <attr name="prmBounceDuration" format="integer" />
+        <attr name="prmBounceRepeat" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMShadowView">
+        <attr name="prmSvBackgroundType" format="enum">
+            <enum name="fill" value="0" />
+            <enum name="stroke" value="1" />
+            <enum name="fill_stroke" value="2" />
+        </attr>
+        <attr name="prmSvBackgroundColorType" format="enum">
+            <enum name="solid" value="0" />
+            <enum name="gradient_linear" value="1" />
+            <enum name="gradient_radial" value="2" />
+            <enum name="gradient_sweep" value="3" />
+        </attr>
+        <attr name="prmSvBackgroundColor" format="color" />
+        <attr name="prmSvBackgroundGradientColor0" format="color" />
+        <attr name="prmSvBackgroundGradientColor1" format="color" />
+        <attr name="prmSvBackgroundGradientColor2" format="color" />
+        <attr name="prmSvBackgroundGradientColor3" format="color" />
+        <attr name="prmSvBackgroundGradientColor4" format="color" />
+        <attr name="prmSvBackgroundGradientColor5" format="color" />
+        <attr name="prmSvBackgroundGradientColor6" format="color" />
+        <attr name="prmSvBackgroundGradientColorEnd" format="color" />
+        <attr name="prmSvBackgroundGradientAngle" format="float" />
+        <attr name="prmSvBackgroundGradientOffCenterX" format="float" />
+        <attr name="prmSvBackgroundGradientOffCenterY" format="float" />
+        <attr name="prmSvBackgroundAlpha" format="float" />
+        <attr name="prmSvStrokeType" format="enum">
+            <enum name="solid" value="0" />
+            <enum name="dash" value="1" />
+        </attr>
+        <attr name="prmSvStrokeColorType" format="enum">
+            <enum name="solid" value="0" />
+            <enum name="gradient_linear" value="1" />
+            <enum name="gradient_sweep" value="3" />
+        </attr>
+        <attr name="prmSvStrokeColor" format="color" />
+        <attr name="prmSvStrokeGradientColor0" format="color" />
+        <attr name="prmSvStrokeGradientColor1" format="color" />
+        <attr name="prmSvStrokeGradientColor2" format="color" />
+        <attr name="prmSvStrokeGradientColor3" format="color" />
+        <attr name="prmSvStrokeGradientColor4" format="color" />
+        <attr name="prmSvStrokeGradientColor5" format="color" />
+        <attr name="prmSvStrokeGradientColor6" format="color" />
+        <attr name="prmSvStrokeGradientColorEnd" format="color" />
+        <attr name="prmSvStrokeGradientAngle" format="float" />
+        <attr name="prmSvStrokeGradientOffCenterX" format="float" />
+        <attr name="prmSvStrokeGradientOffCenterY" format="float" />
+        <attr name="prmSvStrokeAlpha" format="float" />
+        <attr name="prmSvStrokeWidth" format="dimension" />
+        <attr name="prmSvStrokeDashSize" format="dimension" />
+        <attr name="prmSvStrokeGapSize" format="dimension" />
+        <attr name="prmSvStrokeCapType" format="enum">
+            <enum name="square" value="0" />
+            <enum name="butt" value="1" />
+            <enum name="round" value="2" />
+        </attr>
+        <attr name="prmSvShadowColor" format="color" />
+        <attr name="prmSvShadowAlpha" format="float" />
+        <attr name="prmSvShadowDistance" format="dimension" />
+        <attr name="prmSvShadowBlur" format="dimension" />
+        <attr name="prmSvShadowAngle" format="float" />
+        <attr name="prmSvShadowArea" format="dimension" />
+        <attr name="prmSvShadowLeft" format="dimension" />
+        <attr name="prmSvShadowTop" format="dimension" />
+        <attr name="prmSvShadowRight" format="dimension" />
+        <attr name="prmSvShadowBottom" format="dimension" />
+        <attr name="prmSvShadowDy" format="dimension" />
+        <attr name="prmSvCornerType" format="enum">
+            <enum name="custom" value="0" />
+            <enum name="rectangular" value="1" />
+            <enum name="circular" value="2" />
+            <enum name="third" value="3" />
+            <enum name="quarter" value="4" />
+        </attr>
+        <attr name="prmSvCornerTopLeft" format="dimension" />
+        <attr name="prmSvCornerTopRight" format="dimension" />
+        <attr name="prmSvCornerBottomLeft" format="dimension" />
+        <attr name="prmSvCornerBottomRight" format="dimension" />
+        <attr name="prmSvCornerRadius" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="PRMRadioButton">
+        <!--  String resource id for button  -->
+        <attr name="rbText" format="reference" />
+        <attr name="rbShowText" format="boolean" />
+    </declare-styleable>
+</resources>

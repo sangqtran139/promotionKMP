@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.ttcn.promotionsdk.ui.widget.PRMEditText
+            android:id="@+id/searchInput"
+            style="@style/fontPRMSfDisplayBold32"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@null"
+            android:gravity="center_vertical"
+            android:imeOptions="actionDone"
+            android:includeFontPadding="false"
+            android:lines="1"
+            android:maxLines="1"
+            android:padding="@dimen/_10sdp"
+            android:paddingTop="@dimen/_6sdp"
+            android:paddingBottom="@dimen/_6sdp"
+            android:singleLine="true"
+            android:textColor="@color/tokenDark100"
+            android:textCursorDrawable="@null"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/buttonSearch"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
+            android:id="@+id/searchIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/_6sdp"
+            android:adjustViewBounds="true"
+            app:layout_constraintBottom_toBottomOf="@+id/searchInput"
+            app:layout_constraintStart_toStartOf="@+id/searchInput"
+            app:layout_constraintTop_toTopOf="@+id/searchInput" />
+
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
+            android:id="@+id/buttonClear"
+            android:layout_width="@dimen/_19sdp"
+            android:layout_height="@dimen/_19sdp"
+            android:layout_marginEnd="@dimen/_3sdp"
+            android:adjustViewBounds="true"
+            android:padding="@dimen/_3sdp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/prm_foundations_icon_clear"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="@+id/searchInput"
+            app:layout_constraintTop_toTopOf="parent"
+            app:prmIvEnableClickEffect="true" />
+
+        <com.ttcn.promotionsdk.ui.widget.PRMImageView
+            android:id="@+id/buttonSearch"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/_32sdp"
+            android:adjustViewBounds="true"
+            android:paddingStart="@dimen/_13sdp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/prm_foundations_icon_reload"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="RtlSymmetry" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>
+
