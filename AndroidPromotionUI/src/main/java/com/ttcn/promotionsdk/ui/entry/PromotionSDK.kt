@@ -15,10 +15,7 @@ import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
 import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
-import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
-import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
-import com.ttcn.promotionsdk.ui.theme.toThemeConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -74,8 +71,8 @@ object PromotionSDK {
      * without re-running [init].
      */
     @JvmStatic
-    internal fun syncThemeConfig(config: PromotionThemeConfig?) {
-        theme = config?.let(PromotionSDKTheme::from) ?: PromotionSDKTheme()
+    internal fun syncThemeConfig(config: PromotionSDKTheme?) {
+        theme = config ?: PromotionSDKTheme()
     }
 
     @JvmStatic
@@ -83,11 +80,8 @@ object PromotionSDK {
         callback = options.callback
         contextProvider = options.config.contextProvider
         PromotionContainer.initialize(context, options.config.toCoreConfig())
-        PromotionThemeStore.init(context)
         theme = options.theme
-        val themeConfig = options.theme.toThemeConfig()
-        PromotionThemeRegistry.configure(themeConfig)
-        PromotionThemeStore.save(themeConfig)
+        PromotionThemeRegistry.configure(options.theme)
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         sdkScope?.launch { PromotionFeatureGate.refresh() }
@@ -147,7 +141,6 @@ object PromotionSDK {
         sdkScope = null
         PromotionContainer.clear()
         PromotionThemeRegistry.configure(null)
-        PromotionThemeStore.clear()
         syncThemeConfig(null)
         callback = null
         contextProvider = null

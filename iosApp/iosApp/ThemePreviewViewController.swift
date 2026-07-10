@@ -36,6 +36,8 @@ final class ThemePreviewViewController: UIViewController {
         return v
     }()
     private var widget: UIView?
+    /// Default THẬT của SDK, dạng hex — nguồn để reset và để so "đã đổi hay chưa".
+    private var sdkDisplayDefaults = PromotionThemeDisplay.Defaults()
 
     init(sdk: PromotionSDK) {
         self.sdk = sdk
@@ -47,9 +49,14 @@ final class ThemePreviewViewController: UIViewController {
         super.viewDidLoad()
         title = "Theme Playground"
         view.backgroundColor = .systemGroupedBackground
-        // Khôi phục theme đã lưu (mirror Android: load → configure).
-        if let saved = ThemePreferenceManager.shared.load() {
-            loadDraft(from: saved)
+
+        // Seed form bằng default THẬT của SDK, rồi phủ theme đã lưu lên trên.
+        // Mirror ThemePreviewFragment bên Android: loadDisplayDefaults → mergeDisplayWithSaved.
+        // Trước đây chưa có theme lưu thì mọi ô đều trống, còn Android hiện sẵn giá trị SDK.
+        sdkDisplayDefaults = PromotionThemeDisplay.load()
+        let saved = ThemePreferenceManager.shared.load()
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: saved))
+        if let saved {
             sdk.configure(theme: saved)
         }
         setupLayout()
@@ -57,36 +64,42 @@ final class ThemePreviewViewController: UIViewController {
         reloadWidget()
     }
 
-    /// Map theme đã lưu → draft (để các hàng hiển thị đúng giá trị đã lưu).
-    private func loadDraft(from t: PromotionSDKTheme) {
-        draft.buttonBackground = t.button?.backgroundColor
-        draft.buttonText = t.button?.textColor
-        draft.buttonShadow = t.button?.shadowColor
-        draft.buttonCorner = t.button?.cornerRadius
-        draft.searchBorder = t.searchBar?.borderColor
-        draft.searchHint = t.searchBar?.hintTextColor
-        draft.searchText = t.searchBar?.textColor
-        draft.searchIcon = t.searchBar?.iconColor
-        draft.searchCorner = t.searchBar?.cornerRadius
-        draft.listLink = t.listItem?.linkTextColor
-        draft.listUsedText = t.listItem?.usedBadgeTextColor
-        draft.listUsedBg = t.listItem?.usedBadgeBackgroundColor
-        draft.listRadioSelected = t.listItem?.radioSelectedColor
-        draft.listRadioUnselected = t.listItem?.radioUnselectedColor
-        draft.tabChipActiveBg = t.tabChip?.activeBackgroundColor
-        draft.tabChipInactiveBg = t.tabChip?.inactiveBackgroundColor
-        draft.tabChipActiveText = t.tabChip?.activeTextColor
-        draft.tabChipInactiveText = t.tabChip?.inactiveTextColor
-        draft.tabChipCorner = t.tabChip?.cornerRadius
-        draft.tabIndicator = t.tabUnderline?.indicatorColor
-        draft.tabActiveText = t.tabUnderline?.activeTextColor
-        draft.tabInactiveText = t.tabUnderline?.inactiveTextColor
-        draft.tabBg = t.tabUnderline?.backgroundColor
-        draft.dscAvailText = t.discountBadge?.availableTextColor
-        draft.dscUnavailText = t.discountBadge?.unavailableTextColor
-        draft.dscAvailBg = t.discountBadge?.availableBackgroundColor
-        draft.dscUnavailBg = t.discountBadge?.unavailableBackgroundColor
-        draft.dscAction = t.discountBadge?.actionTextColor
+    /// Map display values (default SDK + theme đã lưu) → draft cho các hàng hiển thị.
+    private func loadDraft(from d: PromotionThemeDisplay.Defaults) {
+        let button = d.button.toToken()
+        let search = d.searchBar.toToken()
+        let list = d.listItem.toToken()
+        let chip = d.tabChip.toToken()
+        let underline = d.tabUnderline.toToken()
+        let badge = d.discountBadge.toToken()
+        draft.buttonBackground = button.backgroundColor
+        draft.buttonText = button.textColor
+        draft.buttonShadow = button.shadowColor
+        draft.buttonCorner = button.cornerRadius
+        draft.searchBorder = search.borderColor
+        draft.searchHint = search.hintTextColor
+        draft.searchText = search.textColor
+        draft.searchIcon = search.iconColor
+        draft.searchCorner = search.cornerRadius
+        draft.listLink = list.linkTextColor
+        draft.listUsedText = list.usedBadgeTextColor
+        draft.listUsedBg = list.usedBadgeBackgroundColor
+        draft.listRadioSelected = list.radioButtonSelectedStrokeColor
+        draft.listRadioUnselected = list.radioButtonStrokeColor
+        draft.tabChipActiveBg = chip.activeBackgroundColor
+        draft.tabChipInactiveBg = chip.inactiveBackgroundColor
+        draft.tabChipActiveText = chip.activeTextColor
+        draft.tabChipInactiveText = chip.inactiveTextColor
+        draft.tabChipCorner = chip.cornerRadius
+        draft.tabIndicator = underline.indicatorColor
+        draft.tabActiveText = underline.activeTextColor
+        draft.tabInactiveText = underline.inactiveTextColor
+        draft.tabBg = underline.backgroundColor
+        draft.dscAvailText = badge.availableTextColor
+        draft.dscUnavailText = badge.unavailableTextColor
+        draft.dscAvailBg = badge.availableBackgroundColor
+        draft.dscUnavailBg = badge.unavailableBackgroundColor
+        draft.dscAction = badge.actionTextColor
     }
 
     private func setupLayout() {
@@ -113,37 +126,37 @@ final class ThemePreviewViewController: UIViewController {
 
     /// Map DraftTheme (UIColor/CGFloat) → PromotionSDKTheme.
     private func makeTheme() -> PromotionSDKTheme {
-        let button = VDSPromotionButtonToken(
+        let button = ButtonToken(
             backgroundColor: draft.buttonBackground, textColor: draft.buttonText,
             shadowColor: draft.buttonShadow, cornerRadius: draft.buttonCorner
         )
-        let search = VDSPromotionSearchBarToken(
+        let search = SearchBarToken(
             borderColor: draft.searchBorder, hintTextColor: draft.searchHint,
             textColor: draft.searchText, iconColor: draft.searchIcon, cornerRadius: draft.searchCorner
         )
-        let list = VDSPromotionListItemToken(
+        let list = ListItemToken(
             linkTextColor: draft.listLink, usedBadgeTextColor: draft.listUsedText,
             usedBadgeBackgroundColor: draft.listUsedBg,
-            radioSelectedColor: draft.listRadioSelected,
-            radioUnselectedColor: draft.listRadioUnselected
+            radioButtonStrokeColor: draft.listRadioUnselected,
+            radioButtonSelectedStrokeColor: draft.listRadioSelected
         )
-        let tabChip = VDSPromotionTabChipToken(
+        let tabChip = TabChipToken(
             activeBackgroundColor: draft.tabChipActiveBg, inactiveBackgroundColor: draft.tabChipInactiveBg,
             activeTextColor: draft.tabChipActiveText, inactiveTextColor: draft.tabChipInactiveText,
             cornerRadius: draft.tabChipCorner
         )
-        let tab = VDSPromotionTabUnderlineToken(
+        let tab = TabUnderlineToken(
             indicatorColor: draft.tabIndicator, activeTextColor: draft.tabActiveText,
             inactiveTextColor: draft.tabInactiveText, backgroundColor: draft.tabBg
         )
-        let discount = VDSPromotionDiscountBadgeToken(
+        let discount = DiscountBadgeToken(
             availableTextColor: draft.dscAvailText, unavailableTextColor: draft.dscUnavailText,
             availableBackgroundColor: draft.dscAvailBg, unavailableBackgroundColor: draft.dscUnavailBg,
             actionTextColor: draft.dscAction
         )
         return PromotionSDKTheme(
-            button: button, searchBar: search, listItem: list,
-            tabChip: tabChip, tabUnderline: tab, discountBadge: discount
+            buttonToken: button, searchBarToken: search, listItemToken: list,
+            tabChipToken: tabChip, tabUnderlineToken: tab, discountBadgeToken: discount
         )
     }
 
@@ -157,6 +170,7 @@ final class ThemePreviewViewController: UIViewController {
 
     func resetTheme() {
         draft = DraftTheme()
+        loadDraft(from: sdkDisplayDefaults)
         sdk.configure(theme: nil)
         ThemePreferenceManager.shared.clear()
         for refresh in rowRefreshers { refresh() }

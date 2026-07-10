@@ -10,13 +10,13 @@ import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
 internal object PromotionThemeRegistry {
 
     @Volatile
-    private var config: PromotionThemeConfig? = null
+    private var config: PromotionSDKTheme? = null
 
-    fun configure(themeConfig: PromotionThemeConfig?) {
+    fun configure(themeConfig: PromotionSDKTheme?) {
         config = themeConfig
     }
 
-    fun currentConfig(): PromotionThemeConfig? = config
+    fun currentConfig(): PromotionSDKTheme? = config
 
     fun buttonToken(): ButtonToken? = config?.buttonToken
 

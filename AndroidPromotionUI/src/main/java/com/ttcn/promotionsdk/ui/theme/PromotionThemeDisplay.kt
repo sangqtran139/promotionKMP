@@ -11,7 +11,7 @@ import android.content.Context
 
 /**
  * Hex-string display model for theme preview UI.
- * Converts to [PromotionThemeConfig] / token types for SDK apply.
+ * Converts to [PromotionSDKTheme] / token types for SDK apply.
  */
 object PromotionThemeDisplay {
 
@@ -73,7 +73,7 @@ object PromotionThemeDisplay {
     fun load(context: Context): Defaults =
         fromConfig(PromotionThemeDefaults.defaultConfig(context), context)
 
-    fun mergeWithSaved(context: Context, sdk: Defaults, saved: PromotionThemeConfig?): Defaults {
+    fun mergeWithSaved(context: Context, sdk: Defaults, saved: PromotionSDKTheme?): Defaults {
         if (saved == null) return sdk
         val savedDisplay = fromConfig(saved, context)
         return Defaults(
@@ -86,8 +86,8 @@ object PromotionThemeDisplay {
         )
     }
 
-    fun configFromDisplayValues(display: Defaults, sdk: Defaults): PromotionThemeConfig =
-        PromotionThemeConfig(
+    fun configFromDisplayValues(display: Defaults, sdk: Defaults): PromotionSDKTheme =
+        PromotionSDKTheme(
             buttonToken = display.button.toToken().takeIf { display.button != sdk.button },
             searchBarToken = display.searchBar.toToken()
                 .takeIf { display.searchBar != sdk.searchBar },
@@ -113,7 +113,7 @@ object PromotionThemeDisplay {
         )
     }
 
-    private fun fromConfig(config: PromotionThemeConfig, context: Context?): Defaults {
+    private fun fromConfig(config: PromotionSDKTheme, context: Context?): Defaults {
         fun hex(@androidx.annotation.ColorInt color: Int?) =
             color?.let { PromotionThemeDefaults.colorToHex(it) }
 

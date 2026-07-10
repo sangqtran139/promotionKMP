@@ -98,7 +98,7 @@ final class PromotionSDKImpl: NSObject {
             return
         }
         let config = VDSThemeConfig(
-            button: theme.button.map {
+            button: theme.buttonToken.map {
                 VDSButtonThemeToken(
                     backgroundColor: $0.backgroundColor,
                     textColor: $0.textColor,
@@ -106,7 +106,7 @@ final class PromotionSDKImpl: NSObject {
                     cornerRadius: $0.cornerRadius
                 )
             },
-            searchBar: theme.searchBar.map {
+            searchBar: theme.searchBarToken.map {
                 VDSSearchBarThemeToken(
                     borderColor: $0.borderColor,
                     hintTextColor: $0.hintTextColor,
@@ -115,16 +115,16 @@ final class PromotionSDKImpl: NSObject {
                     cornerRadius: $0.cornerRadius
                 )
             },
-            listItem: theme.listItem.map {
+            listItem: theme.listItemToken.map {
                 VDSListItemThemeToken(
                     linkTextColor: $0.linkTextColor,
                     usedBadgeTextColor: $0.usedBadgeTextColor,
                     usedBadgeBackgroundColor: $0.usedBadgeBackgroundColor,
-                    radioSelectedColor: $0.radioSelectedColor,
-                    radioUnselectedColor: $0.radioUnselectedColor
+                    radioSelectedColor: $0.radioButtonSelectedStrokeColor,
+                    radioUnselectedColor: $0.radioButtonStrokeColor
                 )
             },
-            tabChip: theme.tabChip.map {
+            tabChip: theme.tabChipToken.map {
                 VDSTabChipThemeToken(
                     activeBackgroundColor: $0.activeBackgroundColor,
                     inactiveBackgroundColor: $0.inactiveBackgroundColor,
@@ -133,7 +133,7 @@ final class PromotionSDKImpl: NSObject {
                     cornerRadius: $0.cornerRadius
                 )
             },
-            tabUnderline: theme.tabUnderline.map {
+            tabUnderline: theme.tabUnderlineToken.map {
                 VDSTabUnderlineThemeToken(
                     indicatorColor: $0.indicatorColor,
                     activeTextColor: $0.activeTextColor,
@@ -141,7 +141,7 @@ final class PromotionSDKImpl: NSObject {
                     backgroundColor: $0.backgroundColor
                 )
             },
-            discountBadge: theme.discountBadge.map {
+            discountBadge: theme.discountBadgeToken.map {
                 VDSDiscountBadgeThemeToken(
                     availableTextColor: $0.availableTextColor,
                     unavailableTextColor: $0.unavailableTextColor,
@@ -158,42 +158,42 @@ final class PromotionSDKImpl: NSObject {
     func currentTheme() -> PromotionSDKTheme? {
         guard let config = VDSThemeRegistry.shared.current else { return nil }
         return PromotionSDKTheme(
-            button: config.button.map {
-                VDSPromotionButtonToken(
+            buttonToken: config.button.map {
+                ButtonToken(
                     backgroundColor: $0.backgroundColor, textColor: $0.textColor,
                     shadowColor: $0.shadowColor, cornerRadius: $0.cornerRadius
                 )
             },
-            searchBar: config.searchBar.map {
-                VDSPromotionSearchBarToken(
+            searchBarToken: config.searchBar.map {
+                SearchBarToken(
                     borderColor: $0.borderColor, hintTextColor: $0.hintTextColor,
                     textColor: $0.textColor, iconColor: $0.iconColor, cornerRadius: $0.cornerRadius
                 )
             },
-            listItem: config.listItem.map {
-                VDSPromotionListItemToken(
+            listItemToken: config.listItem.map {
+                ListItemToken(
                     linkTextColor: $0.linkTextColor, usedBadgeTextColor: $0.usedBadgeTextColor,
                     usedBadgeBackgroundColor: $0.usedBadgeBackgroundColor,
-                    radioSelectedColor: $0.radioSelectedColor,
-                    radioUnselectedColor: $0.radioUnselectedColor
+                    radioButtonStrokeColor: $0.radioUnselectedColor,
+                    radioButtonSelectedStrokeColor: $0.radioSelectedColor
                 )
             },
-            tabChip: config.tabChip.map {
-                VDSPromotionTabChipToken(
+            tabChipToken: config.tabChip.map {
+                TabChipToken(
                     activeBackgroundColor: $0.activeBackgroundColor,
                     inactiveBackgroundColor: $0.inactiveBackgroundColor,
                     activeTextColor: $0.activeTextColor, inactiveTextColor: $0.inactiveTextColor,
                     cornerRadius: $0.cornerRadius
                 )
             },
-            tabUnderline: config.tabUnderline.map {
-                VDSPromotionTabUnderlineToken(
+            tabUnderlineToken: config.tabUnderline.map {
+                TabUnderlineToken(
                     indicatorColor: $0.indicatorColor, activeTextColor: $0.activeTextColor,
                     inactiveTextColor: $0.inactiveTextColor, backgroundColor: $0.backgroundColor
                 )
             },
-            discountBadge: config.discountBadge.map {
-                VDSPromotionDiscountBadgeToken(
+            discountBadgeToken: config.discountBadge.map {
+                DiscountBadgeToken(
                     availableTextColor: $0.availableTextColor, unavailableTextColor: $0.unavailableTextColor,
                     availableBackgroundColor: $0.availableBackgroundColor,
                     unavailableBackgroundColor: $0.unavailableBackgroundColor,

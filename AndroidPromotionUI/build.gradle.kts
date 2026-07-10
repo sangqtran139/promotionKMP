@@ -59,4 +59,8 @@ dependencies {
     implementation(libs.timber)
     // Theme của host truyền vào dạng JSON và được parse ở tầng UI (PromotionThemeJson).
     implementation(libs.gson)
+
+    // `ThemeHex` + `PromotionThemeJson` là Kotlin thuần (không android.graphics) nên chạy được
+    // bằng unit test JVM, không cần Robolectric.
+    testImplementation(libs.junit)
 }

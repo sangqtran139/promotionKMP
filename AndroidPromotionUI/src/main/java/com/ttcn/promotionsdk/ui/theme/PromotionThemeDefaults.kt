@@ -8,7 +8,6 @@ import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
 import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
 
 import android.content.Context
-import android.graphics.Color
 import androidx.annotation.ColorInt
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.utils.enum.PRMCoreButtonType
@@ -73,7 +72,7 @@ internal object PromotionThemeDefaults {
         actionTextColor = context.retrieveColor(R.color.color_EE0033),
     )
 
-    fun defaultConfig(context: Context) = PromotionThemeConfig(
+    fun defaultConfig(context: Context) = PromotionSDKTheme(
         buttonToken = button(context),
         searchBarToken = searchBar(context),
         listItemToken = listItem(context),
@@ -82,13 +81,7 @@ internal object PromotionThemeDefaults {
         discountBadgeToken = discountBadge(context),
     )
 
-    @ColorInt
-    fun colorToHex(@ColorInt color: Int): String =
-        if (Color.alpha(color) != 0xFF) {
-            String.format("#%08X", color)
-        } else {
-            String.format("#%06X", 0xFFFFFF and color)
-        }
+    fun colorToHex(@ColorInt color: Int): String = ThemeHex.format(color)
 
     fun pxToDp(context: Context, px: Float): Float =
         px / context.resources.displayMetrics.density
