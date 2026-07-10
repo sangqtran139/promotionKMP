@@ -43,17 +43,7 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     // ─── Navigation ───────────────────────────────────────────────────────────
 
     private fun openVoucherSelectionScreen() {
-        val endowView = binding.endowView
-        val fragment = ChoosePromotionFragment().apply {
-            initialMyOffers = endowView.myVouchers
-            initialOtherOffers = endowView.otherVouchers
-            preSelectedVoucherIds = endowView.discountDetails
-                .filter { it.valid }
-                .map { it.objectId }
-                .toSet()
-            onApplyVoucher = { details -> endowView.setDiscountDetails(details) }
-        }
-        addFragment(fragment)
+        addFragment(ChoosePromotionFragment.forEndowView(binding.endowView))
     }
 
     // ─── Payment ──────────────────────────────────────────────────────────────

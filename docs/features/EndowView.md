@@ -15,7 +15,12 @@
 - Dùng `ApplyPromotionAdapter` để hiển thị các voucher đã áp dụng.
 - Theme hoá qua `PromotionThemeRegistry` / `DiscountBadgeToken`.
 
-### State — `PRMEndowUiState`
+### State — `PRMEndowUiState` (`internal`)
+
+`internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.
+Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; host lấy chúng gián tiếp
+qua `ChoosePromotionFragment.forEndowView(endowView)`.
+
 | Field | Ý nghĩa |
 |-------|---------|
 | `myVouchers` / `otherVouchers` | `List<EligibleOffer>` đã nạp sẵn (truyền sang Choose Promotion để tránh gọi API lại) |

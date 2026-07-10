@@ -36,8 +36,10 @@ base {
 }
 
 dependencies {
-    // Nghiệp vụ đến từ đây. `api` để host thấy PromotionResult / domain model qua chữ ký public.
-    api(projects.promotionLogic)
+    // Nghiệp vụ đến từ đây. `implementation` chứ không `api`: host chỉ tích hợp AndroidPromotionUI,
+    // nên `com.ttcn.promotionsdk.core.*` phải nằm ngoài compile classpath của host. Mọi model của
+    // lõi được map sang DTO public ở `ui/entry/api` — xem `PromotionSDKApi`.
+    implementation(projects.promotionLogic)
 
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.appcompat)

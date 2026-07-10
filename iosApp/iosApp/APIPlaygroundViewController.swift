@@ -30,7 +30,7 @@ final class APIPlaygroundViewController: UIViewController {
     private let sdk: PromotionSDK
     private var cards: [APICard] = []
     /// Trang voucher "của tôi" cho demo load more — tăng dần mỗi lần bấm getVouchers.
-    private var getVouchersMyPage = 0
+    private var getVouchersPage = 0
     /// Trang nhóm "của tôi" (Eligible) cho demo load more findEligible.
     private var findEligibleMyPage = 0
 
@@ -232,10 +232,10 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callGetVouchers(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        let myPage = getVouchersMyPage
+        let page = getVouchersPage
         sdk.api.getVouchers(
-            myPage: myPage,
-            mySize: 10
+            page: page,
+            size: 10
         ) { [weak self] result in
             guard let self else { return }
             switch result {
@@ -244,16 +244,16 @@ final class APIPlaygroundViewController: UIViewController {
                     vouchers.prefix(5).map { ["id": $0.id, "merchant": $0.merchantName, "title": $0.title] }
                 }
                 let responseJSON = self.formatJSON([
-                    "requestedPage": myPage,
-                    "myVouchers": [
-                        "count": r.myVouchers.count,
-                        "isLastPage": r.myIsLastPage,
-                        "items": mapItems(r.myVouchers)
+                    "requestedPage": page,
+                    "vouchers": [
+                        "count": r.vouchers.count,
+                        "isLastPage": r.isLastPage,
+                        "items": mapItems(r.vouchers)
                     ] as [String: Any]
                 ])
                 self.setResponse(responseJSON, at: cardIndex, isError: false)
                 // Demo load more: lần bấm sau lấy trang kế tiếp; hết thì quay về 0.
-                self.getVouchersMyPage = r.myIsLastPage ? 0 : myPage + 1
+                self.getVouchersPage = r.isLastPage ? 0 : page + 1
             case .failure(let error):
                 self.setResponse(self.formatError(error), at: cardIndex, isError: true)
             }

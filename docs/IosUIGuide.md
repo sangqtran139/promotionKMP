@@ -227,18 +227,28 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 
 Tên cũ là `PromotionSDKUseCases`, gây hiểu lầm: nó **không** chứa nghiệp vụ. Gác cờ, bắt lỗi, chuẩn
 hoá `errorCode` đều nằm trong `PromotionUseCases` của lõi (dùng chung với Android). Lớp này chỉ uỷ
-quyền, rồi đổi model Kotlin sang DTO Swift và `PromotionResult` sang `Result`.
+quyền, rồi đổi model Kotlin sang DTO Swift và `PromotionResult` sang `PromotionApiResult`.
 
-Nó tồn tại **vì mô hình phân phối**, không phải vì khẩu vị:
+Nó tồn tại **vì ranh giới phân phối**, không phải vì khẩu vị. Cả hai nền tảng nay đều có mapper, và
+hai file là song ánh — xem [PublicApi.md](./PublicApi.md):
 
 | | Android | iOS |
 |---|---|---|
-| Artifact | 2 AAR | 1 XCFramework |
-| Khai báo | `api(projects.promotionLogic)` | `@_implementationOnly import PromotionKit` |
-| Host thấy type lõi? | Có | Không |
-| Cần mapper? | Không | **Có** |
+| Khai báo | `implementation(projects.promotionLogic)` | `@_implementationOnly import PromotionKit` |
+| Host thấy type lõi? | Không | Không |
+| Cần mapper? | **Có** | **Có** |
+| Nếu vẫn phơi type lõi | Host: `Unresolved reference` | Host: `Unable to find module dependency: 'PromotionKit'` |
 
-Muốn bỏ mapper thì phải ship kèm `PromotionLogic.xcframework` cho host — tức đổi sang 2 artifact.
+Ràng buộc bên iOS **cứng hơn**: type Kotlin lọt vào chữ ký public bị ghi thẳng vào `.swiftinterface`,
+nên hỏng ngay cả khi host chưa dùng tới nó. Android chỉ hỏng ở đúng chỗ host chạm vào.
+
+Ba file API bên iOS đặt ở `PromotionSDK/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
+`PromotionSDKApi.swift`, `PromotionApiModels.swift`, `PromotionApiResult.swift`.
+
+> **Cạm bẫy đã mất một buổi.** Đổi chữ ký public rồi dựng lại xcframework, app host **vẫn** compile
+> theo chữ ký cũ: Xcode cache module nhị phân ở `SwiftExplicitPrecompiledModules/` và không tự dọn.
+> Compiler báo lỗi kèm `note:` trỏ vào một chữ ký không còn tồn tại trong file interface bên cạnh.
+> `build-xcframework.sh` nay tự xoá cache đó; build tay thì `⇧⌘K`.
 
 ---
 

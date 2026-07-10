@@ -17,7 +17,7 @@ import com.ttcn.promotionsdk.ui.theme.applier.PromotionListItemApplier
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 
-sealed class ChoosePromotionListItem {
+internal sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
     data class VoucherItem(val data: MyVoucherListItem) : ChoosePromotionListItem()
 
@@ -30,7 +30,7 @@ sealed class ChoosePromotionListItem {
     data class SeeMoreMyVoucher(val isExpanded: Boolean) : ChoosePromotionListItem()
 }
 
-class ChoosePromotionMainAdapter(
+internal class ChoosePromotionMainAdapter(
     private val onVoucherClick: (MyVoucherListItem) -> Unit,
     private val onDetailClick: (MyVoucherListItem) -> Unit,
     private val onSeeMoreMyVoucher: () -> Unit,

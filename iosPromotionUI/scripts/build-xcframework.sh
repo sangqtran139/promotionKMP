@@ -58,6 +58,25 @@ xcodebuild -create-xcframework \
   -framework "$BUILD_DIR/dev.xcarchive/Products/Library/Frameworks/$FRAMEWORK" \
   -output "$OUT"
 
+# Xcode dịch sẵn `.swiftinterface` của framework thành module nhị phân rồi cache ở
+# `SwiftExplicitPrecompiledModules/` (explicit module build). Cache đó **không** tự hết hạn khi
+# xcframework được dựng lại: đổi một chữ ký public xong, app host vẫn compile theo chữ ký cũ và
+# báo lỗi trỏ vào file interface đang ghi đúng thứ khác. Đã mất một buổi vì chuyện này:
+#
+#     error: extra arguments at positions #1, #2, #3 in call
+#     note: 'getVouchers(keyword:serviceCode:tab:myPage:mySize:completion:)' declared here
+#
+# Cùng họ với cái bẫy header Kotlin ở đầu file, chỉ lùi thêm một tầng — sang phía app host.
+# Xoá đây cho khỏi phải nhớ ⇧⌘K. Chỉ đụng cache của chính framework này; Xcode dựng lại khi cần.
+DERIVED_DATA="$HOME/Library/Developer/Xcode/DerivedData"
+if [ -d "$DERIVED_DATA" ]; then
+  echo "▶︎ Dọn precompiled module cache của $SCHEME trong DerivedData"
+  find "$DERIVED_DATA" \
+    -type d \
+    -path "*/SwiftExplicitPrecompiledModules" \
+    -exec sh -c 'rm -rf "$1"/'"$SCHEME"'-*.swiftmodule' _ {} \; 2>/dev/null || true
+fi
+
 echo ""
 echo "✅ Xong: $OUT"
 echo ""

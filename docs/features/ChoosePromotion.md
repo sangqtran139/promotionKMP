@@ -34,7 +34,7 @@ vì lọc client chỉ đúng trên trang đầu và sẽ im lặng trả sai k�
 
 ### Action — `ChoosePromotionAction`
 - `LoadInitial` — load lần đầu (cả hai nhóm, `section = null`).
-- `PreloadVouchers(myOffers, otherOffers)` — **nhận data đã load sẵn từ `PRMEndowView`** để tránh gọi API 2 lần; nếu cả hai rỗng thì ViewModel tự gọi API. Mang `List<EligibleOffer>` chứ không phải model UI, vì bộ lọc từ khoá chạy trên `campaignName` của bản gốc.
+- `PreloadVouchers(myOffers, otherOffers)` — **nhận data đã load sẵn từ `PRMEndowView`** để tránh gọi API 2 lần; nếu cả hai rỗng thì ViewModel tự gọi API. Mang `List<EligibleOffer>` chứ không phải model UI, vì bộ lọc từ khoá chạy trên `campaignName` của bản gốc. Cả contract này là `internal` — `EligibleOffer` thuộc lõi.
 - `Refresh` — làm mới.
 - `QueryChanged(keyword)` — gõ mỗi ký tự → debounce 400ms → `search()` (**chưa triển khai**).
 - `Search` — bấm Enter: chạy ngay, bỏ debounce.

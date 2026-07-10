@@ -19,7 +19,7 @@ import com.ttcn.promotionsdk.ui.utils.extension.toHighlightedSpannable
 import com.ttcn.promotionsdk.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.promotionsdk.ui.utils.loadPromotionVoucherLogo
 
-sealed class MyPromotionListItem {
+internal sealed class MyPromotionListItem {
     data class Header(val title: String) : MyPromotionListItem()
 
     data class Endow(
@@ -31,7 +31,7 @@ sealed class MyPromotionListItem {
     data object Loading : MyPromotionListItem()
 }
 
-class MyPromotionAdapter(
+internal class MyPromotionAdapter(
     private val onVoucherClick: (MyVoucherListItem, Int) -> Unit,
     private val onUseClick: (MyVoucherListItem, Int) -> Unit
 ) : ListAdapter<MyPromotionListItem, RecyclerView.ViewHolder>(MyPromotionDiffCallback()) {
@@ -157,7 +157,7 @@ class MyPromotionAdapter(
     }
 }
 
-fun buildPromotionListItems(
+internal fun buildPromotionListItems(
     vouchers: List<MyVoucherListItem>,
     isLoadingMore: Boolean,
     headerTitle: String? = null,
@@ -195,7 +195,7 @@ private fun MyVoucherListItem.buildStableRowKey(index: Int): String {
     ).joinToString(separator = "_")
 }
 
-class MyPromotionDiffCallback : DiffUtil.ItemCallback<MyPromotionListItem>() {
+internal class MyPromotionDiffCallback : DiffUtil.ItemCallback<MyPromotionListItem>() {
     override fun areItemsTheSame(oldItem: MyPromotionListItem, newItem: MyPromotionListItem): Boolean {
         return when {
             oldItem is MyPromotionListItem.Header && newItem is MyPromotionListItem.Header -> {

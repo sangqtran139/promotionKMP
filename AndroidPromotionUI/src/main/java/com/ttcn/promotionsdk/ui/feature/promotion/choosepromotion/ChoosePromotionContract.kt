@@ -5,7 +5,7 @@ import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 
-data class ChoosePromotionUiState(
+internal data class ChoosePromotionUiState(
     val hasLoadedInitial: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -28,7 +28,7 @@ data class ChoosePromotionUiState(
     val otherVouchers: List<MyVoucherListItem> = emptyList(),
 )
 
-sealed interface ChoosePromotionAction {
+internal sealed interface ChoosePromotionAction {
     data object LoadInitial : ChoosePromotionAction
 
     /**
@@ -65,7 +65,7 @@ sealed interface ChoosePromotionAction {
     ) : ChoosePromotionAction
 }
 
-sealed interface ChoosePromotionEffect {
+internal sealed interface ChoosePromotionEffect {
     data class OpenVoucherDetail(val voucherId: String) : ChoosePromotionEffect
     data class ShowError(val errorCode: String) : ChoosePromotionEffect
 

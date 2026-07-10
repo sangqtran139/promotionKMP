@@ -16,6 +16,7 @@ import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
+import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.utils.extension.VerticalSpaceItemDecoration
 
@@ -24,24 +25,23 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentChoosePromotionBinding.inflate(inflater, container, false)
 
-    // ─── Input từ host ────────────────────────────────────────────────────────
+    // ─── Input ────────────────────────────────────────────────────────────────
 
     /**
-     * Data đã load sẵn từ [PRMEndowView] — truyền vào để tránh double API call.
-     * Nếu không truyền (rỗng) thì ViewModel sẽ tự gọi API.
+     * Data đã load sẵn từ [PRMEndowView] — dùng lại để tránh double API call.
+     * Rỗng thì ViewModel tự gọi API.
+     *
+     * `internal`: [EligibleOffer] thuộc `promotionLogic`. Host dựng màn qua [forEndowView].
      */
-    var initialMyOffers: List<EligibleOffer> = emptyList()
-    var initialOtherOffers: List<EligibleOffer> = emptyList()
+    internal var initialMyOffers: List<EligibleOffer> = emptyList()
+    internal var initialOtherOffers: List<EligibleOffer> = emptyList()
+
+    /** objectId của các voucher cần pre-select (valid=true từ discountDetails trước đó). */
+    internal var preSelectedVoucherIds: Set<String> = emptySet()
 
     /**
-     * Set objectId của các voucher cần pre-select (valid=true từ discountDetails trước đó).
-     * Host truyền vào: endowView.discountDetails.filter { it.valid }.map { it.objectId }.toSet()
-     */
-    var preSelectedVoucherIds: Set<String> = emptySet()
-
-    /**
-     * Callback trả về [AppliedDiscount] từ validateStackableDiscounts mới cho host.
-     * Host nhận → gọi [PRMEndowView.setDiscountDetails].
+     * Callback trả về [AppliedDiscount] từ validateStackableDiscounts mới.
+     * [forEndowView] tự nối vào [PRMEndowView.setDiscountDetails]; host chỉ set nếu cần làm thêm.
      */
     var onApplyVoucher: ((List<AppliedDiscount>) -> Unit)? = null
 
@@ -258,5 +258,32 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     companion object {
         private const val COLLAPSED_COUNT = 2
+
+        /**
+         * Dựng màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
+         *
+         * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang
+         * áp, và đẩy kết quả ngược về widget khi user bấm "Áp dụng".
+         *
+         * ```kotlin
+         * binding.endowView.onOpenVoucherSelection = {
+         *     addFragment(ChoosePromotionFragment.forEndowView(binding.endowView))
+         * }
+         * ```
+         *
+         * Host muốn làm thêm việc gì đó lúc áp thì ghi đè [onApplyVoucher] — nhớ tự gọi
+         * `endowView.setDiscountDetails(...)`, vì set lại sẽ thay callback mặc định.
+         */
+        @JvmStatic
+        fun forEndowView(endowView: PRMEndowView): ChoosePromotionFragment =
+            ChoosePromotionFragment().apply {
+                initialMyOffers = endowView.myVouchers
+                initialOtherOffers = endowView.otherVouchers
+                preSelectedVoucherIds = endowView.discountDetails
+                    .filter { it.valid }
+                    .map { it.objectId }
+                    .toSet()
+                onApplyVoucher = { details -> endowView.setDiscountDetails(details) }
+            }
     }
 }

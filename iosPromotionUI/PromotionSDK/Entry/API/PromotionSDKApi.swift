@@ -16,7 +16,11 @@ import Foundation
 /// (Tên cũ `PromotionSDKUseCases` gây hiểu lầm đúng ở điểm đó.)
 ///
 /// Việc nó làm, và chỉ một việc: đổi model Kotlin sang DTO Swift (`PromotionVoucher`,
-/// `PromotionEligibleOffer`, …), và đổi `PromotionResult` sang `Result` cho quen tay Swift.
+/// `PromotionEligibleOffer`, …), và đổi `PromotionResult` sang `PromotionApiResult`.
+///
+/// **Song ánh với `PromotionSDKApi.kt` bên Android**: cùng 5 hàm, cùng tên tham số, cùng DTO, cùng
+/// thứ tự khai báo, cùng cách xử lý `NO_RESULT`. Khác duy nhất ở kiểu bất đồng bộ — Swift dùng
+/// closure, Kotlin dùng `suspend`. Sửa một bên thì sửa cả hai.
 ///
 /// **Vì sao bắt buộc phải map, không trả thẳng model Kotlin?**
 /// iOS ship **một** xcframework: Kotlin được link tĩnh và giấu sau `@_implementationOnly import`.
@@ -25,9 +29,9 @@ import Foundation
 ///
 ///     error: Unable to find module dependency: 'PromotionKit'
 ///
-/// Android không gặp chuyện này vì nó ship **hai** AAR và khai `api(projects.promotionLogic)`,
-/// nên host thấy thẳng type lõi và không cần mapper. Muốn iOS bỏ mapper thì phải ship kèm
-/// `PromotionLogic.xcframework` — tức đổi mô hình phân phối.
+/// Android chịu ràng buộc tương đương nhưng nhẹ hơn: nó khai `implementation(projects.promotionLogic)`
+/// nên `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host, và type lõi lọt vào chữ
+/// ký public sẽ khiến host không resolve được.
 public final class PromotionSDKApi {
 
     // MARK: - Private
@@ -46,112 +50,21 @@ public final class PromotionSDKApi {
         self.useCases = useCases
     }
 
-    // MARK: - PromotionResult → Result
-
-    /// `PromotionUseCases` không ném lỗi nghiệp vụ: nó trả `PromotionResult.Failure` kèm `errorCode`.
-    /// Chỉ `CancellationException` mới thoát ra thành `Error` của Swift.
-    ///
-    /// - Parameter onEmpty: xử lý `NO_RESULT` (server trả `data: null`). Danh sách coi là rỗng và
-    ///   vẫn thành công; còn chi tiết / validate / redemption thì đó là `.parseFailed`.
-    ///   Giữ đúng hành vi trước khi lớp này chuyển sang gọi lõi.
-    private func handle<Model, Out>(
-        _ completion: @escaping (Result<Out, PromotionSDKError>) -> Void,
-        onEmpty: @escaping () -> Result<Out, PromotionSDKError> = { .failure(.parseFailed) },
-        map: @escaping (Model) -> Out,
-        call: @escaping () async throws -> any PromotionResult
-    ) {
-        Task { @MainActor in
-            do {
-                let result = try await call()
-                if let failure = result as? PromotionResultFailure {
-                    if failure.errorCode == PromotionErrorCodes.shared.NO_RESULT {
-                        completion(onEmpty())
-                    } else {
-                        completion(.failure(Self.mapFailure(failure)))
-                    }
-                } else if let success = result as? PromotionResultSuccess<AnyObject> {
-                    guard let model = success.data as? Model else {
-                        completion(.failure(.parseFailed))
-                        return
-                    }
-                    completion(.success(map(model)))
-                } else {
-                    // Không phải Success cũng không phải Failure: giả định về cầu nối Kotlin↔Swift
-                    // đã sai (vd `PromotionResult` thêm biến thể mới). Đây **không** phải lỗi dữ
-                    // liệu — đừng để nó giả dạng `.parseFailed`, sẽ đi tìm bug ở nhầm chỗ.
-                    completion(.failure(.unknown(Self.bridgeMismatch(result))))
-                }
-            } catch {
-                completion(.failure(.unknown(error)))
-            }
-        }
-    }
-
-    private static func bridgeMismatch(_ result: any PromotionResult) -> NSError {
-        NSError(
-            domain: "PromotionSDK",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey:
-                "PromotionResult không rõ biến thể: \(type(of: result)). Kiểm tra PromotionSDKApi.handle."]
-        )
-    }
-
-    private static func mapFailure(_ failure: PromotionResultFailure) -> PromotionSDKError {
-        let codes = PromotionErrorCodes.shared
-        switch failure.errorCode {
-        case codes.FEATURE_DISABLED:
-            return .featureDisabled
-        case codes.TIMEOUT:
-            return .timeout
-        case codes.NETWORK_ERROR:
-            return .networkFailure(code: nil, message: failure.message ?? "")
-        default:
-            // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) đi kèm httpStatus nếu có.
-            return .networkFailure(code: failure.httpStatus?.intValue, message: failure.message ?? "")
-        }
-    }
-
-    // MARK: - Mapping sang DTO public
-
-    private static func toVoucher(_ p: VoucherItem) -> PromotionVoucher {
-        PromotionVoucher(
-            id: p.voucherId,
-            merchantName: p.merchantName ?? "",
-            title: p.title ?? "",           // tên ưu đãi
-            imageURL: p.logo,
-            expireDate: PromotionDate.parse(p.expirationDate),
-            isUsed: p.displayState() == .used,
-            status: p.status,
-            displayStatusLabel: p.displayStatusLabel
-        )
-    }
-
-    private static func toOffer(_ p: EligibleOffer) -> PromotionEligibleOffer {
-        PromotionEligibleOffer(
-            id: p.id,
-            name: p.campaignName ?? "",
-            objectType: p.objectType,
-            usable: p.usable,
-            estimatedDiscount: p.estimatedDiscount,
-            expireDate: PromotionDate.parse(p.expireDate),
-            // Lõi không dựng sẵn câu tiếng Việt — trả rule thô cho host tự hiển thị.
-            ineligibleReason: p.usable ? nil : p.unmatchedRules.first
-        )
-    }
-
     // MARK: - Public API
 
     /// Lấy voucher **của khách** (Search Customer Vouchers) — chỉ voucher đã sở hữu.
     /// Để lấy "Ưu đãi khác" (campaign chưa sở hữu, đủ điều kiện cho đơn) dùng `findEligible(...)`.
-    /// - Tăng `myPage` để load thêm. Lọc tuỳ chọn: `keyword`, `serviceCode`, `tab` ("all"/"expiring_soon").
-    /// - Cờ `VOUCHER_LIST` TẮT → trả `.featureDisabled`.
+    ///
+    /// Tăng `page` để load thêm. Cờ `VOUCHER_LIST` TẮT → `.featureDisabled`.
+    ///
+    /// - Parameter tab: "all" hoặc "expiring_soon".
     public func getVouchers(
         keyword: String? = nil,
         serviceCode: String? = nil,
         tab: String? = nil,
-        myPage: Int = 0,
-        mySize: Int = 10,
-        completion: @escaping (Result<PromotionVoucherPage, PromotionSDKError>) -> Void
+        page: Int = 0,
+        size: Int = 10,
+        completion: @escaping (PromotionApiResult<PromotionVoucherPage>) -> Void
     ) {
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
         let request = SearchCustomerVouchersRequest(
@@ -159,17 +72,17 @@ public final class PromotionSDKApi {
             keyword: keyword,
             serviceCode: serviceCode,
             tab: tab ?? "all",
-            page: boxed(myPage),
-            size: boxed(mySize)
+            page: boxed(page),
+            size: boxed(size)
         )
         let useCases = self.useCases
         handle(
             completion,
-            onEmpty: { .success(PromotionVoucherPage(myVouchers: [], myIsLastPage: true)) },
+            onEmpty: { .success(PromotionVoucherPage(vouchers: [], isLastPage: true)) },
             map: { (model: SearchCustomerVouchersResult) in
                 PromotionVoucherPage(
-                    myVouchers: model.content.map(Self.toVoucher),
-                    myIsLastPage: model.last?.boolValue ?? true
+                    vouchers: model.content.map(Self.toVoucher),
+                    isLastPage: model.last?.boolValue ?? true
                 )
             },
             call: { try await useCases.searchVouchers(request: request) }
@@ -177,10 +90,12 @@ public final class PromotionSDKApi {
     }
 
     /// Tìm ưu đãi đủ điều kiện cho đơn (Find Eligible Campaigns) — luồng "Chọn ưu đãi" khi checkout.
-    /// Trả 2 nhóm "của tôi" (voucher đã sở hữu) + "khác" (campaign công khai chưa sở hữu), phân trang ĐỘC LẬP.
-    /// - `items`: dòng đơn hàng — bắt buộc để lấy campaign theo SKU (rỗng → chỉ campaign cấp đơn).
-    /// - Tăng `myPage`/`otherPage` để load thêm từng nhóm.
-    /// - Cờ `VOUCHER_SELECTION` TẮT → trả `.featureDisabled`.
+    /// Trả 2 nhóm: "của tôi" (voucher đã sở hữu) và "khác" (campaign công khai chưa sở hữu), phân
+    /// trang ĐỘC LẬP — tăng `myPage` / `otherPage` để load thêm từng nhóm.
+    ///
+    /// Cờ `VOUCHER_SELECTION` TẮT → `.featureDisabled`.
+    ///
+    /// - Parameter items: dòng đơn hàng — bắt buộc để lấy campaign theo SKU (rỗng → chỉ campaign cấp đơn).
     public func findEligible(
         orderId: String,
         orderValue: String,
@@ -190,7 +105,7 @@ public final class PromotionSDKApi {
         mySize: Int = 10,
         otherPage: Int = 0,
         otherSize: Int = 10,
-        completion: @escaping (Result<PromotionEligibleResult, PromotionSDKError>) -> Void
+        completion: @escaping (PromotionApiResult<PromotionEligibleResult>) -> Void
     ) {
         let orderItems = items.map {
             EligibleOrderItem(
@@ -236,46 +151,33 @@ public final class PromotionSDKApi {
     }
 
     /// Lấy chi tiết 1 voucher của khách (Get Customer Voucher Detail).
-    /// - `serviceCode`: tuỳ chọn — lọc thông tin theo dịch vụ đang thanh toán.
-    /// - Cờ `VOUCHER_DETAIL` TẮT → trả `.featureDisabled`.
+    /// Cờ `VOUCHER_DETAIL` TẮT → `.featureDisabled`.
+    ///
+    /// - Parameter serviceCode: lọc thông tin theo dịch vụ đang thanh toán.
     public func getVoucherDetail(
         voucherId: String,
         serviceCode: String? = nil,
-        completion: @escaping (Result<PromotionVoucherDetail, PromotionSDKError>) -> Void
+        completion: @escaping (PromotionApiResult<PromotionVoucherDetail>) -> Void
     ) {
         let useCases = self.useCases
         let customerId = self.customerId
         handle(
             completion,
-            map: { (model: VoucherDetail) in
-                PromotionVoucherDetail(
-                    id: model.voucherId,
-                    merchantName: model.merchantName ?? "",
-                    title: model.title ?? "",
-                    descriptionText: model.description_ ?? "",
-                    guideline: model.guideline ?? "",
-                    startDate: PromotionDate.parse(model.startDate),
-                    expireDate: PromotionDate.parse(model.expirationDate),
-                    bannerURL: model.banner,
-                    logoURL: model.logo,
-                    status: model.status ?? "",
-                    displayStatusLabel: model.displayStatusLabel
-                )
-            },
+            map: Self.toVoucherDetail,
             call: {
                 try await useCases.getVoucherDetail(voucherId: voucherId, customerId: customerId, service: serviceCode)
             }
         )
     }
 
-    /// Validate a set of voucher IDs against an order before applying.
-    /// - Cờ `VOUCHER_APPLY` TẮT → trả `.featureDisabled`.
+    /// Validate một tập voucher với đơn hàng trước khi áp.
+    /// Cờ `VOUCHER_APPLY` TẮT → `.featureDisabled`.
     public func validateDiscounts(
         orderId: String,
         orderValue: String,
         voucherIds: [String],
         objectType: String = "CAMPAIGN",
-        completion: @escaping (Result<PromotionValidationResult, PromotionSDKError>) -> Void
+        completion: @escaping (PromotionApiResult<PromotionValidationResult>) -> Void
     ) {
         let items = voucherIds.map { DiscountItemRequest(objectId: $0, objectType: objectType) }
         let request = ValidateDiscountsRequest(
@@ -306,14 +208,14 @@ public final class PromotionSDKApi {
         )
     }
 
-    /// Create a redemption session to confirm payment with selected vouchers.
-    /// - Cờ `VOUCHER_REDEEM` TẮT → trả `.featureDisabled`.
+    /// Tạo redemption session để xác nhận thanh toán với voucher đã chọn.
+    /// Cờ `VOUCHER_REDEEM` TẮT → `.featureDisabled`.
     public func createRedemption(
         orderId: String,
         orderValue: String,
         voucherIds: [String],
         objectType: String = "CAMPAIGN",
-        completion: @escaping (Result<PromotionRedemptionResult, PromotionSDKError>) -> Void
+        completion: @escaping (PromotionApiResult<PromotionRedemptionResult>) -> Void
     ) {
         let items = voucherIds.map {
             RedemptionItemRequest(objectId: $0, objectType: objectType, expectedDiscount: nil)
@@ -338,6 +240,117 @@ public final class PromotionSDKApi {
                 )
             },
             call: { try await useCases.createRedemption(request: request) }
+        )
+    }
+
+    // MARK: - PromotionResult → PromotionApiResult
+
+    /// `PromotionUseCases` không ném lỗi nghiệp vụ: nó trả `PromotionResult.Failure` kèm `errorCode`.
+    /// Chỉ `CancellationException` mới thoát ra thành `Error` của Swift.
+    ///
+    /// - Parameter onEmpty: xử lý `NO_RESULT` (server trả `data: null`). Danh sách coi là rỗng và
+    ///   vẫn thành công; còn chi tiết / validate / redemption thì đó là `.parseFailed`.
+    ///   Giữ đúng hành vi của `PromotionSDKApi.kt`.
+    private func handle<Model, Out>(
+        _ completion: @escaping (PromotionApiResult<Out>) -> Void,
+        onEmpty: @escaping () -> PromotionApiResult<Out> = { .failure(.parseFailed) },
+        map: @escaping (Model) -> Out,
+        call: @escaping () async throws -> any PromotionResult
+    ) {
+        Task { @MainActor in
+            do {
+                let result = try await call()
+                if let failure = result as? PromotionResultFailure {
+                    if failure.errorCode == PromotionErrorCodes.shared.NO_RESULT {
+                        completion(onEmpty())
+                    } else {
+                        completion(.failure(Self.toSdkError(failure)))
+                    }
+                } else if let success = result as? PromotionResultSuccess<AnyObject> {
+                    guard let model = success.data as? Model else {
+                        completion(.failure(.parseFailed))
+                        return
+                    }
+                    completion(.success(map(model)))
+                } else {
+                    // Không phải Success cũng không phải Failure: giả định về cầu nối Kotlin↔Swift
+                    // đã sai (vd `PromotionResult` thêm biến thể mới). Đây **không** phải lỗi dữ
+                    // liệu — đừng để nó giả dạng `.parseFailed`, sẽ đi tìm bug ở nhầm chỗ.
+                    completion(.failure(.unknown(Self.bridgeMismatch(result))))
+                }
+            } catch {
+                completion(.failure(.unknown(error)))
+            }
+        }
+    }
+
+    private static func toSdkError(_ failure: PromotionResultFailure) -> PromotionSDKError {
+        let codes = PromotionErrorCodes.shared
+        switch failure.errorCode {
+        case codes.FEATURE_DISABLED:
+            return .featureDisabled
+        case codes.TIMEOUT:
+            return .timeout
+        case codes.NO_RESULT:
+            return .parseFailed
+        case codes.NETWORK_ERROR:
+            return .networkFailure(code: nil, message: failure.message ?? "")
+        default:
+            // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) đi kèm httpStatus nếu có.
+            return .networkFailure(code: failure.httpStatus?.intValue, message: failure.message ?? "")
+        }
+    }
+
+    private static func bridgeMismatch(_ result: any PromotionResult) -> NSError {
+        NSError(
+            domain: "PromotionSDK",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey:
+                "PromotionResult không rõ biến thể: \(type(of: result)). Kiểm tra PromotionSDKApi.handle."]
+        )
+    }
+
+    // MARK: - Lõi → DTO public
+
+    private static func toVoucher(_ model: VoucherItem) -> PromotionVoucher {
+        PromotionVoucher(
+            id: model.voucherId,
+            merchantName: model.merchantName ?? "",
+            title: model.title ?? "",           // tên ưu đãi
+            imageURL: model.logo,
+            expireDate: model.expirationDate,
+            isUsed: model.displayState() == .used,
+            status: model.status,
+            displayStatusLabel: model.displayStatusLabel
+        )
+    }
+
+    private static func toVoucherDetail(_ model: VoucherDetail) -> PromotionVoucherDetail {
+        PromotionVoucherDetail(
+            id: model.voucherId,
+            merchantName: model.merchantName ?? "",
+            title: model.title ?? "",
+            description: model.description_ ?? "",
+            guideline: model.guideline ?? "",
+            startDate: model.startDate,
+            expireDate: model.expirationDate,
+            bannerURL: model.banner,
+            logoURL: model.logo,
+            status: model.status ?? "",
+            displayStatusLabel: model.displayStatusLabel
+        )
+    }
+
+    private static func toOffer(_ model: EligibleOffer) -> PromotionEligibleOffer {
+        PromotionEligibleOffer(
+            id: model.id,
+            name: model.campaignName ?? "",
+            objectType: model.objectType,
+            usable: model.usable,
+            estimatedDiscount: model.estimatedDiscount,
+            expireDate: model.expireDate,
+            // Lõi không dựng sẵn câu tiếng Việt — trả rule thô cho host tự hiển thị.
+            ineligibleReason: model.usable ? nil : model.unmatchedRules.first
         )
     }
 }

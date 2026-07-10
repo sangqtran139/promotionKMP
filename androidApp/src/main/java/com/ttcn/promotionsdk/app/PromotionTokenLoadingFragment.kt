@@ -8,10 +8,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentTokenLoadingBinding
-import com.ttcn.promotionsdk.core.config.AvailableService
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.ui.entry.PromotionAvailableService
+import com.ttcn.promotionsdk.ui.entry.PromotionConfig
+import com.ttcn.promotionsdk.ui.entry.PromotionContextProvider
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
 import kotlinx.coroutines.delay
@@ -62,14 +61,14 @@ class PromotionTokenLoadingFragment : Fragment() {
     }
 
     private fun initSdk(token: String) {
-        if (PromotionContainer.isInitialized()) PromotionSDK.release()
+        if (PromotionSDK.isInitialized()) PromotionSDK.release()
         PromotionSDK.init(
             requireContext(),
             PromotionSDKOptions(
-                config = PromotionSDKConfig(
+                config = PromotionConfig(
                     apiKey = "demo",
                     baseUrl = "https://staging1.viettelmoney.vn",
-                    requestContextProvider = object : PromotionRequestContextProvider {
+                    contextProvider = object : PromotionContextProvider {
                         override fun getCustomerId(): String = "CUST-001"
                         override fun getService(): String? = null
                         override fun getAccessToken(): String = token
@@ -78,19 +77,19 @@ class PromotionTokenLoadingFragment : Fragment() {
                         override fun getOrderValue(): String? = "123"
                     },
                     availableServices = listOf(
-                        AvailableService(
+                        PromotionAvailableService(
                             serviceCode = "P-FOOD-001",
                             serviceName = "Mua đồ ăn 1",
                             serviceType = "SKU-FOOD-001",
                             iconUrl = "https://cdn.promix.test/products/food-001.png"
                         ),
-                        AvailableService(
+                        PromotionAvailableService(
                             serviceCode = "P-FOOD-002",
                             serviceName = "Mua đồ ăn 1",
                             serviceType = "SKU-FOOD-002",
                             iconUrl = "https://cdn.promix.test/products/food-002.png"
                         ),
-                        AvailableService(
+                        PromotionAvailableService(
                             serviceCode = "P-ALC-001",
                             serviceName = "Mua rượu",
                             serviceType = "SKU-ALCOHOL-001",

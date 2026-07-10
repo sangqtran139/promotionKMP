@@ -1,7 +1,13 @@
-# HeadlessAPI — Public API của `:promotionLogic`
+# HeadlessAPI — API của `:promotionLogic`
 
-Bề mặt API không-UI của SDK. Cả `promotionUI` (Android/iOS) lẫn app host tự dựng giao diện đều gọi
-qua đây. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném exception ra ngoài**.
+Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném exception ra ngoài**.
+
+> **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionUI` và `PromotionSDKUI` gọi vào đây.
+> Host không với tới được `com.ttcn.promotionsdk.core.*`: Android khai
+> `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PromotionKit`.
+>
+> Thứ host gọi là `PromotionSDK.api` (`PromotionSDKApi`), nó uỷ quyền xuống đây rồi map sang DTO.
+> Xem [PublicApi.md](./PublicApi.md).
 
 ---
 
@@ -10,6 +16,7 @@ qua đây. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném ex
 ```kotlin
 // Android — BẮT BUỘC dùng overload có Context.
 // Nó nạp applicationContext cho SharedPreferences và suy ra isDebug từ FLAG_DEBUGGABLE.
+// Host không gọi trực tiếp: PromotionSDK.init(context, options) làm việc này.
 PromotionContainer.init(context, PromotionSDKConfig(apiKey = "...", baseUrl = "..."))
 
 // Common / iOS

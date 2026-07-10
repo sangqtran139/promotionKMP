@@ -38,7 +38,7 @@ promotionLogic/src/
 ├── commonMain/kotlin/com/ttcn/promotionsdk/core/
 │   ├── config/                  # PromotionSDKConfig, PromotionRequestContextProvider
 │   ├── di/                      # Custom DI
-│   │   ├── PromotionContainer.kt     # PUBLIC entry: init / clear / useCases / featureFlags
+│   │   ├── PromotionContainer.kt     # init / clear / requireConfig — nội bộ SDK, host KHÔNG thấy
 │   │   ├── NetworkModule.kt          # HttpClient, ApiService, RemoteDataSource
 │   │   ├── LocalModule.kt            # KeyValueStorage, FeatureFlagLocalDataSource
 │   │   ├── RepositoryModule.kt
@@ -114,7 +114,11 @@ promotionLogic/src/
 - `core/di/internal/` — cơ chế DI lõi. Sửa thì phải cập nhật `DependencyInjection.md`.
 - `core/util/SdkLock.kt` — đổi sang khoá không reentrant sẽ deadlock lúc init.
 - `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
-  — **public API**; thay đổi = breaking cho host app.
+  — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
+  UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
+- `ui/entry/` và `ui/entry/api/` của `AndroidPromotionUI` — **public API thật sự**; thay đổi =
+  breaking cho host app, và phải sửa đối ứng bên `PromotionSDK/Entry/API/` của iOS.
+  Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
 - `sharedLogic/`, `sharedUI/` — scaffold template, không phải nơi đặt logic Promotion.
 

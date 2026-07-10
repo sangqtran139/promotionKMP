@@ -101,7 +101,7 @@ internal class PromotionDetailViewModel(
     }
 }
 
-data class VoucherActionUiState(
+internal data class VoucherActionUiState(
     val visible: Boolean,
     val enabled: Boolean,
     val label: String,

@@ -83,7 +83,8 @@ Xem [IosUIGuide.md](./IosUIGuide.md).
 | [AI_AGENT_RULES.md](./AI_AGENT_RULES.md) | **Quy tắc bắt buộc** cho AI agent khi làm việc trên repo. |
 | [Architecture.md](./Architecture.md) | Kiến trúc tổng thể: lõi chung + hai UI native, luồng dữ liệu. |
 | [ProjectStructure.md](./ProjectStructure.md) | Cấu trúc thư mục, vai trò từng package, đặt file mới ở đâu. |
-| [HeadlessAPI.md](./HeadlessAPI.md) | Public API: 5 use case nghiệp vụ + feature flag. |
+| [PublicApi.md](./PublicApi.md) | **Bề mặt SDK cho app host**: `PromotionSDK`, `PromotionSDKApi`, DTO — song ánh Android ↔ iOS. |
+| [HeadlessAPI.md](./HeadlessAPI.md) | API của lõi `:promotionLogic`: 5 use case nghiệp vụ + feature flag. Host **không** gọi vào đây. |
 | [NetworkingGuide.md](./NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
 | [DependencyInjection.md](./DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
 | [StorageGuide.md](./StorageGuide.md) | `KeyValueStorage`, cache feature flag. Vì sao không có DB. |
@@ -103,9 +104,10 @@ Xem [IosUIGuide.md](./IosUIGuide.md).
 1. **AI_AGENT_RULES.md** — luật chơi.
 2. **Architecture.md** — bức tranh lớn.
 3. **ProjectStructure.md** — biết file nằm ở đâu.
-4. **HeadlessAPI.md** — bề mặt API mà cả hai UI đều gọi.
-5. Guide chuyên đề (Networking, DI, Storage, AndroidUI, IosUI) theo nhu cầu task.
-6. **CodingStandards.md** + **ErrorHandling.md** — trước khi commit.
+4. **PublicApi.md** — thứ đối tác nhìn thấy. Đọc trước khi đổi bất cứ gì `public`.
+5. **HeadlessAPI.md** — bề mặt lõi mà cả hai UI đều gọi.
+6. Guide chuyên đề (Networking, DI, Storage, AndroidUI, IosUI) theo nhu cầu task.
+7. **CodingStandards.md** + **ErrorHandling.md** — trước khi commit.
 
 ---
 

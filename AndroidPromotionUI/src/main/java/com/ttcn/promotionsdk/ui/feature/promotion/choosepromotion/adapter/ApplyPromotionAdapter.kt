@@ -21,7 +21,7 @@ import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
  * - [AppliedDiscount.valid] = true  → hiển thị bình thường
  * - [AppliedDiscount.valid] = false → hiển thị mờ/disabled
  */
-class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val items = mutableListOf<AppliedDiscount>()
     private val maxVisibleVouchers = 2

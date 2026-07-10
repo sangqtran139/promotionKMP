@@ -2,10 +2,12 @@
 package com.ttcn.promotionsdk.ui.entry.api
 
 /**
- * DTO công khai của [PromotionSDKApi]. Đối ứng 1-1 với `PromotionSDKResults.swift` bên iOS.
+ * DTO công khai của [PromotionSDKApi]. Đối ứng 1-1 với `PromotionApiModels.swift` bên iOS:
+ * cùng tên type, cùng tên field, cùng thứ tự khai báo. Sửa một bên thì sửa cả hai.
  *
- * Ngày tháng giữ nguyên **chuỗi thô của server** (iOS parse sang `Date` cho hợp tay Swift).
- * Cố ý: parse ở đây sẽ thêm một điểm hỏng mới, trong khi tầng UI của SDK cũng đang dùng chuỗi thô.
+ * Ngày tháng giữ nguyên **chuỗi thô của server** ở cả hai nền tảng. Parse ở tầng này thì hỏng định
+ * dạng sẽ trả `null`, và host không phân biệt được "voucher vô thời hạn" với "server trả định dạng
+ * lạ". Định dạng ngày là việc của tầng hiển thị.
  */
 
 /** 1 voucher trong danh sách trả cho đối tác. */
@@ -14,7 +16,7 @@ data class PromotionVoucher(
     val merchantName: String,
     /** Tên ưu đãi. */
     val title: String,
-    val imageUrl: String?,
+    val imageURL: String?,
     val expireDate: String?,
     val isUsed: Boolean,
     /** Mã trạng thái thô từ server (ACTIVE/USED/EXPIRED...). */
@@ -44,8 +46,8 @@ data class PromotionVoucherDetail(
     val guideline: String,
     val startDate: String?,
     val expireDate: String?,
-    val bannerUrl: String?,
-    val logoUrl: String?,
+    val bannerURL: String?,
+    val logoURL: String?,
     val status: String,
     val displayStatusLabel: String?,
 )
@@ -82,15 +84,15 @@ data class PromotionEligibleResult(
 data class PromotionOrderItem(
     /** Mã SKU sản phẩm (bắt buộc). */
     val skuId: String,
-    /** Số lượng (> 0). */
-    val quantity: Int,
-    /** Đơn giá — chuỗi số nguyên (VNĐ), vd "500000". */
-    val unitPrice: String,
     val productId: String? = null,
     /** Tên sản phẩm — cho rule theo tên / hiển thị. */
     val productName: String? = null,
     /** Ngành hàng / danh mục — cho rule theo category. */
     val productCategory: String? = null,
+    /** Số lượng (> 0). */
+    val quantity: Int,
+    /** Đơn giá — chuỗi số nguyên (VNĐ), vd "500000". */
+    val unitPrice: String,
 )
 
 /** Kết quả validate một tập voucher với đơn hàng, trước khi áp. */

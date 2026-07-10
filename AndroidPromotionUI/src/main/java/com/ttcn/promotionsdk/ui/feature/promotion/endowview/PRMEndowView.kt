@@ -10,6 +10,8 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.ui.entry.api.PromotionVoucher
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import androidx.core.view.isVisible
@@ -48,13 +50,17 @@ class PRMEndowView @JvmOverloads constructor(
     private var lastAppliedToken: DiscountBadgeToken? = null
     private var viewScope: CoroutineScope? = null
 
-    // ─── Public read-only accessors (delegate to ViewModel state) ─────────────
+    // ─── Read-only accessors (delegate to ViewModel state) ────────────────────
 
-    /** Truyền vào `ChoosePromotionFragment.initialMyOffers` để màn đó khỏi gọi lại `findEligible`. */
-    val myVouchers: List<EligibleOffer>
+    /**
+     * Ưu đãi đã load sẵn, dùng lại cho màn "Chọn ưu đãi" để khỏi gọi `findEligible` hai lần.
+     * `internal`: [EligibleOffer] thuộc `promotionLogic`, không được lọt ra API public.
+     * Host lấy qua [ChoosePromotionFragment.forEndowView].
+     */
+    internal val myVouchers: List<EligibleOffer>
         get() = viewModel?.uiState?.value?.myVouchers ?: emptyList()
 
-    val otherVouchers: List<EligibleOffer>
+    internal val otherVouchers: List<EligibleOffer>
         get() = viewModel?.uiState?.value?.otherVouchers ?: emptyList()
 
     val discountDetails: List<AppliedDiscount>
@@ -63,7 +69,9 @@ class PRMEndowView @JvmOverloads constructor(
     // ─── Public callbacks ─────────────────────────────────────────────────────
 
     var onOpenVoucherSelection: (() -> Unit)? = null
-    var onVoucherItemClick: ((MyVoucherListItem) -> Unit)? = null
+
+    /** Voucher user bấm vào trong widget. Trả DTO public — [MyVoucherListItem] là model nội bộ. */
+    var onVoucherItemClick: ((PromotionVoucher) -> Unit)? = null
     var onError: ((errorCode: String) -> Unit)? = null
 
     // ─── Init ─────────────────────────────────────────────────────────────────

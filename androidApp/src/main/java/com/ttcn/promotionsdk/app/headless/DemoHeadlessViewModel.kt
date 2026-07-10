@@ -2,31 +2,28 @@ package com.ttcn.promotionsdk.app.headless
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.PromotionResult
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.api.PromotionApiResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+/**
+ * Chế độ headless: đối tác tự dựng UI, chỉ gọi [PromotionSDK.api].
+ *
+ * Không một import nào từ `promotionLogic` — đó là mục đích của lớp wrapper `PromotionSDKApi`:
+ * host chỉ tích hợp AndroidPromotionUI, lõi nằm ngoài compile classpath.
+ */
 class DemoHeadlessViewModel : ViewModel() {
 
-    // ─── Lấy use cases từ SDK — đây là tất cả những gì partner cần ───────────
-    private val useCases = PromotionSDK.useCases
+    private val api = PromotionSDK.api
 
-    // ─── Đọc context được init vào SDK ───────────────────────────────────────
-    private val ctx get() = PromotionContainer.requestContextProvider
-    private val customerId get() = ctx.getCustomerId().orEmpty()
-    private val orderId get() = ctx.getOrderId().orEmpty()
-    private val orderValue get() = ctx.getOrderValue().orEmpty()
+    // ─── Đọc context host đã truyền vào SDK ──────────────────────────────────
+    private val ctx get() = PromotionSDK.requestContext
+    private val orderId get() = ctx?.getOrderId().orEmpty()
+    private val orderValue get() = ctx?.getOrderValue().orEmpty()
 
     // ─── State ────────────────────────────────────────────────────────────────
     private val _isLoading = MutableStateFlow(false)
@@ -37,139 +34,123 @@ class DemoHeadlessViewModel : ViewModel() {
 
     // Giữ voucherId lấy từ search để các bước sau dùng
     private var firstVoucherId: String? = null
-    private var validatedItems: List<Pair<String, String>> = emptyList() // objectId, objectType
+    private var validatedVoucherIds: List<String> = emptyList()
 
     init {
         viewModelScope.launch {
             emit("── SDK context ──────────────────────")
-            emit("   customerId : ${ctx.getCustomerId() ?: "(null)"}")
-            emit("   orderId    : ${ctx.getOrderId() ?: "(null)"}")
-            emit("   orderValue : ${ctx.getOrderValue() ?: "(null)"}")
-            emit("   service    : ${ctx.getService() ?: "(null)"}")
-            emit("   language   : ${ctx.getLanguage() ?: "(null)"}")
+            emit("   customerId : ${ctx?.getCustomerId() ?: "(null)"}")
+            emit("   orderId    : ${ctx?.getOrderId() ?: "(null)"}")
+            emit("   orderValue : ${ctx?.getOrderValue() ?: "(null)"}")
+            emit("   service    : ${ctx?.getService() ?: "(null)"}")
+            emit("   language   : ${ctx?.getLanguage() ?: "(null)"}")
             emit("─────────────────────────────────────")
         }
     }
 
     // ─── Step 1: Search vouchers ──────────────────────────────────────────────
     fun searchVouchers() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            val result = useCases.searchVouchers(
-                SearchCustomerVouchersRequest(
-                    customerId = customerId,
-                    serviceCode = null,
-                    keyword = null,
-                    tab = null,
-                    page = 0,
-                    size = 10,
-                )
-            )
-            when (result) {
-                is PromotionResult.Success -> {
-                    val data = result.data
-                    val all: List<VoucherItem> = data.content
-                    firstVoucherId = all.firstOrNull()?.voucherId
-                    emit("✅ searchVouchers")
-                    emit("   vouchers: ${all.size} items (total=${data.totalElements})")
-                    all.take(3).forEach { emit("   - [${it.voucherId}] ${it.title}") }
-                    if (all.size > 3) emit("   ... +${all.size - 3} more")
+        launchStep {
+            when (val result = api.getVouchers(page = 0, size = 10)) {
+                is PromotionApiResult.Success -> {
+                    val vouchers = result.data.vouchers
+                    firstVoucherId = vouchers.firstOrNull()?.id
+                    emit("✅ getVouchers")
+                    emit("   vouchers: ${vouchers.size} items (lastPage=${result.data.isLastPage})")
+                    vouchers.take(3).forEach { emit("   - [${it.id}] ${it.title}") }
+                    if (vouchers.size > 3) emit("   ... +${vouchers.size - 3} more")
                 }
-                is PromotionResult.Failure -> emit("❌ searchVouchers: ${result.errorCode}")
+
+                is PromotionApiResult.Failure -> emit("❌ getVouchers: ${result.error.message}")
             }
-            _isLoading.value = false
         }
     }
 
     // ─── Step 2: Get voucher detail ───────────────────────────────────────────
     fun getVoucherDetail() {
-        val voucherId = firstVoucherId ?: run {
-            viewModelScope.launch { emit("⚠️ Chưa có voucherId, hãy Search trước") }
-            return
-        }
-        viewModelScope.launch {
-            _isLoading.value = true
-            when (val result = useCases.getVoucherDetail(voucherId = voucherId, customerId = customerId)) {
-                is PromotionResult.Success -> {
+        val voucherId = requireVoucherId() ?: return
+        launchStep {
+            when (val result = api.getVoucherDetail(voucherId)) {
+                is PromotionApiResult.Success -> {
                     val detail = result.data
-                    emit("✅ getVoucherDetail [${detail.voucherId}]")
+                    emit("✅ getVoucherDetail [${detail.id}]")
                     emit("   title      : ${detail.title}")
                     emit("   merchant   : ${detail.merchantName}")
-                    emit("   expires    : ${detail.expirationDate}")
+                    emit("   expires    : ${detail.expireDate}")
                     emit("   status     : ${detail.status}")
                 }
-                is PromotionResult.Failure -> emit("❌ getVoucherDetail: ${result.errorCode}")
+
+                is PromotionApiResult.Failure -> emit("❌ getVoucherDetail: ${result.error.message}")
             }
-            _isLoading.value = false
         }
     }
 
     // ─── Step 3: Validate discounts ───────────────────────────────────────────
     fun validateDiscounts() {
-        val voucherId = firstVoucherId ?: run {
-            viewModelScope.launch { emit("⚠️ Chưa có voucherId, hãy Search trước") }
-            return
-        }
-        viewModelScope.launch {
-            _isLoading.value = true
-            val result = useCases.validateDiscounts(
-                ValidateDiscountsRequest(
-                    customerId = customerId,
-                    orderId = orderId,
-                    orderValue = orderValue,
-                    items = listOf(DiscountItemRequest(objectId = voucherId)),
-                )
+        val voucherId = requireVoucherId() ?: return
+        launchStep {
+            val result = api.validateDiscounts(
+                orderId = orderId,
+                orderValue = orderValue,
+                voucherIds = listOf(voucherId),
             )
             when (result) {
-                is PromotionResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val data = result.data
-                    validatedItems = data.validItems.map { it.objectId to it.objectType }
+                    validatedVoucherIds = data.items.filter { it.isValid }.map { it.objectId }
                     emit("✅ validateDiscounts")
                     emit("   overallValid       : ${data.overallValid}")
                     emit("   totalDiscountAmount: ${data.totalDiscountAmount}")
                     emit("   finalAmount        : ${data.finalAmount}")
                     data.items.forEach { item ->
-                        emit("   [${item.objectId}] valid=${item.valid} discount=${item.calculatedDiscount}")
+                        emit("   [${item.objectId}] valid=${item.isValid} discount=${item.discountAmount}")
                     }
                 }
-                is PromotionResult.Failure -> emit("❌ validateDiscounts: ${result.errorCode}")
+
+                is PromotionApiResult.Failure -> emit("❌ validateDiscounts: ${result.error.message}")
             }
-            _isLoading.value = false
         }
     }
 
     // ─── Step 4: Create redemption ────────────────────────────────────────────
     fun createRedemption() {
-        if (validatedItems.isEmpty()) {
+        if (validatedVoucherIds.isEmpty()) {
             viewModelScope.launch { emit("⚠️ Chưa validate, hãy Validate trước") }
             return
         }
-        viewModelScope.launch {
-            _isLoading.value = true
-            val result = useCases.createRedemption(
-                CreateRedemptionRequest(
-                    customerId = customerId,
-                    orderId = orderId,
-                    orderValue = orderValue,
-                    items = validatedItems.map { (objectId, objectType) ->
-                        RedemptionItemRequest(objectId = objectId, objectType = objectType)
-                    },
-                )
+        launchStep {
+            val result = api.createRedemption(
+                orderId = orderId,
+                orderValue = orderValue,
+                voucherIds = validatedVoucherIds,
             )
             when (result) {
-                is PromotionResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val data = result.data
                     emit("✅ createRedemption")
-                    emit("   sessionId   : ${data.sessionId}")
+                    emit("   sessionId    : ${data.sessionId}")
                     emit("   totalDiscount: ${data.totalDiscount}")
-                    emit("   finalAmount : ${data.finalAmount}")
-                    emit("   hasErrors   : ${data.hasErrors}")
+                    emit("   finalAmount  : ${data.finalAmount}")
+                    emit("   hasErrors    : ${data.validationErrors.isNotEmpty()}")
                     data.validationErrors.forEach { err ->
                         emit("   ⚠️ ${err.code}: ${err.message}")
                     }
                 }
-                is PromotionResult.Failure -> emit("❌ createRedemption: ${result.errorCode}")
+
+                is PromotionApiResult.Failure -> emit("❌ createRedemption: ${result.error.message}")
             }
+        }
+    }
+
+    private fun requireVoucherId(): String? = firstVoucherId ?: run {
+        viewModelScope.launch { emit("⚠️ Chưa có voucherId, hãy Search trước") }
+        null
+    }
+
+    private fun launchStep(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            block()
             _isLoading.value = false
         }
     }

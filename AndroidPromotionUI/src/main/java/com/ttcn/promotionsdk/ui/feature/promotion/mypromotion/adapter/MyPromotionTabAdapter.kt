@@ -10,7 +10,7 @@ import com.ttcn.promotionsdk.ui.theme.PromotionThemeDefaults
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.applier.TabChipThemeApplier
 
-class MyPromotionTabAdapter(
+internal class MyPromotionTabAdapter(
     private val onTabSelected: (TabItem) -> Unit = {},
 ) : RecyclerView.Adapter<MyPromotionTabAdapter.TabViewHolder>() {
     private var tabs: List<TabItem> = emptyList()

@@ -5,7 +5,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
 
-data class MyPromotionUiState(
+internal data class MyPromotionUiState(
     val hasLoadedInitial: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -21,7 +21,7 @@ data class MyPromotionUiState(
     val vouchers: List<MyVoucherListItem> = emptyList(),
 )
 
-sealed interface MyPromotionAction {
+internal sealed interface MyPromotionAction {
     data object LoadInitialIfNeeded : MyPromotionAction
     data object Refresh : MyPromotionAction
     data class SelectTab(val tabCode: String) : MyPromotionAction
@@ -34,7 +34,7 @@ sealed interface MyPromotionAction {
     ) : MyPromotionAction
 }
 
-sealed interface MyPromotionEffect {
+internal sealed interface MyPromotionEffect {
     data class OpenVoucherDetail(val voucherId: String) : MyPromotionEffect
     data class ShowError(val errorCode: String) : MyPromotionEffect
     data class ShowServiceSelector(
@@ -43,7 +43,7 @@ sealed interface MyPromotionEffect {
     ) : MyPromotionEffect
 }
 
-data class MyVoucherListItem(
+internal data class MyVoucherListItem(
     val voucherId: String,
     val campaignId: String = "",
     val merchantName: String,
@@ -59,7 +59,7 @@ data class MyVoucherListItem(
     val applicableProducts: List<ApplicableProduct> = emptyList(),
 )
 
-data class TabItem(
+internal data class TabItem(
     val code: String,
     val label: String,
     val count: Int,
@@ -67,7 +67,7 @@ data class TabItem(
     val isDefault: Boolean = false,
 )
 
-fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
+internal fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
     return MyVoucherListItem(
         voucherId = voucherId,
         campaignId = campaignId.orEmpty(),
@@ -86,7 +86,7 @@ fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
     )
 }
 
-fun VoucherTabItem.toMyVoucherTabUi(): TabItem {
+internal fun VoucherTabItem.toMyVoucherTabUi(): TabItem {
     return TabItem(
         code = code,
         label = label,

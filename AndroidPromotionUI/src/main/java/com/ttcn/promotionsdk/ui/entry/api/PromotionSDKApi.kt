@@ -266,11 +266,11 @@ class PromotionSDKApi internal constructor(
             PromotionErrorCodes.TIMEOUT -> PromotionSDKError.Timeout
             PromotionErrorCodes.NO_RESULT -> PromotionSDKError.ParseFailed
             PromotionErrorCodes.NETWORK_ERROR ->
-                PromotionSDKError.NetworkFailure(code = null, serverMessage = failure.message.orEmpty())
+                PromotionSDKError.NetworkFailure(code = null, message = failure.message.orEmpty())
             // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) đi kèm httpStatus nếu có.
             else -> PromotionSDKError.NetworkFailure(
                 code = failure.httpStatus,
-                serverMessage = failure.message.orEmpty(),
+                message = failure.message.orEmpty(),
             )
         }
 
@@ -280,7 +280,7 @@ class PromotionSDKApi internal constructor(
         id = model.voucherId,
         merchantName = model.merchantName.orEmpty(),
         title = model.title.orEmpty(),
-        imageUrl = model.logo,
+        imageURL = model.logo,
         expireDate = model.expirationDate,
         isUsed = model.displayState() == VoucherDisplayState.USED,
         status = model.status,
@@ -295,8 +295,8 @@ class PromotionSDKApi internal constructor(
         guideline = model.guideline.orEmpty(),
         startDate = model.startDate,
         expireDate = model.expirationDate,
-        bannerUrl = model.banner,
-        logoUrl = model.logo,
+        bannerURL = model.banner,
+        logoURL = model.logo,
         status = model.status.orEmpty(),
         displayStatusLabel = model.displayStatusLabel,
     )

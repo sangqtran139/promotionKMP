@@ -29,7 +29,8 @@ chứa networking — nó gọi `:promotionLogic`.
 
 ```kotlin
 PromotionSDK.init(context, options)
-   └─ PromotionContainer.init(context, config)   // androidMain của :promotionLogic
+   └─ options.config.toCoreConfig()               // PromotionConfig (public) → PromotionSDKConfig (lõi)
+   └─ PromotionContainer.init(context, config)    // androidMain của :promotionLogic
         ├─ AndroidContextHolder.set(applicationContext)
         ├─ isDebug ← ApplicationInfo.FLAG_DEBUGGABLE
         └─ dựng DI
@@ -38,7 +39,11 @@ PromotionSDK.init(context, options)
 
 - Luôn dùng `applicationContext`; **không** giữ tham chiếu Activity tĩnh.
 - Use case chỉ **gọi** được sau `init()`; dựng trước thì không ném, lỗi nổi lên ở `invoke()`.
-- Hai chế độ: **UI mode** (host mở Fragment của SDK) và **headless mode** (host tự dựng UI).
+- Hai chế độ: **UI mode** (host mở Fragment của SDK) và **headless mode** (host tự dựng UI, gọi
+  `PromotionSDK.api`).
+
+Host **không** thấy `PromotionSDKConfig` / `PromotionContainer` của lõi — nó truyền `PromotionConfig`
+và SDK tự map. Bề mặt đầy đủ: [PublicApi.md](./PublicApi.md).
 
 ---
 
@@ -102,8 +107,10 @@ fun loadVouchers() = launch {
 Use case được cấp qua `PromotionViewModelFactory` (xem `ui/di/`), lấy repository từ đồ thị mà
 `PromotionContainer.initialize(...)` đã dựng.
 
-> Chỉ facade `PromotionUseCases()` mới trả `PromotionResult` và **không ném**. Nó dành cho host tự
-> dựng UI (headless), không dành cho UI trong module này.
+> Chỉ facade `PromotionUseCases()` mới trả `PromotionResult` và **không ném**. Nó là type của
+> `:promotionLogic`, **không** dành cho host: host chỉ tích hợp `AndroidPromotionUI` nên không có
+> `core.*` trên compile classpath. Host tự dựng UI thì gọi `PromotionSDK.api` — xem
+> [PublicApi.md](./PublicApi.md). Trong module này, UI dựng thẳng use case đơn lẻ và tự `runCatching`.
 
 ### Luồng checkout dùng `findEligible`, không phải `searchVouchers`
 

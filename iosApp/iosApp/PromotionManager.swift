@@ -55,7 +55,7 @@ struct VoucherSummary {
     let merchantName: String
     let title: String
     let imageURL: String?
-    let expireDate: Date?
+    let expireDate: String?
     let isUsed: Bool
     let statusLabel: String?
 }
@@ -91,7 +91,7 @@ protocol PromotionServing: AnyObject {
     // --- Headless API (không UI) ---
     /// Lấy danh sách voucher của khách (Search Customer Vouchers).
     func fetchVouchers(keyword: String?, serviceCode: String?, tab: String?,
-                       myPage: Int,
+                       page: Int,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void)
     /// Kiểm tra voucher còn hợp lệ với đơn hàng (nên gọi trước createRedemption).
     func validate(order: OrderContext, voucherIds: [String],
@@ -178,16 +178,16 @@ final class PromotionManager: NSObject, PromotionServing {
     // MARK: Headless
 
     func fetchVouchers(keyword: String? = nil, serviceCode: String? = nil, tab: String? = nil,
-                       myPage: Int = 0,
+                       page: Int = 0,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void) {
         guard let sdk else { return completion(.failure(Self.notReady)) }
         sdk.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
-                                 myPage: myPage) { result in
+                                 page: page) { result in
             switch result {
             case .success(let r):
                 completion(.success(VoucherPage(
-                    mine: r.myVouchers.map(Self.map),
-                    mineIsLastPage: r.myIsLastPage
+                    mine: r.vouchers.map(Self.map),
+                    mineIsLastPage: r.isLastPage
                 )))
             case .failure(let error): completion(.failure(error))
             }

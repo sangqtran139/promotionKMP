@@ -10,10 +10,9 @@ import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
-import com.ttcn.promotionsdk.core.domain.usecase.GetPromotionFeatureFlagsUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
+import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeConfig
@@ -32,18 +31,38 @@ object PromotionSDK {
 
     private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
+    private var contextProvider: PromotionContextProvider? = null
     private var sdkScope: CoroutineScope? = null
 
     /**
-     * Truy cập tất cả use case của SDK ở chế độ headless (tự build UI).
-     * Phải gọi [init] trước khi sử dụng.
+     * Bề mặt headless cho host tự dựng UI. Phải gọi [init] trước.
      *
      * ```kotlin
-     * val result = PromotionSDK.useCases.searchVouchers(request)
+     * when (val r = PromotionSDK.api.getVouchers()) {
+     *     is PromotionApiResult.Success -> render(r.data.vouchers)
+     *     is PromotionApiResult.Failure -> showError(r.error)
+     * }
      * ```
+     *
+     * Thay cho `useCases: PromotionUseCases` trước đây — kiểu đó thuộc `promotionLogic`, mà host
+     * chỉ tích hợp `AndroidPromotionUI` nên không resolve được. Xem [PromotionSDKApi].
+     *
+     * Dựng mới mỗi lần đọc: sau [release] + [init] lại, instance cũ vẫn giữ use case của đồ thị DI đã bị huỷ.
+     *
+     * @throws IllegalStateException khi chưa gọi [init].
      */
     @JvmStatic
-    val useCases: PromotionUseCases get() = PromotionUseCases()
+    val api: PromotionSDKApi
+        get() {
+            check(PromotionContainer.isInitialized()) {
+                "PromotionSDK.init() must be called before api."
+            }
+            return PromotionSDKApi()
+        }
+
+    /** Context do host cấp ở [PromotionSDKOptions.config]. Null khi chưa [init] hoặc host không truyền. */
+    @JvmStatic
+    val requestContext: PromotionContextProvider? get() = contextProvider
 
     // SDK **không** phơi API hỏi feature flag ra host. Host không cần biết cờ nào đang bật: mọi
     // điểm vào đều tự gác qua `PromotionFeatureGate` của `promotionLogic` — `openMyPromotion`,
@@ -62,7 +81,8 @@ object PromotionSDK {
     @JvmStatic
     fun init(context: Context, options: PromotionSDKOptions) {
         callback = options.callback
-        PromotionContainer.initialize(context, options.config)
+        contextProvider = options.config.contextProvider
+        PromotionContainer.initialize(context, options.config.toCoreConfig())
         PromotionThemeStore.init(context)
         theme = options.theme
         val themeConfig = options.theme.toThemeConfig()
@@ -72,6 +92,10 @@ object PromotionSDK {
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         sdkScope?.launch { PromotionFeatureGate.refresh() }
     }
+
+    /** `true` sau [init] và trước [release]. Gọi [release] khi chưa init là vô hại. */
+    @JvmStatic
+    fun isInitialized(): Boolean = PromotionContainer.isInitialized()
 
     @JvmStatic
     fun getTheme(): PromotionSDKTheme = theme
@@ -126,6 +150,7 @@ object PromotionSDK {
         PromotionThemeStore.clear()
         syncThemeConfig(null)
         callback = null
+        contextProvider = null
     }
 
 }
