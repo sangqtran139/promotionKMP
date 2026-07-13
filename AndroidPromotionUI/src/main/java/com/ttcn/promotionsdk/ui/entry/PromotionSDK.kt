@@ -10,12 +10,11 @@ import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
-import com.ttcn.promotionsdk.ui.entry.PromotionSDK.getTheme
-import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
 import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
+import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,7 +25,6 @@ object PromotionSDK {
 
     private const val TAG_MY_PROMOTION = "prm_my_promotion"
 
-    private var theme: PromotionSDKTheme = PromotionSDKTheme()
     private var callback: PromotionSDKCallback? = null
     private var contextProvider: PromotionContextProvider? = null
     private var sdkScope: CoroutineScope? = null
@@ -66,33 +64,41 @@ object PromotionSDK {
     // `PRMBaseFragment.openPromotionDetail`, `PRMEndowView` — và hiện thông báo PRM_MOB_021 khi bị
     // chặn. Trước đây có `PromotionSDK.featureFlags`, nhưng không nơi nào dùng.
 
-    /**
-     * Keeps [getTheme] in sync when hosts call [PromotionTheme.configure] / [PromotionTheme.clear]
-     * without re-running [init].
-     */
-    @JvmStatic
-    internal fun syncThemeConfig(config: PromotionSDKTheme?) {
-        theme = config ?: PromotionSDKTheme()
-    }
-
     @JvmStatic
     fun init(context: Context, options: PromotionSDKOptions) {
         callback = options.callback
         contextProvider = options.config.contextProvider
         PromotionContainer.initialize(context, options.config.toCoreConfig())
-        theme = options.theme
-        PromotionThemeRegistry.configure(options.theme)
+        // Host truyền theme → ghi đè và lưu. Không truyền → khôi phục theme đã lưu lần trước.
+        // Nhờ vậy host cấu hình một lần; các lần mở app sau chỉ cần init(config), theme tự sống lại.
+        val resolved = options.theme
+        if (resolved != null) PromotionThemeStore.save(resolved)
+        PromotionThemeRegistry.configure(resolved ?: PromotionThemeStore.load())
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         sdkScope?.launch { PromotionFeatureGate.refresh() }
     }
 
+    /**
+     * Đổi theme **và lưu lại** sau khi đã [init]. `null` = xoá theme đã lưu, về mặc định SDK.
+     * Đối ứng `PromotionSDK.configure(theme:)` bên iOS (khác: iOS trên instance, Android trên object).
+     *
+     * View đã render có thể chỉ cập nhật khi được dựng lại (rebind/đẩy màn mới) — nên cấu hình theme
+     * **một lần** lúc khởi tạo là tốt nhất.
+     */
+    @JvmStatic
+    fun configure(theme: PromotionSDKTheme?) {
+        PromotionThemeRegistry.configure(theme)
+        if (theme != null) PromotionThemeStore.save(theme) else PromotionThemeStore.clear()
+    }
+
+    /** Theme đang áp (`null` nếu đang dùng mặc định). Đối ứng `sdk.currentTheme` bên iOS. */
+    @JvmStatic
+    fun currentTheme(): PromotionSDKTheme? = PromotionThemeRegistry.currentConfig()
+
     /** `true` sau [init] và trước [release]. Gọi [release] khi chưa init là vô hại. */
     @JvmStatic
     fun isInitialized(): Boolean = PromotionContainer.isInitialized()
-
-    @JvmStatic
-    fun getTheme(): PromotionSDKTheme = theme
 
     @JvmStatic
     fun getCallback(): PromotionSDKCallback? = callback
@@ -140,8 +146,8 @@ object PromotionSDK {
         sdkScope?.cancel()
         sdkScope = null
         PromotionContainer.clear()
+        // Reset registry trong bộ nhớ; **không** xoá theme đã lưu — nó sống qua release/init.
         PromotionThemeRegistry.configure(null)
-        syncThemeConfig(null)
         callback = null
         contextProvider = null
     }

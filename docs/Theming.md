@@ -10,10 +10,13 @@ Sửa một bên thì sửa cả hai.
 | Android `ui/theme/` | iOS `PromotionSDK/Theme/` |
 |---|---|
 | `PromotionSDKTheme.kt` + `token/*.kt` | `PromotionSDKTheme.swift` |
-| `PromotionThemeJson.kt` + `ThemeHex.kt` | (phần `ThemeDTO` trong `PromotionSDKTheme.swift`) |
+| `token/*.kt` (6 token) | `Token/*.swift` (6 token) |
+| `PromotionThemeJson.kt` | `PromotionThemeJson.swift` |
+| `ThemeHex.kt` | `ThemeHex.swift` |
+| `PromotionThemeStore.kt` | `PromotionThemeStore.swift` |
 | `PromotionThemeDefaults.kt` | `PromotionThemeDefaults.swift` |
 | `PromotionThemeDisplay.kt` | `PromotionThemeDisplay.swift` |
-| `PromotionThemeRegistry.kt` (internal) | `VDSThemeRegistry` trong CoreUI (internal) |
+| `PromotionThemeRegistry.kt` (internal) | `VDSThemeRegistry` trong CoreUI (internal) — cố hữu, §4 |
 
 ---
 
@@ -23,8 +26,8 @@ Sửa một bên thì sửa cả hai.
             (Host app)
                 │ truyền token màu
                 ▼
-   PromotionTheme (public API, ui/entry)      │ iOS: sdk.configure(theme:)
-        configure() / clear() / currentTheme()│
+   PromotionSDK.configure(theme) / .currentTheme()   │ iOS: sdk.configure(theme:) / sdk.currentTheme
+
                 │
                 ▼
    PromotionThemeRegistry (internal, @Volatile singleton)
@@ -39,11 +42,13 @@ Các lớp phụ trợ:
 - `PromotionThemeDefaults` — giá trị mặc định **thật** của SDK (xem §6).
 - `PromotionThemeDisplay` — biểu diễn token dạng **chuỗi hex** + `merge`/`toToken`; phục vụ màn cấu
   hình theme của host. Tên field của nó (`button`, `searchBar`…) cũng chính là **key của JSON**.
-- `PromotionThemeJson` / `ThemeHex` (Android), `ThemeDTO` (iOS) — serialize.
+- `PromotionThemeJson` + `ThemeHex` — serialize (cùng tên hai bên).
+- `PromotionThemeStore` — persist (xem §3.1).
 
-> **SDK không lưu theme.** Host truyền theme mỗi lần `init`, và tự lưu nếu muốn — cả hai app demo
-> đều có `ThemePreferenceManager` riêng. Trước đây Android có `PromotionThemeStore` ghi xuống
-> SharedPreferences, nhưng `load()` **không có call-site nào**: nó chỉ ghi rác. Đã xoá.
+> **SDK tự lưu theme.** Host cấu hình một lần (`configure` hoặc `init(theme=...)`); lần mở app sau chỉ
+> cần `init` không truyền theme, SDK **tự khôi phục**. Persistence dùng chung ở lõi
+> (`PromotionContainer.preferences` → `PromotionPreferences`, `expect/actual` chung với FeatureFlag) —
+> một key, một cơ chế, không phải mỗi UI SDK tự viết một store. Xem §3.1.
 
 ---
 
@@ -85,13 +90,20 @@ trong JSON.
 - Nhóm vắng mặt = giữ mặc định SDK cho nhóm đó.
 
 ```kotlin
-PromotionTheme.toJson(theme)      // Android
-PromotionTheme.fromJson(json)
+PromotionThemeJson.toJson(theme)  // Android
+PromotionThemeJson.fromJson(json)
 ```
 ```swift
-theme.jsonString()                // iOS
-PromotionSDKTheme.from(jsonString: json)
+PromotionThemeJson.toJson(theme)  // iOS — cùng tên type, cùng hàm
+PromotionThemeJson.fromJson(json)
 ```
+
+### 3.1. Persistence — SDK tự lưu, tự khôi phục
+
+Serialize (trên) + lưu qua `PromotionThemeStore` (giữ key `promotion_theme_config_v1`) → xuống lõi
+`PromotionContainer.preferences` (`PromotionPreferences`, `expect/actual`: SharedPreferences / UserDefaults).
+`configure(theme)` lưu, `configure(null)` xoá, `init` không truyền theme thì `load()` khôi phục. Một
+key và một cơ chế cho cả hai nền tảng — đã kiểm chứng round-trip trên thiết bị (save/restore/clear).
 
 > **Từng hỏng thật, theo hai cách.** Comment `// mirror Android PromotionThemeJson` trong file Swift
 > là sai sự thật: Android `gson.toJson(config)` thẳng nên sinh `{"buttonToken":{"backgroundColor":-1179597}}`
@@ -128,29 +140,32 @@ Bên iOS không có applier riêng: mỗi component tự đọc `VDSThemeRegistr
 
 ## 5. Public API cho host
 
+Theme lifecycle nằm trên **`PromotionSDK`** ở cả hai nền tảng (khác duy nhất: Android là `object`
+toàn cục, iOS là instance — xem §7). Helper serialize/preview gọi thẳng type, cùng tên hai bên.
+
 ```kotlin
-object PromotionTheme {                            // Android
-    fun configure(theme: PromotionSDKTheme)        // set theme + đồng bộ PromotionSDK
-    fun currentTheme(): PromotionSDKTheme?
-    fun clear()                                    // xoá theme về mặc định
-    fun toJson(theme) / fun fromJson(json)
-    fun sdkDefaults(context): PromotionSDKTheme    // giá trị mặc định SDK
-    fun loadDisplayDefaults(context) / fun mergeDisplayWithSaved(...)
-    fun colorToHex(color) / fun pxToDp(context, px)
-}
+// Android
+PromotionSDK.configure(theme: PromotionSDKTheme?)  // áp + lưu; null = xoá, về mặc định
+PromotionSDK.currentTheme(): PromotionSDKTheme?
+PromotionThemeJson.toJson(theme) / .fromJson(json)
+PromotionThemeDefaults.theme(context)              // giá trị mặc định SDK  (internal — dùng qua Display)
+PromotionThemeDisplay.load(context) / .mergeWithSaved(context, sdk, saved) / .themeFromDisplayValues(display, sdk)
 ```
 ```swift
-sdk.configure(theme:)                              // iOS
+// iOS
+sdk.configure(theme:)                              // áp + lưu; nil = xoá, về mặc định
 sdk.currentTheme
-PromotionThemeDefaults.theme                       // ≡ sdkDefaults
+PromotionThemeJson.toJson(_) / .fromJson(_)
+PromotionThemeDefaults.theme
 PromotionThemeDisplay.load() / .mergeWithSaved(sdk:saved:) / .themeFromDisplayValues(_:sdk:)
 ```
 
-`pxToDp` không có bên iOS — pt không cần quy đổi.
+Khác biệt **cố hữu**: Android nhận `Context` (đọc màu resource) và có thêm `pxToDp`; iOS dùng pt nên
+không cần. Tên type/hàm còn lại khớp nhau.
 
-Có sẵn typealias để host Android import gọn: `ThemeConfig`, `ThemeButtonToken`,
-`ThemeDiscountBadgeToken`… (`ThemeConfig` nay trỏ tới `PromotionSDKTheme`; `PromotionThemeConfig` đã
-bị gộp vào đó — nó vốn là bản sao sáu field y hệt.)
+> `PromotionTheme` (object facade cũ) đã bị gỡ: nó trùng `PromotionSDK` (SDK cũng là object toàn cục),
+> tách theme config ra khỏi `PromotionSDK` trong khi iOS đặt trên `sdk`, và có 5 hàm chết. Lifecycle
+> gộp vào `PromotionSDK` cho khớp iOS.
 
 ### Hai cách cấu hình theme
 
@@ -166,40 +181,38 @@ val options = PromotionSDKOptions(
 PromotionSDK.init(context, options)
 ```
 
-**Cách 2 — gọi `PromotionTheme.configure()` SAU `init()`:**
+**Cách 2 — gọi `PromotionSDK.configure()` SAU `init()`:**
 ```kotlin
 PromotionSDK.init(context, PromotionSDKOptions(config = sdkConfig))
-PromotionTheme.configure(PromotionSDKTheme(buttonToken = ...))
+PromotionSDK.configure(PromotionSDKTheme(buttonToken = ...))
 ```
+
+Không truyền `theme` (mặc định `null`) → SDK **tự khôi phục** theme đã lưu lần trước (§3.1).
 
 ---
 
-## 6. ⚠️ Default của hai nền tảng **không giống nhau**
+## 6. Giá trị mặc định — **đồng nhất hai nền tảng**
 
-`PromotionThemeDefaults` **báo cáo trung thực** những gì mỗi nền tảng đang render, chứ không sao chép
-lẫn nhau. Sáu design token nền (`tokenDark10`, `tokenPineBlue100`…) trùng khớp tuyệt đối, nhưng
-component thì chọn khác nhau:
+`PromotionThemeDefaults` cho cùng một bộ màu trên Android và iOS. **Màu lấy theo Android** (nguồn
+`R.color.*`); bên iOS dùng đúng token design system của CoreUI có giá trị **bằng** giá trị đó:
 
-| Field | Android | iOS |
-|---|---|---|
-| `discountBadge.availableTextColor` | `#2CA196` (teal) | `#FF645C` (đỏ san hô) |
-| `discountBadge.availableBackgroundColor` | `#EAF6F4` | `#FF645C` @ 8% |
-| `discountBadge.actionTextColor` | `#EE0033` | `#FF645C` |
-| `tabUnderline.indicatorColor` | `#EE0033` | `#FF645C` |
-| `tabUnderline.activeTextColor` | `#000000` | `#222222` |
-| `tabUnderline.backgroundColor` | `#FBFBFB` | *(không có default)* |
-| `listItem.usedBadgeTextColor` | `#222222` | `#7A7A7A` |
-| `tabChip.cornerRadius` | 7 | 8 |
-| `button.cornerRadius` | `tokenBorderRadius24` (~24) | `height/2` = 24 ở size `.large` |
+| Android `R.color` = hex | iOS `Colors.*` |
+|---|---|
+| `#EE0033` (đỏ VTP) | `tokenViettelPayRed100` |
+| `#FFFFFF` / `#000000` | `tokenWhite` / `tokenBlack` |
+| `#E9E9E9` / `#A7A7A7` / `#222222` | `tokenDark10` / `tokenDark40` / `tokenDark100` |
+| `#F4F4F4` / `#4E4E4E` / `#7A7A7A` / `#FBFBFB` | `tokenDark05` / `tokenDark80` / `tokenDark60` / `tokenDark02` |
+| `#2CA196` (teal) / `#EAF6F4` | `tokenPineBlue100` / `tokenPineBlue10` |
 
-Chú ý `Colors.tokenRed100` của iOS là `#FF645C`, **không** phải `#EE0033` (`tokenViettelPayRed100`).
+> **Từng lệch.** iOS trước đây chọn nhầm token: `tokenRed100 = #FF645C` (đỏ san hô) thay vì
+> `tokenViettelPayRed100 = #EE0033`, `tokenDark60` thay vì `tokenDark100`… nên badge giảm giá ra đỏ
+> san hô còn Android teal. Nay khớp từng dòng — nếu design system đổi token, cả hai đi theo.
 
-Đây là **lệch thiết kế**, không phải bug của tầng theme. Muốn hai app trông giống nhau thì phải đổi
-default của một bên — quyết định của Product/Design, không phải của SDK.
+`cornerRadius` là ngoại lệ cố hữu: Android dùng **sdp** (co giãn theo màn, không có một giá trị duy
+nhất), iOS dùng pt cố định (button 24, search 8, chip 7). Không phải màu nên không đồng bộ tuyệt đối.
 
 Ba field iOS **không có default trong code** (`listItem.linkTextColor`, hai màu radio): component giữ
-màu của XIB / ảnh asset. `PromotionThemeDefaults.swift` khai giá trị mà asset đang thể hiện, để màn
-preview không trống.
+màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị Android để preview không trống.
 
 ---
 
@@ -208,7 +221,7 @@ preview không trống.
 `PromotionSDK.init()` **luôn ghi đè** registry bằng `options.theme`, mà `PromotionSDKOptions.theme`
 **mặc định là rỗng** (`PromotionSDKTheme()`).
 
-> ❌ **Sai:** gọi `PromotionTheme.configure(myTheme)` **trước** rồi `PromotionSDK.init(context, PromotionSDKOptions(config))`
+> ❌ **Sai:** gọi `PromotionSDK.configure(myTheme)` **trước** rồi `PromotionSDK.init(context, PromotionSDKOptions(config))`
 > mà **không** truyền theme vào options → theme vừa set bị **xoá âm thầm** về mặc định.
 
 ✅ **Đúng:** dùng **Cách 1** (truyền theme vào `options`) **hoặc** **Cách 2** (`configure()` **sau** `init()`).

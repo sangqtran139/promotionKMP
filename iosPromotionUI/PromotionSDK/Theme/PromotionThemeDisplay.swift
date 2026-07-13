@@ -190,7 +190,7 @@ public enum PromotionThemeDisplay {
     }
 
     private static func fromTheme(_ t: PromotionSDKTheme) -> Defaults {
-        func hex(_ c: UIColor?) -> String? { c?.promotionHexString }
+        func hex(_ c: UIColor?) -> String? { ThemeHex.format(c) }
         return Defaults(
             button: ButtonValues(
                 backgroundColor: hex(t.buttonToken?.backgroundColor),
@@ -300,58 +300,58 @@ private extension PromotionThemeDisplay.DiscountBadgeValues {
 
 public extension PromotionThemeDisplay.ButtonValues {
     func toToken() -> ButtonToken {
-        ButtonToken(backgroundColor: UIColor(promotionHex: backgroundColor),
-                    textColor: UIColor(promotionHex: textColor),
-                    shadowColor: UIColor(promotionHex: shadowColor),
+        ButtonToken(backgroundColor: ThemeHex.parse(backgroundColor),
+                    textColor: ThemeHex.parse(textColor),
+                    shadowColor: ThemeHex.parse(shadowColor),
                     cornerRadius: cornerRadius)
     }
 }
 
 public extension PromotionThemeDisplay.SearchBarValues {
     func toToken() -> SearchBarToken {
-        SearchBarToken(borderColor: UIColor(promotionHex: borderColor),
-                       hintTextColor: UIColor(promotionHex: hintTextColor),
-                       textColor: UIColor(promotionHex: textColor),
-                       iconColor: UIColor(promotionHex: iconColor),
+        SearchBarToken(borderColor: ThemeHex.parse(borderColor),
+                       hintTextColor: ThemeHex.parse(hintTextColor),
+                       textColor: ThemeHex.parse(textColor),
+                       iconColor: ThemeHex.parse(iconColor),
                        cornerRadius: cornerRadius)
     }
 }
 
 public extension PromotionThemeDisplay.ListItemValues {
     func toToken() -> ListItemToken {
-        ListItemToken(linkTextColor: UIColor(promotionHex: linkTextColor),
-                      usedBadgeTextColor: UIColor(promotionHex: usedBadgeTextColor),
-                      usedBadgeBackgroundColor: UIColor(promotionHex: usedBadgeBackgroundColor),
-                      radioButtonStrokeColor: UIColor(promotionHex: radioButtonStrokeColor),
-                      radioButtonSelectedStrokeColor: UIColor(promotionHex: radioButtonSelectedStrokeColor))
+        ListItemToken(linkTextColor: ThemeHex.parse(linkTextColor),
+                      usedBadgeTextColor: ThemeHex.parse(usedBadgeTextColor),
+                      usedBadgeBackgroundColor: ThemeHex.parse(usedBadgeBackgroundColor),
+                      radioButtonStrokeColor: ThemeHex.parse(radioButtonStrokeColor),
+                      radioButtonSelectedStrokeColor: ThemeHex.parse(radioButtonSelectedStrokeColor))
     }
 }
 
 public extension PromotionThemeDisplay.TabChipValues {
     func toToken() -> TabChipToken {
-        TabChipToken(activeBackgroundColor: UIColor(promotionHex: activeBackgroundColor),
-                     inactiveBackgroundColor: UIColor(promotionHex: inactiveBackgroundColor),
-                     activeTextColor: UIColor(promotionHex: activeTextColor),
-                     inactiveTextColor: UIColor(promotionHex: inactiveTextColor),
+        TabChipToken(activeBackgroundColor: ThemeHex.parse(activeBackgroundColor),
+                     inactiveBackgroundColor: ThemeHex.parse(inactiveBackgroundColor),
+                     activeTextColor: ThemeHex.parse(activeTextColor),
+                     inactiveTextColor: ThemeHex.parse(inactiveTextColor),
                      cornerRadius: cornerRadius)
     }
 }
 
 public extension PromotionThemeDisplay.TabUnderlineValues {
     func toToken() -> TabUnderlineToken {
-        TabUnderlineToken(indicatorColor: UIColor(promotionHex: indicatorColor),
-                          activeTextColor: UIColor(promotionHex: activeTextColor),
-                          inactiveTextColor: UIColor(promotionHex: inactiveTextColor),
-                          backgroundColor: UIColor(promotionHex: backgroundColor))
+        TabUnderlineToken(indicatorColor: ThemeHex.parse(indicatorColor),
+                          activeTextColor: ThemeHex.parse(activeTextColor),
+                          inactiveTextColor: ThemeHex.parse(inactiveTextColor),
+                          backgroundColor: ThemeHex.parse(backgroundColor))
     }
 }
 
 public extension PromotionThemeDisplay.DiscountBadgeValues {
     func toToken() -> DiscountBadgeToken {
-        DiscountBadgeToken(availableTextColor: UIColor(promotionHex: availableTextColor),
-                           unavailableTextColor: UIColor(promotionHex: unavailableTextColor),
-                           availableBackgroundColor: UIColor(promotionHex: availableBackgroundColor),
-                           unavailableBackgroundColor: UIColor(promotionHex: unavailableBackgroundColor),
-                           actionTextColor: UIColor(promotionHex: actionTextColor))
+        DiscountBadgeToken(availableTextColor: ThemeHex.parse(availableTextColor),
+                           unavailableTextColor: ThemeHex.parse(unavailableTextColor),
+                           availableBackgroundColor: ThemeHex.parse(availableBackgroundColor),
+                           unavailableBackgroundColor: ThemeHex.parse(unavailableBackgroundColor),
+                           actionTextColor: ThemeHex.parse(actionTextColor))
     }
 }

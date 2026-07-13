@@ -45,19 +45,20 @@ public final class PromotionSDK {
     ///   - orderItems: dòng đơn hàng — dùng cho Find Eligible Campaigns (luồng "Chọn ưu đãi"). Bỏ trống = chỉ campaign cấp đơn.
     public init(customerId: String, token: String? = nil, orderId: String? = nil, orderValue: String? = nil, orderItems: [PromotionOrderItem] = [], theme: PromotionSDKTheme? = nil, baseURL: String? = nil, availableServices: [PromotionAvailableService] = []) {
         _impl = PromotionSDKImpl(customerId: customerId, token: token, orderId: orderId, orderValue: orderValue, orderItems: orderItems, baseURL: baseURL, availableServices: availableServices)
-        if let theme {
-            impl.applyTheme(theme)
-        }
+        // Truyền theme → áp + lưu. Không truyền → khôi phục theme đã lưu lần trước. Host cấu hình một
+        // lần; lần sau chỉ cần khởi tạo lại SDK, theme tự sống lại. Đối ứng PromotionSDK.init bên Android.
+        impl.restoreOrApplyTheme(theme)
     }
 
     // MARK: - Theming
 
-    /// Cập nhật theme sau khi đã khởi tạo. Truyền `nil` để reset về default SDK.
+    /// Cập nhật theme **và lưu lại** để sống qua các lần mở app. Truyền `nil` để xoá theme đã lưu,
+    /// quay về mặc định SDK.
     ///
     /// Lưu ý: theme nên cấu hình **một lần** lúc khởi tạo. Các view đã render có thể chỉ
     /// cập nhật khi được dựng lại (rebind/đẩy màn mới).
     public func configure(theme: PromotionSDKTheme?) {
-        impl.applyTheme(theme)
+        impl.applyAndPersistTheme(theme)
     }
 
     /// Theme đang áp (nil nếu đang dùng mặc định). Dùng để đọc lại / lưu cấu hình.

@@ -2,6 +2,7 @@ package com.ttcn.promotionsdk.core.di
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.core.data.local.PromotionPreferences
 import com.ttcn.promotionsdk.core.di.internal.SdkDi
 import com.ttcn.promotionsdk.core.di.internal.get
 import io.ktor.client.HttpClient
@@ -58,5 +59,13 @@ object PromotionContainer {
 
     /** Nguồn token / customerId / ngôn ngữ do host cấp. Thuộc cấu hình, nên nằm ở đây. */
     val requestContextProvider: PromotionRequestContextProvider
+        get() = get()
+
+    /**
+     * Kho key-value dùng chung của SDK, cho tầng UI persist cấu hình (theme…). **Một cơ chế lưu**
+     * duy nhất, chung với FeatureFlag, giống nhau trên Android và iOS. Chỉ đọc được sau
+     * [initialize]; tầng UI tự đặt key (vd `PromotionThemeStore`). Xem [PromotionPreferences].
+     */
+    val preferences: PromotionPreferences
         get() = get()
 }

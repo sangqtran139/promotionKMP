@@ -91,6 +91,27 @@ final class PromotionSDKImpl: NSObject {
 
     // MARK: - Theming
 
+    /// Lúc khởi tạo: host truyền theme → áp + lưu; không truyền → khôi phục theme đã lưu.
+    /// Phải gọi **sau** `PromotionContainer.initialize` (đã chạy trong init) để `preferences` sẵn sàng.
+    func restoreOrApplyTheme(_ theme: PromotionSDKTheme?) {
+        if let theme {
+            applyTheme(theme)
+            PromotionThemeStore.save(theme)
+        } else if let saved = PromotionThemeStore.load() {
+            applyTheme(saved)
+        }
+    }
+
+    /// `configure(theme:)`: áp + persist. `nil` = reset và xoá theme đã lưu.
+    func applyAndPersistTheme(_ theme: PromotionSDKTheme?) {
+        applyTheme(theme)
+        if let theme {
+            PromotionThemeStore.save(theme)
+        } else {
+            PromotionThemeStore.clear()
+        }
+    }
+
     /// Map public theme (UIColor/CGFloat) → CoreUI registry config. Truyền nil để reset.
     func applyTheme(_ theme: PromotionSDKTheme?) {
         guard let theme else {

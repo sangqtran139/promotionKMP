@@ -32,16 +32,16 @@ import com.ttcn.promotionsdk.app.databinding.ItemThemeColorTokenBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
-import com.ttcn.promotionsdk.ui.entry.PromotionTheme
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
-import com.ttcn.promotionsdk.ui.theme.PromotionListItemTheme
+import com.ttcn.promotionsdk.ui.theme.applytoken.PromotionListItemTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay.Defaults
-import com.ttcn.promotionsdk.ui.theme.TabUnderlineTheme
+import com.ttcn.promotionsdk.ui.theme.applytoken.TabUnderlineTheme
 import com.ttcn.promotionsdk.ui.theme.toToken
 import com.ttcn.promotionsdk.ui.widget.PRMSearchType
-import com.ttcn.promotionsdk.ui.theme.TokenColorParser
-import com.ttcn.promotionsdk.ui.theme.TokenDrawableFactory
+import com.ttcn.promotionsdk.ui.theme.applytoken.TokenColorParser
+import com.ttcn.promotionsdk.ui.theme.applytoken.TokenDrawableFactory
 import com.ttcn.promotionsdk.ui.widget.PRMButton
 import com.ttcn.promotionsdk.ui.widget.PRMSearchField
 import kotlin.math.roundToInt
@@ -52,7 +52,6 @@ class ThemePreviewFragment : Fragment() {
     private var _binding: FragmentThemePreviewBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var preferenceManager: ThemePreferenceManager
     private lateinit var sdkDefaults: Defaults
     private lateinit var themeDisplay: Defaults
 
@@ -76,8 +75,7 @@ class ThemePreviewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        preferenceManager = ThemePreferenceManager(requireContext())
-        sdkDefaults = PromotionTheme.loadDisplayDefaults(requireContext())
+        sdkDefaults = PromotionThemeDisplay.load(requireContext())
         reloadDisplayValues()
 
         headerTopPadding = binding.headerContainer.paddingTop
@@ -116,8 +114,9 @@ class ThemePreviewFragment : Fragment() {
     }
 
     private fun reloadDisplayValues() {
-        val saved = preferenceManager.load()
-        themeDisplay = PromotionTheme.mergeDisplayWithSaved(requireContext(), sdkDefaults, saved)
+        // SDK là nơi lưu theme; đọc lại theme đang áp (đã khôi phục từ lần trước nếu có).
+        val saved = PromotionSDK.currentTheme()
+        themeDisplay = PromotionThemeDisplay.mergeWithSaved(requireContext(), sdkDefaults, saved)
     }
 
     private fun registerFields() {
@@ -883,18 +882,16 @@ class ThemePreviewFragment : Fragment() {
     }
 
     private fun onReset() {
-        preferenceManager.clear()
-        PromotionTheme.clear()
-        sdkDefaults = PromotionTheme.loadDisplayDefaults(requireContext())
+        PromotionSDK.configure(null)   // SDK xoá theme đã lưu
+        sdkDefaults = PromotionThemeDisplay.load(requireContext())
         themeDisplay = sdkDefaults
         buildCards()
     }
 
     private fun onApply() {
         syncFieldsFromViews()
-        val config = PromotionThemeDisplay.configFromDisplayValues(themeDisplay, sdkDefaults)
-        preferenceManager.save(config)
-        PromotionTheme.configure(config)
+        val config = PromotionThemeDisplay.themeFromDisplayValues(themeDisplay, sdkDefaults)
+        PromotionSDK.configure(config)   // SDK áp + lưu
         parentFragmentManager.popBackStack()
         Toast.makeText(
             requireActivity(),

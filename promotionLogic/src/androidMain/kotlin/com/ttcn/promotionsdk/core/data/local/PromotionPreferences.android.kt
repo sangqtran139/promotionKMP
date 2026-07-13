@@ -26,10 +26,10 @@ internal object AndroidContextHolder {
     }
 }
 
-internal class SharedPrefStorage(context: Context) : KeyValueStorage {
+internal class SharedPrefStorage(context: Context) : PromotionPreferences {
 
     private val prefs: SharedPreferences =
-        context.getSharedPreferences(KeyValueStorage.PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PromotionPreferences.PREFS_NAME, Context.MODE_PRIVATE)
 
     override fun putBoolean(key: String, value: Boolean) {
         prefs.edit().putBoolean(key, value).apply()
@@ -37,6 +37,12 @@ internal class SharedPrefStorage(context: Context) : KeyValueStorage {
 
     override fun getBoolean(key: String, default: Boolean): Boolean =
         prefs.getBoolean(key, default)
+
+    override fun putString(key: String, value: String) {
+        prefs.edit().putString(key, value).apply()
+    }
+
+    override fun getString(key: String): String? = prefs.getString(key, null)
 
     override fun contains(key: String): Boolean = prefs.contains(key)
 
@@ -49,5 +55,5 @@ internal class SharedPrefStorage(context: Context) : KeyValueStorage {
     }
 }
 
-internal actual fun createKeyValueStorage(): KeyValueStorage =
+internal actual fun createPreferences(): PromotionPreferences =
     SharedPrefStorage(AndroidContextHolder.require())

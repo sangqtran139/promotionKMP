@@ -11,7 +11,7 @@ Mục tiêu: giữ kiến trúc nhất quán giữa lõi dùng chung và hai UI 
 
 ---
 
-## 9 quy tắc cốt lõi
+## 10 quy tắc cốt lõi
 
 ### 1. Luôn đọc `/docs` trước khi làm task
 Đọc ít nhất `Architecture.md`, `ProjectStructure.md`, và guide chuyên đề tương ứng
@@ -29,7 +29,7 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 ### 4. Giữ đúng ranh giới "lõi dùng chung / UI riêng nền tảng"
 - Business logic (data / domain / use case) **chỉ** nằm ở `:promotionLogic`, `commonMain`.
 - `commonMain` **không** được import `android.*`, `platform.*`, hay bất kỳ API riêng nền tảng nào.
-  Cần API nền tảng → dùng `expect`/`actual` (xem `SdkLock`, `KeyValueStorage`).
+  Cần API nền tảng → dùng `expect`/`actual` (xem `SdkLock`, `PromotionPreferences`).
 - UI **không** gọi thẳng Repository/DataSource; luôn đi qua use case.
 - Domain **không** biết DTO. Data map DTO ↔ domain model trước khi trả lên.
 
@@ -41,7 +41,7 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 ### 6. Thêm thư viện phải có lý do và được yêu cầu
 - Không thêm dependency/plugin mới vào `libs.versions.toml` khi chưa được yêu cầu rõ ràng.
 - Ưu tiên `expect`/`actual` tự viết cho nhu cầu nhỏ thay vì kéo thêm thư viện
-  (ví dụ `KeyValueStorage` thay cho `multiplatform-settings`).
+  (ví dụ `PromotionPreferences` thay cho `multiplatform-settings`).
 - **Không** thêm Hilt/Koin/Dagger — đã có Custom DI.
 - **Không** thêm annotation processor (kapt/KSP) vào `:promotionLogic` — sẽ vỡ target iOS.
 
@@ -60,6 +60,27 @@ Mỗi task, **trước khi sửa code**, trình bày ngắn gọn:
 1. **Tóm tắt rule liên quan** — những điều trong `/docs` ảnh hưởng tới task.
 2. **Kế hoạch triển khai** — các bước, file dự kiến sửa/thêm, lý do không vi phạm rule.
 3. **Hỏi ý kiến người phụ trách** trước khi làm thay đổi lớn (đổi public API, thêm thư viện, đổi kiến trúc).
+
+### 10. Android và iOS phải đồng bộ về logic và kiến trúc
+
+Hai nền tảng là **hai mặt của cùng một SDK**, không phải hai sản phẩm riêng. Bất cứ thứ gì host nhìn
+thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
+
+- **Logic nghiệp vụ**: chỉ ở `:promotionLogic` (rule 4). Không viết lại bằng Kotlin-riêng-Android hay
+  Swift. Kill-switch, gác cờ, chuẩn hoá lỗi, persistence… nằm ở lõi dùng chung.
+- **Bề mặt công khai & model**: `PromotionSDKApi`, DTO, `PromotionSDKTheme` + token, `PromotionThemeJson`,
+  `PromotionThemeDefaults`, `PromotionThemeDisplay`, error code, giá trị mặc định (kể cả **màu**) —
+  phải **cùng tên type, cùng tên field/hàm, cùng thứ tự, cùng cách document, cùng cấu trúc thư mục**.
+- **Sửa một bên = sửa bên kia trong cùng thay đổi.** Thêm field vào token → thêm cả hai + DTO JSON +
+  test. Đổi tên hàm → đổi cả hai.
+- **Khác biệt chỉ được phép khi *cố hữu* do nền tảng**, và **phải ghi rõ lý do trong docs**. Ví dụ đã
+  chấp nhận: Android SDK là `object` (theme toàn cục) vs iOS là instance (`sdk.configure`); Android cần
+  `Context` cho màu resource; registry đặt ở CoreUI bên iOS vì component VDS đọc nó; applier pattern chỉ
+  có ở Android. Không được lấy "khác nền tảng" làm cớ cho lệch **tuỳ tiện** (tên, thứ tự, giá trị default).
+- Kiến trúc UI giữ riêng theo rule 5 (MVI vs MVVM) — đó là cố hữu, đã ghi.
+
+> Kiểm bằng cách diff tên type/field/hàm hai bên (xem `PublicApi.md` và `Theming.md`). Lệch tên hoặc
+> lệch giá trị default = bug, không phải "đặc thù nền tảng".
 
 ---
 

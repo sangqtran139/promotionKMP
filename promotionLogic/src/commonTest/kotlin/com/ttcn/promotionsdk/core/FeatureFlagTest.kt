@@ -2,7 +2,7 @@ package com.ttcn.promotionsdk.core
 
 import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.local.FeatureFlagLocalDataSource
-import com.ttcn.promotionsdk.core.data.local.KeyValueStorage
+import com.ttcn.promotionsdk.core.data.local.PromotionPreferences
 import com.ttcn.promotionsdk.core.data.remote.KtorFeatureFlagApiService
 import com.ttcn.promotionsdk.core.data.remote.PromotionHttpClient
 import com.ttcn.promotionsdk.core.data.remote.FeatureFlagRemoteDataSource
@@ -29,10 +29,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private class InMemoryStorage : KeyValueStorage {
-    private val map = mutableMapOf<String, Boolean>()
+private class InMemoryStorage : PromotionPreferences {
+    private val map = mutableMapOf<String, Any>()
     override fun putBoolean(key: String, value: Boolean) { map[key] = value }
-    override fun getBoolean(key: String, default: Boolean): Boolean = map[key] ?: default
+    override fun getBoolean(key: String, default: Boolean): Boolean = map[key] as? Boolean ?: default
+    override fun putString(key: String, value: String) { map[key] = value }
+    override fun getString(key: String): String? = map[key] as? String
     override fun contains(key: String): Boolean = map.containsKey(key)
     override fun remove(key: String) { map.remove(key) }
     override fun clear() = map.clear()
@@ -45,7 +47,7 @@ private class CustomerProvider(private val id: String? = "c-1") : PromotionReque
 private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
 private fun featureFlags(
-    storage: KeyValueStorage,
+    storage: PromotionPreferences,
     handler: suspend MockRequestHandleScope.(HttpRequestData) -> HttpResponseData,
 ): PromotionFeatureFlagUseCases {
     val client = HttpClient(MockEngine(handler)) {

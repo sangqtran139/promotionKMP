@@ -50,15 +50,11 @@ final class ThemePreviewViewController: UIViewController {
         title = "Theme Playground"
         view.backgroundColor = .systemGroupedBackground
 
-        // Seed form bằng default THẬT của SDK, rồi phủ theme đã lưu lên trên.
-        // Mirror ThemePreviewFragment bên Android: loadDisplayDefaults → mergeDisplayWithSaved.
-        // Trước đây chưa có theme lưu thì mọi ô đều trống, còn Android hiện sẵn giá trị SDK.
+        // Seed form bằng default THẬT của SDK, rồi phủ theme đang áp lên trên.
+        // SDK đã tự khôi phục theme đã lưu lúc khởi tạo (PromotionSDK.init) → đọc qua `sdk.currentTheme`,
+        // demo không tự persist nữa. Mirror ThemePreviewFragment bên Android (dùng PromotionTheme.currentTheme).
         sdkDisplayDefaults = PromotionThemeDisplay.load()
-        let saved = ThemePreferenceManager.shared.load()
-        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: saved))
-        if let saved {
-            sdk.configure(theme: saved)
-        }
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: sdk.currentTheme))
         setupLayout()
         buildSections()
         reloadWidget()
@@ -162,8 +158,7 @@ final class ThemePreviewViewController: UIViewController {
 
     func applyTheme() {
         let theme = makeTheme()
-        sdk.configure(theme: theme)
-        ThemePreferenceManager.shared.save(theme)   // persist (mirror Android)
+        sdk.configure(theme: theme)   // SDK áp + lưu
         reloadWidget()
         toast("Đã áp dụng + lưu theme")
     }
@@ -171,8 +166,7 @@ final class ThemePreviewViewController: UIViewController {
     func resetTheme() {
         draft = DraftTheme()
         loadDraft(from: sdkDisplayDefaults)
-        sdk.configure(theme: nil)
-        ThemePreferenceManager.shared.clear()
+        sdk.configure(theme: nil)     // SDK xoá theme đã lưu
         for refresh in rowRefreshers { refresh() }
         for refresh in previewRefreshers { refresh() }
         reloadWidget()

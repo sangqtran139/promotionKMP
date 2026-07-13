@@ -6,10 +6,10 @@ import platform.Foundation.NSUserDefaults
  * Dùng một suite riêng (`promotion_sdk_prefs`) thay vì `standardUserDefaults`, để `clear()` không
  * xoá nhầm preference của app host — tương đương việc Android mở file prefs riêng.
  */
-internal class UserDefaultsStorage : KeyValueStorage {
+internal class UserDefaultsStorage : PromotionPreferences {
 
     private val defaults: NSUserDefaults =
-        NSUserDefaults(suiteName = KeyValueStorage.PREFS_NAME) ?: NSUserDefaults.standardUserDefaults
+        NSUserDefaults(suiteName = PromotionPreferences.PREFS_NAME) ?: NSUserDefaults.standardUserDefaults
 
     override fun putBoolean(key: String, value: Boolean) {
         defaults.setBool(value, key)
@@ -17,6 +17,12 @@ internal class UserDefaultsStorage : KeyValueStorage {
 
     override fun getBoolean(key: String, default: Boolean): Boolean =
         if (contains(key)) defaults.boolForKey(key) else default
+
+    override fun putString(key: String, value: String) {
+        defaults.setObject(value, key)
+    }
+
+    override fun getString(key: String): String? = defaults.stringForKey(key)
 
     override fun contains(key: String): Boolean = defaults.objectForKey(key) != null
 
@@ -31,4 +37,4 @@ internal class UserDefaultsStorage : KeyValueStorage {
     }
 }
 
-internal actual fun createKeyValueStorage(): KeyValueStorage = UserDefaultsStorage()
+internal actual fun createPreferences(): PromotionPreferences = UserDefaultsStorage()

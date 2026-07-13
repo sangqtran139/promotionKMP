@@ -8,6 +8,7 @@ import com.ttcn.promotionsdk.ui.theme.token.TabChipToken
 import com.ttcn.promotionsdk.ui.theme.token.TabUnderlineToken
 
 import android.content.Context
+import com.ttcn.promotionsdk.ui.theme.applytoken.TokenColorParser
 
 /**
  * Hex-string display model for theme preview UI.
@@ -71,7 +72,7 @@ object PromotionThemeDisplay {
     )
 
     fun load(context: Context): Defaults =
-        fromConfig(PromotionThemeDefaults.defaultConfig(context), context)
+        fromConfig(PromotionThemeDefaults.theme(context), context)
 
     fun mergeWithSaved(context: Context, sdk: Defaults, saved: PromotionSDKTheme?): Defaults {
         if (saved == null) return sdk
@@ -86,7 +87,7 @@ object PromotionThemeDisplay {
         )
     }
 
-    fun configFromDisplayValues(display: Defaults, sdk: Defaults): PromotionSDKTheme =
+    fun themeFromDisplayValues(display: Defaults, sdk: Defaults): PromotionSDKTheme =
         PromotionSDKTheme(
             buttonToken = display.button.toToken().takeIf { display.button != sdk.button },
             searchBarToken = display.searchBar.toToken()

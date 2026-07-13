@@ -1,4 +1,4 @@
-package com.ttcn.promotionsdk.ui.theme
+package com.ttcn.promotionsdk.ui.theme.applytoken
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable

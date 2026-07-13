@@ -3,7 +3,7 @@ package com.ttcn.promotionsdk.core.data.local
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 
-internal class FeatureFlagLocalDataSource(private val storage: KeyValueStorage) {
+internal class FeatureFlagLocalDataSource(private val storage: PromotionPreferences) {
 
     fun save(flags: PromotionFeatureFlags) {
         storage.putBoolean(KEY_HAS_CACHE, true)

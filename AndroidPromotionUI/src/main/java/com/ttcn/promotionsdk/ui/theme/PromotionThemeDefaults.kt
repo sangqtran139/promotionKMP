@@ -72,7 +72,7 @@ internal object PromotionThemeDefaults {
         actionTextColor = context.retrieveColor(R.color.color_EE0033),
     )
 
-    fun defaultConfig(context: Context) = PromotionSDKTheme(
+    fun theme(context: Context) = PromotionSDKTheme(
         buttonToken = button(context),
         searchBarToken = searchBar(context),
         listItemToken = listItem(context),
