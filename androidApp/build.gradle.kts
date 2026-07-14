@@ -38,39 +38,37 @@ android {
     }
 }
 
+val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+
 dependencies {
-    // ─── SDK: nạp dạng FILE AAR, đúng như app host của đối tác ───────────────────────────
-    // Không dùng `implementation(projects.androidPromotionUI)`: mục đích của module này là
-    // nghiệm thu bộ AAR chạy được ngoài đời. Chạy `./gradlew syncSdkAars` để làm mới hai file.
-    implementation(fileTree("libs") { include("*.aar") })
-
-    // AAR **không mang theo dependency** (không có POM). Host phải khai báo tay toàn bộ
-    // dependency của SDK — nếu thiếu sẽ crash `NoClassDefFoundError` lúc runtime, không lỗi build.
+    // ─── SDK: nạp từ Maven, đúng như app host của đối tác ────────────────────────────────
+    // Artifact mang theo POM/metadata → Gradle tự kéo promotion-logic, Ktor, AppCompat, Glide…
+    // đúng version SDK đã compile. Host **không** phải khai tay dependency nào của SDK.
     //
-    // Dependency của promotionLogic.aar:
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.contentNegotiation)
-    implementation(libs.ktor.client.logging)
-    implementation(libs.ktor.serialization.kotlinxJson)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.coroutines.core)
+    // Trước khi build app, phải có artifact trong ~/.m2:
+    //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+    //
+    // Sửa SDK xong mà quên publish thì app vẫn build với bản cũ — im lặng, y như "quên syncSdkAars"
+    // ngày trước. Vòng lặp dev nhanh thì dùng `implementation(projects.androidPromotionUI)`;
+    // để nghiệm thu bộ artifact như host thật thì giữ dòng dưới. Xem docs/Distribution.md §5.
+    implementation("com.ttcn.promotion:promotionUI:$sdkVersion")
 
-    // Dependency của AndroidPromotionUI.aar:
+    // ─── androidx/material: HOST vẫn phải khai ───────────────────────────────────────────
+    // Hai lý do khác nhau, đừng lẫn:
+    //
+    // 1. App demo TỰ dùng: layout của nó có MaterialButton, ConstraintLayout, TabLayout…
+    //    Host thật cũng phải khai những gì chính app mình dùng — chuyện bình thường.
+    //
+    // 2. SDK **phơi androidx ra public API** nhưng khai `implementation`: `PRMBaseFragment<VB> :
+    //    Fragment()`, `PRMBaseActivity<VB> : AppCompatActivity()`, `openMyPromotion(FragmentActivity)`.
+    //    `implementation` → metadata đặt chúng ở scope **runtime** → host KHÔNG thấy lúc compile,
+    //    nên `class X : PRMBaseFragment<B>()` không biên dịch được nếu thiếu dòng fragment/appcompat
+    //    dưới đây. Muốn host khỏi phải đoán thì SDK đổi sang `api(...)` cho đúng những lib nằm trong
+    //    signature public — xem docs/Distribution.md §5.
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.fragment.ktx)
-    implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.material)
-    implementation(libs.glide)
-    implementation(libs.shimmer)
-    implementation(libs.shapeofview)
-    implementation(libs.sdp.android)
-    implementation(libs.timber)
-    implementation(libs.gson)
+    implementation(libs.androidx.constraintlayout)
 
     // ─── Của riêng app demo ──────────────────────────────────────────────────────────────
     implementation(libs.kotlinx.coroutines.android)
@@ -78,19 +76,4 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging)
-}
-
-/**
- * Làm mới hai file AAR trong `libs/` từ output của `:promotionLogic` và `:AndroidPromotionUI`.
- *
- * Đây là điểm yếu cố hữu của cách tích hợp bằng file: sửa SDK xong mà quên chạy task này thì
- * app demo vẫn build với AAR cũ, **không có cảnh báo nào**.
- */
-tasks.register<Copy>("syncSdkAars") {
-    dependsOn(":promotionLogic:assemble", ":AndroidPromotionUI:assembleRelease")
-    from(rootProject.file("promotionLogic/build/outputs/aar/promotionLogic.aar"))
-    from(rootProject.file("AndroidPromotionUI/build/outputs/aar")) {
-        include("AndroidPromotionUI-*-release.aar")
-    }
-    into(layout.projectDirectory.dir("libs"))
 }

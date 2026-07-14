@@ -2,9 +2,15 @@ plugins {
     // AGP 9 đã tích hợp sẵn Kotlin — thêm `org.jetbrains.kotlin.android` sẽ lỗi.
     // Không khai version vì AGP đã có trên classpath từ :androidApp.
     id("com.android.library")
+    `maven-publish`
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+
+// Toạ độ Maven. Cần `group` + `version` để Gradle dịch `projects.promotionLogic` bên dưới thành
+// toạ độ thật trong metadata — không có thì publish hỏng. Xem docs/Distribution.md.
+group = "com.ttcn.promotion"
+version = sdkVersion
 
 android {
     // Giữ đúng namespace của SDK gốc: `R` và `databinding.*` sinh ra ở com.ttcn.promotionsdk.*
@@ -28,11 +34,41 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
+    publishing {
+        // Chỉ phát hành bản release. Kèm sources để host debug vào trong SDK được.
+        singleVariant("release") { withSourcesJar() }
+    }
 }
 
 // AAR đặt tên theo phiên bản: AndroidPromotionUI-<version>.aar
 base {
     archivesName = "AndroidPromotionUI-$sdkVersion"
+}
+
+/**
+ * Phát hành `com.ttcn.promotion:promotionUI:<SDK_VERSION>` — cặp đôi với `promotionLogic`.
+ *
+ * Khác hẳn cách ship file AAR: artifact đi kèm POM + Gradle Module Metadata, nên host khai một dòng
+ * và Gradle tự kéo `promotionLogic`, Ktor, Glide… đúng version. Các `implementation` dưới đây vào
+ * metadata ở scope **runtime** → host không thấy chúng trên compile classpath.
+ *
+ * Đổi artifactId ở đây **an toàn** vì host khai thẳng toạ độ này. Ngược lại, artifactId của
+ * `:promotionLogic` thì **không** được đổi — xem ghi chú trong `promotionLogic/build.gradle.kts`.
+ *
+ * Chạy: `./gradlew :AndroidPromotionUI:publishToMavenLocal` (xem docs/Distribution.md §3.4).
+ */
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            afterEvaluate { from(components["release"]) }
+            artifactId = "promotionUI"
+        }
+    }
+    repositories {
+        // Bước 1: ~/.m2. Đổi sang Nexus/Artifactory khi luồng đã thông — Distribution.md §3.4.
+        mavenLocal()
+    }
 }
 
 dependencies {

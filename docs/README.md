@@ -94,6 +94,7 @@ Xem [IosUIGuide.md](./IosUIGuide.md).
 | [AndroidUIGuide.md](./AndroidUIGuide.md) | UI Android: XML View, Data/View Binding, RecyclerView, MVI. |
 | [IosUIGuide.md](./IosUIGuide.md) | UI iOS: UIKit, XIB, MVVM + Builder/Router, RxSwift. |
 | [Theming.md](./Theming.md) | Hệ thống theme/token, tùy biến brand cho host — cả hai nền tảng. |
+| [Distribution.md](./Distribution.md) | Phát hành SDK Android: file AAR (hiện tại) ↔ Maven — cách làm, ràng buộc nào mất, ràng buộc nào còn. |
 | [ComposeGuide.md](./ComposeGuide.md) | Trạng thái Compose Multiplatform và điều kiện áp dụng. |
 | [features/](./features/README.md) | Tài liệu theo tính năng, ánh xạ màn hình Android ↔ iOS. |
 

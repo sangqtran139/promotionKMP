@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+#
+# Build SDK Android + app demo trên một máy bất kỳ.
+#
+# Từ khi SDK phát hành qua Maven (docs/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR trong
+# libs/ nữa — nó khai toạ độ `com.ttcn.promotion:promotionUI`. Nghĩa là **phải publish SDK trước**,
+# nếu không Gradle báo "Could not find com.ttcn.promotion:promotionUI". Script này ép đúng thứ tự đó.
+#
+#   ./scripts/build-android.sh                 # publish SDK → build app demo (APK debug)
+#   ./scripts/build-android.sh --skip-app      # chỉ publish SDK vào ~/.m2
+#   ./scripts/build-android.sh --clean         # dọn build cũ rồi làm lại từ đầu
+#   ./scripts/build-android.sh --install       # build xong cài luôn vào máy/emulator đang cắm
+#   ./scripts/build-android.sh --version 1.2.0 # publish số version khác (mặc định 1.0.0)
+#
+set -euo pipefail
+
+cd "$(dirname "$0")/.."   # luôn chạy từ gốc repo, gọi script từ đâu cũng được
+
+SKIP_APP=false
+DO_CLEAN=false
+DO_INSTALL=false
+SDK_VERSION=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --skip-app) SKIP_APP=true; shift ;;
+        --clean)    DO_CLEAN=true; shift ;;
+        --install)  DO_INSTALL=true; shift ;;
+        --version)  SDK_VERSION="${2:-}"; shift 2 ;;
+        -h|--help)  sed -n '3,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *)          echo "Tham số lạ: $1 (xem --help)" >&2; exit 1 ;;
+    esac
+done
+
+GRADLE_ARGS=()
+[[ -n "$SDK_VERSION" ]] && GRADLE_ARGS+=("-PSDK_VERSION=$SDK_VERSION")
+
+# bash 3.2 (mặc định trên macOS) coi mảng RỖNG là "unbound" dưới `set -u`, nên không thể viết
+# thẳng "${GRADLE_ARGS[@]}". Hàm này bung mảng an toàn khi nó rỗng.
+gradle() { ./gradlew "$@" ${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}; }
+
+# ─── Điều kiện cần: JDK + Android SDK ────────────────────────────────────────────────────────
+# Gradle sẽ tự báo lỗi thiếu JDK, nhưng Android SDK thì thông báo khó hiểu — chặn sớm cho rõ.
+
+if [[ ! -f local.properties && -z "${ANDROID_HOME:-}" && -z "${ANDROID_SDK_ROOT:-}" ]]; then
+    cat >&2 <<'MSG'
+Chưa thấy Android SDK.
+
+Làm một trong hai:
+  • Mở project bằng Android Studio một lần (nó tự sinh local.properties), hoặc
+  • Tạo tay:  echo "sdk.dir=$HOME/Library/Android/sdk" > local.properties   (macOS)
+              echo "sdk.dir=$HOME/Android/Sdk"          > local.properties   (Linux)
+MSG
+    exit 1
+fi
+
+if [[ "$DO_CLEAN" == true ]]; then
+    echo "▸ Dọn build cũ"
+    gradle clean
+fi
+
+# ─── 1. Publish SDK vào ~/.m2 ────────────────────────────────────────────────────────────────
+# Bước bắt buộc, và là bước dễ quên nhất: sửa SDK xong mà không publish thì app vẫn build với bản
+# cũ trong ~/.m2 — im lặng, không cảnh báo (docs/Distribution.md §5).
+
+echo "▸ Publish SDK vào ~/.m2 (promotionLogic + promotionUI)"
+gradle :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+
+if [[ "$SKIP_APP" == true ]]; then
+    echo "✓ Xong. SDK đã nằm trong ~/.m2/repository/com/ttcn/promotion/"
+    exit 0
+fi
+
+# ─── 2. Build app demo (tiêu thụ SDK từ ~/.m2 như host thật) ──────────────────────────────────
+
+echo "▸ Build app demo"
+gradle :androidApp:assembleDebug
+
+APK="androidApp/build/outputs/apk/debug/androidApp-debug.apk"
+echo "✓ Xong: $APK"
+
+if [[ "$DO_INSTALL" == true ]]; then
+    echo "▸ Cài vào thiết bị đang cắm"
+    gradle :androidApp:installDebug
+    echo "✓ Đã cài."
+fi
