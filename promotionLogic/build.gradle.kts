@@ -60,13 +60,17 @@ kotlin {
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
-    // Gom ba target thành một PromotionLogic.xcframework để iosPromotionUI link vào.
-    // iosX64 có mặt để slice simulator bao được cả Mac Intel, khớp với VDSPromotionSDK.xcframework hiện có.
+    // Gom hai target thành một PromotionLogic.xcframework để iosPromotionUI link vào.
+    //
+    // KHÔNG có iosX64 (simulator trên Mac Intel). Bản trước có, để khớp VDSPromotionSDK.xcframework
+    // cũ — nhưng arch đó chỉ chạy trên máy dev, không bao giờ lên App Store, mà lại làm slice
+    // simulator nặng gấp đôi (19MB → 9,5MB khi bỏ). Đổi lại: **Mac Intel không chạy được simulator**
+    // của SDK này nữa. Phải giữ đồng bộ với `EXCLUDED_ARCHS` bên iosPromotionUI (xem pbxproj) —
+    // lệch nhau thì link lỗi "building for iOS Simulator, but linking object file built for …".
     val xcf = XCFramework("PromotionLogic")
 
     listOf(
         iosArm64(),
-        iosX64(),
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         // SDK iOS khai minos 13.0. Mặc định Kotlin/Native build cho iOS 15, khiến linker cảnh báo
@@ -75,7 +79,7 @@ kotlin {
             compileTaskProvider.configure {
                 compilerOptions.freeCompilerArgs.add(
                     "-Xoverride-konan-properties=osVersionMin.ios_arm64=13.0;" +
-                        "osVersionMin.ios_x64=13.0;osVersionMin.ios_simulator_arm64=13.0"
+                        "osVersionMin.ios_simulator_arm64=13.0"
                 )
             }
         }

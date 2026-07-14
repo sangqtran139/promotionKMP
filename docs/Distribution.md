@@ -363,6 +363,65 @@ Bước 1 do `iosPromotionUI/scripts/build-xcframework.sh` lo (nó tự gọi Gr
 > `xcuserdata` thì chỉ máy của người tạo mới thấy — máy khác clone về, `xcodebuild -scheme iosApp`
 > không tìm ra. Và `-derivedDataPath` bắt buộc đi kèm `-scheme`, không dùng được với `-target`.
 
+### 6.1. Mỗi bản phát hành phải **lưu dSYM lại**
+
+Target framework đặt `STRIP_STYLE = non-global` (Release), nên binary giao cho host **không còn
+local symbol**. Đây là chủ ý: 30.500 local symbol — 8.680 trong đó là `kfun:`/`ktype:` của
+Kotlin/Native link tĩnh vào — làm `__LINKEDIT` phình 2,6MB trên tổng 9,5MB. Strip xong slice device
+còn 7,3MB, và 1.384 global symbol host cần để link vẫn nguyên vẹn.
+
+Cái giá: **crash report chỉ symbolicate được bằng dSYM.** Không có nó thì stack trace chỉ còn địa
+chỉ trần — kể cả phần Kotlin.
+
+`build-xcframework.sh` đặt dSYM **cạnh** xcframework:
+
+```
+iosPromotionUI/build/
+├── PromotionSDKUI.xcframework          ← giao cho host
+└── PromotionSDKUI.framework.dSYM       ← GIỮ LẠI, đừng để rơi
+```
+
+> ⚠️ Thư mục `build/` bị `rm -rf` ở **đầu** mỗi lần chạy script. dSYM không được archive đi nơi khác
+> thì lần build sau là mất vĩnh viễn, và mọi crash report của bản đã phát hành thành vô dụng —
+> không dựng lại được, vì UUID của bản build mới sẽ khác.
+
+Vì sao để cạnh chứ không nhét vào trong bằng `create-xcframework -debug-symbols` (cách "đúng sách"):
+riêng dSYM device đã **26MB**, cộng bản simulator thì gói phân phối phồng từ ~35MB lên hơn 100MB.
+Host không cần dSYM để build — chỉ người giữ bản phát hành cần, lúc đọc crash report. Nên nó là
+**artifact của quy trình release**, không phải thứ gửi cho host.
+
+Kiểm tra dSYM đúng với binary đang phát hành (hai UUID phải trùng):
+
+```bash
+dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.framework.dSYM/Contents/Resources/DWARF/PromotionSDKUI
+dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
+```
+
+### 6.2. Không hỗ trợ simulator trên Mac Intel
+
+XCFramework có đúng hai slice:
+
+| Slice | Dùng khi nào |
+|---|---|
+| `ios-arm64` | Bản lên App Store — **chỉ slice này ship** |
+| `ios-arm64-simulator` | Dev của app host chạy simulator trên Mac Apple Silicon |
+
+Slice simulator **không** ship, nhưng vẫn bắt buộc phải có: thiếu nó thì dev bên host bấm Run với
+simulator là ăn lỗi link *"building for iOS Simulator, but linking in object file built for iOS"*, và
+họ buộc phải cắm máy thật.
+
+`x86_64` (simulator trên **Mac Intel**) đã bị bỏ: nó không bao giờ lên App Store mà làm slice
+simulator nặng gấp đôi (19MB → 9,5MB). Hệ quả cần báo cho host: **ai còn dùng Mac Intel sẽ không
+chạy được simulator.** Bản `VDSPromotionSDK.xcframework` cũ của ttcn-ios *có* x86_64, nên với host
+đây là thay đổi hành vi, không phải chuyện nội bộ.
+
+Việc bỏ arch này đặt ở **hai chỗ, phải luôn khớp nhau**:
+
+- `promotionLogic/build.gradle.kts` — danh sách target Kotlin, đã bỏ `iosX64()`.
+- `iosPromotionUI/…/project.pbxproj` — `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` (cả Debug lẫn Release).
+
+Sửa một bên quên bên kia thì lỗi link hiện ra ở tận bước archive, thông báo không trỏ về nguyên nhân.
+
 ---
 
 ## 7. Liên quan

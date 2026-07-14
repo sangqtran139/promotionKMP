@@ -417,6 +417,12 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				// Simulator chi build arm64 (Apple Silicon). x86_64 = simulator tren Mac Intel:
+				// khong bao gio len App Store, ma lam slice simulator nang gap doi (19MB → 9,5MB).
+				// He qua: Mac Intel KHONG chay duoc simulator voi SDK nay nua.
+				// Phai khop voi target Kotlin ben `promotionLogic/build.gradle.kts` (da bo iosX64) —
+				// lech nhau thi link loi "building for iOS Simulator, but linking object file built for…".
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				ENABLE_MODULE_VERIFIER = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -456,6 +462,9 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				// Xem chu thich o config Debug. Hai config phai giong nhau: archive dung Release,
+				// nhung dev mo project bang Xcode thi build Debug — lech thi loi chi hien o mot ben.
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
 				ENABLE_MODULE_VERIFIER = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -476,6 +485,13 @@
 				PRODUCT_NAME = PromotionSDKUI;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				// Mac dinh `debugging` chi go debug symbol, giu lai ~30.500 local symbol
+				// (8.680 cai la kfun:/ktype: cua Kotlin/Native link tinh vao day) → __LINKEDIT
+				// phinh 2,6MB tren tong 9,5MB binary. `non-global` go not local symbol, giu
+				// nguyen 1.384 global symbol ma host can de link. Binary: 9,5MB → 7,3MB.
+				// Doi lai, crash log phai symbolicate bang dSYM — xem `-debug-symbols` trong
+				// scripts/build-xcframework.sh.
+				STRIP_STYLE = "non-global";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_MODULE = YES;
