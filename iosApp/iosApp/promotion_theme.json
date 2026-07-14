@@ -1,0 +1,42 @@
+{
+  "button": {
+    "backgroundColor": "#2CA196",
+    "textColor": "#FFFFFF",
+    "shadowColor": "#332CA196",
+    "cornerRadius": 12.0
+  },
+  "searchBar": {
+    "borderColor": "#2CA196",
+    "hintTextColor": "#7A7A7A",
+    "textColor": "#222222",
+    "iconColor": "#2CA196",
+    "cornerRadius": 10.0
+  },
+  "listItem": {
+    "linkTextColor": "#2CA196",
+    "usedBadgeTextColor": "#7A7A7A",
+    "usedBadgeBackgroundColor": "#F4F4F4",
+    "radioButtonStrokeColor": "#A7A7A7",
+    "radioButtonSelectedStrokeColor": "#2CA196"
+  },
+  "tabChip": {
+    "activeBackgroundColor": "#2CA196",
+    "inactiveBackgroundColor": "#EAF6F4",
+    "activeTextColor": "#FFFFFF",
+    "inactiveTextColor": "#4E4E4E",
+    "cornerRadius": 16.0
+  },
+  "tabUnderline": {
+    "indicatorColor": "#2CA196",
+    "activeTextColor": "#2CA196",
+    "inactiveTextColor": "#7A7A7A",
+    "backgroundColor": "#FFFFFF"
+  },
+  "discountBadge": {
+    "availableTextColor": "#2CA196",
+    "unavailableTextColor": "#A7A7A7",
+    "availableBackgroundColor": "#EAF6F4",
+    "unavailableBackgroundColor": "#F4F4F4",
+    "actionTextColor": "#2CA196"
+  }
+}

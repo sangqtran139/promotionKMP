@@ -98,6 +98,45 @@ PromotionThemeJson.toJson(theme)  // iOS — cùng tên type, cùng hàm
 PromotionThemeJson.fromJson(json)
 ```
 
+### 3.0. Dùng một file JSON cho cả hai nền tảng — **được**
+
+Đối tác ship **một** file `promotion_theme.json`, hai nền tảng đọc chung. Host chỉ cần đọc file
+thành chuỗi rồi `fromJson` — SDK không đọc file hộ, và **không** có API nhận đường dẫn file:
+
+```kotlin
+// Android — file ở assets/
+val json = context.assets.open("promotion_theme.json").bufferedReader().use { it.readText() }
+val theme = PromotionThemeJson.fromJson(json)   // null = JSON hỏng
+PromotionSDK.configure(theme)
+```
+```swift
+// iOS — file trong bundle
+let url = Bundle.main.url(forResource: "promotion_theme", withExtension: "json")!
+let theme = PromotionThemeJson.fromJson(try String(contentsOf: url, encoding: .utf8))
+sdk.configure(theme: theme)
+```
+
+`fromJson` trả `null`/`nil` khi JSON hỏng — **không ném lỗi**, nên host phải tự xử: bỏ qua (giữ theme
+cũ) hay báo lỗi. Đưa thẳng `null` vào `configure` sẽ **xoá** theme về mặc định, thường không phải ý
+bạn muốn.
+
+Cùng bộ token đó cũng dựng được **bằng object**, không qua JSON — chọn cách nào là tuỳ host:
+
+| | File JSON | Object trong code |
+|---|---|---|
+| Đổi màu không cần build lại app | ✅ (nếu file tải từ server) | ❌ |
+| Sai chính tả key → phát hiện lúc | chạy (im lặng bỏ qua field lạ) | biên dịch |
+| Ship chung Android + iOS | ✅ một file | ❌ viết hai lần |
+
+**Demo chạy được** ở màn Theme Playground, hai nút cạnh nút "Apply": *Load JSON file* và *Apply
+object*. Cùng cho ra bộ teal `#2CA196` để thấy hai đường đi ra một kết quả.
+
+| | Android | iOS |
+|---|---|---|
+| File theme | `androidApp/src/main/assets/promotion_theme.json` | `iosApp/iosApp/promotion_theme.json` |
+| Hai nguồn theme | `DemoThemeSource.kt` | `DemoThemeSource.swift` |
+| Nút + xử lý | `ThemePreviewFragment` | `ThemePreviewViewController` |
+
 ### 3.1. Persistence — SDK tự lưu, tự khôi phục
 
 Serialize (trên) + lưu qua `PromotionThemeStore` (giữ key `promotion_theme_config_v1`) → xuống lõi

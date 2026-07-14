@@ -34,6 +34,7 @@ import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
 import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
+import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.applytoken.PromotionListItemTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeDisplay.Defaults
@@ -92,6 +93,8 @@ class ThemePreviewFragment : Fragment() {
             onReset()
         }
         binding.btnApply.setOnClickListener { onApply() }
+        binding.btnLoadJsonFile.setOnClickListener { onApplyFromJsonFile() }
+        binding.btnApplyObject.setOnClickListener { onApplyFromObject() }
 
         registerFields()
         buildCards()
@@ -886,6 +889,33 @@ class ThemePreviewFragment : Fragment() {
         sdkDefaults = PromotionThemeDisplay.load(requireContext())
         themeDisplay = sdkDefaults
         buildCards()
+    }
+
+    /** Demo: theme đến từ **file JSON** (`assets/promotion_theme.json`, dùng chung với iOS). */
+    private fun onApplyFromJsonFile() {
+        val theme = DemoThemeSource.fromJsonFile(requireContext())
+        if (theme == null) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.prm_theme_json_invalid),
+                Toast.LENGTH_LONG,
+            ).show()
+            return
+        }
+        applyTheme(theme, R.string.prm_theme_json_applied)
+    }
+
+    /** Demo: cùng bộ màu nhưng dựng bằng token trong code, không qua JSON. */
+    private fun onApplyFromObject() {
+        applyTheme(DemoThemeSource.fromObject(), R.string.prm_theme_object_applied)
+    }
+
+    /** Áp + lưu vào SDK, rồi nạp lại form để thấy đúng giá trị vừa áp. */
+    private fun applyTheme(theme: PromotionSDKTheme, @StringRes messageRes: Int) {
+        PromotionSDK.configure(theme)
+        reloadDisplayValues()
+        buildCards()
+        Toast.makeText(requireContext(), getString(messageRes), Toast.LENGTH_LONG).show()
     }
 
     private fun onApply() {

@@ -163,6 +163,29 @@ final class ThemePreviewViewController: UIViewController {
         toast("Đã áp dụng + lưu theme")
     }
 
+    /// Demo: theme đến từ **file JSON** (`promotion_theme.json` trong bundle, dùng chung với Android).
+    func applyThemeFromJsonFile() {
+        guard let theme = DemoThemeSource.fromJsonFile() else {
+            return toast("promotion_theme.json hỏng — giữ theme cũ")
+        }
+        apply(theme, message: "Đã áp theme từ promotion_theme.json")
+    }
+
+    /// Demo: cùng bộ màu nhưng dựng bằng token trong code, không qua JSON.
+    func applyThemeFromObject() {
+        apply(DemoThemeSource.fromObject(), message: "Đã áp theme dựng bằng PromotionSDKTheme object")
+    }
+
+    /// Áp + lưu vào SDK, rồi nạp lại form/preview để thấy đúng giá trị vừa áp.
+    private func apply(_ theme: PromotionSDKTheme, message: String) {
+        sdk.configure(theme: theme)
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: sdk.currentTheme))
+        for refresh in rowRefreshers { refresh() }
+        for refresh in previewRefreshers { refresh() }
+        reloadWidget()
+        toast(message)
+    }
+
     func resetTheme() {
         draft = DraftTheme()
         loadDraft(from: sdkDisplayDefaults)

@@ -166,6 +166,8 @@ extension ThemePreviewViewController {
         addSection("DISCOUNT BADGE", rows: discountRows) { [weak self] in self?.discountBadgePreview() }
 
         contentStack.addArrangedSubview(actionButton("✓  Áp dụng", color: .systemGreen) { [weak self] in self?.applyTheme() })
+        contentStack.addArrangedSubview(actionButton("📄  Áp theme từ file JSON", color: .systemTeal) { [weak self] in self?.applyThemeFromJsonFile() })
+        contentStack.addArrangedSubview(actionButton("{}  Áp theme bằng object", color: .systemOrange) { [weak self] in self?.applyThemeFromObject() })
         contentStack.addArrangedSubview(actionButton("↺  Reset về mặc định", color: .systemGray) { [weak self] in self?.resetTheme() })
         contentStack.addArrangedSubview(actionButton("→  Mở màn Ưu đãi (UI)", color: .systemBlue) { [weak self] in self?.openMyPromotions() })
 
