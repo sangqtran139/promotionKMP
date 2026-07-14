@@ -3,11 +3,14 @@ package com.ttcn.promotionsdk.app
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.api.PromotionApiResult
+import kotlinx.coroutines.launch
 
 class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
 
@@ -44,9 +47,36 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
             Log.d(TAG, "Opening MyPromotion via PromotionSDK.openMyPromotion")
             PromotionSDK.openMyPromotion(requireActivity(), R.id.layoutRoot)
         }
+
+        binding.btnOpenPromotionDetail.setOnClickListener {
+            Log.d(TAG, "Opening PromotionDetail via PromotionSDK.openPromotionDetail")
+            openPromotionDetailDirect()
+        }
+    }
+
+    /**
+     * Mở thẳng màn chi tiết, KHÔNG qua danh sách — mô phỏng host bấm push notification / deeplink.
+     *
+     * Ưu tiên voucherId thật (voucher đầu tiên của khách) để màn có dữ liệu đầy đủ; khách chưa có
+     * voucher hoặc API lỗi thì **vẫn vào** bằng [FALLBACK_VOUCHER_ID] — mục đích của nút là xem được
+     * màn chi tiết, không phải kiểm tra API. Đối xứng với nút bên demo iOS.
+     */
+    private fun openPromotionDetailDirect() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val voucherId = runCatching {
+                (PromotionSDK.api.getVouchers(page = 0, size = 1) as? PromotionApiResult.Success)
+                    ?.data?.vouchers?.firstOrNull()?.id
+            }.getOrNull() ?: FALLBACK_VOUCHER_ID
+
+            Log.d(TAG, "openPromotionDetail(voucherId=$voucherId)")
+            PromotionSDK.openPromotionDetail(requireActivity(), voucherId, R.id.layoutRoot)
+        }
     }
 
     private companion object {
         const val TAG = "PromotionLauncher"
+
+        /** Ngoài đời host đã có sẵn id (payload notification) nên không cần bước fetch ở trên. */
+        const val FALLBACK_VOUCHER_ID = "VOUCHER-DEMO-001"
     }
 }

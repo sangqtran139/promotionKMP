@@ -12,6 +12,7 @@ import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
+import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeRegistry
 import com.ttcn.promotionsdk.ui.theme.PromotionThemeStore
@@ -24,6 +25,7 @@ import kotlinx.coroutines.launch
 object PromotionSDK {
 
     private const val TAG_MY_PROMOTION = "prm_my_promotion"
+    private const val TAG_PROMOTION_DETAIL = "prm_promotion_detail"
 
     private var callback: PromotionSDKCallback? = null
     private var contextProvider: PromotionContextProvider? = null
@@ -138,6 +140,55 @@ object PromotionSDK {
                 }
             }
             .addToBackStack(TAG_MY_PROMOTION)
+            .commit()
+    }
+
+    /**
+     * Mở thẳng màn "Chi tiết ưu đãi" theo [voucherId], **không** qua danh sách.
+     *
+     * Dùng khi host đã biết id — vd bấm vào push notification, hoặc deeplink từ banner ngoài SDK.
+     * Đối ứng `sdk.openPromotionDetail(voucherId:from:)` bên iOS.
+     *
+     * Gác bởi cờ [PromotionFeatureFlag.VOUCHER_DETAIL] y như đường vào nội bộ
+     * (`PRMBaseFragment.openPromotionDetail`): TẮT → thông báo PRM_MOB_021 và **không** mở màn.
+     * Gác ở đây là bắt buộc — kill-switch không được có cửa sau chỉ vì host gọi thẳng entry.
+     *
+     * Màn tự fetch chi tiết theo [voucherId]; trong lúc chờ hiện shimmer.
+     *
+     * @param activity Activity host (FragmentActivity / AppCompatActivity).
+     * @param voucherId Id voucher cần xem.
+     * @param containerViewId Khác null → `replace` trên container này; null → `add` lên
+     * `android.R.id.content`. Cùng quy ước với [openMyPromotion].
+     *
+     * @throws IllegalStateException khi chưa gọi [init].
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun openPromotionDetail(
+        activity: FragmentActivity,
+        voucherId: String,
+        containerViewId: Int? = null,
+    ) {
+        check(PromotionContainer.isInitialized()) {
+            "PromotionSDK.init() must be called before openPromotionDetail()."
+        }
+        if (!PromotionFeatureGate.canOpenVoucherDetail()) {
+            Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val fm = activity.supportFragmentManager
+        if (fm.findFragmentByTag(TAG_PROMOTION_DETAIL) != null) return
+        val fragment = PromotionDetailFragment.newInstance(voucherId)
+        fm.beginTransaction()
+            .setReorderingAllowed(true)
+            .apply {
+                if (containerViewId != null) {
+                    replace(containerViewId, fragment, TAG_PROMOTION_DETAIL)
+                } else {
+                    add(android.R.id.content, fragment, TAG_PROMOTION_DETAIL)
+                }
+            }
+            .addToBackStack(TAG_PROMOTION_DETAIL)
             .commit()
     }
 

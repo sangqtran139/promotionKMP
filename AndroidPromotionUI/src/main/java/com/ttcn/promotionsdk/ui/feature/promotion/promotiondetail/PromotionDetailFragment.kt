@@ -68,7 +68,14 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                 return@collectFlow
             }
 
-            hideDetailLoading(showContent = false)
+            // Không có data (voucherId không tồn tại, hoặc API lỗi).
+            //
+            // Bản cũ `hideDetailLoading(showContent = false)` ẩn sạch content → user nhận một màn
+            // trắng, không tab, không biết đang ở đâu. Giờ VẪN dựng khung đầy đủ với dữ liệu trống —
+            // đúng như iOS: hai tab "Thông tin chi tiết" / "Hướng dẫn sử dụng" vẫn có, nội dung để
+            // trống, ảnh rơi về placeholder xám mặc định của layout.
+            hideDetailLoading()
+            bindEmptyContent()
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
@@ -140,6 +147,30 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                 }
             }
         }
+    }
+
+    /**
+     * Khung màn khi KHÔNG có data — vẫn đủ 2 tab, chữ để trống, ảnh xám mặc định.
+     *
+     * CỐ Ý không đụng vào `imgBanner` và `circleLogo`: layout đã khai sẵn
+     * `@drawable/prm_bg_image_placeholder` và `@drawable/prm_background_shimmer_circle`, nên cứ để
+     * nguyên là ra đúng ảnh xám. Gọi `loadPromotionVoucherBanner("")` ở đây chỉ tổ nạp lại đúng cái
+     * placeholder đó qua Glide, còn `circleLogo.background = null` (như [bindDetailContent] làm) sẽ
+     * **xoá mất** vòng tròn xám.
+     *
+     * Tab vẫn dựng với nội dung rỗng để user thấy màn hình có cấu trúc, không phải khoảng trắng.
+     */
+    private fun bindEmptyContent() {
+        binding.txtVoucherName.text = ""
+        binding.tvContent.text = ""
+        binding.tvExpired.text = ""
+        binding.tvUse.isVisible = false
+
+        bindDetailTabsIfNeeded(
+            voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),
+            descriptionHtml = "",
+            guidelineHtml = "",
+        )
     }
 
     private fun bindDetailTabsIfNeeded(

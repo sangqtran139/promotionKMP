@@ -85,6 +85,9 @@ protocol PromotionServing: AnyObject {
 
     /// Mở màn "Ưu đãi của tôi / Chi tiết" (không cần order).
     func openMyPromotions(from viewController: UIViewController)
+    /// Mở thẳng màn chi tiết một ưu đãi, không qua danh sách. Host dùng khi đã biết `voucherId`
+    /// (vd: bấm vào push notification, hoặc deeplink từ banner ngoài SDK).
+    func openPromotionDetail(voucherId: String, from viewController: UIViewController)
     /// Tạo widget cho màn thanh toán (truyền order tại đây, không re-init).
     func makeCheckoutWidget(from viewController: UIViewController, order: OrderContext) -> UIView
 
@@ -168,6 +171,10 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func openMyPromotions(from viewController: UIViewController) {
         sdk?.openMyPromotion(from: viewController)
+    }
+
+    func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
+        sdk?.openPromotionDetail(voucherId: voucherId, from: viewController)
     }
 
     func makeCheckoutWidget(from viewController: UIViewController, order: OrderContext) -> UIView {

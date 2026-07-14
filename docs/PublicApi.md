@@ -40,8 +40,14 @@ object PromotionSDK {
     fun getTheme(): PromotionSDKTheme
     fun getCallback(): PromotionSDKCallback?
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null)
+    fun openPromotionDetail(activity: FragmentActivity, voucherId: String, containerViewId: Int? = null)
 }
 ```
+
+`openPromotionDetail` mở **thẳng** màn chi tiết theo `voucherId`, không qua danh sách — dùng khi host
+đã biết id (bấm push notification, deeplink từ banner ngoài SDK). Đối ứng
+`sdk.openPromotionDetail(voucherId:from:)` bên iOS. Cả hai đều gác bởi cờ `VOUCHER_DETAIL` y như
+đường vào nội bộ: kill-switch không có cửa sau chỉ vì host gọi thẳng entry.
 
 ```kotlin
 PromotionSDK.init(

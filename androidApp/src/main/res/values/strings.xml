@@ -3,6 +3,7 @@
     <string name="app_launcher_btn_custom_theme">Theme preview</string>
     <string name="app_launcher_btn_payment_integrate">Payment integrate</string>
     <string name="app_launcher_btn_my_promotion">My promotion</string>
+    <string name="app_launcher_btn_promotion_detail">Promotion detail (direct)</string>
     <string name="app_launcher_btn_headless_demo">Headless API Demo</string>
 
     <string name="demo_headless_title">Headless API Demo</string>

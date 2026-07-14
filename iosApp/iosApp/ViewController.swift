@@ -19,6 +19,9 @@ class ViewController: UIViewController {
     private let demoToken: String? = nil
     /// Đơn hàng ở màn thanh toán — truyền vào widget để validate voucher khi "Áp dụng".
     private let demoOrder = OrderContext(id: "ORDER-001", value: "500000")
+    /// Id dự phòng cho nút "Mở thẳng chi tiết": khách chưa có voucher, hoặc API lỗi, vẫn vào được màn
+    /// chi tiết để xem layout. Màn tự fetch theo id này rồi hiện shimmer → lỗi. Chỉ dùng ở demo.
+    private let fallbackVoucherId = "VOUCHER-DEMO-001"
 
     /// Danh mục dịch vụ HOST cung cấp (map sang bottom sheet "Chọn dịch vụ").
     /// 3 mã đầu trùng applicableProducts voucher ACTIVE → sẽ hiện; 2 mã cuối bị lọc bỏ (minh hoạ mapping).
@@ -107,6 +110,7 @@ class ViewController: UIViewController {
         ])
 
         stackView.addArrangedSubview(makeButton("Xem danh sách ưu đãi (UI)", action: #selector(showMyPromotionsTapped)))
+        stackView.addArrangedSubview(makeButton("🎟  Mở thẳng chi tiết ưu đãi", action: #selector(openPromotionDetailTapped), color: .systemTeal))
         stackView.addArrangedSubview(makeButton("🛒  Mở màn thanh toán", action: #selector(openCheckoutTapped), color: .systemGreen))
         stackView.addArrangedSubview(makeSeparator())
         stackView.addArrangedSubview(makeButton("▶  API Playground (Request / Response)", action: #selector(openPlaygroundTapped), color: .systemIndigo))
@@ -136,6 +140,20 @@ class ViewController: UIViewController {
 
     @objc private func showMyPromotionsTapped() {
         promotions.openMyPromotions(from: self)
+    }
+
+    /// Mở thẳng màn chi tiết, KHÔNG qua danh sách — mô phỏng host bấm vào push notification/deeplink.
+    ///
+    /// Ưu tiên `voucherId` thật (voucher đầu tiên của khách) để màn hiển thị dữ liệu đầy đủ. Nhưng
+    /// khách chưa có voucher, hoặc API lỗi, thì **vẫn vào** bằng `fallbackVoucherId` — mục đích của
+    /// nút này là xem được màn chi tiết, không phải kiểm tra API. Ngoài đời host đã có sẵn id
+    /// (trong payload notification) nên không cần bước fetch này.
+    @objc private func openPromotionDetailTapped() {
+        promotions.fetchVouchers(keyword: nil, serviceCode: nil, tab: nil, page: 0) { [weak self] result in
+            guard let self else { return }
+            let voucherId = (try? result.get())?.mine.first?.id ?? self.fallbackVoucherId
+            self.promotions.openPromotionDetail(voucherId: voucherId, from: self)
+        }
     }
 
     @objc private func openCheckoutTapped() {
