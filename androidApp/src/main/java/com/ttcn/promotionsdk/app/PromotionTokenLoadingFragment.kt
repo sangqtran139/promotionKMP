@@ -9,10 +9,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentTokenLoadingBinding
 import com.ttcn.promotionsdk.ui.entry.PromotionAvailableService
-import com.ttcn.promotionsdk.ui.entry.PromotionConfig
-import com.ttcn.promotionsdk.ui.entry.PromotionContextProvider
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
+import com.ttcn.promotionsdk.ui.entry.PromotionSessionConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -47,6 +46,7 @@ class PromotionTokenLoadingFragment : Fragment() {
                 Log.d(TAG, "accessToken: $token")
 
                 initSdk(token)
+                updateDemoContext()
 
                 binding?.tvStatus?.text = "Lấy token thành công"
                 delay(500)
@@ -65,39 +65,42 @@ class PromotionTokenLoadingFragment : Fragment() {
         PromotionSDK.init(
             requireContext(),
             PromotionSDKOptions(
-                config = PromotionConfig(
-                    apiKey = "demo",
+                session = PromotionSessionConfig(
+                    customerId = "CUST-001",
+                    accessToken = token,
                     baseUrl = "https://staging1.viettelmoney.vn",
-                    contextProvider = object : PromotionContextProvider {
-                        override fun getCustomerId(): String = "CUST-001"
-                        override fun getService(): String? = null
-                        override fun getAccessToken(): String = token
-                        override fun getLanguage(): String = "vi-VN"
-                        override fun getOrderId(): String? = "123"
-                        override fun getOrderValue(): String? = "123"
-                    },
-                    availableServices = listOf(
-                        PromotionAvailableService(
-                            serviceCode = "P-FOOD-001",
-                            serviceName = "Mua đồ ăn 1",
-                            serviceType = "SKU-FOOD-001",
-                            iconUrl = "https://cdn.promix.test/products/food-001.png"
-                        ),
-                        PromotionAvailableService(
-                            serviceCode = "P-FOOD-002",
-                            serviceName = "Mua đồ ăn 1",
-                            serviceType = "SKU-FOOD-002",
-                            iconUrl = "https://cdn.promix.test/products/food-002.png"
-                        ),
-                        PromotionAvailableService(
-                            serviceCode = "P-ALC-001",
-                            serviceName = "Mua rượu",
-                            serviceType = "SKU-ALCOHOL-001",
-                            iconUrl = "https://cdn.promix.test/products/alcohol-001.png"
-                        ),
+                    language = "vi-VN",
+                ),
+                availableServices = listOf(
+                    PromotionAvailableService(
+                        serviceCode = "P-FOOD-001",
+                        serviceName = "Mua đồ ăn 1",
+                        serviceType = "SKU-FOOD-001",
+                        iconUrl = "https://cdn.promix.test/products/food-001.png"
+                    ),
+                    PromotionAvailableService(
+                        serviceCode = "P-FOOD-002",
+                        serviceName = "Mua đồ ăn 1",
+                        serviceType = "SKU-FOOD-002",
+                        iconUrl = "https://cdn.promix.test/products/food-002.png"
+                    ),
+                    PromotionAvailableService(
+                        serviceCode = "P-ALC-001",
+                        serviceName = "Mua rượu",
+                        serviceType = "SKU-ALCOHOL-001",
+                        iconUrl = "https://cdn.promix.test/products/alcohol-001.png"
                     ),
                 ),
             )
+        )
+    }
+
+    private fun updateDemoContext() {
+        PromotionSDK.updateContext(
+            orderId = "ORD-DEMO-001",
+            orderValue = "500000",
+            serviceCode = "P-FOOD-001",
+            metaData = null
         )
     }
 

@@ -20,10 +20,9 @@ class DemoHeadlessViewModel : ViewModel() {
 
     private val api = PromotionSDK.api
 
-    // ─── Đọc context host đã truyền vào SDK ──────────────────────────────────
-    private val ctx get() = PromotionSDK.requestContext
-    private val orderId get() = ctx?.getOrderId().orEmpty()
-    private val orderValue get() = ctx?.getOrderValue().orEmpty()
+    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateContext() ─────────────
+    private val orderId get() = PromotionSDK.currentOrderId.orEmpty()
+    private val orderValue get() = PromotionSDK.currentOrderValue.orEmpty()
 
     // ─── State ────────────────────────────────────────────────────────────────
     private val _isLoading = MutableStateFlow(false)
@@ -38,12 +37,13 @@ class DemoHeadlessViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
+            val s = PromotionSDK.session
             emit("── SDK context ──────────────────────")
-            emit("   customerId : ${ctx?.getCustomerId() ?: "(null)"}")
-            emit("   orderId    : ${ctx?.getOrderId() ?: "(null)"}")
-            emit("   orderValue : ${ctx?.getOrderValue() ?: "(null)"}")
-            emit("   service    : ${ctx?.getService() ?: "(null)"}")
-            emit("   language   : ${ctx?.getLanguage() ?: "(null)"}")
+            emit("   customerId  : ${s?.customerId ?: "(null)"}")
+            emit("   language    : ${s?.language ?: "(null)"}")
+            emit("   orderId     : ${PromotionSDK.currentOrderId ?: "(null)"}")
+            emit("   orderValue  : ${PromotionSDK.currentOrderValue ?: "(null)"}")
+            emit("   serviceCode : ${PromotionSDK.currentServiceCode ?: "(null)"}")
             emit("─────────────────────────────────────")
         }
     }

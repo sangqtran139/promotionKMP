@@ -1,15 +1,17 @@
 package com.ttcn.promotionsdk.ui.entry
 
+// Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.core.di.PromotionContainer
-// Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK.init
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK.release
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK.updateContext
 import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
@@ -28,7 +30,7 @@ object PromotionSDK {
     private const val TAG_PROMOTION_DETAIL = "prm_promotion_detail"
 
     private var callback: PromotionSDKCallback? = null
-    private var contextProvider: PromotionContextProvider? = null
+    private var mutableContext: PromotionMutableContext? = null
     private var sdkScope: CoroutineScope? = null
 
     /**
@@ -57,9 +59,19 @@ object PromotionSDK {
             return PromotionSDKApi()
         }
 
-    /** Context do host cấp ở [PromotionSDKOptions.config]. Null khi chưa [init] hoặc host không truyền. */
+    /** Session đã truyền lúc [init]. Null khi chưa [init] hoặc không truyền [PromotionSessionConfig]. */
     @JvmStatic
-    val requestContext: PromotionContextProvider? get() = contextProvider
+    val session: PromotionSessionConfig? get() = mutableContext?.session
+
+    /** Giá trị dynamic hiện tại được ghi qua [updateContext]. Null khi chưa [updateContext]. */
+    @JvmStatic
+    val currentOrderId: String? get() = mutableContext?.orderId
+    @JvmStatic
+    val currentOrderValue: String? get() = mutableContext?.orderValue
+    @JvmStatic
+    val currentServiceCode: String? get() = mutableContext?.serviceCode
+    @JvmStatic
+    val currentMetaData: String? get() = mutableContext?.metaData
 
     // SDK **không** phơi API hỏi feature flag ra host. Host không cần biết cờ nào đang bật: mọi
     // điểm vào đều tự gác qua `PromotionFeatureGate` của `promotionLogic` — `openMyPromotion`,
@@ -69,8 +81,8 @@ object PromotionSDK {
     @JvmStatic
     fun init(context: Context, options: PromotionSDKOptions) {
         callback = options.callback
-        contextProvider = options.config.contextProvider
-        PromotionContainer.initialize(context, options.config.toCoreConfig())
+        mutableContext = PromotionMutableContext(options.session)
+        PromotionContainer.initialize(context, options.toCoreConfig(mutableContext))
         // Host truyền theme → ghi đè và lưu. Không truyền → khôi phục theme đã lưu lần trước.
         // Nhờ vậy host cấu hình một lần; các lần mở app sau chỉ cần init(config), theme tự sống lại.
         val resolved = options.theme
@@ -79,6 +91,31 @@ object PromotionSDK {
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         sdkScope?.launch { PromotionFeatureGate.refresh() }
+    }
+
+    /**
+     * Cập nhật context đơn hàng / dịch vụ — gọi mỗi khi host vào màn có voucher (checkout, dịch vụ…).
+     *
+     * Ghi vào [PromotionMutableContext] đang sống; không cần [init] lại. SDK đọc lại các giá trị này
+     * ở **mỗi** request, nên gọi trước khi mở màn hoặc gọi API là đủ.
+     *
+     * @throws IllegalStateException nếu [init] chưa được gọi.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun updateContext(
+        orderId: String? = null,
+        orderValue: String? = null,
+        serviceCode: String? = null,
+        metaData: String? = null,
+    ) {
+        val ctx = checkNotNull(mutableContext) {
+            "PromotionSDK.init() must be called before updateContext()."
+        }
+        ctx.orderId = orderId
+        ctx.orderValue = orderValue
+        ctx.serviceCode = serviceCode
+        ctx.metaData = metaData
     }
 
     /**
@@ -200,7 +237,7 @@ object PromotionSDK {
         // Reset registry trong bộ nhớ; **không** xoá theme đã lưu — nó sống qua release/init.
         PromotionThemeRegistry.configure(null)
         callback = null
-        contextProvider = null
+        mutableContext = null
     }
 
 }

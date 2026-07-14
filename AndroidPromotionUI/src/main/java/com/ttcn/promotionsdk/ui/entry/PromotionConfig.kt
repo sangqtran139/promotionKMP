@@ -6,34 +6,16 @@ import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.config.SdkEnvironment
 
 /**
- * Cấu hình phiên SDK do host cấp — kiểu **công khai** của `AndroidPromotionUI`.
- *
- * Bản sao của `PromotionSDKConfig` ở lõi, cố ý không tái sử dụng type lõi: host chỉ nhận **một**
- * AAR và không có `com.ttcn.promotionsdk.core.*` trên compile classpath. Xem [PromotionSDKApi].
- *
- * [PromotionSDKConfig.isDebug] không có ở đây: `PromotionSDK.init` suy ra từ
- * `ApplicationInfo.FLAG_DEBUGGABLE` của host.
+ * Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc [PromotionSDK.init].
+ * Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng [PromotionSDK.updateContext].
  */
-data class PromotionConfig(
-    val apiKey: String,
+data class PromotionSessionConfig(
+    val customerId: String,
+    val accessToken: String,
     val baseUrl: String,
-    val contextProvider: PromotionContextProvider? = null,
+    val language: String = "vi-VN",
     val environment: PromotionEnvironment = PromotionEnvironment.PROD,
-    val availableServices: List<PromotionAvailableService> = emptyList(),
 )
-
-/**
- * Nguồn token / customerId / thông tin đơn do host cấp. SDK đọc lại ở **mỗi** request, nên host
- * refresh token là SDK thấy ngay — không cần `init` lại.
- */
-interface PromotionContextProvider {
-    fun getCustomerId(): String? = null
-    fun getService(): String? = null
-    fun getAccessToken(): String? = null
-    fun getLanguage(): String? = null
-    fun getOrderId(): String? = null
-    fun getOrderValue(): String? = null
-}
 
 /**
  * Một dịch vụ khả dụng mà voucher có thể áp dụng.
@@ -52,11 +34,12 @@ enum class PromotionEnvironment { PROD, STAGING }
 
 // ─── Public → core ──────────────────────────────────────────────────────────
 
-internal fun PromotionConfig.toCoreConfig(): PromotionSDKConfig = PromotionSDKConfig(
-    apiKey = apiKey,
-    baseUrl = baseUrl,
-    requestContextProvider = contextProvider?.let(::CoreContextProviderAdapter),
-    environment = when (environment) {
+internal fun PromotionSDKOptions.toCoreConfig(
+    contextProvider: PromotionRequestContextProvider?,
+): PromotionSDKConfig = PromotionSDKConfig(
+    baseUrl = session.baseUrl,
+    requestContextProvider = contextProvider,
+    environment = when (session.environment) {
         PromotionEnvironment.PROD -> SdkEnvironment.PROD
         PromotionEnvironment.STAGING -> SdkEnvironment.STAGING
     },
@@ -70,14 +53,24 @@ internal fun PromotionConfig.toCoreConfig(): PromotionSDKConfig = PromotionSDKCo
     },
 )
 
-/** Uỷ quyền chứ không sao chép: host trả giá trị mới (token refresh) là lõi đọc được ngay. */
-private class CoreContextProviderAdapter(
-    private val delegate: PromotionContextProvider,
+/**
+ * Giữ toàn bộ context mà SDK cần — tĩnh (session) + động (đơn hàng/dịch vụ).
+ * [PromotionSDK.updateContext] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.init].
+ */
+internal class PromotionMutableContext(
+    val session: PromotionSessionConfig,
 ) : PromotionRequestContextProvider {
-    override fun getCustomerId(): String? = delegate.getCustomerId()
-    override fun getService(): String? = delegate.getService()
-    override fun getAccessToken(): String? = delegate.getAccessToken()
-    override fun getLanguage(): String? = delegate.getLanguage()
-    override fun getOrderId(): String? = delegate.getOrderId()
-    override fun getOrderValue(): String? = delegate.getOrderValue()
+
+    @JvmField @Volatile var orderId: String? = null
+    @JvmField @Volatile var orderValue: String? = null
+    @JvmField @Volatile var serviceCode: String? = null
+    @JvmField @Volatile var metaData: String? = null
+
+    override fun getCustomerId() = session.customerId
+    override fun getAccessToken() = session.accessToken
+    override fun getLanguage() = session.language
+    override fun getOrderId() = orderId
+    override fun getOrderValue() = orderValue
+    override fun getService() = serviceCode
+    override fun getMetaData() = metaData
 }

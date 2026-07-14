@@ -29,7 +29,7 @@ class PromotionContainerTest {
 
     @Test
     fun init_wiresGraph_soUseCasesCanBeConstructedDirectly() {
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://api.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://api.example.com"))
 
         assertTrue(PromotionContainer.isInitialized())
         // Container không phơi use case; UI dựng thẳng, use case tự lấy repository từ đồ thị.
@@ -66,7 +66,7 @@ class PromotionContainerTest {
 
     @Test
     fun repositoryBehindUseCases_isSameSingleton() {
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://api.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://api.example.com"))
 
         // Hai lần dựng use case phải dùng lại cùng một repository (và cùng một HttpClient).
         assertSame(PromotionContainer.requestContextProvider, PromotionContainer.requestContextProvider)
@@ -74,7 +74,7 @@ class PromotionContainerTest {
 
     @Test
     fun requestContextProvider_fallsBackToEmptyWhenNotConfigured() {
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://api.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://api.example.com"))
 
         assertEquals(null, PromotionContainer.requestContextProvider.getCustomerId())
     }
@@ -83,7 +83,6 @@ class PromotionContainerTest {
     fun requestContextProvider_usesConfiguredProvider() {
         PromotionContainer.initialize(
             PromotionSDKConfig(
-                apiKey = "k",
                 baseUrl = "https://api.example.com",
                 requestContextProvider = StubContextProvider(),
             )
@@ -94,7 +93,7 @@ class PromotionContainerTest {
 
     @Test
     fun clear_resetsContainer_andIsSafeWhenHttpClientNeverBuilt() {
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://api.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://api.example.com"))
 
         PromotionContainer.clear()
 
@@ -103,9 +102,9 @@ class PromotionContainerTest {
 
     @Test
     fun init_afterClear_rebuildsGraph() {
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://a.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://a.example.com"))
         PromotionContainer.clear()
-        PromotionContainer.initialize(PromotionSDKConfig(apiKey = "k", baseUrl = "https://b.example.com"))
+        PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://b.example.com"))
 
         assertEquals("https://b.example.com", PromotionContainer.requireConfig().baseUrl)
         assertNotNull(PromotionUseCases())

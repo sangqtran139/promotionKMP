@@ -7,7 +7,8 @@ import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
  * lần rồi thôi. Truyền theme cụ thể = ghi đè và lưu lại. Xem [PromotionSDK.init].
  */
 data class PromotionSDKOptions(
-    val config: PromotionConfig,
+    val session: PromotionSessionConfig,
+    val availableServices: List<PromotionAvailableService> = emptyList(),
     val theme: PromotionSDKTheme? = null,
-    val callback: PromotionSDKCallback? = null
+    val callback: PromotionSDKCallback? = null,
 )
