@@ -367,8 +367,9 @@ Bước 1 do `iosPromotionUI/scripts/build-xcframework.sh` lo (nó tự gọi Gr
 
 Target framework đặt `STRIP_STYLE = non-global` (Release), nên binary giao cho host **không còn
 local symbol**. Đây là chủ ý: 30.500 local symbol — 8.680 trong đó là `kfun:`/`ktype:` của
-Kotlin/Native link tĩnh vào — làm `__LINKEDIT` phình 2,6MB trên tổng 9,5MB. Strip xong slice device
-còn 7,3MB, và 1.384 global symbol host cần để link vẫn nguyên vẹn.
+Kotlin/Native link tĩnh vào — làm `__LINKEDIT` phình 2,6MB trên tổng 9,5MB của slice device. Strip
+xong slice device còn 7,3MB, và các global symbol host cần để link vẫn nguyên vẹn (đã kiểm bằng cách
+link thật một host giả lập vào framework đã strip).
 
 Cái giá: **crash report chỉ symbolicate được bằng dSYM.** Không có nó thì stack trace chỉ còn địa
 chỉ trần — kể cả phần Kotlin.
@@ -397,30 +398,24 @@ dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.framework.dSYM/Contents/Res
 dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
 ```
 
-### 6.2. Không hỗ trợ simulator trên Mac Intel
+### 6.2. Slice — host không phải khai gì
 
-XCFramework có đúng hai slice:
+XCFramework có hai slice, cùng cách phân phối như bản `VDSPromotionSDK.xcframework` cũ:
 
 | Slice | Dùng khi nào |
 |---|---|
 | `ios-arm64` | Bản lên App Store — **chỉ slice này ship** |
-| `ios-arm64-simulator` | Dev của app host chạy simulator trên Mac Apple Silicon |
+| `ios-arm64_x86_64-simulator` | Dev của app host chạy simulator (cả Apple Silicon lẫn Mac Intel) |
 
 Slice simulator **không** ship, nhưng vẫn bắt buộc phải có: thiếu nó thì dev bên host bấm Run với
-simulator là ăn lỗi link *"building for iOS Simulator, but linking in object file built for iOS"*, và
-họ buộc phải cắm máy thật.
+simulator là ăn lỗi link *"building for iOS Simulator, but linking in object file built for iOS"*.
 
-`x86_64` (simulator trên **Mac Intel**) đã bị bỏ: nó không bao giờ lên App Store mà làm slice
-simulator nặng gấp đôi (19MB → 9,5MB). Hệ quả cần báo cho host: **ai còn dùng Mac Intel sẽ không
-chạy được simulator.** Bản `VDSPromotionSDK.xcframework` cũ của ttcn-ios *có* x86_64, nên với host
-đây là thay đổi hành vi, không phải chuyện nội bộ.
-
-Việc bỏ arch này đặt ở **hai chỗ, phải luôn khớp nhau**:
-
-- `promotionLogic/build.gradle.kts` — danh sách target Kotlin, đã bỏ `iosX64()`.
-- `iosPromotionUI/…/project.pbxproj` — `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` (cả Debug lẫn Release).
-
-Sửa một bên quên bên kia thì lỗi link hiện ra ở tận bước archive, thông báo không trỏ về nguyên nhân.
+> **Đã cân nhắc bỏ `x86_64`** (simulator trên Mac Intel) để cắt ~9,5MB slice simulator. Không làm,
+> vì một xcframework **không thể tiêm build setting vào project host**: bỏ `x86_64` thì app host
+> **buộc** phải tự khai `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` — nếu không, CI build kiểu
+> `xcodebuild -sdk iphonesimulator` (không kèm `-destination`) sẽ fail *"Unable to find module
+> dependency"*. Đẩy một dòng cấu hình bắt buộc sang phía host không đáng đổi lấy 9,5MB, nhất là khi
+> ba tối ưu còn lại (§6, asset/strip/abi.json) đã giảm gói mà host không phải làm gì.
 
 ---
 
