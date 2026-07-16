@@ -11,6 +11,8 @@ import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.PromotionServiceSelection
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionTabAdapter
@@ -165,6 +167,15 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         ServiceSelectorBottomSheet.newInstance(
             services = services,
             onServiceSelected = { service ->
+                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
+                PromotionSDK.getCallback()?.onServiceSelected(
+                    PromotionServiceSelection(
+                        voucherId = voucher.voucherId,
+                        serviceCode = service.serviceCode,
+                        serviceName = service.serviceName,
+                        iconUrl = service.iconUrl,
+                    )
+                )
                 viewModel.handleAction(MyPromotionAction.ServiceSelected(voucher, service))
             },
         ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
@@ -176,6 +187,13 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         fm.beginTransaction().setReorderingAllowed(true)
             .add(android.R.id.content, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
             .addToBackStack(TAG_SEARCH_MY_PROMOTION).commit()
+    }
+
+    override fun onDestroyView() {
+        // Màn bị pop khỏi back stack (user back) → báo host. Đối ứng iOS `vc.onClose → onClosed`.
+        // `isRemoving` false khi chỉ đổi cấu hình / đẩy màn khác lên trên (được lưu ở back stack).
+        if (isRemoving) PromotionSDK.getCallback()?.onClosed()
+        super.onDestroyView()
     }
 
     private companion object {

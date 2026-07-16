@@ -35,7 +35,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * Cùng vai trò với `PromotionSDKApi.swift`; bên iOS ràng buộc còn cứng hơn vì type Kotlin lọt vào
  * public API sẽ kéo `import PromotionKit` vào `.swiftinterface` và app host không build được.
  *
- * Lấy qua `PromotionSDK.api` sau khi đã `PromotionSDK.init(...)`:
+ * Lấy qua `PromotionSDK.api` sau khi đã `PromotionSDK.initialize(...)`:
  * ```kotlin
  * when (val r = PromotionSDK.api.getVouchers()) {
  *     is PromotionApiResult.Success -> render(r.data.vouchers)

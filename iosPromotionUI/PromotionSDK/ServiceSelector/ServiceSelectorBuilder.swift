@@ -2,9 +2,9 @@
 //  ServiceSelectorBuilder.swift
 //  PromotionSDK
 //
-//  Lọc danh mục dịch vụ host cung cấp (`PromotionSessionConfig.availableServices`)
+//  Lọc danh mục dịch vụ host cung cấp (`PromotionContainer.requireConfig().availableServices`)
 //  theo `applicableProducts` của voucher → items cho bottom sheet "Chọn dịch vụ".
-//  Parity Android `MyPromotionViewModel.openServiceSelector`.
+//  Đọc thẳng từ core config như Android `MyPromotionViewModel.openServiceSelector` (`config.availableServices`).
 //
 
 import Foundation
@@ -17,7 +17,7 @@ enum ServiceSelectorBuilder {
     static func items(forApplicableProducts products: [ApplicableProduct]) -> [ServiceSelectorItem] {
         let applicableIds = Set(products.map { $0.productId })
         var seen = Set<String>()
-        return PromotionSessionConfig.availableServices
+        return PromotionContainer.shared.requireConfig().availableServices
             .filter { applicableIds.contains($0.serviceCode) }
             .filter { seen.insert($0.serviceCode).inserted }
             .map { ServiceSelectorItem(serviceCode: $0.serviceCode, serviceName: $0.serviceName, iconUrl: $0.iconUrl) }

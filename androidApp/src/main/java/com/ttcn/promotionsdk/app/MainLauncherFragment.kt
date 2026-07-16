@@ -8,8 +8,6 @@ import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
-import com.ttcn.promotionsdk.ui.entry.PromotionSDK
-import com.ttcn.promotionsdk.ui.entry.api.PromotionApiResult
 import kotlinx.coroutines.launch
 
 class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
@@ -44,12 +42,12 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         }
 
         binding.btnOpenMyPromotion.setOnClickListener {
-            Log.d(TAG, "Opening MyPromotion via PromotionSDK.openMyPromotion")
-            PromotionSDK.openMyPromotion(requireActivity(), R.id.layoutRoot)
+            Log.d(TAG, "Opening MyPromotion via PromotionManager")
+            PromotionManager.openMyPromotions(requireActivity(), R.id.layoutRoot)
         }
 
         binding.btnOpenPromotionDetail.setOnClickListener {
-            Log.d(TAG, "Opening PromotionDetail via PromotionSDK.openPromotionDetail")
+            Log.d(TAG, "Opening PromotionDetail via PromotionManager")
             openPromotionDetailDirect()
         }
     }
@@ -63,13 +61,11 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
      */
     private fun openPromotionDetailDirect() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val voucherId = runCatching {
-                (PromotionSDK.api.getVouchers(page = 0, size = 1) as? PromotionApiResult.Success)
-                    ?.data?.vouchers?.firstOrNull()?.id
-            }.getOrNull() ?: FALLBACK_VOUCHER_ID
+            val voucherId = PromotionManager.fetchVouchers(null, null, null, 0)
+                .getOrNull()?.mine?.firstOrNull()?.id ?: FALLBACK_VOUCHER_ID
 
             Log.d(TAG, "openPromotionDetail(voucherId=$voucherId)")
-            PromotionSDK.openPromotionDetail(requireActivity(), voucherId, R.id.layoutRoot)
+            PromotionManager.openPromotionDetail(voucherId, requireActivity(), R.id.layoutRoot)
         }
     }
 

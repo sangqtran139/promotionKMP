@@ -4,11 +4,11 @@
 //
 //  Demo tích hợp PromotionSDK SDK QUA wrapper `PromotionManager` (pattern anti-corruption):
 //  luồng chính (widget / danh sách / redemption / sự kiện) chỉ gọi PromotionManager, KHÔNG
-//  chạm SDK trực tiếp. Chỉ 2 công cụ Playground bên dưới mới dùng `rawSDK` (cần instance thật).
+//  chạm SDK trực tiếp. Chỉ 2 công cụ Playground bên dưới mới gọi thẳng API tĩnh `PromotionSDK`.
 //
 
 import UIKit
-import PromotionSDKUI   // chỉ còn cần cho 2 màn Playground (rawSDK). Luồng chính không dùng type SDK.
+import PromotionSDKUI   // chỉ còn cần cho 2 màn Playground (gọi API tĩnh). Luồng chính không dùng type SDK.
 
 class ViewController: UIViewController {
 
@@ -160,16 +160,16 @@ class ViewController: UIViewController {
         navigationController?.pushViewController(CheckoutViewController(order: demoOrder), animated: true)
     }
 
-    // MARK: - Playground (công cụ demo — cần instance SDK thật qua rawSDK)
+    // MARK: - Playground (công cụ demo — gọi thẳng API tĩnh PromotionSDK, gác bằng isReady)
 
     @objc private func openPlaygroundTapped() {
-        guard let sdk = PromotionManager.shared.rawSDK else { return }
-        navigationController?.pushViewController(APIPlaygroundViewController(sdk: sdk), animated: true)
+        guard PromotionManager.shared.isReady else { return }
+        navigationController?.pushViewController(APIPlaygroundViewController(), animated: true)
     }
 
     @objc private func openThemePlaygroundTapped() {
-        guard let sdk = PromotionManager.shared.rawSDK else { return }
-        navigationController?.pushViewController(ThemePreviewViewController(sdk: sdk), animated: true)
+        guard PromotionManager.shared.isReady else { return }
+        navigationController?.pushViewController(ThemePreviewViewController(), animated: true)
     }
 
     // MARK: - Helpers

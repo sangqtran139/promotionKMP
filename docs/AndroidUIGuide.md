@@ -28,7 +28,7 @@ chứa networking — nó gọi `:promotionLogic`.
 ## 2. Khởi tạo SDK
 
 ```kotlin
-PromotionSDK.init(context, options)
+PromotionSDK.initialize(context, options)
    └─ options.config.toCoreConfig()               // PromotionConfig (public) → PromotionSDKConfig (lõi)
    └─ PromotionContainer.init(context, config)    // androidMain của :promotionLogic
         ├─ AndroidContextHolder.set(applicationContext)

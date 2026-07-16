@@ -9,10 +9,10 @@
 //  upgrade/đổi SDK, chỉ sửa đúng file này.
 //
 //  Gom vào 1 chỗ các ràng buộc dễ sai của SDK:
-//   - Chỉ 1 instance sống tại 1 thời điểm.
-//   - Token bị "chụp" lúc init → refresh token = tạo lại instance.
-//   - Order truyền lúc mở widget thanh toán (không re-init).
-//   - `delegate` là 1-1 → manager sở hữu, map type SDK sang model APP rồi phát ra.
+//   - SDK là singleton tĩnh (PromotionSDK.initialize / updateContext / release) — như Android.
+//   - Token bị "chụp" lúc initialize → refresh token = initialize lại với session mới.
+//   - Order/dịch vụ cập nhật qua updateContext (không re-init).
+//   - `callback` gói trong options → manager là callback, map type SDK sang model APP rồi phát ra.
 //
 //  LƯU Ý: file này import SDK nên CỐ TÌNH GIỮ NHỎ (không nhét UI nặng) — xem ghi chú ở
 //  ThemePreviewViewController về swift-frontend `deserializeClass`.
@@ -107,6 +107,10 @@ protocol PromotionServing: AnyObject {
     var onVoucherCleared: (() -> Void)? { get set }
     var onVoucherCountChanged: ((_ count: Int) -> Void)? { get set }
     var onServiceSelected: ((ServiceSelection) -> Void)? { get set }
+    /// Feature flag báo tắt → host nên ẩn điểm vào ưu đãi.
+    var onAvailabilityChanged: ((_ enabled: Bool) -> Void)? { get set }
+    /// Màn hình SDK đóng (user back).
+    var onClosed: (() -> Void)? { get set }
 }
 
 // MARK: - Manager: chỗ DUY NHẤT chạm PromotionSDK SDK
@@ -118,22 +122,28 @@ final class PromotionManager: NSObject, PromotionServing {
     static let shared = PromotionManager()
     private override init() {}
 
-    // Sự kiện
+    // Sự kiện (fan-out từ callback 1-1 của SDK ra nhiều listener của app)
     var onVoucherApplied: ((String) -> Void)?
     var onVoucherCleared: (() -> Void)?
     var onVoucherCountChanged: ((Int) -> Void)?
     var onServiceSelected: ((ServiceSelection) -> Void)?
+    var onAvailabilityChanged: ((Bool) -> Void)?
+    var onClosed: (() -> Void)?
 
-    private var sdk: PromotionSDK?
+    /// Adapter riêng conform `PromotionSDKCallback` — tách khỏi manager để tên method callback
+    /// (`onVoucherCleared()`, `onClosed()`…) không đụng các closure sự kiện cùng tên ở trên.
+    private lazy var sdkCallback = PromotionCallbackAdapter(owner: self)
+
     private var customerId: String?
     private var availableServices: [AvailableService] = []   // host truyền xuống qua start(...)
 
-    /// Escape hatch CHỈ cho công cụ demo (API/Theme Playground) cần instance SDK thật.
-    /// App thật KHÔNG nên dùng — mọi thao tác nên đi qua các hàm của manager.
-    var rawSDK: PromotionSDK? { sdk }
+    /// SDK đã sẵn sàng chưa (đã `initialize`, chưa `release`). Công cụ Playground dùng để gác.
+    var isReady: Bool { PromotionSDK.isInitialized() }
 
     // Theme cấu hình tập trung 1 chỗ (nil = mặc định SDK).
     private static let theme: PromotionSDKTheme? = nil   // hoặc PromotionSDKTheme(button: ...)
+    // Base URL Promotion BFF — host cấu hình. Đối ứng `PromotionSessionConfig.baseUrl` bên Android.
+    private static let baseUrl = "https://staging1.viettelmoney.vn/"
 
     // MARK: Lifecycle
 
@@ -148,38 +158,48 @@ final class PromotionManager: NSObject, PromotionServing {
     }
 
     func stop() {
-        sdk = nil
+        PromotionSDK.release()
         customerId = nil
         availableServices = []
     }
 
     private func rebuild(token: String?) {
         guard let customerId else { return }
-        let instance = PromotionSDK(
-            customerId: customerId,
-            token: token,
-            availableServices: availableServices.map {
-                PromotionAvailableService(serviceCode: $0.code, serviceName: $0.name, serviceType: $0.type, iconUrl: $0.iconUrl)
-            }
+        // Đối ứng Android: PromotionSDK.initialize(options) một lần; refresh token = initialize lại
+        // với session mới. callback + theme + danh mục dịch vụ gói trong options.
+        PromotionSDK.initialize(
+            options: PromotionSDKOptions(
+                session: PromotionSessionConfig(
+                    customerId: customerId,
+                    accessToken: token ?? "",
+                    baseUrl: Self.baseUrl,
+                    language: "vi-VN",
+                    environment: .prod
+                ),
+                availableServices: availableServices.map {
+                    PromotionAvailableService(serviceCode: $0.code, serviceName: $0.name, serviceType: $0.type, iconUrl: $0.iconUrl)
+                },
+                theme: Self.theme,
+                callback: sdkCallback
+            )
         )
-        instance.delegate = self
-        if let theme = Self.theme { instance.configure(theme: theme) }   // set theme TRƯỚC khi tạo view
-        sdk = instance
     }
 
     // MARK: Điều hướng / UI
 
     func openMyPromotions(from viewController: UIViewController) {
-        sdk?.openMyPromotion(from: viewController)
+        PromotionSDK.openMyPromotion(from: viewController)
     }
 
     func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
-        sdk?.openPromotionDetail(voucherId: voucherId, from: viewController)
+        PromotionSDK.openPromotionDetail(voucherId: voucherId, from: viewController)
     }
 
     func makeCheckoutWidget(from viewController: UIViewController, order: OrderContext) -> UIView {
-        // Order truyền tại đây → không cần re-init SDK.
-        sdk?.createEndowView(from: viewController, orderId: order.id, orderValue: order.value) ?? UIView()
+        // Order truyền tại đây → cập nhật context rồi dựng widget, không re-init SDK. Đối ứng Android:
+        // PromotionSDK.updateContext(...) trước khi mở màn có voucher.
+        PromotionSDK.updateContext(orderId: order.id, orderValue: order.value)
+        return PromotionSDK.createEndowView(from: viewController)
     }
 
     // MARK: Headless
@@ -187,8 +207,8 @@ final class PromotionManager: NSObject, PromotionServing {
     func fetchVouchers(keyword: String? = nil, serviceCode: String? = nil, tab: String? = nil,
                        page: Int = 0,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void) {
-        guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
                                  page: page) { result in
             switch result {
             case .success(let r):
@@ -203,8 +223,8 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func validate(order: OrderContext, voucherIds: [String],
                   completion: @escaping (Result<ValidationSummary, Error>) -> Void) {
-        guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.api.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
             switch result {
             case .success(let r):
                 completion(.success(ValidationSummary(isValid: r.overallValid,
@@ -216,8 +236,8 @@ final class PromotionManager: NSObject, PromotionServing {
     }
 
     func createRedemption(order: OrderContext, voucherId: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let sdk else { return completion(.failure(Self.notReady)) }
-        sdk.api.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
             switch result {
             case .success(let r): completion(.success(r.sessionId))   // map type SDK → String cho app
             case .failure(let error): completion(.failure(error))
@@ -236,29 +256,45 @@ final class PromotionManager: NSObject, PromotionServing {
     }
 }
 
-// MARK: - Delegate SDK (1-1) → map sang model app rồi phát ra ngoài
+// MARK: - Adapter callback SDK (1-1) → map sang model app rồi phát ra ngoài
+//
+// Tách khỏi PromotionManager để tên method của `PromotionSDKCallback` (`onVoucherCleared()`,
+// `onClosed()`…) không đụng các closure sự kiện cùng tên trên manager. Giữ `weak owner` — manager
+// sở hữu adapter (strong lazy), nên vòng đời khớp nhau.
 
-extension PromotionManager: PromotionSDKCallback {
+private final class PromotionCallbackAdapter: PromotionSDKCallback {
 
-    func vdsPromotion(_ sdk: PromotionSDK, didApplyVoucherId voucherId: String) {
-        onVoucherApplied?(voucherId)
+    private weak var owner: PromotionManager?
+
+    init(owner: PromotionManager) { self.owner = owner }
+
+    func onVoucherApplied(voucherId: String) {
+        owner?.onVoucherApplied?(voucherId)
     }
 
-    func vdsPromotionDidClearVoucher(_ sdk: PromotionSDK) {
-        onVoucherCleared?()
+    func onVoucherCleared() {
+        owner?.onVoucherCleared?()
     }
 
-    func vdsPromotion(_ sdk: PromotionSDK, didUpdateVoucherCount count: Int) {
-        onVoucherCountChanged?(count)
+    func onVoucherCountChanged(count: Int) {
+        owner?.onVoucherCountChanged?(count)
     }
 
-    func vdsPromotion(_ sdk: PromotionSDK, didSelectService selection: PromotionSDKServiceSelection) {
-        onServiceSelected?(ServiceSelection(
+    func onServiceSelected(selection: PromotionServiceSelection) {
+        owner?.onServiceSelected?(ServiceSelection(
             voucherId: selection.voucherId,
             code: selection.serviceCode,
             name: selection.serviceName,
             iconUrl: selection.iconUrl
         ))
+    }
+
+    func onAvailabilityChanged(enabled: Bool) {
+        owner?.onAvailabilityChanged?(enabled)
+    }
+
+    func onClosed() {
+        owner?.onClosed?()
     }
 }
 

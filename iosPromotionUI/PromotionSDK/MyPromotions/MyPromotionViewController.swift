@@ -337,7 +337,12 @@ extension MyPromotionViewController: MyPromotionCellDelegate {
 
     func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String, services: [ServiceSelectorItem]) {
         ServiceSelectorBottomSheet.present(from: self, services: services) { service in
-            PromotionSessionConfig.onServiceSelected?(voucherId, service)
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
+                voucherId: voucherId,
+                serviceCode: service.serviceCode,
+                serviceName: service.serviceName,
+                iconUrl: service.iconUrl
+            ))
         }
     }
 }

@@ -245,7 +245,12 @@ final class PromotionDetailViewController: BaseViewController<PromotionDetailVie
         let items = self.viewModel.serviceSelectorItems()
         let voucherId = self.viewModel.voucherId
         ServiceSelectorBottomSheet.present(from: self, services: items) { service in
-            PromotionSessionConfig.onServiceSelected?(voucherId, service)
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
+                voucherId: voucherId,
+                serviceCode: service.serviceCode,
+                serviceName: service.serviceName,
+                iconUrl: service.iconUrl
+            ))
         }
     }
 }

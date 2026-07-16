@@ -14,7 +14,6 @@ import PromotionSDKUI
 
 final class ThemePreviewViewController: UIViewController {
 
-    let sdk: PromotionSDK
     var draft = DraftTheme()
     var rowRefreshers: [() -> Void] = []
     /// Refresh các preview mock (mô phỏng) dưới mỗi nhóm token — gọi khi reset để vẽ lại theo draft mặc định.
@@ -39,8 +38,7 @@ final class ThemePreviewViewController: UIViewController {
     /// Default THẬT của SDK, dạng hex — nguồn để reset và để so "đã đổi hay chưa".
     private var sdkDisplayDefaults = PromotionThemeDisplay.Defaults()
 
-    init(sdk: PromotionSDK) {
-        self.sdk = sdk
+    init() {
         super.init(nibName: nil, bundle: nil)
     }
     required init?(coder: NSCoder) { fatalError() }
@@ -51,10 +49,10 @@ final class ThemePreviewViewController: UIViewController {
         view.backgroundColor = .systemGroupedBackground
 
         // Seed form bằng default THẬT của SDK, rồi phủ theme đang áp lên trên.
-        // SDK đã tự khôi phục theme đã lưu lúc khởi tạo (PromotionSDK.init) → đọc qua `sdk.currentTheme`,
+        // SDK đã tự khôi phục theme đã lưu lúc khởi tạo (PromotionSDK.initialize) → đọc qua `PromotionSDK.currentTheme()`,
         // demo không tự persist nữa. Mirror ThemePreviewFragment bên Android (dùng PromotionTheme.currentTheme).
         sdkDisplayDefaults = PromotionThemeDisplay.load()
-        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: sdk.currentTheme))
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PromotionSDK.currentTheme()))
         setupLayout()
         buildSections()
         reloadWidget()
@@ -158,7 +156,7 @@ final class ThemePreviewViewController: UIViewController {
 
     func applyTheme() {
         let theme = makeTheme()
-        sdk.configure(theme: theme)   // SDK áp + lưu
+        PromotionSDK.configure(theme: theme)   // SDK áp + lưu
         reloadWidget()
         toast("Đã áp dụng + lưu theme")
     }
@@ -178,8 +176,8 @@ final class ThemePreviewViewController: UIViewController {
 
     /// Áp + lưu vào SDK, rồi nạp lại form/preview để thấy đúng giá trị vừa áp.
     private func apply(_ theme: PromotionSDKTheme, message: String) {
-        sdk.configure(theme: theme)
-        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: sdk.currentTheme))
+        PromotionSDK.configure(theme: theme)
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PromotionSDK.currentTheme()))
         for refresh in rowRefreshers { refresh() }
         for refresh in previewRefreshers { refresh() }
         reloadWidget()
@@ -189,7 +187,7 @@ final class ThemePreviewViewController: UIViewController {
     func resetTheme() {
         draft = DraftTheme()
         loadDraft(from: sdkDisplayDefaults)
-        sdk.configure(theme: nil)     // SDK xoá theme đã lưu
+        PromotionSDK.configure(theme: nil)     // SDK xoá theme đã lưu
         for refresh in rowRefreshers { refresh() }
         for refresh in previewRefreshers { refresh() }
         reloadWidget()
@@ -197,13 +195,13 @@ final class ThemePreviewViewController: UIViewController {
     }
 
     func openMyPromotions() {
-        sdk.configure(theme: makeTheme())
-        sdk.openMyPromotion(from: self)
+        PromotionSDK.configure(theme: makeTheme())
+        PromotionSDK.openMyPromotion(from: self)
     }
 
     func reloadWidget() {
         widget?.removeFromSuperview()
-        let w: UIView = sdk.createEndowView(from: self)
+        let w: UIView = PromotionSDK.createEndowView(from: self)
         w.translatesAutoresizingMaskIntoConstraints = false
         widgetContainer.addSubview(w)
         NSLayoutConstraint.activate([

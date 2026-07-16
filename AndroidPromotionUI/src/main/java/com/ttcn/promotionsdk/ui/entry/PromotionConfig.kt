@@ -6,7 +6,7 @@ import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.config.SdkEnvironment
 
 /**
- * Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc [PromotionSDK.init].
+ * Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc [PromotionSDK.initialize].
  * Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng [PromotionSDK.updateContext].
  */
 data class PromotionSessionConfig(
@@ -55,7 +55,7 @@ internal fun PromotionSDKOptions.toCoreConfig(
 
 /**
  * Giữ toàn bộ context mà SDK cần — tĩnh (session) + động (đơn hàng/dịch vụ).
- * [PromotionSDK.updateContext] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.init].
+ * [PromotionSDK.updateContext] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.initialize].
  */
 internal class PromotionMutableContext(
     val session: PromotionSessionConfig,

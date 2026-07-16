@@ -27,7 +27,6 @@ final class APIPlaygroundViewController: UIViewController {
 
     // MARK: - State
 
-    private let sdk: PromotionSDK
     private var cards: [APICard] = []
     /// Trang voucher "của tôi" cho demo load more — tăng dần mỗi lần bấm getVouchers.
     private var getVouchersPage = 0
@@ -36,8 +35,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     // MARK: - Init
 
-    init(sdk: PromotionSDK) {
-        self.sdk = sdk
+    init() {
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -233,7 +231,7 @@ final class APIPlaygroundViewController: UIViewController {
     private func callGetVouchers(cardIndex: Int) {
         setLoading(true, at: cardIndex)
         let page = getVouchersPage
-        sdk.api.getVouchers(
+        PromotionSDK.api.getVouchers(
             page: page,
             size: 10
         ) { [weak self] result in
@@ -264,7 +262,7 @@ final class APIPlaygroundViewController: UIViewController {
         setLoading(true, at: cardIndex)
         let myPage = findEligibleMyPage
         let items = [PromotionOrderItem(skuId: "SKU-01", productId: "P-01", quantity: 1, unitPrice: "500000")]
-        sdk.api.findEligible(
+        PromotionSDK.api.findEligible(
             orderId: "ORDER-1234",
             orderValue: "500000",
             items: items,
@@ -306,7 +304,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callGetVoucherDetail(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.api.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
+        PromotionSDK.api.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let d):
@@ -327,7 +325,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callValidateDiscounts(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.api.validateDiscounts(
+        PromotionSDK.api.validateDiscounts(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -358,7 +356,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callCreateRedemption(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        sdk.api.createRedemption(
+        PromotionSDK.api.createRedemption(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -448,7 +446,7 @@ extension APIPlaygroundViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         let card = cards[section]
-        return "[\(card.method)] sdk.api.\(card.title)(...)"
+        return "[\(card.method)] PromotionSDK.api.\(card.title)(...)"
     }
 }
 

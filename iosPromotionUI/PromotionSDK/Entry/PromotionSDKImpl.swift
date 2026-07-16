@@ -16,7 +16,6 @@ import UIKit
 // Internal callbacks used by PromotionSDK to communicate back.
 typealias OnApplyVoucher = (String) -> Void  // voucherId
 typealias OnClearVoucher = () -> Void
-typealias OnServiceSelected = (PromotionSDKServiceSelection) -> Void
 
 final class PromotionSDKImpl: NSObject {
 
@@ -24,16 +23,26 @@ final class PromotionSDKImpl: NSObject {
     var onClearVoucher: OnClearVoucher?
     var onUpdateWidgetCount: ((Int) -> Void)?
     var onClose: (() -> Void)?
-    var onServiceSelected: OnServiceSelected?
     /// Báo host trạng thái bật/tắt SDK (feature flag Unleash) khi đã biết chắc.
     var onAvailabilityUpdate: ((Bool) -> Void)?
 
-    let customerId: String
-    let token: String?
-    // var (không let) để host cập nhật order khi mở widget thanh toán (createEndowView(from:orderId:orderValue:))
-    // mà không phải re-init SDK — giữ 1 instance từ lúc login.
-    var orderId: String?
-    var orderValue: String?
+    /// Nguồn context duy nhất: session tĩnh + order/dịch vụ động. `updateContext` ghi vào đây,
+    /// lõi Kotlin đọc lại ở **mỗi** request. Thay cho `HostRequestContextProvider` + các field rời cũ.
+    let context: PromotionMutableContext
+
+    var customerId: String { context.session.customerId }
+    var token: String? { context.session.accessToken }
+
+    // Định tuyến qua context để `updateContext` (host cập nhật khi mở widget thanh toán) và luồng
+    // build request dùng chung một nguồn — không phải re-init SDK, giữ 1 phiên từ lúc login.
+    var orderId: String? {
+        get { context.orderId }
+        set { context.orderId = newValue }
+    }
+    var orderValue: String? {
+        get { context.orderValue }
+        set { context.orderValue = newValue }
+    }
     /// Dòng đơn hàng host truyền vào — cần cho Find Eligible Campaigns (orderInfo.items[]).
     var orderItems: [PromotionOrderItem]
     // Chỉ hai use case này còn dùng trực tiếp — cho widget checkout. Luồng headless đi qua
@@ -46,47 +55,22 @@ final class PromotionSDKImpl: NSObject {
     var appliedPromotion: EligibleOffer?
     weak var activeWidget: PRMEndowView?
 
-    init(customerId: String, token: String?, orderId: String? = nil, orderValue: String? = nil, orderItems: [PromotionOrderItem] = [], baseURL: String? = nil, availableServices: [PromotionAvailableService] = []) {
-        self.customerId = customerId
-        self.token = token
-        self.orderId = orderId
-        self.orderValue = orderValue
-        self.orderItems = orderItems
-        // Khởi tạo lõi Kotlin. `baseUrl` bắt buộc — trước đây `ServiceUrl` giữ URL theo build-flag,
-        // nay URL thuộc cấu hình SDK và host truyền vào (hoặc dùng mặc định bên dưới).
-        let resolvedBaseURL = (baseURL?.isEmpty == false)
-            ? baseURL!
-            : "https://staging1.viettelmoney.vn/"
+    init(options: PromotionSDKOptions) {
+        self.context = PromotionMutableContext(session: options.session)
+        self.orderItems = []
+        // Khởi tạo lõi Kotlin qua map public→core (đối ứng `options.toCoreConfig` bên Android).
+        // `isDebug`: bản DEBUG in toàn bộ request/response của Ktor ra console để đối chiếu schema thật
+        // của server với DTO; bản Release tắt hẳn (không log token) — xem `isDebugBuild`.
+        // `availableServices` đã nằm trong config (toCoreConfig) → `ServiceSelectorBuilder` đọc lại
+        // từ `PromotionContainer.requireConfig()`, không cần holder Swift riêng (parity Android).
         PromotionContainer.shared.initialize(
-            config: PromotionSDKConfig(
-                apiKey: "",
-                baseUrl: resolvedBaseURL,
-                requestContextProvider: HostRequestContextProvider(customerId: customerId, token: token),
-                environment: SdkEnvironment.prod,
-                availableServices: [],
-                // Bản DEBUG in toàn bộ request/response của Ktor ra console — cần để đối chiếu
-                // schema thật của server với DTO. Bản Release tắt hẳn (không log token).
-                isDebug: PromotionSDKImpl.isDebugBuild
-            )
+            config: options.toCoreConfig(context: context, isDebug: PromotionSDKImpl.isDebugBuild)
         )
-        // Lưu danh mục dịch vụ khả dụng cho bottom sheet "Chọn dịch vụ" (parity Android config.availableServices).
-        PromotionSessionConfig.availableServices = availableServices
         self.findEligibleUseCase = FindEligibleCampaignsUseCase()
         self.validateDiscountsUseCase = ValidateStackableDiscountsUseCase()
         super.init()
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         Task { try? await PromotionFeatureGate.shared.refresh() }
-        // Nối callback chọn dịch vụ từ các màn nội bộ → map sang delegate public (facade set onServiceSelected).
-        PromotionSessionConfig.onServiceSelected = { [weak self] voucherId, service in
-            self?.onServiceSelected?(
-                PromotionSDKServiceSelection(
-                    voucherId: voucherId,
-                    serviceCode: service.serviceCode,
-                    serviceName: service.serviceName,
-                    iconUrl: service.iconUrl
-                )
-            )
-        }
     }
 
     // MARK: - Theming
@@ -235,6 +219,22 @@ final class PromotionSDKImpl: NSObject {
         if let orderId { self.orderId = orderId }
         if let orderValue { self.orderValue = orderValue }
         if let orderItems { self.orderItems = orderItems }
+    }
+
+    /// Ghi context động — gọi từ `PromotionSDK.updateContext`. Overwrite cả 4 trường (nil = xoá),
+    /// đối ứng `PromotionSDK.updateContext` bên Android (ghi thẳng vào `PromotionMutableContext`).
+    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?) {
+        context.orderId = orderId
+        context.orderValue = orderValue
+        context.serviceCode = serviceCode
+        context.metaData = metaData
+    }
+
+    /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PromotionSDK.release()` bên Android:
+    /// **không** xoá theme đã lưu (nó sống qua release/init), chỉ reset registry đang chạy.
+    func teardown() {
+        PromotionContainer.shared.clear()
+        applyTheme(nil)
     }
 
     /// Map order items (public) → model của lõi Kotlin cho Find Eligible Campaigns.

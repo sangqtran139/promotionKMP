@@ -64,7 +64,7 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 | Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion()` | `PromotionSDK.openMyPromotion(from:)` |
 | Mở màn "Chi tiết ưu đãi" | `PRMBaseFragment.openPromotionDetail()` | `BaseRouter.canOpenVoucherDetail()` |
 | Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
-| Nạp cờ lúc init | `PromotionSDK.init` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
+| Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
 Cả hai nền tảng đều **không** phơi API hỏi cờ cho host — xem ghi chú ở đầu file.
 
@@ -84,7 +84,7 @@ Cả hai nền tảng đều **không** phơi API hỏi cờ cho host — xem gh
 
 Mã lỗi chung: `PromotionErrorCodes.FEATURE_DISABLED` = `"PRM_MOB_021"`.
 
-> **Cạm bẫy đã gặp.** Android từng nạp cờ lúc `PromotionSDK.init()` rồi **không đọc lại ở đâu cả** —
+> **Cạm bẫy đã gặp.** Android từng nạp cờ lúc `PromotionSDK.initialize()` rồi **không đọc lại ở đâu cả** —
 > tắt `VOUCHER_DETAIL` trên server thì iOS chặn màn chi tiết, Android vẫn vào bình thường. Thêm màn
 > mới thì phải gác ở tầng UI; facade không thấy được điều hướng.
 

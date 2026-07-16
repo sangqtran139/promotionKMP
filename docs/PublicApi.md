@@ -30,19 +30,30 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 
 ```kotlin
 object PromotionSDK {
-    fun init(context: Context, options: PromotionSDKOptions)
-    fun isInitialized(): Boolean
+    fun initialize(context: Context, options: PromotionSDKOptions)
     fun release()
-
-    val api: PromotionSDKApi                        // bề mặt headless; ném IllegalStateException nếu chưa init
-    val requestContext: PromotionContextProvider?   // đúng object host đã truyền vào config
-
-    fun getTheme(): PromotionSDKTheme
+    fun isInitialized(): Boolean
     fun getCallback(): PromotionSDKCallback?
+
+    val api: PromotionSDKApi                        // bề mặt headless; ném IllegalStateException nếu chưa initialize
+
+    val session: PromotionSessionConfig?            // session đã truyền lúc initialize
+    val currentOrderId: String?
+    val currentOrderValue: String?
+    val currentServiceCode: String?
+    val currentMetaData: String?
+    fun updateContext(orderId: String? = null, orderValue: String? = null,
+                      serviceCode: String? = null, metaData: String? = null)
+
+    fun configure(theme: PromotionSDKTheme?)
+    fun currentTheme(): PromotionSDKTheme?
+
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null)
-    fun openPromotionDetail(activity: FragmentActivity, voucherId: String, containerViewId: Int? = null)
+    fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int? = null)
 }
 ```
+
+> Thứ tự thành viên + tên hàm **khớp 1:1** với `PromotionSDK` bên iOS. Xem [InitParity.md](./InitParity.md).
 
 `openPromotionDetail` mở **thẳng** màn chi tiết theo `voucherId`, không qua danh sách — dùng khi host
 đã biết id (bấm push notification, deeplink từ banner ngoài SDK). Đối ứng
@@ -50,44 +61,52 @@ object PromotionSDK {
 đường vào nội bộ: kill-switch không có cửa sau chỉ vì host gọi thẳng entry.
 
 ```kotlin
-PromotionSDK.init(
+PromotionSDK.initialize(
     context,
     PromotionSDKOptions(
-        config = PromotionConfig(
-            apiKey = "...",
+        session = PromotionSessionConfig(
+            customerId = "CUST-001",
+            accessToken = token,
             baseUrl = "https://...",
-            contextProvider = object : PromotionContextProvider {
-                override fun getCustomerId() = "CUST-001"
-                override fun getAccessToken() = token
-                override fun getOrderId() = orderId
-                override fun getOrderValue() = orderValue
-            },
-            availableServices = listOf(PromotionAvailableService("P-FOOD-001", "Mua đồ ăn")),
+            language = "vi-VN",
+            environment = PromotionEnvironment.PROD,
         ),
+        availableServices = listOf(PromotionAvailableService("P-FOOD-001", "Mua đồ ăn")),
+        callback = myCallback,
     ),
 )
+PromotionSDK.updateContext(orderId = orderId, orderValue = orderValue)   // cập nhật khi vào màn có voucher
+val api = PromotionSDK.api
 ```
 
-`PromotionConfig` là bản sao public của `PromotionSDKConfig` ở lõi. Nó **không** có `isDebug`:
-`PromotionSDK.init` suy ra từ `ApplicationInfo.FLAG_DEBUGGABLE` của host.
-
-`contextProvider` được **uỷ quyền, không sao chép** — host refresh token là SDK thấy ngay ở request
-kế tiếp, khỏi `init` lại.
+Order/dịch vụ **động** đi qua `updateContext` (ghi vào `PromotionMutableContext`, lõi đọc lại ở **mỗi**
+request) — không cần `initialize` lại. Refresh token = `initialize` lại với session mới.
 
 ### iOS
 
 ```swift
-let sdk = PromotionSDK(customerId: "CUST-001", token: token,
-                       orderId: orderId, orderValue: orderValue,
-                       availableServices: [PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Mua đồ ăn")])
-sdk.delegate = self          // PromotionSDKCallback
-let api = sdk.api            // PromotionSDKApi
+PromotionSDK.initialize(
+    options: PromotionSDKOptions(
+        session: PromotionSessionConfig(
+            customerId: "CUST-001",
+            accessToken: token,
+            baseUrl: "https://...",
+            language: "vi-VN",
+            environment: .prod
+        ),
+        availableServices: [PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Mua đồ ăn")],
+        callback: self          // PromotionSDKCallback
+    )
+)
+PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
+let api = PromotionSDK.api      // PromotionSDKApi
 ```
 
-> **Mô hình vòng đời hai bên KHÁC nhau, và đây là chỗ đối tác dễ vấp.**
-> Android đọc `customerId`/`token`/`orderId` từ `PromotionContextProvider` ở **mỗi** lời gọi.
-> iOS chốt chúng vào instance lúc khởi tạo — đổi token thì phải tạo lại `PromotionSDK`.
-> Hai bề mặt API giống hệt nhau; vòng đời thì không.
+> **Mô hình vòng đời hai bên giờ ĐỐI ỨNG nhau.** Cả hai đều là singleton tĩnh: cấu hình một lần qua
+> `PromotionSDK.initialize(options:)` (iOS) / `PromotionSDK.initialize(context, options)` (Android), rồi cập
+> nhật đơn hàng/dịch vụ qua `updateContext(...)` mà **không** init lại. Giá trị động nằm ở
+> `PromotionMutableContext` — lõi đọc lại ở **mỗi** request, nên refresh token = `initialize`/`init`
+> lại với session mới, còn order/service chỉ cần `updateContext`.
 
 ---
 
@@ -95,7 +114,7 @@ let api = sdk.api            // PromotionSDKApi
 
 Host không cần biết cờ nào đang bật. Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
 (`openMyPromotion`, mở chi tiết, widget) và báo lại khi bị chặn: Toast + `PRM_MOB_021` (Android),
-popup + `vdsPromotion(_:didUpdateAvailability:)` (iOS). Xem [HeadlessAPI.md §4](./HeadlessAPI.md).
+popup + `onAvailabilityChanged(enabled:)` (iOS). Xem [HeadlessAPI.md §4](./HeadlessAPI.md).
 
 ---
 
@@ -209,8 +228,8 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
 | `ChoosePromotionFragment.forEndowView(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. |
 | `PromotionIntegrateManager.create(endowView)` | Gọi `confirmRedemption(onSuccess, onError)` khi bấm thanh toán. |
-| `AppliedDiscount` | Ưu đãi đã validate. Đi qua `PromotionSDKCallback.onVoucherApplied` và `PRMEndowView.setDiscountDetails`. |
-| `PromotionSDKCallback` | `onVoucherApplied` / `onError` / `onSDKClosed`. |
+| `AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). |
+| `PromotionSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin

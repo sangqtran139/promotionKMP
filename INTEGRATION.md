@@ -83,7 +83,7 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        PromotionSDK.init(
+        PromotionSDK.initialize(
             context = this,
             options = PromotionSDKOptions(
                 config = PromotionSDKConfig(
@@ -123,7 +123,7 @@ Có **2 cách** cấu hình theme:
 
 ```kotlin
 // Cách 1 (khuyến nghị): truyền vào options khi init
-PromotionSDK.init(
+PromotionSDK.initialize(
     context = this,
     options = PromotionSDKOptions(
         config = PromotionSDKConfig(/* ... */),
@@ -132,7 +132,7 @@ PromotionSDK.init(
 )
 
 // Cách 2: gọi SAU init()
-PromotionSDK.init(context, PromotionSDKOptions(config = PromotionSDKConfig(/* ... */)))
+PromotionSDK.initialize(context, PromotionSDKOptions(config = PromotionSDKConfig(/* ... */)))
 PromotionTheme.configure(themeConfig)
 ```
 

@@ -8,10 +8,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentTokenLoadingBinding
-import com.ttcn.promotionsdk.ui.entry.PromotionAvailableService
-import com.ttcn.promotionsdk.ui.entry.PromotionSDK
-import com.ttcn.promotionsdk.ui.entry.PromotionSDKOptions
-import com.ttcn.promotionsdk.ui.entry.PromotionSessionConfig
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -60,47 +56,26 @@ class PromotionTokenLoadingFragment : Fragment() {
         }
     }
 
+    // Đi qua wrapper PromotionManager (anti-corruption) — không gọi PromotionSDK trực tiếp.
     private fun initSdk(token: String) {
-        if (PromotionSDK.isInitialized()) PromotionSDK.release()
-        PromotionSDK.init(
+        PromotionManager.start(
             requireContext(),
-            PromotionSDKOptions(
-                session = PromotionSessionConfig(
-                    customerId = "CUST-001",
-                    accessToken = token,
-                    baseUrl = "https://staging1.viettelmoney.vn",
-                    language = "vi-VN",
-                ),
-                availableServices = listOf(
-                    PromotionAvailableService(
-                        serviceCode = "P-FOOD-001",
-                        serviceName = "Mua đồ ăn 1",
-                        serviceType = "SKU-FOOD-001",
-                        iconUrl = "https://cdn.promix.test/products/food-001.png"
-                    ),
-                    PromotionAvailableService(
-                        serviceCode = "P-FOOD-002",
-                        serviceName = "Mua đồ ăn 1",
-                        serviceType = "SKU-FOOD-002",
-                        iconUrl = "https://cdn.promix.test/products/food-002.png"
-                    ),
-                    PromotionAvailableService(
-                        serviceCode = "P-ALC-001",
-                        serviceName = "Mua rượu",
-                        serviceType = "SKU-ALCOHOL-001",
-                        iconUrl = "https://cdn.promix.test/products/alcohol-001.png"
-                    ),
-                ),
-            )
+            customerId = "CUST-001",
+            token = token,
+            availableServices = listOf(
+                AvailableService("P-FOOD-001", "Mua đồ ăn 1", "SKU-FOOD-001", "https://cdn.promix.test/products/food-001.png"),
+                AvailableService("P-FOOD-002", "Mua đồ ăn 1", "SKU-FOOD-002", "https://cdn.promix.test/products/food-002.png"),
+                AvailableService("P-ALC-001", "Mua rượu", "SKU-ALCOHOL-001", "https://cdn.promix.test/products/alcohol-001.png"),
+            ),
         )
     }
 
     private fun updateDemoContext() {
-        PromotionSDK.updateContext(
+        PromotionManager.updateContext(
             orderId = "ORD-DEMO-001",
             orderValue = "500000",
             serviceCode = "P-FOOD-001",
-            metaData = null
+            metaData = null,
         )
     }
 

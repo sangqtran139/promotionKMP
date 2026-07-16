@@ -15,6 +15,8 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.PromotionServiceSelection
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorBottomSheet
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
@@ -217,6 +219,15 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         ServiceSelectorBottomSheet.newInstance(
             services = services,
             onServiceSelected = { service ->
+                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
+                PromotionSDK.getCallback()?.onServiceSelected(
+                    PromotionServiceSelection(
+                        voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),
+                        serviceCode = service.serviceCode,
+                        serviceName = service.serviceName,
+                        iconUrl = service.iconUrl,
+                    )
+                )
                 viewModel.handleAction(PromotionDetailAction.ServiceSelected(service))
             },
         ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)

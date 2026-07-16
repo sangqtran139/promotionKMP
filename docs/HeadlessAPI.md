@@ -16,7 +16,7 @@ Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionRe
 ```kotlin
 // Android — BẮT BUỘC dùng overload có Context.
 // Nó nạp applicationContext cho SharedPreferences và suy ra isDebug từ FLAG_DEBUGGABLE.
-// Host không gọi trực tiếp: PromotionSDK.init(context, options) làm việc này.
+// Host không gọi trực tiếp: PromotionSDK.initialize(context, options) làm việc này.
 PromotionContainer.init(context, PromotionSDKConfig(apiKey = "...", baseUrl = "..."))
 
 // Common / iOS
@@ -228,7 +228,7 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 đi qua facade — đó là lý do tầng UI phải hỏi gate lần nữa, chứ không phải gác hai lần thừa.
 Phần riêng của mỗi nền tảng chỉ còn cách **hiển thị** thông báo: Toast (Android) vs popup (iOS).
 
-> Cạm bẫy đã gặp: Android nạp cờ lúc `PromotionSDK.init()` rồi **không đọc lại ở đâu cả**.
+> Cạm bẫy đã gặp: Android nạp cờ lúc `PromotionSDK.initialize()` rồi **không đọc lại ở đâu cả**.
 > Tắt `VOUCHER_DETAIL` trên server thì iOS chặn màn chi tiết, Android vẫn vào bình thường.
 > Nếu thêm một màn mới, thêm một hàm `canOpen…` vào gate — facade không thấy được điều hướng.
 

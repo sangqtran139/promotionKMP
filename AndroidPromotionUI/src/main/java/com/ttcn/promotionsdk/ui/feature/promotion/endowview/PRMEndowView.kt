@@ -10,6 +10,7 @@ import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
 import com.ttcn.promotionsdk.ui.entry.api.PromotionVoucher
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
 import com.ttcn.promotionsdk.databinding.PrmViewEndowBinding
@@ -49,6 +50,10 @@ class PRMEndowView @JvmOverloads constructor(
     private var currentState: EndowViewState = EndowViewState.NOT_APPLIED
     private var lastAppliedToken: DiscountBadgeToken? = null
     private var viewScope: CoroutineScope? = null
+
+    // Theo dõi transition để phát callback host đúng một lần mỗi lần đổi (không spam theo mỗi render).
+    private var lastNotifiedState: EndowViewState? = null
+    private var lastNotifiedCount: Int = -1
 
     // ─── Read-only accessors (delegate to ViewModel state) ────────────────────
 
@@ -200,6 +205,25 @@ class PRMEndowView @JvmOverloads constructor(
                 showEmptyState()
             }
         }
+
+        notifyHost(state)
+    }
+
+    /**
+     * Phát sự kiện cho host qua callback đã set lúc [PromotionSDK.initialize] — đối ứng iOS
+     * (`onVoucherCountChanged` / `onVoucherApplied`). Chỉ phát khi thật sự đổi để không spam theo
+     * mỗi lần render. `onVoucherCleared` phát trực tiếp ở click "Hủy" (xem [setupClickListeners]).
+     */
+    private fun notifyHost(state: PRMEndowUiState) {
+        val callback = PromotionSDK.getCallback()
+        if (state.totalVoucherCount != lastNotifiedCount) {
+            lastNotifiedCount = state.totalVoucherCount
+            callback?.onVoucherCountChanged(state.totalVoucherCount)
+        }
+        if (currentState == EndowViewState.APPLIED && lastNotifiedState != EndowViewState.APPLIED) {
+            state.discountDetails.firstOrNull()?.objectId?.let { callback?.onVoucherApplied(it) }
+        }
+        lastNotifiedState = currentState
     }
 
     // ─── Private: UI helpers ──────────────────────────────────────────────────
@@ -215,7 +239,10 @@ class PRMEndowView @JvmOverloads constructor(
         binding.txtStatusEndow.setOnClickListener {
             when (currentState) {
                 EndowViewState.NOT_APPLIED -> onOpenVoucherSelection?.invoke()
-                EndowViewState.APPLIED -> viewModel?.clearDiscountDetails()
+                EndowViewState.APPLIED -> {
+                    viewModel?.clearDiscountDetails()
+                    PromotionSDK.getCallback()?.onVoucherCleared()
+                }
                 EndowViewState.UNAVAILABLE -> onOpenVoucherSelection?.invoke()
                 EndowViewState.EMPTY -> Unit
             }
@@ -267,7 +294,7 @@ class PRMEndowView @JvmOverloads constructor(
             txtNumberEndow.text = context.getString(R.string.prm_no_endow)
             txtNumberEndow.visibility = VISIBLE
             rcvEndow.visibility = GONE
-            txtStatusEndow.visibility = GONE
+            txtStatusEndow.visibility = INVISIBLE
         }
         applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.discountBadgeToken())
     }

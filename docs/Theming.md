@@ -217,12 +217,12 @@ val options = PromotionSDKOptions(
         tabChipToken = TabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
     ),
 )
-PromotionSDK.init(context, options)
+PromotionSDK.initialize(context, options)
 ```
 
 **Cách 2 — gọi `PromotionSDK.configure()` SAU `init()`:**
 ```kotlin
-PromotionSDK.init(context, PromotionSDKOptions(config = sdkConfig))
+PromotionSDK.initialize(context, PromotionSDKOptions(config = sdkConfig))
 PromotionSDK.configure(PromotionSDKTheme(buttonToken = ...))
 ```
 
@@ -257,10 +257,10 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
 
 ## 7. ⚠️ Quy tắc thứ tự bắt buộc (foot-gun)
 
-`PromotionSDK.init()` **luôn ghi đè** registry bằng `options.theme`, mà `PromotionSDKOptions.theme`
+`PromotionSDK.initialize()` **luôn ghi đè** registry bằng `options.theme`, mà `PromotionSDKOptions.theme`
 **mặc định là rỗng** (`PromotionSDKTheme()`).
 
-> ❌ **Sai:** gọi `PromotionSDK.configure(myTheme)` **trước** rồi `PromotionSDK.init(context, PromotionSDKOptions(config))`
+> ❌ **Sai:** gọi `PromotionSDK.configure(myTheme)` **trước** rồi `PromotionSDK.initialize(context, PromotionSDKOptions(config))`
 > mà **không** truyền theme vào options → theme vừa set bị **xoá âm thầm** về mặc định.
 
 ✅ **Đúng:** dùng **Cách 1** (truyền theme vào `options`) **hoặc** **Cách 2** (`configure()` **sau** `init()`).
