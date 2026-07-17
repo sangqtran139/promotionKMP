@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Ripple overlay on primary (white ~25% alpha) -->
-    <color name="app_launcher_btn_ripple">#40FFFFFF</color>
-</resources>

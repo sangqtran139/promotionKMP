@@ -77,10 +77,9 @@ extension PromotionSDKOptions {
     ///
     /// `availableServices` bơm thẳng vào core config (giống Android) → `ServiceSelectorBuilder` đọc lại
     /// từ lõi qua `PromotionContainer.requireConfig()`. Khác Android (N1): `isDebug` truyền vào (iOS
-    /// không có `ApplicationInfo.FLAG_DEBUGGABLE`) và `apiKey` là tham số iOS-only.
+    /// không có `ApplicationInfo.FLAG_DEBUGGABLE`).
     func toCoreConfig(context: PromotionMutableContext, isDebug: Bool) -> PromotionSDKConfig {
         PromotionSDKConfig(
-            apiKey: "",
             baseUrl: session.baseUrl.isEmpty ? "https://staging1.viettelmoney.vn/" : session.baseUrl,
             requestContextProvider: context,
             environment: session.environment.toCore(),

@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:drawable="@drawable/prm_slidebutton_ic_check"
-    tools:ignore="NewApi">
-    <target
-        android:name="check"
-        android:animation="@animator/prm_slidebutton_animator_ic_check" />
-</animated-vector>
