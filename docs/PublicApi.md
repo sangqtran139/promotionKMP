@@ -15,9 +15,9 @@ chủ đích, không phải quy ước lỏng lẻo:
 - **Android** — `AndroidPromotionUI` khai `implementation(projects.promotionLogic)`, nên
   `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host. Thử import là lỗi compile:
   `Unresolved reference 'PromotionUseCases'`.
-- **iOS** — `PromotionSDKUI` khai `@_implementationOnly import PromotionKit`. Type Kotlin lọt vào chữ
+- **iOS** — `PromotionSDKUI` khai `@_implementationOnly import PRMKotlinBridge`. Type Kotlin lọt vào chữ
   ký public sẽ bị ghi vào `.swiftinterface` và app host không build được:
-  `error: Unable to find module dependency: 'PromotionKit'`.
+  `error: Unable to find module dependency: 'PRMKotlinBridge'`.
 
 Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi ra tới host. Nơi làm việc đó là
 `PromotionSDKApi` — xem §3.
@@ -127,7 +127,7 @@ của lõi, dùng chung hai nền tảng. Lớp này làm đúng một việc: *
 Hai file dưới đây là **song ánh**. Cùng tên type, cùng tên field, cùng thứ tự khai báo, cùng tên
 tham số, cùng cách xử lý `NO_RESULT`. **Sửa một bên thì sửa cả hai.**
 
-| Android `ui/entry/api/` | iOS `PromotionSDK/Entry/API/` |
+| Android `ui/entry/api/` | iOS `PromotionSDKUI/Entry/API/` |
 |---|---|
 | `PromotionSDKApi.kt` | `PromotionSDKApi.swift` |
 | `PromotionApiModels.kt` | `PromotionApiModels.swift` |

@@ -2,8 +2,8 @@
 #
 # Copy resource bundle của các SPM package vào trong PromotionSDKUI.framework.
 #
-# Vì sao cần: package khai `resources:` (CoreUI, PromotionUI) sinh ra bundle riêng
-# `CoreUI_CoreUI.bundle`, `PromotionUI_PromotionUI.bundle`. Khi package được link **tĩnh** vào
+# Vì sao cần: package khai `resources:` (PRMDesignKit, PRMPromotionUI) sinh ra bundle riêng
+# `PRMDesignKit_PRMDesignKit.bundle`, `PRMPromotionUI_PRMPromotionUI.bundle`. Khi package được link **tĩnh** vào
 # framework này, Xcode không copy bundle vào framework. Đến runtime, `Bundle.module` do SwiftPM
 # sinh ra không tìm thấy bundle và gọi `fatalError` — app chết ngay khi mở màn đầu tiên.
 #

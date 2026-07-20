@@ -75,7 +75,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
   test. Đổi tên hàm → đổi cả hai.
 - **Khác biệt chỉ được phép khi *cố hữu* do nền tảng**, và **phải ghi rõ lý do trong docs**. Ví dụ đã
   chấp nhận: Android SDK là `object` (theme toàn cục) vs iOS là instance (`sdk.configure`); Android cần
-  `Context` cho màu resource; registry đặt ở CoreUI bên iOS vì component VDS đọc nó; applier pattern chỉ
+  `Context` cho màu resource; registry đặt ở PRMDesignKit bên iOS vì component VDS đọc nó; applier pattern chỉ
   có ở Android. Không được lấy "khác nền tảng" làm cớ cho lệch **tuỳ tiện** (tên, thứ tự, giá trị default).
 - Kiến trúc UI giữ riêng theo rule 5 (MVI vs MVVM) — đó là cố hữu, đã ghi.
 

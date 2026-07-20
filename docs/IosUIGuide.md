@@ -20,14 +20,14 @@ Hướng dẫn UI cho `promotionUI` (iOS). Giao diện làm bằng **UIKit (XIB)
 | Linter | SwiftLint (`.swiftlint.yml`) |
 
 **Khác với SDK cũ:** các package `Repository`, `PromotionLogic`, và phần networking của `CoreNetwork`
-được thay bằng `PromotionLogic.framework` (Kotlin Multiplatform). `CoreUI`, `PromotionUI`, `Utility`
+được thay bằng `PromotionLogic.framework` (Kotlin Multiplatform). `PRMDesignKit`, `PRMPromotionUI`, `PRMFoundation`
 giữ nguyên.
 
 ---
 
 ## 2. Pattern: MVVM + Builder + Router
 
-Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK/Base/MVVM/`:
+Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDKUI/Base/MVVM/`:
 
 | Thành phần | Base class | Trách nhiệm |
 |-----------|-----------|-------------|
@@ -43,7 +43,7 @@ class BaseViewController<VM>: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        _ = VDSBundleSetup.once          // đăng ký SDK bundle (cho UIImage.sdk)
+        _ = PRMBundleSetup.once          // đăng ký SDK bundle (cho UIImage.sdk)
         navigationController?.navigationBar.isHidden = true
         setupUI()
         bindViewModel()
@@ -149,10 +149,10 @@ Chữ ký public **chỉ** dùng type Foundation/UIKit. Không lộ RxSwift, kh�
 
 | Module | Tầng | Trách nhiệm |
 |--------|------|-------------|
-| `Utility` | Foundation | Extension, Logger, `SDKBundle`/`VDSAsset`, re-export RxSwift |
-| `CoreUI` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`VDSButton`, `Shimmer`…) |
-| `PromotionUI` | Feature UI | View nghiệp vụ: `PromotionCardView`, `CouponViews`, `PRMEndowView` |
-| `PromotionKit` | Keo | Adapter `async → Single`, ánh xạ lỗi Kotlin → `PromotionError`. **Không nghiệp vụ.** |
+| `PRMFoundation` | Foundation | Extension, Logger, `SDKBundle`/`PRMAsset`, re-export RxSwift |
+| `PRMDesignKit` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`PRMButton`, `Shimmer`…) |
+| `PRMPromotionUI` | Feature UI | View nghiệp vụ: `PromotionCardView`, `CouponViews`, `PRMEndowView` |
+| `PRMKotlinBridge` | Keo | Adapter `async → Single`, ánh xạ lỗi Kotlin → `PromotionError`. **Không nghiệp vụ.** |
 | `PromotionSDKUI` | Facade | Public API + màn hình (MVVM), phụ thuộc mọi module qua `@_implementationOnly` |
 
 Đã **xoá** khỏi bản KMP: `PromotionLogic` (Swift), `Repository`, `CoreNetwork`, `CoreDatabase` —
@@ -165,11 +165,11 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 | Bạn muốn thêm... | Đặt ở |
 |------------------|-------|
 | Business rule / endpoint | **`:promotionLogic` (Kotlin)** — không phải Swift |
-| Component UI tái dùng, generic | `CoreUI` |
-| Component UI gắn nghiệp vụ ưu đãi | `PromotionUI` |
+| Component UI tái dùng, generic | `PRMDesignKit` |
+| Component UI gắn nghiệp vụ ưu đãi | `PRMPromotionUI` |
 | Màn hình mới | `PromotionSDKUI` — bộ Builder/Router/ViewModel/ViewController |
 | Public method cho đối tác | `PromotionSDK` / `PromotionSDKApi` — chỉ Foundation/UIKit type ở chữ ký |
-| Extension/helper chung | `Utility` |
+| Extension/helper chung | `PRMFoundation` |
 
 ### Tên class đồng nhất với Android
 
@@ -177,7 +177,7 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 `ChoosePromotionViewController`, `PromotionDetailViewController`, `SearchMyPromotionViewController`,
 `PRMEndowView`. Tên hàm cũng vậy: `openMyPromotion`, `openPromotionDetail`, `createEndowView`.
 
-Riêng token theme của `CoreUI` (`VDSButtonThemeToken`…) giữ prefix `VDS` — đó là design system
+Riêng token theme của `PRMDesignKit` (`PRMButtonThemeToken`…) dùng prefix `PRM` — đó là design system
 dùng chung, không thuộc bề mặt SDK.
 
 ---
@@ -212,14 +212,14 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 `promotionLogic`, và báo host qua `onAvailabilityChanged(enabled:)` khi bị chặn.
 
 > **Ràng buộc, đã kiểm chứng bằng compiler.** Kể cả khi muốn phơi ra, type Kotlin không thể xuất hiện
-> trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PromotionKit`.
+> trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PRMKotlinBridge`.
 > App host chỉ có `PromotionSDKUI.xcframework`, không có module đó, nên build hỏng ngay:
 >
 > ```
-> error: Unable to find module dependency: 'PromotionKit'
+> error: Unable to find module dependency: 'PRMKotlinBridge'
 > ```
 >
-> `PromotionSDKImpl` thì được phép nhắc tới type Kotlin, vì nó import `PromotionKit` dạng
+> `PromotionSDKImpl` thì được phép nhắc tới type Kotlin, vì nó import `PRMKotlinBridge` dạng
 > `@_implementationOnly`. Đây cũng chính là lý do `PromotionSDKApi` phải map model Kotlin → DTO Swift
 > chứ không trả thẳng — xem mục dưới.
 
@@ -234,15 +234,15 @@ hai file là song ánh — xem [PublicApi.md](./PublicApi.md):
 
 | | Android | iOS |
 |---|---|---|
-| Khai báo | `implementation(projects.promotionLogic)` | `@_implementationOnly import PromotionKit` |
+| Khai báo | `implementation(projects.promotionLogic)` | `@_implementationOnly import PRMKotlinBridge` |
 | Host thấy type lõi? | Không | Không |
 | Cần mapper? | **Có** | **Có** |
-| Nếu vẫn phơi type lõi | Host: `Unresolved reference` | Host: `Unable to find module dependency: 'PromotionKit'` |
+| Nếu vẫn phơi type lõi | Host: `Unresolved reference` | Host: `Unable to find module dependency: 'PRMKotlinBridge'` |
 
 Ràng buộc bên iOS **cứng hơn**: type Kotlin lọt vào chữ ký public bị ghi thẳng vào `.swiftinterface`,
 nên hỏng ngay cả khi host chưa dùng tới nó. Android chỉ hỏng ở đúng chỗ host chạm vào.
 
-Ba file API bên iOS đặt ở `PromotionSDK/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
+Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
 `PromotionSDKApi.swift`, `PromotionApiModels.swift`, `PromotionApiResult.swift`.
 
 > **Cạm bẫy đã mất một buổi.** Đổi chữ ký public rồi dựng lại xcframework, app host **vẫn** compile

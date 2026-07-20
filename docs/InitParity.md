@@ -95,7 +95,7 @@ Tất cả method đều `default {}` (Kotlin default method / Swift protocol ex
 
 Mục tiêu: **cùng số file, cùng tên khái niệm, cùng thứ tự khai báo** trong mỗi file.
 
-| Vai trò | Android (`.../ui/entry/`) | iOS (`.../PromotionSDK/Entry/`) |
+| Vai trò | Android (`.../ui/entry/`) | iOS (`.../PromotionSDKUI/Entry/`) |
 |---|---|---|
 | Entry object/facade | `PromotionSDK.kt` | `PromotionSDK.swift` |
 | (impl box — N1) | — | `PromotionSDKImpl.swift` |

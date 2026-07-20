@@ -7,7 +7,7 @@ SDK không ép host dùng style cứng — host truyền các token màu, SDK t�
 **Hai nền tảng song ánh.** Cùng sáu token, cùng tên type, cùng tên field, cùng một định dạng JSON.
 Sửa một bên thì sửa cả hai.
 
-| Android `ui/theme/` | iOS `PromotionSDK/Theme/` |
+| Android `ui/theme/` | iOS `PromotionSDKUI/Theme/` |
 |---|---|
 | `PromotionSDKTheme.kt` + `token/*.kt` | `PromotionSDKTheme.swift` |
 | `token/*.kt` (6 token) | `Token/*.swift` (6 token) |
@@ -16,7 +16,7 @@ Sửa một bên thì sửa cả hai.
 | `PromotionThemeStore.kt` | `PromotionThemeStore.swift` |
 | `PromotionThemeDefaults.kt` | `PromotionThemeDefaults.swift` |
 | `PromotionThemeDisplay.kt` | `PromotionThemeDisplay.swift` |
-| `PromotionThemeRegistry.kt` (internal) | `VDSThemeRegistry` trong CoreUI (internal) — cố hữu, §4 |
+| `PromotionThemeRegistry.kt` (internal) | `PRMThemeRegistry` trong PRMDesignKit (internal) — cố hữu, §4 |
 
 ---
 
@@ -59,8 +59,8 @@ SDK" (applier bỏ qua). Nhóm `null` = giữ nguyên cả nhóm.
 
 | Token | Field | Áp vào |
 |-------|-------|--------|
-| `ButtonToken` | `backgroundColor`, `textColor`, `shadowColor`, `cornerRadius` | `PRMButton` / `VDSButton` |
-| `SearchBarToken` | `borderColor`, `hintTextColor`, `textColor`, `iconColor`, `cornerRadius` | `PRMSearchField` / `VDSSearchTextField` |
+| `ButtonToken` | `backgroundColor`, `textColor`, `shadowColor`, `cornerRadius` | `PRMButton` / `PRMButton` |
+| `SearchBarToken` | `borderColor`, `hintTextColor`, `textColor`, `iconColor`, `cornerRadius` | `PRMSearchField` / `PRMSearchTextField` |
 | `ListItemToken` | `linkTextColor`, `usedBadgeTextColor`, `usedBadgeBackgroundColor`, `radioButtonStrokeColor`, `radioButtonSelectedStrokeColor` | Item voucher (`PromotionListItemApplier` / `PromotionCardView`) |
 | `TabChipToken` | `activeBackgroundColor`, `inactiveBackgroundColor`, `activeTextColor`, `inactiveTextColor`, `cornerRadius` | Tab chip (`TabChipThemeApplier` / `PromotionTabView`) |
 | `TabUnderlineToken` | `indicatorColor`, `activeTextColor`, `inactiveTextColor`, `backgroundColor` | Tab gạch chân (`TabLayoutThemeApplier` / `UnderlinedSegmentControlItem`) |
@@ -172,7 +172,7 @@ Mỗi loại view có một applier **idempotent, null-safe** (`if (token == nul
 
 Helper áp giá trị nằm ở `ui/utils/TokenExtensions.kt`. Tất cả **bỏ qua khi giá trị null**.
 
-Bên iOS không có applier riêng: mỗi component tự đọc `VDSThemeRegistry.shared.<token>()` và dùng
+Bên iOS không có applier riêng: mỗi component tự đọc `PRMThemeRegistry.shared.<token>()` và dùng
 `?? default` ở chỗ cần.
 
 ---
@@ -233,7 +233,7 @@ Không truyền `theme` (mặc định `null`) → SDK **tự khôi phục** the
 ## 6. Giá trị mặc định — **đồng nhất hai nền tảng**
 
 `PromotionThemeDefaults` cho cùng một bộ màu trên Android và iOS. **Màu lấy theo Android** (nguồn
-`R.color.*`); bên iOS dùng đúng token design system của CoreUI có giá trị **bằng** giá trị đó:
+`R.color.*`); bên iOS dùng đúng token design system của PRMDesignKit có giá trị **bằng** giá trị đó:
 
 | Android `R.color` = hex | iOS `Colors.*` |
 |---|---|
@@ -289,7 +289,7 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
    - Cập nhật DTO JSON ở cả hai bên, và thêm case vào `PromotionThemeJsonTest`.
    - Cập nhật **bảng token ở §2 của file này**.
 2. **Token mới (loại view mới)** = tạo `XxxToken` + applier + getter trong registry + field trong
-   `PromotionSDKTheme`. Cùng package `ui/theme/` (Android) / `PromotionSDK/Theme/` (iOS).
+   `PromotionSDKTheme`. Cùng package `ui/theme/` (Android) / `PromotionSDKUI/Theme/` (iOS).
 3. **Luôn null-safe**: applier `return` khi token/field null; không ghi đè style mặc định khi host
    không cấu hình.
 4. **Đơn vị nhất quán**: màu hex `#AARRGGBB` trong JSON, bo góc dp/pt.

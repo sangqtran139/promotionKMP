@@ -27,7 +27,7 @@ MyApplication13/
 | Module | Nội dung | Nguồn |
 |---|---|---|
 | `:promotionUI` (Android) | Fragment, XML, adapter, theme, MVI | `ttcn-promotion-android-sdk/vds-promotion/ui/` |
-| `promotionUI` (iOS) | ViewController, XIB, MVVM/Router, RxSwift | `ttcn-promotion-ios-sdk/VDSPromotion` + `Packages/PromotionUI` |
+| `promotionUI` (iOS) | ViewController, XIB, MVVM/Router, RxSwift | `ttcn-promotion-ios-sdk/VDSPromotion` + `Packages/PRMPromotionUI` |
 
 ---
 
@@ -102,7 +102,7 @@ promotionLogic/src/
 
 - **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
 - **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
-- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `CoreUI` giữ tiền tố **`VDS`** (`VDSButton`, `VDSButtonThemeToken`).
+- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
 - Module DI kết thúc bằng `Module`. Bản Ktor của ApiService bắt đầu bằng `Ktor`.
 - Feature contract Android: `XxxUiState` / `XxxAction` / `XxxEffect`, gộp trong `XxxContract.kt`.
@@ -117,7 +117,7 @@ promotionLogic/src/
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
 - `ui/entry/` và `ui/entry/api/` của `AndroidPromotionUI` — **public API thật sự**; thay đổi =
-  breaking cho host app, và phải sửa đối ứng bên `PromotionSDK/Entry/API/` của iOS.
+  breaking cho host app, và phải sửa đối ứng bên `PromotionSDKUI/Entry/API/` của iOS.
   Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
 - `sharedLogic/`, `sharedUI/` — scaffold template, không phải nơi đặt logic Promotion.

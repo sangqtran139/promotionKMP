@@ -4,7 +4,7 @@ Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionRe
 
 > **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionUI` và `PromotionSDKUI` gọi vào đây.
 > Host không với tới được `com.ttcn.promotionsdk.core.*`: Android khai
-> `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PromotionKit`.
+> `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PRMKotlinBridge`.
 >
 > Thứ host gọi là `PromotionSDK.api` (`PromotionSDKApi`), nó uỷ quyền xuống đây rồi map sang DTO.
 > Xem [PublicApi.md](./PublicApi.md).

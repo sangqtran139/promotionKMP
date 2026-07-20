@@ -7,12 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5503AB622F95BF310075769D /* CoreUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5503AB612F95BF310075769D /* CoreUI */; };
+		5503AB622F95BF310075769D /* PRMDesignKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5503AB612F95BF310075769D /* PRMDesignKit */; };
 		55D4D56E2F8C946E0042667F /* VDSPromotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55D4D5622F8C946E0042667F /* VDSPromotion.framework */; };
 		AA01000100000001ABCD1234 /* Repository in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000200000001ABCD1234 /* Repository */; };
 		AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000400000001ABCD1234 /* PromotionLogic */; };
-		AA01000500000001ABCD1234 /* PromotionUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000600000001ABCD1234 /* PromotionUI */; };
-		AA01000700000001ABCD1234 /* Utility in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000800000001ABCD1234 /* Utility */; };
+		AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000600000001ABCD1234 /* PRMPromotionUI */; };
+		AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000800000001ABCD1234 /* PRMFoundation */; };
 		AA01000900000001ABCD1234 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000A00000001ABCD1234 /* RxSwift */; };
 		AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000C00000001ABCD1234 /* RxCocoa */; };
 		AA01000D00000001ABCD1234 /* CoreNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000E00000001ABCD1234 /* CoreNetwork */; };
@@ -29,10 +29,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		5503AB5C2F95BC0D0075769D /* CoreUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = CoreUI; sourceTree = "<group>"; };
-		5503AB5D2F95BC0D0075769D /* PromotionKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PromotionKit; sourceTree = "<group>"; };
-		5503AB5E2F95BC0D0075769D /* PromotionUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PromotionUI; sourceTree = "<group>"; };
-		553838622F9607D10085CAE8 /* Utility */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Utility; sourceTree = "<group>"; };
+		5503AB5C2F95BC0D0075769D /* PRMDesignKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMDesignKit; sourceTree = "<group>"; };
+		5503AB5D2F95BC0D0075769D /* PRMKotlinBridge */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMKotlinBridge; sourceTree = "<group>"; };
+		5503AB5E2F95BC0D0075769D /* PRMPromotionUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMPromotionUI; sourceTree = "<group>"; };
+		553838622F9607D10085CAE8 /* PRMFoundation */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMFoundation; sourceTree = "<group>"; };
 		55D4D5622F8C946E0042667F /* VDSPromotion.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = PromotionSDKUI.framework; path = PromotionSDKUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		55D4D56D2F8C946E0042667F /* VDSPromotionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VDSPromotionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -40,7 +40,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		55D4D5642F8C946E0042667F /* VDSPromotion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = PromotionSDK;
+			path = PromotionSDKUI;
 			sourceTree = "<group>";
 		};
 		55D4D5712F8C946E0042667F /* VDSPromotionTests */ = {
@@ -55,11 +55,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5503AB622F95BF310075769D /* CoreUI in Frameworks */,
+				5503AB622F95BF310075769D /* PRMDesignKit in Frameworks */,
 				AA01000100000001ABCD1234 /* Repository in Frameworks */,
 				AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */,
-				AA01000500000001ABCD1234 /* PromotionUI in Frameworks */,
-				AA01000700000001ABCD1234 /* Utility in Frameworks */,
+				AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */,
+				AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */,
 				AA01000900000001ABCD1234 /* RxSwift in Frameworks */,
 				AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */,
 				AA01000D00000001ABCD1234 /* CoreNetwork in Frameworks */,
@@ -80,10 +80,10 @@
 		5503AB5F2F95BC0D0075769D /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				553838622F9607D10085CAE8 /* Utility */,
-				5503AB5C2F95BC0D0075769D /* CoreUI */,
-				5503AB5D2F95BC0D0075769D /* PromotionKit */,
-				5503AB5E2F95BC0D0075769D /* PromotionUI */,
+				553838622F9607D10085CAE8 /* PRMFoundation */,
+				5503AB5C2F95BC0D0075769D /* PRMDesignKit */,
+				5503AB5D2F95BC0D0075769D /* PRMKotlinBridge */,
+				5503AB5E2F95BC0D0075769D /* PRMPromotionUI */,
 			);
 			path = Packages;
 			sourceTree = "<group>";
@@ -147,10 +147,10 @@
 			);
 			name = PromotionSDKUI;
 			packageProductDependencies = (
-				5503AB612F95BF310075769D /* CoreUI */,
-				AA01000400000001ABCD1234 /* PromotionKit */,
-				AA01000600000001ABCD1234 /* PromotionUI */,
-				AA01000800000001ABCD1234 /* Utility */,
+				5503AB612F95BF310075769D /* PRMDesignKit */,
+				AA01000400000001ABCD1234 /* PRMKotlinBridge */,
+				AA01000600000001ABCD1234 /* PRMPromotionUI */,
+				AA01000800000001ABCD1234 /* PRMFoundation */,
 				AA01000A00000001ABCD1234 /* RxSwift */,
 				AA01000C00000001ABCD1234 /* RxCocoa */,
 			);
@@ -562,21 +562,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		5503AB612F95BF310075769D /* CoreUI */ = {
+		5503AB612F95BF310075769D /* PRMDesignKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = CoreUI;
+			productName = PRMDesignKit;
 		};
-		AA01000400000001ABCD1234 /* PromotionKit */ = {
+		AA01000400000001ABCD1234 /* PRMKotlinBridge */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = PromotionKit;
+			productName = PRMKotlinBridge;
 		};
-		AA01000600000001ABCD1234 /* PromotionUI */ = {
+		AA01000600000001ABCD1234 /* PRMPromotionUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = PromotionUI;
+			productName = PRMPromotionUI;
 		};
-		AA01000800000001ABCD1234 /* Utility */ = {
+		AA01000800000001ABCD1234 /* PRMFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Utility;
+			productName = PRMFoundation;
 		};
 		AA01000A00000001ABCD1234 /* RxSwift */ = {
 			isa = XCSwiftPackageProductDependency;
