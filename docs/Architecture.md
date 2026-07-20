@@ -42,6 +42,54 @@ tầng Data + Domain được chia sẻ giữa Android và iOS qua Kotlin Multip
 **Quy tắc phụ thuộc:** phụ thuộc luôn hướng **vào trong** (Presentation → Domain ← Data).
 Domain là trung tâm, **không biết** gì về Android, iOS, Ktor hay kotlinx.serialization.
 
+### 1.1. Bề mặt SDK, wrapper host & DI — class chủ chốt trong luồng
+
+Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi của một lời gọi* từ app host xuống lõi, kèm
+**tên class thật** ở mỗi chặng (hai nền tảng đối xứng 1:1 — xem [InitParity.md](./InitParity.md)).
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ HOST APP (đối tác)  — chỉ chạm PromotionManager, KHÔNG import SDK rải rác   │
+└─────────────────────────────────────┬──────────────────────────────────────┘
+                                      ▼
+  PromotionManager        (androidApp / iosApp — wrapper / anti-corruption)
+  • map model APP ⇄ model SDK   • singleton   • adapter cho PromotionSDKCallback
+  • nuốt ràng buộc: token chụp lúc init · updateContext trước màn có voucher
+                                      │  gọi entry tĩnh
+                                      ▼
+  PromotionSDK            ← ENTRY công khai; chữ ký chỉ Foundation/UIKit (iOS) /
+                            không lộ core type (Android). Android: `object`;
+                            iOS: `final class` + `_impl: NSObject` box.
+  ├─ vòng đời   initialize · release · isInitialized · updateContext · configure(theme)
+  ├─ màn hình   openMyPromotion · openPromotionDetail · createEndowView → PRMEndowView
+  ├─ headless   api: PromotionSDKApi
+  └─ sự kiện    PromotionSDKCallback (6 sự kiện)
+                                      │
+        Android: `object` giữ callback/context rồi uỷ quyền.
+        iOS: PromotionSDKImpl (box) giữ đồ thị sống + phát 6 sự kiện.
+                                      ▼
+  PromotionSDKApi        ← RANH GIỚI headless: map model lõi → DTO,
+                            PromotionResult → PromotionApiResult. KHÔNG chứa nghiệp vụ.
+                                      │
+                                      ▼
+  PromotionContainer  (core/di, `object` dùng chung KMP)  →  SdkDi (engine DI nội bộ)
+  • dựng & giữ: PromotionUseCases (facade headless) · Repository · RemoteDataSource · KeyValueStorage
+  • gác cờ:     PromotionFeatureGate — cùng nguồn sự thật cho UI (điểm điều hướng) lẫn headless
+                                      │
+                                      ▼
+            DOMAIN ← DATA   (đã mô tả ở §1: UseCase → Repository → RemoteDataSource)
+```
+
+Các nút thắt cần nhớ:
+
+- **`PromotionManager`** là chỗ *duy nhất* host chạm SDK — upgrade/đổi SDK chỉ sửa một file. Hợp đồng
+  `PromotionServing` đối xứng hai nền tảng, xem [InitParity.md §6](./InitParity.md#6-wrapper-host--hợp-đồng-chung).
+- **`PromotionSDK`** giữ chữ ký sạch (không lộ RxSwift/Kotlin/core type) — xem [PublicApi.md](./PublicApi.md).
+- **`PromotionSDKApi`** là *ranh giới phân phối* (map DTO), **không** phải use case — nghiệp vụ, gác cờ,
+  chuẩn hoá `errorCode` đều nằm ở `PromotionUseCases` của lõi.
+- **`PromotionContainer` / `SdkDi`** là DI tự viết — **không** sửa (xem [DependencyInjection.md](./DependencyInjection.md)).
+- **`PromotionFeatureGate`** gác cờ cho *cả* UI lẫn headless — kill-switch không có cửa sau.
+
 ---
 
 ## 2. Lõi dùng chung — `:promotionLogic`
@@ -126,7 +174,7 @@ Chi tiết: [AndroidUIGuide.md](./AndroidUIGuide.md).
 - **ViewModel** (`BaseViewModel`): theo `ViewModelType` với `transform(input:) -> Output`, dùng RxSwift.
 - **ViewController** (`BaseViewController`): bind UI, load XIB theo tên class.
 
-Public facade `VDSPromotion` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
+Public facade `PromotionSDK` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
 (RxSwift, domain model) — tránh crash đệ quy `deserializeClass`.
 
 Chi tiết: [IosUIGuide.md](./IosUIGuide.md).

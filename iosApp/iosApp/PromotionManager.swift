@@ -73,6 +73,39 @@ struct ValidationSummary {
     let finalAmount: String
 }
 
+/// Ưu đãi đủ điều kiện áp cho đơn (kết quả headless findEligibleOffers).
+struct EligibleOffer {
+    let id: String
+    let name: String
+    let objectType: String
+    let usable: Bool
+    let estimatedDiscount: String?
+    let expireDate: String?
+    let ineligibleReason: String?
+}
+
+/// Hai nhóm ưu đãi đủ điều kiện: "của tôi" (voucher đã sở hữu) và "khác" (campaign công khai).
+struct EligibleOffers {
+    let mine: [EligibleOffer]
+    let others: [EligibleOffer]
+    let mineIsLastPage: Bool
+    let othersIsLastPage: Bool
+}
+
+/// Chi tiết một voucher (kết quả headless fetchVoucherDetail).
+struct VoucherDetail {
+    let id: String
+    let merchantName: String
+    let title: String
+    let description: String
+    let guideline: String
+    let startDate: String?
+    let expireDate: String?
+    let bannerURL: String?
+    let logoURL: String?
+    let statusLabel: String?
+}
+
 // MARK: - Cổng app-facing (app phụ thuộc protocol này, dễ mock/test, dễ thay SDK)
 
 protocol PromotionServing: AnyObject {
@@ -80,6 +113,8 @@ protocol PromotionServing: AnyObject {
     func start(customerId: String, token: String?, availableServices: [AvailableService])
     /// Gọi khi access token được refresh — manager tự tạo lại instance với token mới.
     func updateToken(_ token: String?)
+    /// Cập nhật context đơn hàng / dịch vụ mỗi khi vào màn có voucher (không re-init). Đối ứng Android.
+    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?)
     /// Gọi khi logout.
     func stop()
 
@@ -96,6 +131,12 @@ protocol PromotionServing: AnyObject {
     func fetchVouchers(keyword: String?, serviceCode: String?, tab: String?,
                        page: Int,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void)
+    /// Lấy ưu đãi đủ điều kiện cho đơn (voucher đã sở hữu + campaign công khai).
+    func findEligibleOffers(order: OrderContext, tab: String?, myPage: Int, otherPage: Int,
+                            completion: @escaping (Result<EligibleOffers, Error>) -> Void)
+    /// Lấy chi tiết một voucher theo id (dùng khi host tự dựng màn chi tiết).
+    func fetchVoucherDetail(voucherId: String, serviceCode: String?,
+                            completion: @escaping (Result<VoucherDetail, Error>) -> Void)
     /// Kiểm tra voucher còn hợp lệ với đơn hàng (nên gọi trước createRedemption).
     func validate(order: OrderContext, voucherIds: [String],
                   completion: @escaping (Result<ValidationSummary, Error>) -> Void)
@@ -155,6 +196,10 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func updateToken(_ token: String?) {
         rebuild(token: token)   // token bị chụp lúc init → refresh = tạo lại instance
+    }
+
+    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?) {
+        PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode, metaData: metaData)
     }
 
     func stop() {
@@ -221,6 +266,35 @@ final class PromotionManager: NSObject, PromotionServing {
         }
     }
 
+    func findEligibleOffers(order: OrderContext, tab: String?, myPage: Int, otherPage: Int,
+                            completion: @escaping (Result<EligibleOffers, Error>) -> Void) {
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.findEligible(orderId: order.id, orderValue: order.value,
+                                      tabCode: tab, myPage: myPage, otherPage: otherPage) { result in
+            switch result {
+            case .success(let r):
+                completion(.success(EligibleOffers(
+                    mine: r.myOffers.map(Self.map),
+                    others: r.otherOffers.map(Self.map),
+                    mineIsLastPage: r.myIsLastPage,
+                    othersIsLastPage: r.otherIsLastPage
+                )))
+            case .failure(let error): completion(.failure(error))
+            }
+        }
+    }
+
+    func fetchVoucherDetail(voucherId: String, serviceCode: String?,
+                            completion: @escaping (Result<VoucherDetail, Error>) -> Void) {
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.getVoucherDetail(voucherId: voucherId, serviceCode: serviceCode) { result in
+            switch result {
+            case .success(let r): completion(.success(Self.map(r)))
+            case .failure(let error): completion(.failure(error))
+            }
+        }
+    }
+
     func validate(order: OrderContext, voucherIds: [String],
                   completion: @escaping (Result<ValidationSummary, Error>) -> Void) {
         guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
@@ -250,9 +324,21 @@ final class PromotionManager: NSObject, PromotionServing {
     private static let notReady = NSError(domain: "PromotionManager", code: -1,
                                           userInfo: [NSLocalizedDescriptionKey: "SDK chưa khởi tạo (chưa login?)"])
 
-    private static func map(_ v: PromotionVoucher) -> VoucherSummary {
+    private nonisolated static func map(_ v: PromotionVoucher) -> VoucherSummary {
         VoucherSummary(id: v.id, merchantName: v.merchantName, title: v.title, imageURL: v.imageURL,
                        expireDate: v.expireDate, isUsed: v.isUsed, statusLabel: v.displayStatusLabel)
+    }
+
+    private nonisolated static func map(_ o: PromotionEligibleOffer) -> EligibleOffer {
+        EligibleOffer(id: o.id, name: o.name, objectType: o.objectType, usable: o.usable,
+                      estimatedDiscount: o.estimatedDiscount, expireDate: o.expireDate,
+                      ineligibleReason: o.ineligibleReason)
+    }
+
+    private nonisolated static func map(_ d: PromotionVoucherDetail) -> VoucherDetail {
+        VoucherDetail(id: d.id, merchantName: d.merchantName, title: d.title, description: d.description,
+                      guideline: d.guideline, startDate: d.startDate, expireDate: d.expireDate,
+                      bannerURL: d.bannerURL, logoURL: d.logoURL, statusLabel: d.displayStatusLabel)
     }
 }
 

@@ -228,7 +228,7 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
 | `ChoosePromotionFragment.forEndowView(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. |
 | `PromotionIntegrateManager.create(endowView)` | Gọi `confirmRedemption(onSuccess, onError)` khi bấm thanh toán. |
-| `AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). |
+| `AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
 | `PromotionSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 

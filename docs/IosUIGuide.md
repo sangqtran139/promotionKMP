@@ -27,7 +27,7 @@ giữ nguyên.
 
 ## 2. Pattern: MVVM + Builder + Router
 
-Mỗi màn hình gồm bốn thành phần, kế thừa base trong `VDSPromotion/Base/MVVM/`:
+Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK/Base/MVVM/`:
 
 | Thành phần | Base class | Trách nhiệm |
 |-----------|-----------|-------------|
@@ -109,7 +109,7 @@ func searchVouchers(_ request: SearchCustomerVouchersRequest) -> Single<SearchCu
                 let result = try await PromotionContainer.shared.useCases.searchVouchers(request: request)
                 switch onEnum(of: result) {
                 case .success(let s): single(.success(s.data))
-                case .failure(let f): single(.error(VDSPromotionError.from(f)))
+                case .failure(let f): single(.error(PromotionSDKError.from(f)))
                 }
             } catch {
                 single(.error(error))
@@ -129,12 +129,12 @@ func searchVouchers(_ request: SearchCustomerVouchersRequest) -> Single<SearchCu
 
 ## 5. Public API & "NSObject box"
 
-Class công khai `VDSPromotion` **không** giữ trực tiếp type nội bộ:
+Class công khai `PromotionSDK` **không** giữ trực tiếp type nội bộ:
 
 ```swift
-public final class VDSPromotion {
+public final class PromotionSDK {
     private let _impl: NSObject
-    private var impl: VDSPromotionImpl { _impl as! VDSPromotionImpl }
+    private var impl: PromotionSDKImpl { _impl as! PromotionSDKImpl }
 }
 ```
 
@@ -177,7 +177,7 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 `ChoosePromotionViewController`, `PromotionDetailViewController`, `SearchMyPromotionViewController`,
 `PRMEndowView`. Tên hàm cũng vậy: `openMyPromotion`, `openPromotionDetail`, `createEndowView`.
 
-Riêng token theme của `CoreUI` (`VDSPromotionButtonToken`…) giữ prefix `VDS` — đó là design system
+Riêng token theme của `CoreUI` (`VDSButtonThemeToken`…) giữ prefix `VDS` — đó là design system
 dùng chung, không thuộc bề mặt SDK.
 
 ---
@@ -209,7 +209,7 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 
 `PromotionSDKFeature` đã bị xoá, và **không có** enum thay thế. Host không cần biết cờ nào đang bật:
 `openMyPromotion` / `openPromotionDetail` / widget đều tự gác qua `PromotionFeatureGate` của
-`promotionLogic`, và báo host qua `vdsPromotion(_:didUpdateAvailability:)` khi bị chặn.
+`promotionLogic`, và báo host qua `onAvailabilityChanged(enabled:)` khi bị chặn.
 
 > **Ràng buộc, đã kiểm chứng bằng compiler.** Kể cả khi muốn phơi ra, type Kotlin không thể xuất hiện
 > trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PromotionKit`.
@@ -255,7 +255,7 @@ Ba file API bên iOS đặt ở `PromotionSDK/Entry/API/`, đối ứng `ui/entr
 ## 8. Quy tắc
 
 1. **Business logic không được viết bằng Swift.** Mọi nghiệp vụ mới thuộc `:promotionLogic`.
-   `VDSPromotionUseCases` chỉ là lớp mỏng chuyển `PromotionResult` → `Result`/`Single`.
+   `PromotionSDKApi` chỉ là lớp mỏng chuyển `PromotionResult` → `Result`/`Single`.
 2. ViewModel **không** gọi thẳng repository; đi qua use case của lõi KMP.
 3. `Output` luôn là `Driver` — an toàn thread, không lỗi.
 4. Mọi subscription `.disposed(by: disposeBag)`.

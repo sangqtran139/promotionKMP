@@ -17,7 +17,7 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 
 > **SDK không phơi API hỏi cờ ra host.** App đối tác không cần biết cờ nào đang bật: mọi điểm vào đều
 > tự gác, và khi bị chặn thì SDK hiện thông báo PRM_MOB_021 (iOS còn báo qua
-> `vdsPromotion(_:didUpdateAvailability:)`). `PromotionSDK.featureFlags` (Android) và
+> `onAvailabilityChanged(enabled:)`). `PromotionSDK.featureFlags` (Android) và
 > `PromotionSDK.isEnabled(feature:)` (iOS) đã bị gỡ — không nơi nào dùng chúng.
 
 ---

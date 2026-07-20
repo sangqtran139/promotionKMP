@@ -118,6 +118,15 @@ hàm map options→core, và `PromotionMutableContext` (nội bộ). `availableS
 Giữ lệch có chủ đích: Android `PRMEndowView` (View đặt trong layout), iOS `createEndowView(from:)`.
 Wrapper phơi **một** API chung `makeCheckoutWidget(...)` để host không thấy khác biệt.
 
+**Chi tiết giảm giá (`AppliedDiscount`) — N1, đã duyệt:** chỉ **Android** phơi `AppliedDiscount` +
+`PRMEndowView.setDiscountDetails(...)` để host đọc breakdown giảm giá **trực tiếp** từ widget. **iOS
+cố tình KHÔNG phơi** type này: `createEndowView(from:)` trả `UIView` đục (che type nội bộ theo box
+binary-interface — [§4](#4-ngoại-lệ-n1--buộc-lệch)), nên host iOS chỉ nhận **id** voucher đã áp qua
+`onVoucherApplied(voucherId)`; muốn biết số tiền giảm thì gọi headless `PromotionSDK.api.validateDiscounts(...)`
+với `voucherId` đó (trả `PromotionValidationResult` — cùng dữ liệu, đi qua ranh giới DTO hợp lệ). Đây
+**không** phải thiếu sót cần "sửa": phơi `AppliedDiscount` bên iOS sẽ kéo type lõi vào `.swiftinterface`
+(xem [PublicApi.md §3](./PublicApi.md)).
+
 ---
 
 ## 6. Wrapper host — hợp đồng chung (`PromotionServing`)
@@ -137,8 +146,8 @@ interface/protocol PromotionServing:
     openPromotionDetail(voucherId, from host)
     makeCheckoutWidget(from host, order) -> View     // che PRMEndowView / createEndowView
 
-    // Headless
-    fetchVouchers(...) ; validate(...) ; createRedemption(...)
+    // Headless (bọc đủ 5 hàm của PromotionSDKApi)
+    fetchVouchers(...) ; findEligibleOffers(...) ; fetchVoucherDetail(...) ; validate(...) ; createRedemption(...)
 
     // Sự kiện (fan-out từ callback 1-1 của SDK → nhiều listener của app)
     onVoucherApplied ; onVoucherCleared ; onVoucherCountChanged

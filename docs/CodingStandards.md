@@ -43,7 +43,7 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
 
 - **Lõi `:promotionLogic`**: *không* prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
 - **UI Android**: base class và custom view public dùng **`PRM`** — `PRMBaseFragment`, `PRMEndowView`.
-- **UI iOS**: type public dùng **`VDS`** — `VDSPromotion`, `VDSButton`.
+- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android — `PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`. Riêng design-system dùng chung `CoreUI` giữ **`VDS`** — `VDSButton`, `VDSButtonThemeToken`.
 
 Mục đích của prefix là tránh trùng tên khi nhúng vào host app.
 

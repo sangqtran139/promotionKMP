@@ -117,7 +117,7 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 
 ### iOS (MVVM + RxSwift)
 
-- `PromotionResult.Failure` map sang `VDSPromotionError` ở tầng facade.
+- `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Phát qua `Driver`/`Signal` riêng cho lỗi, không trộn vào output dữ liệu.
 
 ### Cả hai

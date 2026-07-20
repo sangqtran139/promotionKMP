@@ -26,7 +26,9 @@ import com.ttcn.promotionsdk.ui.entry.PromotionServiceSelection
 import com.ttcn.promotionsdk.ui.entry.PromotionSessionConfig
 import com.ttcn.promotionsdk.ui.theme.PromotionSDKTheme
 import com.ttcn.promotionsdk.ui.entry.api.PromotionApiResult
+import com.ttcn.promotionsdk.ui.entry.api.PromotionEligibleOffer
 import com.ttcn.promotionsdk.ui.entry.api.PromotionVoucher
+import com.ttcn.promotionsdk.ui.entry.api.PromotionVoucherDetail
 
 // ─── Model của APP (không dùng type SDK ở tầng app → anti-corruption) ─────────
 
@@ -61,6 +63,39 @@ data class VoucherPage(val mine: List<VoucherSummary>, val mineIsLastPage: Boole
 /** Kết quả validate voucher theo đơn. */
 data class ValidationSummary(val isValid: Boolean, val totalDiscount: String, val finalAmount: String)
 
+/** Ưu đãi đủ điều kiện áp cho đơn (kết quả headless findEligibleOffers). */
+data class EligibleOffer(
+    val id: String,
+    val name: String,
+    val objectType: String,
+    val usable: Boolean,
+    val estimatedDiscount: String?,
+    val expireDate: String?,
+    val ineligibleReason: String?,
+)
+
+/** Hai nhóm ưu đãi đủ điều kiện: "của tôi" (voucher đã sở hữu) và "khác" (campaign công khai). */
+data class EligibleOffers(
+    val mine: List<EligibleOffer>,
+    val others: List<EligibleOffer>,
+    val mineIsLastPage: Boolean,
+    val othersIsLastPage: Boolean,
+)
+
+/** Chi tiết một voucher (kết quả headless fetchVoucherDetail). */
+data class VoucherDetail(
+    val id: String,
+    val merchantName: String,
+    val title: String,
+    val description: String,
+    val guideline: String,
+    val startDate: String?,
+    val expireDate: String?,
+    val bannerURL: String?,
+    val logoURL: String?,
+    val statusLabel: String?,
+)
+
 // ─── Cổng app-facing (app phụ thuộc interface này, dễ mock/test, dễ thay SDK) ──
 
 interface PromotionServing {
@@ -82,6 +117,10 @@ interface PromotionServing {
 
     // --- Headless API (không UI) — `suspend` thay cho completion bên iOS (N1) ---
     suspend fun fetchVouchers(keyword: String?, serviceCode: String?, tab: String?, page: Int): Result<VoucherPage>
+    /** Lấy ưu đãi đủ điều kiện cho đơn (voucher đã sở hữu + campaign công khai). */
+    suspend fun findEligibleOffers(order: OrderContext, tab: String?, myPage: Int, otherPage: Int): Result<EligibleOffers>
+    /** Lấy chi tiết một voucher theo id (dùng khi host tự dựng màn chi tiết). */
+    suspend fun fetchVoucherDetail(voucherId: String, serviceCode: String?): Result<VoucherDetail>
     suspend fun validate(order: OrderContext, voucherIds: List<String>): Result<ValidationSummary>
     suspend fun createRedemption(order: OrderContext, voucherId: String): Result<String>
 
@@ -206,6 +245,42 @@ object PromotionManager : PromotionServing {
         }
     }
 
+    override suspend fun findEligibleOffers(
+        order: OrderContext,
+        tab: String?,
+        myPage: Int,
+        otherPage: Int,
+    ): Result<EligibleOffers> {
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (
+            val r = PromotionSDK.api.findEligible(
+                orderId = order.id,
+                orderValue = order.value,
+                tabCode = tab,
+                myPage = myPage,
+                otherPage = otherPage,
+            )
+        ) {
+            is PromotionApiResult.Success -> Result.success(
+                EligibleOffers(
+                    mine = r.data.myOffers.map(::map),
+                    others = r.data.otherOffers.map(::map),
+                    mineIsLastPage = r.data.myIsLastPage,
+                    othersIsLastPage = r.data.otherIsLastPage,
+                )
+            )
+            is PromotionApiResult.Failure -> Result.failure(r.error)
+        }
+    }
+
+    override suspend fun fetchVoucherDetail(voucherId: String, serviceCode: String?): Result<VoucherDetail> {
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (val r = PromotionSDK.api.getVoucherDetail(voucherId, serviceCode)) {
+            is PromotionApiResult.Success -> Result.success(map(r.data))
+            is PromotionApiResult.Failure -> Result.failure(r.error)
+        }
+    }
+
     override suspend fun validate(order: OrderContext, voucherIds: List<String>): Result<ValidationSummary> {
         if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
         return when (val r = PromotionSDK.api.validateDiscounts(order.id, order.value, voucherIds)) {
@@ -236,5 +311,28 @@ object PromotionManager : PromotionServing {
         expireDate = v.expireDate,
         isUsed = v.isUsed,
         statusLabel = v.displayStatusLabel,
+    )
+
+    private fun map(o: PromotionEligibleOffer) = EligibleOffer(
+        id = o.id,
+        name = o.name,
+        objectType = o.objectType,
+        usable = o.usable,
+        estimatedDiscount = o.estimatedDiscount,
+        expireDate = o.expireDate,
+        ineligibleReason = o.ineligibleReason,
+    )
+
+    private fun map(d: PromotionVoucherDetail) = VoucherDetail(
+        id = d.id,
+        merchantName = d.merchantName,
+        title = d.title,
+        description = d.description,
+        guideline = d.guideline,
+        startDate = d.startDate,
+        expireDate = d.expireDate,
+        bannerURL = d.bannerURL,
+        logoURL = d.logoURL,
+        statusLabel = d.displayStatusLabel,
     )
 }
