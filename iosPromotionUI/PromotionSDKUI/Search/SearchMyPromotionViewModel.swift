@@ -13,7 +13,7 @@ import Foundation
 private let minKeywordLength = 1
 private let debounceMs: RxTimeInterval = .milliseconds(400)
 
-final class SearchMyPromotionViewModel: BaseViewModel<SearchMyPromotionRouter>, ViewModelType {
+final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter>, PRMViewModelType {
 
     struct Input {
         let searchText: Observable<String>

@@ -1,11 +1,11 @@
 //
-//  BaseBuilder.swift
+//  PRMBaseBuilder.swift
 //  PromotionSDK
 //
 
 import UIKit
 
-class BaseBuilder<VC: UIViewController, VM, R, Dependency> {
+class PRMBaseBuilder<VC: UIViewController, VM, R, Dependency> {
 
     init() {}
 
@@ -22,7 +22,7 @@ class BaseBuilder<VC: UIViewController, VM, R, Dependency> {
     }
 
     func configureRouter(_ router: R, viewController: VC, navigator: UINavigationController?) {
-        if let baseRouter = router as? BaseRouter<VC> {
+        if let baseRouter = router as? PRMBaseRouter<VC> {
             baseRouter.setViewController(viewController)
             baseRouter.setNavigator(navigator)
         }

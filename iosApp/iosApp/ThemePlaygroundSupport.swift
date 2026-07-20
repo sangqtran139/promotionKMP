@@ -1,6 +1,6 @@
 //
 //  ThemePlaygroundSupport.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Toàn bộ UI nặng của Theme Playground. File này CỐ TÌNH KHÔNG import PromotionSDKUI
 //  để swift-frontend không phải deserialize class graph của framework khi type-check

@@ -8,7 +8,7 @@
 import UIKit
 @_implementationOnly import PRMKotlinBridge
 
-final class MyPromotionRouter: BaseRouter<MyPromotionViewController> {
+final class MyPromotionRouter: PRMBaseRouter<MyPromotionViewController> {
     
     func routeToSearch(customerId: String, token: String?) {
         let vc = SearchMyPromotionBuilder.build(with: .init(customerId: customerId, token: token), navigator: navigator)

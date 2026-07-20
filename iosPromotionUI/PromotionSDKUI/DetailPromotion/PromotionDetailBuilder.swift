@@ -8,7 +8,7 @@
 import UIKit
 @_implementationOnly import PRMKotlinBridge
 
-final class PromotionDetailBuilder: BaseBuilder<PromotionDetailViewController, PromotionDetailViewModel, PromotionDetailRouter, PromotionDetailBuilder.DataModel> {
+final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController, PromotionDetailViewModel, PromotionDetailRouter, PromotionDetailBuilder.DataModel> {
     
     struct DataModel {
         /// Promotion cơ bản (từ list) để hiện card NGAY; màn tự fetch detail đầy đủ theo voucherId.

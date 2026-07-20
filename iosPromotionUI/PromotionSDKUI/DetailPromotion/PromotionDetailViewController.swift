@@ -12,7 +12,7 @@ import UIKit
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMDesignKit
 
-final class PromotionDetailViewController: BaseViewController<PromotionDetailViewModel> {
+final class PromotionDetailViewController: PRMBaseViewController<PromotionDetailViewModel> {
     // MARK: - UI Components
     @IBOutlet private weak var bannerImageView: UIImageView!
     @IBOutlet private weak var voucherCardView: VoucherCardView!

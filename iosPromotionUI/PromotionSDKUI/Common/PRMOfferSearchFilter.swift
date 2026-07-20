@@ -1,5 +1,5 @@
 //
-//  OfferSearchFilter.swift
+//  PRMOfferSearchFilter.swift
 //  PRMPromotionUI
 //
 //  Lọc danh sách ưu đãi theo từ khoá, **trong bộ nhớ**, cho ô tìm kiếm của màn "Chọn ưu đãi".
@@ -11,7 +11,7 @@
 import Foundation
 @_implementationOnly import PRMKotlinBridge
 
-enum OfferSearchFilter {
+enum PRMOfferSearchFilter {
 
     static func search(query: String, in offers: [EligibleOffer]) -> [EligibleOffer] {
         let keyword = normalize(query)

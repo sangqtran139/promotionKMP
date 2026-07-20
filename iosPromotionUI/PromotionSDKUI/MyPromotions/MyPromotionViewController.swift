@@ -13,7 +13,7 @@ import UIKit
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMKotlinBridge
 
-final class MyPromotionViewController: BaseViewController<MyPromotionViewModel> {
+final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewModel> {
 
     // MARK: - UI Components
     @IBOutlet private weak var promotionsTableview: PRMRefreshTableView!

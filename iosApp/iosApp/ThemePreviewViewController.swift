@@ -1,6 +1,6 @@
 //
 //  ThemePreviewViewController.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Theme Playground — chỉnh màu/bo góc từng token và xem SDK áp dụng trực tiếp.
 //

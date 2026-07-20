@@ -1,5 +1,5 @@
 //
-//  BaseRouter+FeatureFlag.swift
+//  PRMBaseRouter+FeatureFlag.swift
 //  PRMPromotionUI
 //
 //  Gate điều hướng theo feature flag. Dùng chung cho các router mở màn Chi tiết ưu đãi.
@@ -9,7 +9,7 @@ import UIKit
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMKotlinBridge
 
-extension BaseRouter {
+extension PRMBaseRouter {
 
     /// Kiểm tra cờ `VOUCHER_DETAIL` trước khi mở màn Chi tiết ưu đãi.
     /// - Returns: `true` nếu được phép mở. Nếu TẮT → hiện popup lỗi PRM_MOB_021 và trả `false`.

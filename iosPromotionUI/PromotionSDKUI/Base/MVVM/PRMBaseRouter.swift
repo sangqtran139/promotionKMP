@@ -1,15 +1,15 @@
 //
-//  BaseRouter.swift
+//  PRMBaseRouter.swift
 //  PromotionSDK
 //
 
 import UIKit
 
-protocol BaseRouterProtocol {
+protocol PRMBaseRouterProtocol {
     func routeToParent()
 }
 
-class BaseRouter<VC: UIViewController>: BaseRouterProtocol {
+class PRMBaseRouter<VC: UIViewController>: PRMBaseRouterProtocol {
 
     weak var viewController: VC?
     weak var navigator: UINavigationController?

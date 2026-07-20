@@ -1,6 +1,6 @@
 //
 //  APIPlaygroundViewController.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Màn hình demo gọi từng API, hiển thị request/response đầy đủ.
 //

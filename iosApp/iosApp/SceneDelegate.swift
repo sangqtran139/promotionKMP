@@ -1,6 +1,6 @@
 //
 //  SceneDelegate.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Created by thachlh on 13/4/26.
 //

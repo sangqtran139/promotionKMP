@@ -12,7 +12,7 @@ import UIKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 
-final class SearchMyPromotionViewController: BaseViewController<SearchMyPromotionViewModel> {
+final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromotionViewModel> {
 
     // MARK: - UI Components
     @IBOutlet private weak var searchTextField: PRMSearchTextField!

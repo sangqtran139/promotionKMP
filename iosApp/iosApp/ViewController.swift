@@ -1,6 +1,6 @@
 //
 //  ViewController.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Demo tích hợp PromotionSDK SDK QUA wrapper `PromotionManager` (pattern anti-corruption):
 //  luồng chính (widget / danh sách / redemption / sự kiện) chỉ gọi PromotionManager, KHÔNG

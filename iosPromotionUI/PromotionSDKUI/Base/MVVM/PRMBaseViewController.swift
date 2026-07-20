@@ -1,5 +1,5 @@
 //
-//  BaseViewController.swift
+//  PRMBaseViewController.swift
 //  PromotionSDK
 //
 
@@ -7,7 +7,7 @@ import UIKit
 @_implementationOnly import RxSwift
 @_implementationOnly import RxCocoa
 
-class BaseViewController<VM>: UIViewController {
+class PRMBaseViewController<VM>: UIViewController {
 
     let viewModel: VM
     let disposeBag = DisposeBag()

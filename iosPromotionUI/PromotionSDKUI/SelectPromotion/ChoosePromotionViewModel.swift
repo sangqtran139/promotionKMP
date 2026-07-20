@@ -12,7 +12,7 @@ import UIKit
 @_implementationOnly import RxCocoa
 @_implementationOnly import PRMKotlinBridge
 
-final class ChoosePromotionViewModel: BaseViewModel<ChoosePromotionRouter>, ViewModelType {
+final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, PRMViewModelType {
 
     enum SectionType: String {
         case myPromotions = "myPromotions"
@@ -159,8 +159,8 @@ final class ChoosePromotionViewModel: BaseViewModel<ChoosePromotionRouter>, View
         .map { [weak self] (selectedId, st, keyword) -> [PromotionSection] in
             guard let self = self else { return [] }
             let isSearching = !keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            let filteredMy = isSearching ? OfferSearchFilter.search(query: keyword, in: st.myLoaded) : st.myLoaded
-            let filteredOther = isSearching ? OfferSearchFilter.search(query: keyword, in: st.otherLoaded) : st.otherLoaded
+            let filteredMy = isSearching ? PRMOfferSearchFilter.search(query: keyword, in: st.myLoaded) : st.myLoaded
+            let filteredOther = isSearching ? PRMOfferSearchFilter.search(query: keyword, in: st.otherLoaded) : st.otherLoaded
 
             let mapToViewModel: (EligibleOffer) -> MyPromotionCellViewModel = { entity in
                 MyPromotionCellViewModel(

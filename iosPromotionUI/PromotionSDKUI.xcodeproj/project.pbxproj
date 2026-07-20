@@ -8,14 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		5503AB622F95BF310075769D /* PRMDesignKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5503AB612F95BF310075769D /* PRMDesignKit */; };
-		55D4D56E2F8C946E0042667F /* VDSPromotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55D4D5622F8C946E0042667F /* VDSPromotion.framework */; };
-		AA01000100000001ABCD1234 /* Repository in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000200000001ABCD1234 /* Repository */; };
+		55D4D56E2F8C946E0042667F /* PromotionSDKUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55D4D5622F8C946E0042667F /* PromotionSDKUI.framework */; };
 		AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000400000001ABCD1234 /* PromotionLogic */; };
 		AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000600000001ABCD1234 /* PRMPromotionUI */; };
 		AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000800000001ABCD1234 /* PRMFoundation */; };
 		AA01000900000001ABCD1234 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000A00000001ABCD1234 /* RxSwift */; };
 		AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000C00000001ABCD1234 /* RxCocoa */; };
-		AA01000D00000001ABCD1234 /* CoreNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000E00000001ABCD1234 /* CoreNetwork */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,7 +22,7 @@
 			containerPortal = 55D4D5592F8C946D0042667F /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 55D4D5612F8C946D0042667F;
-			remoteInfo = VDSPromotion;
+			remoteInfo = PromotionSDKUI;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -33,17 +31,17 @@
 		5503AB5D2F95BC0D0075769D /* PRMKotlinBridge */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMKotlinBridge; sourceTree = "<group>"; };
 		5503AB5E2F95BC0D0075769D /* PRMPromotionUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMPromotionUI; sourceTree = "<group>"; };
 		553838622F9607D10085CAE8 /* PRMFoundation */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PRMFoundation; sourceTree = "<group>"; };
-		55D4D5622F8C946E0042667F /* VDSPromotion.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = PromotionSDKUI.framework; path = PromotionSDKUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		55D4D56D2F8C946E0042667F /* VDSPromotionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VDSPromotionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		55D4D5622F8C946E0042667F /* PromotionSDKUI.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; name = PromotionSDKUI.framework; path = PromotionSDKUI.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		55D4D56D2F8C946E0042667F /* PromotionSDKTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PromotionSDKTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		55D4D5642F8C946E0042667F /* VDSPromotion */ = {
+		55D4D5642F8C946E0042667F /* PromotionSDKUI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = PromotionSDKUI;
 			sourceTree = "<group>";
 		};
-		55D4D5712F8C946E0042667F /* VDSPromotionTests */ = {
+		55D4D5712F8C946E0042667F /* PromotionSDKTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = PromotionSDKTests;
 			sourceTree = "<group>";
@@ -56,13 +54,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				5503AB622F95BF310075769D /* PRMDesignKit in Frameworks */,
-				AA01000100000001ABCD1234 /* Repository in Frameworks */,
 				AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */,
 				AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */,
 				AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */,
 				AA01000900000001ABCD1234 /* RxSwift in Frameworks */,
 				AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */,
-				AA01000D00000001ABCD1234 /* CoreNetwork in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +66,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				55D4D56E2F8C946E0042667F /* VDSPromotion.framework in Frameworks */,
+				55D4D56E2F8C946E0042667F /* PromotionSDKUI.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,8 +94,8 @@
 		55D4D5582F8C946D0042667F = {
 			isa = PBXGroup;
 			children = (
-				55D4D5642F8C946E0042667F /* VDSPromotion */,
-				55D4D5712F8C946E0042667F /* VDSPromotionTests */,
+				55D4D5642F8C946E0042667F /* PromotionSDKUI */,
+				55D4D5712F8C946E0042667F /* PromotionSDKTests */,
 				55D4D5632F8C946E0042667F /* Products */,
 				5503AB5F2F95BC0D0075769D /* Packages */,
 				5503AB602F95BF310075769D /* Frameworks */,
@@ -109,8 +105,8 @@
 		55D4D5632F8C946E0042667F /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				55D4D5622F8C946E0042667F /* VDSPromotion.framework */,
-				55D4D56D2F8C946E0042667F /* VDSPromotionTests.xctest */,
+				55D4D5622F8C946E0042667F /* PromotionSDKUI.framework */,
+				55D4D56D2F8C946E0042667F /* PromotionSDKTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,7 +124,7 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		55D4D5612F8C946D0042667F /* VDSPromotion */ = {
+		55D4D5612F8C946D0042667F /* PromotionSDKUI */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 55D4D5762F8C946E0042667F /* Build configuration list for PBXNativeTarget "PromotionSDKUI" */;
 			buildPhases = (
@@ -143,7 +139,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				55D4D5642F8C946E0042667F /* VDSPromotion */,
+				55D4D5642F8C946E0042667F /* PromotionSDKUI */,
 			);
 			name = PromotionSDKUI;
 			packageProductDependencies = (
@@ -155,10 +151,10 @@
 				AA01000C00000001ABCD1234 /* RxCocoa */,
 			);
 			productName = PromotionSDKUI;
-			productReference = 55D4D5622F8C946E0042667F /* VDSPromotion.framework */;
+			productReference = 55D4D5622F8C946E0042667F /* PromotionSDKUI.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		55D4D56C2F8C946E0042667F /* VDSPromotionTests */ = {
+		55D4D56C2F8C946E0042667F /* PromotionSDKTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 55D4D5792F8C946E0042667F /* Build configuration list for PBXNativeTarget "PromotionSDKTests" */;
 			buildPhases = (
@@ -172,13 +168,13 @@
 				55D4D5702F8C946E0042667F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				55D4D5712F8C946E0042667F /* VDSPromotionTests */,
+				55D4D5712F8C946E0042667F /* PromotionSDKTests */,
 			);
 			name = PromotionSDKTests;
 			packageProductDependencies = (
 			);
 			productName = PromotionSDKTests;
-			productReference = 55D4D56D2F8C946E0042667F /* VDSPromotionTests.xctest */;
+			productReference = 55D4D56D2F8C946E0042667F /* PromotionSDKTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -213,8 +209,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				55D4D5612F8C946D0042667F /* VDSPromotion */,
-				55D4D56C2F8C946E0042667F /* VDSPromotionTests */,
+				55D4D5612F8C946D0042667F /* PromotionSDKUI */,
+				55D4D56C2F8C946E0042667F /* PromotionSDKTests */,
 			);
 		};
 /* End PBXProject section */
@@ -275,7 +271,7 @@
 /* Begin PBXTargetDependency section */
 		55D4D5702F8C946E0042667F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 55D4D5612F8C946D0042667F /* VDSPromotion */;
+			target = 55D4D5612F8C946D0042667F /* PromotionSDKUI */;
 			targetProxy = 55D4D56F2F8C946E0042667F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -430,7 +426,7 @@
 				MARKETING_VERSION = 1.0.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
-				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.VDSPromotion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.PromotionSDKUI;
 				// Script `Embed SPM resource bundles` phai doc file ngoai sandbox.
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_MODULE_NAME = PromotionSDKUI;
@@ -469,7 +465,7 @@
 				MARKETING_VERSION = 1.0.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
-				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.VDSPromotion;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.PromotionSDKUI;
 				// Script `Embed SPM resource bundles` phai doc file ngoai sandbox.
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				PRODUCT_MODULE_NAME = PromotionSDKUI;
@@ -500,7 +496,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.VDSPromotionTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.PromotionSDKTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -518,7 +514,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.VDSPromotionTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vtm.PromotionSDKTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

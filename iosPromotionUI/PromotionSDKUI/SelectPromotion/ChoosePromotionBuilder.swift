@@ -9,7 +9,7 @@ import UIKit
 @_implementationOnly import PRMKotlinBridge
 
 
-final class ChoosePromotionBuilder: BaseBuilder<ChoosePromotionViewController, ChoosePromotionViewModel, ChoosePromotionRouter, ChoosePromotionBuilder.DataModel> {
+final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController, ChoosePromotionViewModel, ChoosePromotionRouter, ChoosePromotionBuilder.DataModel> {
     
     struct DataModel {
         let customerId: String

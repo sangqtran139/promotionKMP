@@ -1,6 +1,6 @@
 //
 //  LoginService.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  CHỈ dùng cho app demo: gọi API đăng nhập ViettelMoney để lấy `accessToken` thật rồi truyền
 //  vào SDK (`PromotionManager.start(customerId:token:...)`). Ngoài đời việc này do app HOST làm;

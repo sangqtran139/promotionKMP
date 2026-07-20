@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class PromotionDetailRouter: BaseRouter<PromotionDetailViewController> {
+final class PromotionDetailRouter: PRMBaseRouter<PromotionDetailViewController> {
     
     // Define navigation methods here
     // Example:

@@ -1,6 +1,6 @@
 //
 //  CheckoutViewController.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Màn "Thanh toán" của host: nhúng widget chọn ưu đãi (custom view của SDK) + nút
 //  "Thanh toán" gọi API redemption với voucher user đã áp trên widget.

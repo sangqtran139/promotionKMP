@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class MyPromotionBuilder: BaseBuilder<MyPromotionViewController, MyPromotionViewModel, MyPromotionRouter, MyPromotionBuilder.DataModel> {
+final class MyPromotionBuilder: PRMBaseBuilder<MyPromotionViewController, MyPromotionViewModel, MyPromotionRouter, MyPromotionBuilder.DataModel> {
     
     struct DataModel {
         let customerId: String

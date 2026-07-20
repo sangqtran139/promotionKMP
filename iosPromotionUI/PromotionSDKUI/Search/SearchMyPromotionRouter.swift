@@ -8,7 +8,7 @@
 import UIKit
 @_implementationOnly import PRMKotlinBridge
 
-final class SearchMyPromotionRouter: BaseRouter<SearchMyPromotionViewController> {
+final class SearchMyPromotionRouter: PRMBaseRouter<SearchMyPromotionViewController> {
     
     func routeToDetail(promotion: VoucherItem, customerId: String, token: String?) {
         // Cờ VOUCHER_DETAIL TẮT → hiện popup PRM_MOB_021, không mở màn chi tiết.

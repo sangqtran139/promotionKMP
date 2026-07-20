@@ -10,7 +10,7 @@ import Foundation
 @_implementationOnly import RxCocoa
 @_implementationOnly import PRMKotlinBridge
 
-final class PromotionDetailViewModel: BaseViewModel<PromotionDetailRouter>, ViewModelType {
+final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, PRMViewModelType {
 
     struct Input {}
 

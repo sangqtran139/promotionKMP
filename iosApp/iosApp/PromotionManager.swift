@@ -1,6 +1,6 @@
 //
 //  PromotionManager.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  MẪU THAM KHẢO — Wrapper / Anti-Corruption Layer bọc PromotionSDK SDK.
 //

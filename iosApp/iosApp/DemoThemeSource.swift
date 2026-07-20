@@ -1,6 +1,6 @@
 //
 //  DemoThemeSource.swift
-//  VDSPromotionDemoApp
+//  PromotionSDKDemo
 //
 //  Hai cách host lấy một PromotionSDKTheme — đối ứng `DemoThemeSource.kt` bên Android.
 //

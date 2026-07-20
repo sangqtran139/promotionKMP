@@ -12,7 +12,7 @@ import UIKit
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMKotlinBridge
 
-final class ChoosePromotionViewController: BaseViewController<ChoosePromotionViewModel> {
+final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotionViewModel> {
 
     // MARK: - UI Components
     @IBOutlet private weak var searchTextField: PRMSearchTextField!

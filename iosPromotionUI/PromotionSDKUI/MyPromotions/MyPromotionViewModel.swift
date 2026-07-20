@@ -10,7 +10,7 @@ import Foundation
 @_implementationOnly import RxCocoa
 @_implementationOnly import PRMKotlinBridge
 
-final class MyPromotionViewModel: BaseViewModel<MyPromotionRouter>, ViewModelType {
+final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewModelType {
     
     struct Input {
         let refreshTrigger: Observable<Void>

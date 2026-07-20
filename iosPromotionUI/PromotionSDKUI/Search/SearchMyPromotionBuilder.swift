@@ -8,7 +8,7 @@
 import UIKit
 @_implementationOnly import PRMKotlinBridge
 
-final class SearchMyPromotionBuilder: BaseBuilder<SearchMyPromotionViewController, SearchMyPromotionViewModel, SearchMyPromotionRouter, SearchMyPromotionBuilder.DataModel> {
+final class SearchMyPromotionBuilder: PRMBaseBuilder<SearchMyPromotionViewController, SearchMyPromotionViewModel, SearchMyPromotionRouter, SearchMyPromotionBuilder.DataModel> {
     
     struct DataModel {
         let customerId: String
