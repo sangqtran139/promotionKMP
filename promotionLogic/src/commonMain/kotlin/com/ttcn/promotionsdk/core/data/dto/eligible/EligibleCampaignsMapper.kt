@@ -7,17 +7,19 @@ import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsReq
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
 
 internal fun FindEligibleCampaignsRequest.toEligibleCampaignsRequest() = EligibleCampaignsRequest(
+    // Định danh khách lấy từ JWT-sub → không gửi customerId. customerType/segment/tier đưa vào
+    // customerInfo.metadata (free map) để không mất input đánh giá ưu đãi.
     customerInfo = EligibleCustomerInfo(
-        customerId = customerId,
-        customerType = customerType,
-        segment = segment,
-        tier = tier,
+        metadata = buildMap {
+            customerType?.let { put("customerType", it) }
+            segment?.let { put("segment", it) }
+            tier?.let { put("tier", it) }
+        }.ifEmpty { null },
     ),
     orderInfo = EligibleOrderInfo(
         orderId = orderId,
         orderValue = orderValue,
         currency = currency,
-        channel = channel,
         items = items.map { it.toDto() },
     ),
     filterOptions = EligibleFilterOptionsDto(
@@ -25,22 +27,25 @@ internal fun FindEligibleCampaignsRequest.toEligibleCampaignsRequest() = Eligibl
         checkBudgetAvailability = filterOptions.checkBudgetAvailability,
         includePreview = filterOptions.includePreview,
     ),
+    // sectionCode nay top-level; tabCode/channel bị bỏ khỏi request v1.6.
+    sectionCode = section?.code,
     pagination = EligiblePagination(
         myOffers = EligiblePageRequest(page = myPage, size = mySize),
         otherOffers = EligiblePageRequest(page = otherPage, size = otherSize),
-        tabCode = tabCode?.takeIf { it.isNotBlank() },
-        sectionCode = section?.code,
     ),
 )
 
 private fun EligibleOrderItem.toDto() = EligibleOrderItemDto(
-    skuId = skuId,
+    orderItemId = orderItemId,
+    // skuId của host = skuSourceId đối tác (BE resolve skuId nội bộ).
+    skuSourceId = skuId,
+    productId = productId,
     quantity = quantity,
     unitPrice = unitPrice,
-    orderItemId = orderItemId,
-    productId = productId,
-    productName = productName,
-    productCategory = productCategory,
+    metadata = buildMap {
+        productName?.let { put("productName", it) }
+        productCategory?.let { put("productCategory", it) }
+    }.ifEmpty { null },
 )
 
 internal fun EligibleCampaignsResponse.toEligibleOffersResult() = EligibleOffersResult(
@@ -64,7 +69,8 @@ private fun EligibleOfferDto.toEligibleOffer(): EligibleOffer? {
         id = id,
         campaignId = campaignId,
         voucherId = voucherId,
-        campaignName = campaignName,
+        // Ưu tiên tên hiển thị voucher (v1.6), fallback tên campaign.
+        campaignName = voucherName ?: campaignName,
         campaignType = campaignType,
         objectType = campaignType ?: "CAMPAIGN",
         discountType = discountType,
@@ -74,7 +80,8 @@ private fun EligibleOfferDto.toEligibleOffer(): EligibleOffer? {
         maxDiscount = discountPreview?.maxDiscount,
         minOrderValue = discountPreview?.minOrderValue,
         startDate = validity?.startDate,
-        expireDate = validity?.endDate,
+        // Ưu tiên `expiresAt` (hạn voucher đang sở hữu), fallback hạn campaign.
+        expireDate = expiresAt ?: validity?.endDate,
         remainingRedemptions = validity?.remainingRedemptions,
         budgetAvailable = budgetStatus?.available,
         unmatchedRules = eligibilityDetails?.unmatchedRules.orEmpty(),

@@ -175,10 +175,12 @@ class EligibleCampaignsTest {
 
         val body = (request.body as TextContent).text
         assertTrue("\"sectionCode\":\"other_offers\"" in body, body)
-        assertTrue("\"tabCode\":\"expiring\"" in body, body)
+        // v1.6 bỏ tabCode khỏi request (không còn thanh tab).
+        assertTrue("tabCode" !in body, body)
         assertTrue("\"otherOffers\":{\"page\":3,\"size\":10}" in body, body)
         assertTrue("\"myOffers\":{\"page\":0,\"size\":10}" in body, body)
-        assertTrue("\"skuId\":\"SKU-1\"" in body, body)
+        // Item dùng skuSourceId (v1.6) thay cho skuId.
+        assertTrue("\"skuSourceId\":\"SKU-1\"" in body, body)
         assertTrue("\"currency\":\"VND\"" in body, body)
         assertTrue("\"checkBudgetAvailability\":true" in body, body)
     }

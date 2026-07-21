@@ -1,6 +1,5 @@
 package com.ttcn.promotionsdk.core.data.dto.voucher
 
-import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
 import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
@@ -20,21 +19,23 @@ internal fun SearchCustomerVouchersResponse.toSearchCustomerVouchersResult() = S
 )
 
 internal fun CustomerVoucherDetail.toVoucherDetail() = VoucherDetail(
-    voucherId = voucherId,
-    merchantName = merchantName,
-    logo = logo,
-    banner = banner,
-    title = title,
-    description = description,
-    guideline = guideline,
+    voucherId = voucher.id,
+    merchantName = voucher.brand?.name,
+    logo = voucher.brand?.logo?.firstOrNull(),
+    banner = voucher.image,
+    title = voucher.title,
+    description = voucher.description,
+    // `guideline` (điều khoản/hướng dẫn) = nội dung ngắn `voucher.content`.
+    guideline = voucher.content,
     startDate = startDate,
-    expirationDate = expirationDate,
-    status = status,
-    displayStatusLabel = displayStatusLabel,
-    campaignId = campaignId,
-    campaignType = campaignType,
-    campaignStatus = campaignStatus,
-    applicableProducts = applicableProducts.map { it.toApplicableProduct() },
+    expirationDate = endDate,
+    status = metadata.toStatusRaw(),
+    displayStatusLabel = metadata?.disabledReason,
+    // `voucher.id` chính là campaign_id sinh ra voucher (spec §6.2).
+    campaignId = voucher.id,
+    campaignType = null,
+    campaignStatus = null,
+    applicableProducts = emptyList(),
 )
 
 private fun VoucherTabInfo.toVoucherTabItem() = VoucherTabItem(
@@ -46,25 +47,31 @@ private fun VoucherTabInfo.toVoucherTabItem() = VoucherTabItem(
 )
 
 private fun VoucherListItem.toVoucherItem() = VoucherItem(
-    voucherId = voucherId,
-    merchantName = merchantName,
-    title = title,
-    description = description,
-    logo = logo,
-    expirationDate = expirationDate,
-    status = status,
-    displayStatusLabel = displayStatusLabel,
-    campaignId = campaignId,
-    campaignType = campaignType,
-    objectType = campaignType ?: "CAMPAIGN",
-    isAutoApplied = isAutoApplied ?: false,
-    applicableProducts = applicableProducts.map { it.toApplicableProduct() },
+    voucherId = voucher.id,
+    merchantName = voucher.brand?.name,
+    title = voucher.title,
+    description = voucher.description,
+    logo = voucher.brand?.logo?.firstOrNull(),
+    expirationDate = endDate,
+    status = metadata.toStatusRaw(),
+    displayStatusLabel = metadata?.disabledReason,
+    campaignId = voucher.id,
+    campaignType = null,
+    objectType = "CAMPAIGN",
+    // Spec mới không còn `isAutoApplied` — mặc định không tự áp.
+    isAutoApplied = false,
+    applicableProducts = emptyList(),
 )
 
-private fun ApplicableProductDto.toApplicableProduct() = ApplicableProduct(
-    productId = productId,
-    sku = sku,
-    name = name,
-    image = image,
-    type = type,
-)
+/**
+ * Suy `status` (khuôn cũ, feed `VoucherStatus`) từ `metadata.usable` + `disabledReason`:
+ * - `usable="false"` → `disabledReason` (EXPIRED/REDEEMED map thẳng enum; mã lạ → UNKNOWN → fail-closed).
+ * - `usable="true"` → `USABLE`.
+ * - null/khác → null (UI xử lý như không rõ trạng thái).
+ */
+private fun VoucherMetadataDto?.toStatusRaw(): String? = when {
+    this == null -> null
+    usable.equals("false", ignoreCase = true) -> disabledReason ?: "INELIGIBLE"
+    usable.equals("true", ignoreCase = true) -> "USABLE"
+    else -> null
+}

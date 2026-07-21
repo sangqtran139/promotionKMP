@@ -120,7 +120,7 @@ class MalformedResponseTest {
 
     @Test
     fun searchVouchers_withMalformedItem_becomesFailure_notCrash() = runTest {
-        // `voucherId` bắt buộc trong VoucherListItem.
+        // `voucher` (object) bắt buộc trong VoucherListItem — item phẳng thiếu nó → SerializationException.
         val useCases = useCases {
             respond("""{"success":true,"data":{"content":[{"title":"x"}]}}""", HttpStatusCode.OK, jsonHeaders)
         }

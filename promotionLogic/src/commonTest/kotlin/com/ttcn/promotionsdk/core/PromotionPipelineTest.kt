@@ -83,18 +83,18 @@ class PromotionPipelineTest {
                   "status": 200, "success": true,
                   "data": {
                     "selectedTab": "ALL",
+                    "expireWarningDate": 7,
                     "tabs": [{"code":"ALL","label":"Tất cả","default":true,"count":2}],
                     "content": [
                       {
-                        "voucherId": "v-1",
-                        "merchantName": "Viettel",
-                        "title": "Giảm 50k",
-                        "campaignType": "CAMPAIGN",
-                        "status": "AVAILABLE_TO_CLAIM",
-                        "isAutoApplied": true,
-                        "applicableProducts": [
-                          {"productId":"p-1","name":"Data 5G","type":"DATA"}
-                        ]
+                        "voucher": {
+                          "id": "v-1",
+                          "brand": {"name": "Viettel", "logo": ["https://cdn/vt.png"]},
+                          "title": "Giảm 50k"
+                        },
+                        "metadata": {"usable": "true"},
+                        "startDate": "2026-07-01T00:00:00",
+                        "endDate": "2026-07-31T23:59:59"
                       }
                     ],
                     "totalElements": 1, "last": true, "number": 0, "size": 20
@@ -111,12 +111,11 @@ class PromotionPipelineTest {
         val success = assertIs<PromotionResult.Success<*>>(result)
         val data = success.data as com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
         assertEquals(1, data.content.size)
+        // `voucherId` domain ← `content[].voucher.id`; `merchantName` ← `voucher.brand.name` (khuôn v1.7).
         assertEquals("v-1", data.content.first().voucherId)
+        assertEquals("Viettel", data.content.first().merchantName)
         assertEquals("CAMPAIGN", data.content.first().objectType)
-        assertEquals("Data 5G", data.content.first().applicableProducts.first().name)
-        // isAutoApplied phải đi hết đường JSON → DTO → domain, nếu không voucher tự-áp-dụng
-        // sẽ im lặng ngừng hoạt động (bản Kotlin trước đây thiếu hẳn field này).
-        assertTrue(data.content.first().isAutoApplied)
+        // Trạng thái dùng được suy từ `metadata.usable="true"` → USABLE.
         assertEquals(VoucherDisplayState.USABLE, data.content.first().displayState())
         assertEquals(1, data.tabs.size)
         assertTrue(data.tabs.first().isDefault)
@@ -136,7 +135,7 @@ class PromotionPipelineTest {
             provider = FakeContextProvider(token = "abc123", language = null),
             capture = captured,
         ) {
-            respond("""{"success":true,"data":{"voucherId":"v-1"}}""", HttpStatusCode.OK, jsonHeaders)
+            respond("""{"success":true,"data":{"voucher":{"id":"v-1"}}}""", HttpStatusCode.OK, jsonHeaders)
         }
 
         useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")
@@ -154,7 +153,7 @@ class PromotionPipelineTest {
             provider = FakeContextProvider(token = "Bearer xyz"),
             capture = captured,
         ) {
-            respond("""{"success":true,"data":{"voucherId":"v-1"}}""", HttpStatusCode.OK, jsonHeaders)
+            respond("""{"success":true,"data":{"voucher":{"id":"v-1"}}}""", HttpStatusCode.OK, jsonHeaders)
         }
 
         useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")

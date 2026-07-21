@@ -84,6 +84,8 @@ Xem [IosUIGuide.md](./IosUIGuide.md).
 | [Architecture.md](./Architecture.md) | Kiến trúc tổng thể: lõi chung + hai UI native, luồng dữ liệu. |
 | [ProjectStructure.md](./ProjectStructure.md) | Cấu trúc thư mục, vai trò từng package, đặt file mới ở đâu. |
 | [PublicApi.md](./PublicApi.md) | **Bề mặt SDK cho app host**: `PromotionSDK`, `PromotionSDKApi`, DTO — song ánh Android ↔ iOS. |
+| [AndroidIntegrationGuide.md](./AndroidIntegrationGuide.md) | **Tích hợp Android cho app host**: khai Maven `promotionUI`, vòng đời, UI, headless, lỗi, theming. |
+| [IosIntegrationGuide.md](./IosIntegrationGuide.md) | **Tích hợp iOS cho app host**: nhúng `PromotionSDKUI.xcframework`, vòng đời, UI, headless, lỗi, theming. |
 | [HeadlessAPI.md](./HeadlessAPI.md) | API của lõi `:promotionLogic`: 5 use case nghiệp vụ + feature flag. Host **không** gọi vào đây. |
 | [NetworkingGuide.md](./NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
 | [DependencyInjection.md](./DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |

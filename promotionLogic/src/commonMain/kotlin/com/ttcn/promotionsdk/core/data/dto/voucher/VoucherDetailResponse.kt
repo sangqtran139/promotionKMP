@@ -4,50 +4,27 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Payload trả về của API chi tiết voucher (`GET .../customer-vouchers/{voucherId}`).
+ * Payload `data` của API chi tiết voucher (`GET .../customer-vouchers/{voucherId}`), v1.3.
  * Map sang domain `VoucherDetail` qua [VoucherMapper].
- * Phiên bản v1.1+: thêm campaignId, campaignType, campaignStatus, applicableProducts.
+ *
+ * Breaking v1.3: bỏ lớp lồng `campaign`. `data` là 1 item phẳng gồm object [VoucherInfoDto] +
+ * các field ngang hàng `codes[]` / `quantity` / `value` / `amount` / dates / `metadata`.
+ * Trạng thái dùng được chuyển sang `metadata.usable` + `disabledReason`.
  */
 @Serializable
 data class CustomerVoucherDetail(
-    @SerialName("voucherId") val voucherId: String,
-    @SerialName("customerId") val customerId: String? = null,
-    @SerialName("merchantName") val merchantName: String? = null,
-    @SerialName("logo") val logo: String? = null,
-    @SerialName("banner") val banner: String? = null,
-    @SerialName("title") val title: String? = null,
-    @SerialName("description") val description: String? = null,
-    @SerialName("guideline") val guideline: String? = null,
+    @SerialName("voucher") val voucher: VoucherInfoDto,
+    @SerialName("codes") val codes: List<VoucherCodeDto> = emptyList(),
+    @SerialName("quantity") val quantity: Int? = null,
+    @SerialName("value") val value: Double? = null,
+    @SerialName("amount") val amount: Double? = null,
+    /** Thời điểm bắt đầu hiệu lực, format `yyyy-MM-dd'T'HH:mm:ss`. */
     @SerialName("startDate") val startDate: String? = null,
-    @SerialName("expirationDate") val expirationDate: String? = null,
-    @SerialName("timeSlot") val timeSlot: String? = null,
-    @SerialName("status") val status: String? = null,
-    @SerialName("displayStatusLabel") val displayStatusLabel: String? = null,
-    @SerialName("campaignId") val campaignId: String? = null,
-    @SerialName("campaignType") val campaignType: String? = null,
-    @SerialName("campaignStatus") val campaignStatus: String? = null,
-    @SerialName("applicableProducts") val applicableProducts: List<ApplicableProductDto> = emptyList(),
-    @SerialName("discountType") val discountType: DiscountInfo? = null,
-    @SerialName("conditions") val conditions: VoucherConditions? = null,
-)
-
-@Serializable
-data class DiscountInfo(
-    @SerialName("discountType") val discountType: String? = null,
-    @SerialName("discountMethod") val discountMethod: String? = null,
-    @SerialName("discountValue") val discountValue: String? = null,
-    @SerialName("discountPercentage") val discountPercentage: String? = null,
-    @SerialName("includedProducts") val includedProducts: List<String> = emptyList(),
-    @SerialName("excludedProducts") val excludedProducts: List<String> = emptyList(),
-)
-
-@Serializable
-data class VoucherConditions(
-    @SerialName("validationRules") val validationRules: List<ValidationRule> = emptyList(),
-)
-
-@Serializable
-data class ValidationRule(
-    @SerialName("ruleCode") val ruleCode: String? = null,
-    @SerialName("description") val description: String? = null,
+    /** Thời điểm kết thúc hiệu lực, format `yyyy-MM-dd'T'HH:mm:ss`. */
+    @SerialName("endDate") val endDate: String? = null,
+    @SerialName("expiredTimeNumber") val expiredTimeNumber: Int? = null,
+    @SerialName("priority") val priority: Int? = null,
+    /** `1` = voucher thuộc sở hữu của chính khách. API detail luôn `1`. */
+    @SerialName("isYourself") val isYourself: Int? = null,
+    @SerialName("metadata") val metadata: VoucherMetadataDto? = null,
 )

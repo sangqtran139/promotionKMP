@@ -11,6 +11,9 @@ import kotlinx.serialization.Serializable
 internal data class EligibleCampaignsResponse(
     @SerialName("myOffers") val myOffers: EligibleOfferPage? = null,
     @SerialName("otherOffers") val otherOffers: EligibleOfferPage? = null,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh tại BFF. */
+    @SerialName("expireWarningDate") val expireWarningDate: Double? = null,
+    // v1.6 KHÔNG khôi phục thanh tab — giữ field để tương thích ngược (server không trả → rỗng).
     @SerialName("tabs") val tabs: List<EligibleTabConfig> = emptyList(),
     @SerialName("activeTab") val activeTab: String? = null,
 )
@@ -31,18 +34,34 @@ internal data class EligibleOfferPage(
 @Serializable
 internal data class EligibleOfferDto(
     @SerialName("campaignId") val campaignId: String? = null,
-    /** Chỉ có ở nhóm myOffers (voucher khách sở hữu); null ở otherOffers. */
-    @SerialName("voucherId") val voucherId: String? = null,
     @SerialName("campaignName") val campaignName: String? = null,
     @SerialName("campaignType") val campaignType: String? = null,
     @SerialName("discountType") val discountType: String? = null,
-    @SerialName("usable") val usable: Boolean? = null,
-    /** null nếu usable=true; "DISABLED" nếu hiển thị mờ. */
-    @SerialName("displayMode") val displayMode: String? = null,
+    @SerialName("description") val description: String? = null,
     @SerialName("discountPreview") val discountPreview: EligibleDiscountPreview? = null,
     @SerialName("budgetStatus") val budgetStatus: EligibleBudgetStatus? = null,
     @SerialName("eligibilityDetails") val eligibilityDetails: EligibleEligibilityDetails? = null,
     @SerialName("validity") val validity: EligibleValidity? = null,
+    // Field hiển thị voucher (§6.2) — gating tách ra top-level.
+    /** Chỉ nhóm myOffers (voucher khách sở hữu); null ở otherOffers. */
+    @SerialName("voucherId") val voucherId: String? = null,
+    /** Chỉ nhóm myOffers: trạng thái voucher đang sở hữu. */
+    @SerialName("voucherStatus") val voucherStatus: String? = null,
+    /** Tên voucher/ưu đãi hiển thị — có ở cả 2 nhóm. */
+    @SerialName("voucherName") val voucherName: String? = null,
+    /** Chỉ nhóm myOffers: mã code đã phát hành. */
+    @SerialName("voucherCode") val voucherCode: String? = null,
+    /** Logo voucher — có ở cả 2 nhóm. */
+    @SerialName("logoUrl") val logoUrl: String? = null,
+    /** Tên đối tác/merchant phát hành — có ở cả 2 nhóm. */
+    @SerialName("partnerName") val partnerName: String? = null,
+    @SerialName("usable") val usable: Boolean? = null,
+    /** null nếu usable=true; "DISABLED" nếu hiển thị mờ. */
+    @SerialName("displayMode") val displayMode: String? = null,
+    /** Lý do không dùng được — chỉ khi usable=false. */
+    @SerialName("disabledReason") val disabledReason: String? = null,
+    /** Thời điểm hết hạn (ISO-8601). myOffers ưu tiên hạn voucher đang sở hữu. */
+    @SerialName("expiresAt") val expiresAt: String? = null,
 )
 
 @Serializable

@@ -4,14 +4,18 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * Payload trả về của API tìm kiếm voucher khách hàng (`GET .../customer-vouchers`).
+ * Payload `data` của API tìm kiếm voucher khách hàng (`GET .../customer-vouchers`), v1.8.
  * Map sang domain `SearchCustomerVouchersResult` qua [VoucherMapper].
- * Phiên bản v1.3+: flat Spring Page, không còn myVouchers/otherVouchers.
+ *
+ * `data` là 1 Spring `Page<VoucherItem>` phẳng + thanh tab động (`tabs[]`). Breaking v1.7: mỗi phần
+ * tử `content[]` là item phẳng (khuôn giống Detail §6, trừ `codes`). v1.8: thêm `expireWarningDate`.
  */
 @Serializable
 data class SearchCustomerVouchersResponse(
     @SerialName("keyword") val keyword: String? = null,
     @SerialName("serviceCode") val serviceCode: String? = null,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh tại BFF. */
+    @SerialName("expireWarningDate") val expireWarningDate: Double? = null,
     @SerialName("tabs") val tabs: List<VoucherTabInfo> = emptyList(),
     @SerialName("defaultTab") val defaultTab: String? = null,
     @SerialName("selectedTab") val selectedTab: String? = null,
@@ -55,29 +59,21 @@ data class SortInfo(
     @SerialName("empty") val empty: Boolean? = null,
 )
 
+/**
+ * Một phần tử `content[]` — item phẳng (khuôn giống `data` của API Detail §6, trừ `codes`).
+ * Gồm object [VoucherInfoDto] + các field ngang hàng.
+ */
 @Serializable
 data class VoucherListItem(
-    @SerialName("voucherId") val voucherId: String,
-    @SerialName("merchantName") val merchantName: String? = null,
-    @SerialName("title") val title: String? = null,
-    @SerialName("description") val description: String? = null,
-    @SerialName("logo") val logo: String? = null,
+    @SerialName("voucher") val voucher: VoucherInfoDto,
+    @SerialName("quantity") val quantity: Int? = null,
+    @SerialName("value") val value: Double? = null,
+    @SerialName("amount") val amount: Double? = null,
     @SerialName("startDate") val startDate: String? = null,
-    @SerialName("expirationDate") val expirationDate: String? = null,
-    @SerialName("timeSlot") val timeSlot: String? = null,
-    @SerialName("status") val status: String? = null,
-    @SerialName("displayStatusLabel") val displayStatusLabel: String? = null,
-    @SerialName("campaignId") val campaignId: String? = null,
-    @SerialName("campaignType") val campaignType: String? = null,
-    @SerialName("isAutoApplied") val isAutoApplied: Boolean? = null,
-    @SerialName("applicableProducts") val applicableProducts: List<ApplicableProductDto> = emptyList(),
-)
-
-@Serializable
-data class ApplicableProductDto(
-    @SerialName("productId") val productId: String,
-    @SerialName("sku") val sku: String? = null,
-    @SerialName("name") val name: String,
-    @SerialName("image") val image: String? = null,
-    @SerialName("type") val type: String,
+    @SerialName("endDate") val endDate: String? = null,
+    @SerialName("expiredTimeNumber") val expiredTimeNumber: Int? = null,
+    @SerialName("priority") val priority: Int? = null,
+    /** `1` = voucher thuộc sở hữu của chính khách. API này luôn `1`. */
+    @SerialName("isYourself") val isYourself: Int? = null,
+    @SerialName("metadata") val metadata: VoucherMetadataDto? = null,
 )
