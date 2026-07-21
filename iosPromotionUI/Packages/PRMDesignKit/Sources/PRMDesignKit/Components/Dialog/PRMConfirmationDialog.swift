@@ -4,7 +4,7 @@
 //
 //  Confirmation Dialog dùng chung (mobile) — dạng Lỗi: header "Thông báo" + nội dung + 1 nút "Đóng".
 //  Dùng cho lỗi nghiệp vụ (thay toast) theo PRM_KBNV_MOB_000_Danh mục dùng chung #6.
-//  UIKit thuần, không phụ thuộc RxSwift.
+//  UIKit thuần.
 //
 
 import UIKit

@@ -1,0 +1,136 @@
+# ErrorHandling — Quy ước xử lý lỗi
+
+Phân loại, lan truyền và hiển thị lỗi trong TTCN Promotion SDK. Mục tiêu: lỗi rõ ràng, không bị nuốt
+âm thầm, và host app nhận thông tin nhất quán trên cả hai nền tảng.
+
+---
+
+## 1. Phân loại exception
+
+Đặt ở `core/domain/exception/`:
+
+| Class | Dùng cho |
+|------|----------|
+| `PromotionException` | Lỗi nghiệp vụ/HTTP từ server — mang `errorCode` / `message` / `httpStatus` |
+| `NetworkException` | Lỗi transport (mất mạng, timeout) — mang `errorCode` (`NETWORK_ERROR` / `TIMEOUT`) |
+| `FeatureFlagException` | Lỗi khi lấy cờ tính năng — **không** mang error code, không hiển thị cho user |
+| `ErrorCodes` | Tập hằng số mã lỗi dùng chung |
+
+```kotlin
+internal object ErrorCodes {
+    const val MISSING_CUSTOMER_ID = "missing_customer_id"
+    const val NO_RESULT = "no_result"
+    const val INSUFFICIENT_BUDGET = "INSUFFICIENT_BUDGET"
+    const val GENERAL = "error_general"
+    const val NETWORK_ERROR = "network_error"
+    const val TIMEOUT = "timeout"
+}
+```
+
+Nhờ chuẩn hoá này, Presentation đọc `errorCode` mà **không** phụ thuộc kiểu transport
+(Ktor / OkHttp / NSURLSession).
+
+---
+
+## 2. Bốn tầng lỗi
+
+```
+Ktor  →  ResponseException | HttpRequestTimeoutException | IOException
+   │
+   │  PromotionRemoteDataSource.apiCall  ── map ──▶  PromotionException | NetworkException
+   │                                                       (exception domain)
+   ▼
+Repository & UseCase  ── truyền thẳng, không bắt ──▶
+   │
+   │  PromotionUseCases.headlessCall  ── bọc ──▶  PromotionResult.Failure
+   ▼                                              (không còn exception)
+UI  →  when (result) { Success → render; Failure → hiển thị theo errorCode }
+```
+
+**Ranh giới quan trọng:** `PromotionUseCases` là nơi exception dừng lại. Public API **không ném**
+exception — trừ `CancellationException`, luôn được `throw` lại để coroutine huỷ đúng cách.
+
+```kotlin
+private suspend fun <T : Any> headlessCall(block: suspend () -> T?): PromotionResult<T> =
+    try {
+        block()?.let { PromotionResult.Success(it) } ?: PromotionResult.Failure(ErrorCodes.NO_RESULT)
+    } catch (e: CancellationException) {
+        throw e                                    // BẮT BUỘC rethrow
+    } catch (e: PromotionException) {
+        PromotionResult.Failure(e.errorCode ?: ErrorCodes.GENERAL, e.message, e.httpStatus)
+    } catch (e: NetworkException) {
+        PromotionResult.Failure(e.errorCode, e.message)
+    } catch (e: Throwable) {
+        PromotionResult.Failure(ErrorCodes.GENERAL, e.message)
+    }
+```
+
+---
+
+## 3. Ánh xạ lỗi ở data source
+
+| Bắt được | Ném ra |
+|---|---|
+| `PromotionException` | giữ nguyên |
+| `ResponseException` (4xx/5xx) | `PromotionException` — parse error body lấy `code`/`message` server |
+| `HttpRequestTimeoutException` | `NetworkException(TIMEOUT)` |
+| `ConnectTimeoutException` | `NetworkException(TIMEOUT)` |
+| `SocketTimeoutException` | `NetworkException(TIMEOUT)` |
+| `IOException` khác | `NetworkException(NETWORK_ERROR)` |
+
+⚠️ **Thứ tự `catch` quan trọng.** Cả ba loại timeout của Ktor đều kế thừa `IOException`.
+Bắt `IOException` trước sẽ nuốt mất timeout và báo sai mã lỗi.
+
+### Lỗi nghiệp vụ ẩn trong HTTP 200
+
+Server có thể trả HTTP 200 nhưng envelope báo lỗi. `requireData()` xử lý:
+
+```kotlin
+val isHttpSuccess = status == null || status in 200..299
+if (success == false || !isHttpSuccess) {
+    throw PromotionException(errorCode = code, message = message, httpStatus = status)
+}
+```
+
+### Feature flag là ngoại lệ có chủ đích
+
+`FeatureFlagRemoteDataSource` gộp mọi lỗi HTTP về `FeatureFlagException` trống, và
+`FeatureFlagRepositoryImpl.fetchFlags()` **nuốt luôn** lỗi đó:
+
+```kotlin
+runCatching { remoteDataSource.getFeatureFlags(...) }.getOrNull()?.let { /* cập nhật cache */ }
+```
+
+Lý do: cờ tính năng không phải thứ hiển thị lỗi cho người dùng. API hỏng → giữ cờ đang cache;
+chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
+
+---
+
+## 4. Quy tắc ở UI
+
+### Android (MVI)
+
+- Tác vụ async chạy trong `launch { }` của `PRMBaseViewModel` (đã gắn `CoroutineExceptionHandler`).
+- Override `onError(throwable)` để tắt loading + bắn `Effect` lỗi.
+- Lỗi hiển thị đi qua **Effect** (one-shot), không nhồi vào state vĩnh viễn.
+- **Không** `catch {}` rỗng.
+
+### iOS (MVVM + RxSwift)
+
+- `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
+- Phát qua `Driver`/`Signal` riêng cho lỗi, không trộn vào output dữ liệu.
+
+### Cả hai
+
+Tra message theo `errorCode`, **không** hiển thị thẳng `message` từ server nếu đã có bản dịch cục bộ.
+`:promotionLogic` không chứa chuỗi tiếng Việt (AI_AGENT_RULES).
+
+---
+
+## 5. Quy tắc
+
+1. Data source **không** để lọt exception của Ktor lên Domain.
+2. Domain/Repository **không** bắt lỗi — để `PromotionUseCases` bọc.
+3. Luôn rethrow `CancellationException`.
+4. Không bắt `Throwable` chung ở data source; bắt đúng loại.
+5. Thêm mã lỗi mới → thêm vào `ErrorCodes` + cập nhật file này (AI_AGENT_RULES điều 8).

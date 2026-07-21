@@ -4,8 +4,7 @@
 //
 
 import Foundation
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 
 protocol PRMViewModelType {
     associatedtype Input
@@ -17,7 +16,8 @@ protocol PRMViewModelType {
 class PRMBaseViewModel<R: PRMBaseRouterProtocol> {
 
     let router: R
-    let disposeBag = DisposeBag()
+    /// Combine subscriptions.
+    var cancellables = Set<AnyCancellable>()
 
     init(router: R) {
         self.router = router

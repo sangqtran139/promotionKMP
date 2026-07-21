@@ -6,8 +6,7 @@
 //
 
 import Foundation
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 @_implementationOnly import PRMKotlinBridge
 
 final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, PRMViewModelType {
@@ -27,16 +26,16 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     }
 
     struct Output {
-        let voucherCardViewModel: Driver<VoucherCardViewModel>
-        let bannerImageName: Driver<String?>
+        let voucherCardViewModel: AnyPublisher<VoucherCardViewModel, Never>
+        let bannerImageName: AnyPublisher<String?, Never>
         /// Nội dung cả 2 tab (Thông tin chi tiết / Hướng dẫn sử dụng).
-        let tabContents: Driver<TabContents>
-        let applyButtonTitle: Driver<String>
-        let isApplyEnabled: Driver<Bool>
+        let tabContents: AnyPublisher<TabContents, Never>
+        let applyButtonTitle: AnyPublisher<String, Never>
+        let isApplyEnabled: AnyPublisher<Bool, Never>
         /// Chỉ hiện nút áp dụng khi voucher ACTIVE; các status khác → ẩn hẳn.
-        let isApplyVisible: Driver<Bool>
+        let isApplyVisible: AnyPublisher<Bool, Never>
         /// Hiện shimmer trong lúc gọi API chi tiết; tắt khi có kết quả (thành công/lỗi).
-        let isLoading: Driver<Bool>
+        let isLoading: AnyPublisher<Bool, Never>
     }
 
     /// Gói dữ liệu hiển thị — seed từ `promotion` (cơ bản), cập nhật khi fetch detail đầy đủ về.
@@ -55,8 +54,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     let data: PromotionDetailBuilder.DataModel
 
     private let getDetailUseCase: GetCustomerVoucherDetailUseCase
-    private let displayRelay: BehaviorRelay<Display>
-    private let isLoadingRelay = BehaviorRelay<Bool>(value: true)
+    private let displaySubject: CurrentValueSubject<Display, Never>
+    private let isLoadingSubject = CurrentValueSubject<Bool, Never>(true)
     private var didFetch = false
     /// Dịch vụ/sản phẩm voucher áp dụng được — seed từ promotion, cập nhật khi fetch detail.
     private var applicableProducts: [ApplicableProduct]
@@ -69,7 +68,7 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         self.voucherId = data.promotion.id
         self.applicableProducts = data.promotion.applicableProducts
         // Hiện ngay card từ promotion cơ bản; fetch detail đầy đủ sẽ cập nhật sau.
-        self.displayRelay = BehaviorRelay(value: Self.display(from: data.promotion))
+        self.displaySubject = CurrentValueSubject(Self.display(from: data.promotion))
         super.init(router: router)
     }
 
@@ -81,9 +80,13 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     func transform(input: Input) -> Output {
         fetchDetail()
 
+        // `CurrentValueSubject` phát giá trị hiện tại ngay khi subscribe; `.receive(on: .main)` đảm bảo
+        // bind trên main thread.
+        let display = displaySubject.receive(on: DispatchQueue.main)
+
         // Cả 2 tab render đồng thời (2 trang vuốt được). API không trả nội dung → để TRỐNG,
         // KHÔNG dùng text mặc định (theo yêu cầu sản phẩm).
-        let tabContents = displayRelay.asDriver().map { display -> TabContents in
+        let tabContents = display.map { display -> TabContents in
             TabContents(
                 detail: Self.contentDisplay(display.detailContent),
                 guide: Self.contentDisplay(display.guideContent)
@@ -91,13 +94,13 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         }
 
         return Output(
-            voucherCardViewModel: displayRelay.asDriver().map { $0.card },
-            bannerImageName: displayRelay.asDriver().map { $0.banner },
-            tabContents: tabContents,
-            applyButtonTitle: displayRelay.asDriver().map { $0.applyTitle },
-            isApplyEnabled: displayRelay.asDriver().map { $0.applyEnabled },
-            isApplyVisible: displayRelay.asDriver().map { $0.applyVisible },
-            isLoading: isLoadingRelay.asDriver()
+            voucherCardViewModel: display.map { $0.card }.eraseToAnyPublisher(),
+            bannerImageName: display.map { $0.banner }.eraseToAnyPublisher(),
+            tabContents: tabContents.eraseToAnyPublisher(),
+            applyButtonTitle: display.map { $0.applyTitle }.eraseToAnyPublisher(),
+            isApplyEnabled: display.map { $0.applyEnabled }.eraseToAnyPublisher(),
+            isApplyVisible: display.map { $0.applyVisible }.eraseToAnyPublisher(),
+            isLoading: isLoadingSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher()
         )
     }
 
@@ -115,23 +118,19 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         let voucherId = data.promotion.id
         let customerId = data.customerId
         let service = data.service
-        singleFromKotlin { [getDetailUseCase] in
-            try await getDetailUseCase.invoke(voucherId: voucherId, customerId: customerId, service: service)
+        let getDetailUseCase = self.getDetailUseCase
+        Task { @MainActor [weak self] in
+            do {
+                let detail = try await getDetailUseCase.invoke(voucherId: voucherId, customerId: customerId, service: service)
+                guard let self, let detail else { return }
+                self.applicableProducts = detail.applicableProducts
+                self.displaySubject.send(Self.display(from: detail))
+                self.isLoadingSubject.send(false)
+            } catch {
+                // Lỗi → giữ nguyên card cơ bản từ promotion; nội dung tab để trống (không text mặc định).
+                self?.isLoadingSubject.send(false)
+            }
         }
-            .observeOn(MainScheduler.instance)
-            .subscribe(
-                onSuccess: { [weak self] detail in
-                    guard let self, let detail else { return }
-                    self.applicableProducts = detail.applicableProducts
-                    self.displayRelay.accept(Self.display(from: detail))
-                    self.isLoadingRelay.accept(false)
-                },
-                onError: { [weak self] _ in
-                    // Lỗi → giữ nguyên card cơ bản từ promotion; nội dung tab để trống (không text mặc định).
-                    self?.isLoadingRelay.accept(false)
-                }
-            )
-            .disposed(by: disposeBag)
     }
 
     // MARK: - Display builders

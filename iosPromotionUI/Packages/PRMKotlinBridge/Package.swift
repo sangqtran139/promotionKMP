@@ -7,9 +7,10 @@ import PackageDescription
 /// Thay cho hai gói cũ `PromotionLogic` (Swift) và `Repository` — cả hai đã bị xoá vì nghiệp vụ
 /// nay nằm trọn trong `PromotionLogic.xcframework` (Kotlin Multiplatform).
 ///
-/// Gói này chỉ làm hai việc mà Kotlin không làm được:
-/// 1. Chuyển `async throws` thành `RxSwift.Single` — ViewModel hiện tại đều nhận `Single`.
-/// 2. Đặt `typealias` để giấu prefix `PromotionLogic*` mà Kotlin/Native sinh ra.
+/// Gói này chỉ làm các việc keo mà Kotlin không làm được:
+/// 1. `boxed(_:)` — bọc `Int?` của Swift thành `KotlinInt?` mà Kotlin/Native chờ.
+/// 2. `toPromotionError(_:)` — bóc exception Kotlin trong `NSError` thành `PromotionError` chuẩn hoá.
+/// (Tầng UI gọi `suspend` Kotlin trực tiếp bằng async/await trong `Task`.)
 let package = Package(
     name: "PRMKotlinBridge",
     platforms: [.iOS(.v13)],

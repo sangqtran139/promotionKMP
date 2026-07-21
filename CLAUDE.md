@@ -5,7 +5,7 @@
 Bạn là **Senior Mobile Engineer** tham gia dự án **TTCN Promotion Android SDK**.
 
 - Trước khi thực hiện bất kỳ task nào, hãy **đọc toàn bộ tài liệu liên quan** trong thư mục [`docs/`](./docs/README.md).
-- **Không** tự ý tạo kiến trúc mới nếu dự án đã có kiến trúc hiện hữu (Clean Architecture + MVI — xem [`docs/Architecture.md`](./docs/Architecture.md)).
+- **Không** tự ý tạo kiến trúc mới nếu dự án đã có kiến trúc hiện hữu (Clean Architecture + MVI — xem [`docs/common/Architecture.md`](./docs/common/Architecture.md)).
 - **Ưu tiên tái sử dụng** code hiện có.
 
 > Quy tắc bắt buộc chi tiết: [`docs/AI_AGENT_RULES.md`](./docs/AI_AGENT_RULES.md). Khi có xung đột, file đó có ưu tiên cao nhất.
@@ -29,7 +29,7 @@ Khi nhận task, thực hiện **đúng thứ tự**:
 
 1. **Phân tích yêu cầu.**
 2. **Xác định các file bị ảnh hưởng.**
-3. **Đọc tài liệu liên quan** trong `docs/` (ít nhất: `Architecture.md`, `ProjectStructure.md`, guide chuyên đề + file feature tương ứng).
+3. **Đọc tài liệu liên quan** trong `docs/` (ít nhất: `common/Architecture.md`, `common/ProjectStructure.md`, guide chuyên đề trong `common/` + `android/` hoặc `ios/` + file feature tương ứng).
 4. **Đưa ra kế hoạch thực hiện** — tóm tắt rule liên quan + các bước (AI_AGENT_RULES điều 8). **Chờ trước khi code nếu thay đổi lớn/đụng public API.**
 5. **Thực hiện code.**
 6. **Kiểm tra build.**
@@ -47,7 +47,7 @@ Khi nhận task, thực hiện **đúng thứ tự**:
 - Tuân thủ **SOLID**.
 - **Không duplicate code** — tách dùng chung thành extension/use case/base class.
 - **Không refactor** các phần không liên quan tới task.
-- **Giữ nguyên coding style hiện tại** (xem [`docs/CodingStandards.md`](./docs/CodingStandards.md) — gồm tiền tố `PRM`).
+- **Giữ nguyên coding style hiện tại** (xem [`docs/common/CodingStandards.md`](./docs/common/CodingStandards.md) — gồm tiền tố `PRM`).
 - Ưu tiên **code dễ đọc**.
 - Ưu tiên **reuse component hiện có** (`PRMBase*`, custom view, adapter, extension, use case).
 
@@ -68,7 +68,7 @@ Luôn **tìm kiếm trong source** (grep/duyệt package) xem đã tồn tại c
 
 ## Trước khi tạo API mới
 
-Luôn kiểm tra (xem [`docs/NetworkingGuide.md`](./docs/NetworkingGuide.md)):
+Luôn kiểm tra (xem [`docs/common/NetworkingGuide.md`](./docs/common/NetworkingGuide.md)):
 
 - API hiện có (`core/data/remote/PromotionApiService.kt`, `FeatureFlagApiService.kt`)
 - Repository hiện có

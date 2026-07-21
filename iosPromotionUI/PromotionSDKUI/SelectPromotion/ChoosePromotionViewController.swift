@@ -6,8 +6,7 @@
 //
 
 import UIKit
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMKotlinBridge
@@ -114,32 +113,32 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         }
     }
     
-    private let seeMoreMyRelay = PublishRelay<Void>()
-    private let loadMoreOtherRelay = PublishRelay<Void>()
+    private let seeMoreMyRelay = PassthroughSubject<Void, Never>()
+    private let loadMoreOtherRelay = PassthroughSubject<Void, Never>()
+    private let toggleSelectionRelay = PassthroughSubject<String, Never>()
 
     // MARK: - Bind ViewModel
     override func bindViewModel() {
         super.bindViewModel()
 
-        let toggleSelectionRelay = PublishRelay<String>()
         let input = ChoosePromotionViewModel.Input(
-            searchText: searchTextField.rx.text.orEmpty.asObservable(),
+            searchText: searchTextField.textPublisher,
             toggleSelectionRelay: toggleSelectionRelay,
             seeMoreMyRelay: seeMoreMyRelay,
             loadMoreOtherRelay: loadMoreOtherRelay
         )
-        
+
         let output = viewModel.transform(input: input)
-        
+
         output.sections
-            .drive(onNext: { [weak self] sections in
+            .sink { [weak self] sections in
                 self?.sections = sections
                 self?.promotionsTableView.reloadData()
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.isLoading
-            .drive(onNext: { [weak self] loading in
+            .sink { [weak self] loading in
                 guard let self = self else { return }
                 self.shimmerView.isHidden = !loading
                 if loading {
@@ -147,15 +146,15 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
                 } else {
                     self.shimmerView.stopAnimating()
                 }
-            })
-            .disposed(by: disposeBag)
-            
+            }
+            .store(in: &cancellables)
+
         // Tạm thời ẩn thông tin "Đã chọn voucher" — chỉ track voucher đang chọn cho nút Áp dụng.
         output.selectedPromotion
-            .drive(onNext: { [weak self] promotion in
+            .sink { [weak self] promotion in
                 self?.currentSelectedPromotion = promotion
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
     }
     
     //MARK: - Action
@@ -167,7 +166,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 // MARK: - SelectPromotionItemCellDelegate
 extension ChoosePromotionViewController: SelectPromotionItemCellDelegate {
     func selectPromotionItemCellDidTap(_ cell: ChoosePromotionItemCell, id: String) {
-        self.viewModel.input.toggleSelectionRelay.accept(id)
+        self.viewModel.input.toggleSelectionRelay.send(id)
     }
 
     func selectPromotionItemCellDidTapButton(_ cell: ChoosePromotionItemCell, id: String) {
@@ -208,7 +207,7 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
             cell.button.setImage(UIImage.sdk(isCollapse ? "ic_up_arrow" : "ic_down_arrow"), for: .normal)
 
             cell.action = { [weak self] in
-                self?.seeMoreMyRelay.accept(())
+                self?.seeMoreMyRelay.send(())
             }
             return cell
         }
@@ -228,7 +227,7 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
         // VM tự bỏ qua nếu đã hết trang hoặc đang tải.
         guard sectionData.type == .otherPromotions else { return }
         if indexPath.row == sectionData.items.count - 1 {
-            loadMoreOtherRelay.accept(())
+            loadMoreOtherRelay.send(())
         }
     }
 

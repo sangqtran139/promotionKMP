@@ -4,13 +4,13 @@
 //
 
 import UIKit
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 
 class PRMBaseViewController<VM>: UIViewController {
 
     let viewModel: VM
-    let disposeBag = DisposeBag()
+    /// Combine subscriptions.
+    var cancellables = Set<AnyCancellable>()
 
     init(viewModel: VM, nibName: String? = nil, bundle: Bundle? = nil) {
         self.viewModel = viewModel

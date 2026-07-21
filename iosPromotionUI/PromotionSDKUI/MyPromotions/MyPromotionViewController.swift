@@ -6,8 +6,7 @@
 //
 
 import UIKit
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMFoundation
@@ -62,7 +61,11 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     var onApplyVoucher: ((String) -> Void)?
 
     // MARK: - Dynamic tabs (render N tab từ API thay vì 2 tab cố định)
-    private let selectTabRelay = PublishRelay<String>()
+    private let selectTabRelay = PassthroughSubject<String, Never>()
+    /// Nguồn dữ liệu list.
+    private var promotionItems: [MyPromotionCellViewModel] = []
+    /// Cầu sự kiện chọn item từ cell delegate về ViewModel.
+    private let selectPromotionSubject = PassthroughSubject<String, Never>()
     private weak var tabContainer: UIView?
     // Cuộn ngang khi tổng bề rộng tab vượt màn (container XIB không pin trailing).
     private let tabScrollView: UIScrollView = {
@@ -167,6 +170,8 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     private func configTableView() {
         self.promotionsTableview.registerCell(MyPromotionCell.self)
         self.promotionsTableview.rowHeight = UITableView.automaticDimension
+        // Bind list bằng dataSource cổ điển + reloadData khi mảng đổi.
+        self.promotionsTableview.dataSource = self
         // Bật infinite scroll: kéo tới đáy -> loadMoreTrigger (trước đây không bật nên load-more không chạy).
         self.promotionsTableview.hasInfinityScrolling = true
     }
@@ -215,7 +220,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
             for tab in tabs {
                 let tabView = PromotionTabView()
                 let code = tab.code
-                tabView.onTapped = { [weak self] in self?.selectTabRelay.accept(code) }
+                tabView.onTapped = { [weak self] in self?.selectTabRelay.send(code) }
                 tabStackView.addArrangedSubview(tabView)
                 tabViewsByCode[code] = tabView
             }
@@ -233,17 +238,17 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         super.bindViewModel()
         
         let input = MyPromotionViewModel.Input(
-            refreshTrigger: promotionsTableview.refreshTrigger.asObservable(),
-            loadMoreTrigger: promotionsTableview.loadMoreTrigger.asObservable(),
-            selectPromotionByIDRelay: PublishRelay<String>(),
+            refreshTrigger: promotionsTableview.refreshPublisher.eraseToAnyPublisher(),
+            loadMoreTrigger: promotionsTableview.loadMorePublisher.eraseToAnyPublisher(),
+            selectPromotionByIDRelay: selectPromotionSubject,
             selectTabRelay: selectTabRelay
         )
-        
+
         let output = viewModel.transform(input: input)
-        
+
         // Loading state — hiện shimmer (che cả tab + list), ẩn khi data về.
         output.isLoading
-            .drive(onNext: { [weak self] isLoading in
+            .sink { [weak self] isLoading in
                 guard let self = self else { return }
                 self.shimmerOverlay.isHidden = !isLoading
                 if isLoading {
@@ -253,70 +258,82 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
                     self.shimmerView.stopAnimating()
                     self.tabShimmerChips.forEach { $0.stopAnimating() }
                 }
-            })
-            .disposed(by: disposeBag)
-        
+            }
+            .store(in: &cancellables)
+
         output.isRefreshing
-            .drive(onNext: { [weak self] isRefreshing in
+            .sink { [weak self] isRefreshing in
                 if isRefreshing {
                     self?.promotionsTableview.startRefreshing()
                 } else {
                     self?.promotionsTableview.stopRefreshing()
                 }
-            })
-            .disposed(by: disposeBag)
-            
+            }
+            .store(in: &cancellables)
+
         output.isLoadingMore
-            .drive(onNext: { [weak self] isLoadingMore in
+            .sink { [weak self] isLoadingMore in
                 if isLoadingMore {
                     self?.promotionsTableview.startLoadingMore()
                 } else {
                     self?.promotionsTableview.stopLoadingMore()
                 }
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         // Còn trang hay không -> infinite scroll dừng khi hết.
         output.canLoadMore
-            .drive(onNext: { [weak self] canLoadMore in
+            .sink { [weak self] canLoadMore in
                 self?.promotionsTableview.isHasMorePage = canLoadMore
-            })
-            .disposed(by: disposeBag)
-        
-        // Render tabs động từ API (label + count) + focus theo tab đang chọn.
-        Driver.combineLatest(output.tabs, output.selectedTabCode)
-            .drive(onNext: { [weak self] tabs, selectedCode in
-                self?.renderTabs(tabs, selectedCode: selectedCode)
-            })
-            .disposed(by: disposeBag)
-            
-        output.promotions
-            .drive(promotionsTableview.rx.items(cellIdentifier: "MyPromotionCell", cellType: MyPromotionCell.self)) { [weak self] index, viewModel, cell in
-                guard let self = self else {
-                    return
-                }
-                
-                cell.delegate = self
-                cell.bindData(viewModel)
             }
-            .disposed(by: disposeBag)
+            .store(in: &cancellables)
+
+        // Render tabs động từ API (label + count) + focus theo tab đang chọn.
+        Publishers.CombineLatest(output.tabs, output.selectedTabCode)
+            .sink { [weak self] pair in
+                self?.renderTabs(pair.0, selectedCode: pair.1)
+            }
+            .store(in: &cancellables)
+
+        // Cập nhật mảng nguồn + reload.
+        output.promotions
+            .sink { [weak self] items in
+                guard let self = self else { return }
+                self.promotionItems = items
+                self.promotionsTableview.reloadData()
+            }
+            .store(in: &cancellables)
 
         // Empty view khi list rỗng (đã tải xong) — khớp Android ctlNoResult.
         output.isEmpty
-            .drive(onNext: { [weak self] isEmpty in
+            .sink { [weak self] isEmpty in
                 self?.emptyView.isHidden = !isEmpty
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         // Lỗi nghiệp vụ → Confirmation Dialog (header "Thông báo" + nút "Đóng"), theo MOB_000 #6.
         output.errorMessage
-            .emit(onNext: { [weak self] message in
+            .sink { [weak self] message in
                 guard let self = self else { return }
                 PRMConfirmationDialog.showError(message, in: self.view)
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
     }
 
+}
+
+// MARK: - UITableViewDataSource
+extension MyPromotionViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        promotionItems.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueCell(MyPromotionCell.self, for: indexPath)
+        cell.delegate = self
+        cell.bindData(promotionItems[indexPath.row])
+        return cell
+    }
 }
 
 //MARK: - PromotionHeaderViewDelegate
@@ -332,7 +349,7 @@ extension MyPromotionViewController: PromotionHeaderViewDelegate {
 
 extension MyPromotionViewController: MyPromotionCellDelegate {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String) {
-        viewModel.input.selectPromotionByIDRelay.accept(id)
+        viewModel.input.selectPromotionByIDRelay.send(id)
     }
 
     func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String, services: [ServiceSelectorItem]) {
