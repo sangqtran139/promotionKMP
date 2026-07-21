@@ -52,10 +52,13 @@ public struct PromotionVoucher {
 public struct PromotionVoucherPage {
     public let vouchers: [PromotionVoucher]
     public let isLastPage: Bool
+    /// Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; nil nếu không trả.
+    public let expireWarningDate: Int?
 
-    public init(vouchers: [PromotionVoucher], isLastPage: Bool) {
+    public init(vouchers: [PromotionVoucher], isLastPage: Bool, expireWarningDate: Int? = nil) {
         self.vouchers = vouchers
         self.isLastPage = isLastPage
+        self.expireWarningDate = expireWarningDate
     }
 }
 
@@ -73,10 +76,15 @@ public struct PromotionVoucherDetail {
     public let logoURL: String?
     public let status: String
     public let displayStatusLabel: String?
+    /// Danh sách mã (codex) đã cấp cho khách.
+    public let codes: [String]
+    /// Link hướng dẫn sử dụng.
+    public let usageGuideUrl: String?
 
     public init(id: String, merchantName: String, title: String, description: String,
                 guideline: String, startDate: String?, expireDate: String?, bannerURL: String?,
-                logoURL: String?, status: String, displayStatusLabel: String?) {
+                logoURL: String?, status: String, displayStatusLabel: String?,
+                codes: [String] = [], usageGuideUrl: String? = nil) {
         self.id = id
         self.merchantName = merchantName
         self.title = title
@@ -88,6 +96,8 @@ public struct PromotionVoucherDetail {
         self.logoURL = logoURL
         self.status = status
         self.displayStatusLabel = displayStatusLabel
+        self.codes = codes
+        self.usageGuideUrl = usageGuideUrl
     }
 }
 
@@ -106,9 +116,16 @@ public struct PromotionEligibleOffer {
     public let expireDate: String?
     /// Gợi ý lý do chưa đủ điều kiện (khi `usable == false`). SDK trả rule thô, không dựng sẵn câu.
     public let ineligibleReason: String?
+    /// Logo voucher/ưu đãi (có ở cả 2 nhóm).
+    public let logoUrl: String?
+    /// Tên đối tác/merchant phát hành (có ở cả 2 nhóm).
+    public let partnerName: String?
+    /// Mã code đã phát hành — chỉ nhóm "của tôi".
+    public let voucherCode: String?
 
     public init(id: String, name: String, objectType: String, usable: Bool,
-                estimatedDiscount: String?, expireDate: String?, ineligibleReason: String?) {
+                estimatedDiscount: String?, expireDate: String?, ineligibleReason: String?,
+                logoUrl: String? = nil, partnerName: String? = nil, voucherCode: String? = nil) {
         self.id = id
         self.name = name
         self.objectType = objectType
@@ -116,6 +133,9 @@ public struct PromotionEligibleOffer {
         self.estimatedDiscount = estimatedDiscount
         self.expireDate = expireDate
         self.ineligibleReason = ineligibleReason
+        self.logoUrl = logoUrl
+        self.partnerName = partnerName
+        self.voucherCode = voucherCode
     }
 }
 
@@ -125,13 +145,16 @@ public struct PromotionEligibleResult {
     public let otherOffers: [PromotionEligibleOffer]
     public let myIsLastPage: Bool
     public let otherIsLastPage: Bool
+    /// Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; nil nếu không trả.
+    public let expireWarningDate: Int?
 
     public init(myOffers: [PromotionEligibleOffer], otherOffers: [PromotionEligibleOffer],
-                myIsLastPage: Bool, otherIsLastPage: Bool) {
+                myIsLastPage: Bool, otherIsLastPage: Bool, expireWarningDate: Int? = nil) {
         self.myOffers = myOffers
         self.otherOffers = otherOffers
         self.myIsLastPage = myIsLastPage
         self.otherIsLastPage = otherIsLastPage
+        self.expireWarningDate = expireWarningDate
     }
 }
 

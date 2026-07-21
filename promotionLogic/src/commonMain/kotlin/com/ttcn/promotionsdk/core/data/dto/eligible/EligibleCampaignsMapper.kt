@@ -57,6 +57,7 @@ internal fun EligibleCampaignsResponse.toEligibleOffersResult() = EligibleOffers
     otherIsLastPage = otherOffers?.last ?: true,
     myTotalElements = myOffers?.totalElements ?: 0,
     otherTotalElements = otherOffers?.totalElements ?: 0,
+    expireWarningDate = expireWarningDate?.toInt(),
 )
 
 /**
@@ -75,6 +76,9 @@ private fun EligibleOfferDto.toEligibleOffer(): EligibleOffer? {
         objectType = campaignType ?: "CAMPAIGN",
         discountType = discountType,
         usable = usable ?: true,
+        logoUrl = logoUrl,
+        partnerName = partnerName,
+        voucherCode = voucherCode,
         estimatedDiscount = discountPreview?.estimatedDiscount,
         discountPercentage = discountPreview?.discountPercentage,
         maxDiscount = discountPreview?.maxDiscount,

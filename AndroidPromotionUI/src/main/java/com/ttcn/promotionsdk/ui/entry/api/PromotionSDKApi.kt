@@ -83,6 +83,7 @@ class PromotionSDKApi internal constructor(
                 PromotionVoucherPage(
                     vouchers = model.content.map(::toVoucher),
                     isLastPage = model.last ?: true,
+                    expireWarningDate = model.expireWarningDate,
                 )
             },
         )
@@ -144,6 +145,7 @@ class PromotionSDKApi internal constructor(
                     otherOffers = model.otherOffers.map(::toOffer),
                     myIsLastPage = model.myIsLastPage,
                     otherIsLastPage = model.otherIsLastPage,
+                    expireWarningDate = model.expireWarningDate,
                 )
             },
         )
@@ -299,6 +301,8 @@ class PromotionSDKApi internal constructor(
         logoURL = model.logo,
         status = model.status.orEmpty(),
         displayStatusLabel = model.displayStatusLabel,
+        codes = model.codes,
+        usageGuideUrl = model.usageGuideUrl,
     )
 
     private fun toOffer(model: EligibleOffer) = PromotionEligibleOffer(
@@ -310,6 +314,9 @@ class PromotionSDKApi internal constructor(
         expireDate = model.expireDate,
         // Lõi không dựng sẵn câu tiếng Việt — trả rule thô cho host tự hiển thị.
         ineligibleReason = if (model.usable) null else model.unmatchedRules.firstOrNull(),
+        logoUrl = model.logoUrl,
+        partnerName = model.partnerName,
+        voucherCode = model.voucherCode,
     )
 
     private companion object {

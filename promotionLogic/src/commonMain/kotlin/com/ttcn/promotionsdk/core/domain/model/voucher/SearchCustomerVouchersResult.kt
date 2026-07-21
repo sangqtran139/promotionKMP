@@ -11,6 +11,8 @@ data class SearchCustomerVouchersResult(
     val size: Int? = null,
     val last: Boolean? = null,
     val totalElements: Long? = null,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; null nếu không trả. */
+    val expireWarningDate: Int? = null,
 )
 
 data class VoucherTabItem(

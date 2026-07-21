@@ -16,4 +16,8 @@ data class VoucherDetail(
     val campaignType: String? = null,
     val campaignStatus: String? = null,
     val applicableProducts: List<ApplicableProduct> = emptyList(),
+    /** Danh sách mã (codex) đã cấp cho khách. */
+    val codes: List<String> = emptyList(),
+    /** Link hướng dẫn sử dụng (metadata.usageGuideUrl). */
+    val usageGuideUrl: String? = null,
 )

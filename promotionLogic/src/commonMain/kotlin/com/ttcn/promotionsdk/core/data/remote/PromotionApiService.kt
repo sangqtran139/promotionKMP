@@ -110,6 +110,6 @@ internal class KtorPromotionApiService(
         }.body()
 
     private companion object {
-        const val BASE_PATH = "promotion/promotion-vtm-bff/api/v1/vtm"
+        const val BASE_PATH = "promotion/promotion-bff-mobile/v1"
     }
 }

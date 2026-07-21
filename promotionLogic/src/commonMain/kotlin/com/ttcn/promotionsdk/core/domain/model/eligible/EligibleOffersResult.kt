@@ -12,6 +12,8 @@ data class EligibleOffersResult(
     val otherIsLastPage: Boolean = true,
     val myTotalElements: Long = 0,
     val otherTotalElements: Long = 0,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; null nếu không trả. */
+    val expireWarningDate: Int? = null,
 )
 
 /**
@@ -33,6 +35,12 @@ data class EligibleOffer(
     val objectType: String = "CAMPAIGN",
     val discountType: String? = null,
     val usable: Boolean = true,
+    /** Logo voucher/ưu đãi (có ở cả 2 nhóm). */
+    val logoUrl: String? = null,
+    /** Tên đối tác/merchant phát hành (có ở cả 2 nhóm). */
+    val partnerName: String? = null,
+    /** Mã code đã phát hành — chỉ nhóm "của tôi" (myOffers). */
+    val voucherCode: String? = null,
     val estimatedDiscount: String? = null,
     val discountPercentage: String? = null,
     val maxDiscount: String? = null,

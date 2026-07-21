@@ -34,6 +34,8 @@ data class PromotionVoucher(
 data class PromotionVoucherPage(
     val vouchers: List<PromotionVoucher>,
     val isLastPage: Boolean,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; null nếu không trả. */
+    val expireWarningDate: Int? = null,
 )
 
 /** Chi tiết 1 voucher (Get Customer Voucher Detail). */
@@ -50,6 +52,10 @@ data class PromotionVoucherDetail(
     val logoURL: String?,
     val status: String,
     val displayStatusLabel: String?,
+    /** Danh sách mã (codex) đã cấp cho khách. */
+    val codes: List<String> = emptyList(),
+    /** Link hướng dẫn sử dụng. */
+    val usageGuideUrl: String? = null,
 )
 
 /** 1 ưu đãi đủ điều kiện (Find Eligible Campaigns) cho luồng checkout. */
@@ -67,6 +73,12 @@ data class PromotionEligibleOffer(
     val expireDate: String?,
     /** Gợi ý lý do chưa đủ điều kiện (khi [usable] = false). SDK trả rule thô, không dựng sẵn câu. */
     val ineligibleReason: String?,
+    /** Logo voucher/ưu đãi (có ở cả 2 nhóm). */
+    val logoUrl: String? = null,
+    /** Tên đối tác/merchant phát hành (có ở cả 2 nhóm). */
+    val partnerName: String? = null,
+    /** Mã code đã phát hành — chỉ nhóm "của tôi". */
+    val voucherCode: String? = null,
 )
 
 /** Kết quả Find Eligible Campaigns: 2 nhóm "của tôi" / "khác", phân trang ĐỘC LẬP. */
@@ -75,6 +87,8 @@ data class PromotionEligibleResult(
     val otherOffers: List<PromotionEligibleOffer>,
     val myIsLastPage: Boolean,
     val otherIsLastPage: Boolean,
+    /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; null nếu không trả. */
+    val expireWarningDate: Int? = null,
 )
 
 /**

@@ -82,7 +82,8 @@ public final class PromotionSDKApi {
             map: { (model: SearchCustomerVouchersResult) in
                 PromotionVoucherPage(
                     vouchers: model.content.map(Self.toVoucher),
-                    isLastPage: model.last?.boolValue ?? true
+                    isLastPage: model.last?.boolValue ?? true,
+                    expireWarningDate: model.expireWarningDate?.intValue
                 )
             },
             call: { try await useCases.searchVouchers(request: request) }
@@ -143,7 +144,8 @@ public final class PromotionSDKApi {
                     myOffers: model.myOffers.map(Self.toOffer),
                     otherOffers: model.otherOffers.map(Self.toOffer),
                     myIsLastPage: model.myIsLastPage,
-                    otherIsLastPage: model.otherIsLastPage
+                    otherIsLastPage: model.otherIsLastPage,
+                    expireWarningDate: model.expireWarningDate?.intValue
                 )
             },
             call: { try await useCases.findEligible(request: request) }
@@ -337,7 +339,9 @@ public final class PromotionSDKApi {
             bannerURL: model.banner,
             logoURL: model.logo,
             status: model.status ?? "",
-            displayStatusLabel: model.displayStatusLabel
+            displayStatusLabel: model.displayStatusLabel,
+            codes: model.codes,
+            usageGuideUrl: model.usageGuideUrl
         )
     }
 
@@ -350,7 +354,10 @@ public final class PromotionSDKApi {
             estimatedDiscount: model.estimatedDiscount,
             expireDate: model.expireDate,
             // Lõi không dựng sẵn câu tiếng Việt — trả rule thô cho host tự hiển thị.
-            ineligibleReason: model.usable ? nil : model.unmatchedRules.first
+            ineligibleReason: model.usable ? nil : model.unmatchedRules.first,
+            logoUrl: model.logoUrl,
+            partnerName: model.partnerName,
+            voucherCode: model.voucherCode
         )
     }
 }

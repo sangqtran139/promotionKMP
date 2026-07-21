@@ -16,6 +16,7 @@ internal fun SearchCustomerVouchersResponse.toSearchCustomerVouchersResult() = S
     size = size,
     last = last,
     totalElements = totalElements,
+    expireWarningDate = expireWarningDate?.toInt(),
 )
 
 internal fun CustomerVoucherDetail.toVoucherDetail() = VoucherDetail(
@@ -36,6 +37,8 @@ internal fun CustomerVoucherDetail.toVoucherDetail() = VoucherDetail(
     campaignType = null,
     campaignStatus = null,
     applicableProducts = emptyList(),
+    codes = codes.mapNotNull { it.codex?.takeIf { c -> c.isNotBlank() } },
+    usageGuideUrl = metadata?.usageGuideUrl,
 )
 
 private fun VoucherTabInfo.toVoucherTabItem() = VoucherTabItem(

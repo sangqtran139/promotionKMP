@@ -128,11 +128,12 @@ internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem =
 internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherListItem(
     voucherId = id,
     campaignId = campaignId.orEmpty(),
-    // Tên ưu đãi nằm ở dòng tiêu đề; số tiền giảm dự kiến nằm ở dòng nội dung.
-    merchantName = campaignName.orEmpty(),
+    // Tên hiển thị ưu tiên đối tác/merchant (partnerName, v1.6); số tiền giảm ở dòng nội dung.
+    merchantName = partnerName ?: campaignName.orEmpty(),
     title = formatEstimatedDiscount(estimatedDiscount).orEmpty(),
     description = campaignName.orEmpty(),
-    logo = "",
+    // logoUrl (v1.6) — trước đây findEligible không trả, card offer để trống logo.
+    logo = logoUrl.orEmpty(),
     expirationDate = expireDate.orEmpty(),
     // Lõi không dựng sẵn câu tiếng Việt; lý do lấy từ rule đầu tiên không khớp. Rỗng → layout tự
     // hiện nhãn mặc định của nó.

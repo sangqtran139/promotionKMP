@@ -150,8 +150,10 @@ struct MyPromotionCellViewModel {
         self.init(
             id: offer.id,
             title: derivedTitle,
-            description: offer.campaignName ?? "",
-            imageURL: nil,
+            // Ưu tiên tên đối tác/merchant (partnerName, v1.6), fallback tên ưu đãi.
+            description: offer.partnerName ?? offer.campaignName ?? "",
+            // logoUrl (v1.6) — trước đây findEligible không trả nên card offer để trống logo.
+            imageURL: offer.logoUrl,
             date: PRMPromotionDate.parse(offer.expireDate),
             buttonTitle: derivedButtonTitle,
             showsCheckbox: showsCheckbox,
