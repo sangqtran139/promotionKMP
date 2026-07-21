@@ -21,6 +21,8 @@ data class FindEligibleCampaignsRequest(
     val tabCode: String? = null,
     /** Null → lấy cả hai nhóm. Có giá trị → chỉ load-more nhóm đó. */
     val section: EligibleSection? = null,
+    /** Tìm ưu đãi theo tên/mã voucher — lọc cả myOffers lẫn otherOffers; null/rỗng → không lọc. */
+    val keyword: String? = null,
     val myPage: Int = 0,
     val mySize: Int = 10,
     val otherPage: Int = 0,

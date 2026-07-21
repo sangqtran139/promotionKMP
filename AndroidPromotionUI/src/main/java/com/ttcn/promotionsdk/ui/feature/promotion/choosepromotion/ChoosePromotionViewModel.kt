@@ -15,6 +15,7 @@ import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotio
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toMyVoucherListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.withExpiryWarning
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherTabUi
@@ -44,6 +45,8 @@ internal class ChoosePromotionViewModel(
     /** Nguồn sự thật của danh sách; [ChoosePromotionUiState] giữ bản đã map sang model UI. */
     private var myLoaded: List<EligibleOffer> = emptyList()
     private var otherLoaded: List<EligibleOffer> = emptyList()
+    /** Ngưỡng cảnh báo sắp hết hạn (ngày) từ result — dùng gán "Còn X ngày" lúc publish. */
+    private var expireWarningDate: Int? = null
 
     private var debounceJob: Job? = null
 
@@ -100,6 +103,7 @@ internal class ChoosePromotionViewModel(
             }.onSuccess { result ->
                 myLoaded = result?.myOffers.orEmpty()
                 otherLoaded = result?.otherOffers.orEmpty()
+                expireWarningDate = result?.expireWarningDate
                 setState {
                     copy(
                         isLoading = false,
@@ -207,6 +211,8 @@ internal class ChoosePromotionViewModel(
             items = emptyList(),
             tabCode = null,
             section = section,
+            // Server lọc theo tên/mã voucher (v1.6 §7.3); áp cho cả load đầu lẫn load-more.
+            keyword = state.keyword,
             myPage = if (section == null || isMine) nextPage else state.page,
             mySize = state.size,
             otherPage = if (section == null || !isMine) nextPage else state.otherPage,
@@ -252,34 +258,23 @@ internal class ChoosePromotionViewModel(
     }
 
     /**
-     * TODO(search): **chưa gọi API** — hiện tại gõ từ khoá không đổi danh sách.
-     *
-     * `SearchMyPromotion` gửi `keyword` lên `searchVouchers` và server lọc. Màn này không làm được
-     * như vậy: `EligibleCampaignsRequest` chỉ có `customerInfo` / `orderInfo` / `filterOptions` /
-     * `pagination` — **không có trường `keyword`**, và chưa có spec backend để biết trường đó tên gì,
-     * nằm ở top-level hay trong `filterOptions`.
-     *
-     * Cố tình **không** lọc trong bộ nhớ: lọc client chỉ đúng trên phần đã tải (10 mục đầu), nên nó
-     * im lặng trả sai kết quả khi danh sách dài hơn một trang. Thà chưa chạy còn hơn chạy sai.
-     *
-     * Khi backend chốt trường: thêm nó vào [FindEligibleCampaignsRequest] + DTO, rồi hàm này gọi
-     * [findEligibleCampaignsUseCase] với `myPage = 0` / `otherPage = 0` và thay [myLoaded] /
-     * [otherLoaded] — y như [SearchMyPromotionViewModel.search] với `reset = true`.
+     * Tìm kiếm phía server (v1.6 §7.3): `state.keyword` đã set ở [onQueryChanged]; reload lại 2 nhóm
+     * từ trang 0 kèm `keyword` (buildRequest tự gửi). Server lọc cả myOffers lẫn otherOffers.
      */
     @Suppress("UNUSED_PARAMETER")
     private fun search(keyword: String) {
-        // Chưa triển khai. Xem TODO(search) ở trên.
+        loadOffers(isRefresh = false)
     }
 
-    /** Về lại danh sách đầy đủ đã tải. */
+    /** Xoá keyword → reload danh sách đầy đủ (state.keyword rỗng → không gửi keyword). */
     private fun resetSearchResults() {
-        publishLists()
+        loadOffers(isRefresh = false)
     }
 
     /** Đổ [myLoaded] / [otherLoaded] sang model UI. */
     private fun publishLists() {
-        val my = myLoaded.map { it.toMyVoucherListItem() }
-        val other = otherLoaded.map { it.toMyVoucherListItem() }
+        val my = myLoaded.map { it.toMyVoucherListItem().withExpiryWarning(expireWarningDate) }
+        val other = otherLoaded.map { it.toMyVoucherListItem().withExpiryWarning(expireWarningDate) }
         setState {
             copy(
                 vouchers = my,

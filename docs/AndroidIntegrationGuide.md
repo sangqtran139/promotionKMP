@@ -99,7 +99,7 @@ PromotionSDK.initialize(
         session = PromotionSessionConfig(
             customerId = user.id,
             accessToken = auth.accessToken,
-            baseUrl = "https://staging1.viettelmoney.vn",
+            baseUrl = "http://125.235.38.229:8080",
             language = "vi-VN",                      // mặc định "vi-VN"
             environment = PromotionEnvironment.PROD, // PROD | STAGING, mặc định PROD
         ),

@@ -72,4 +72,19 @@ enum PRMPromotionDate {
         guard expirationDate >= now else { return false }
         return expirationDate.timeIntervalSince(now) / 86_400 <= Double(thresholdDays)
     }
+
+    /// Số ngày (làm tròn lên) từ nay đến hết hạn; nil nếu đã qua hạn / không parse được.
+    static func daysUntilExpiry(_ string: String?) -> Int? {
+        guard let date = parse(string) else { return nil }
+        let seconds = date.timeIntervalSince(Date())
+        guard seconds >= 0 else { return nil }
+        return Int(ceil(seconds / 86_400))
+    }
+
+    /// "Còn X ngày" khi số ngày đến hết hạn ≤ ngưỡng cảnh báo `warningDays` (server `expireWarningDate`);
+    /// nil nếu ngoài ngưỡng / không xác định.
+    static func expiryWarningText(_ string: String?, warningDays: Int?) -> String? {
+        guard let warningDays, let days = daysUntilExpiry(string), days <= warningDays else { return nil }
+        return "Còn \(days) ngày"
+    }
 }

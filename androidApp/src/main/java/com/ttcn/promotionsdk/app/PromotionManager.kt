@@ -155,7 +155,7 @@ object PromotionManager : PromotionServing {
     // Theme cấu hình tập trung 1 chỗ (null = mặc định SDK).
     private val theme: PromotionSDKTheme? = null
     // Base URL Promotion BFF — host cấu hình. Đối ứng `PromotionSessionConfig.baseUrl` bên iOS.
-    private const val BASE_URL = "https://staging1.viettelmoney.vn"
+    private const val BASE_URL = "http://125.235.38.229:8080"
 
     /** Adapter riêng conform `PromotionSDKCallback` — map type SDK → model app rồi phát ra ngoài. */
     private val sdkCallback = object : PromotionSDKCallback {

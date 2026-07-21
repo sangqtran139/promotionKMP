@@ -80,7 +80,7 @@ extension PromotionSDKOptions {
     /// không có `ApplicationInfo.FLAG_DEBUGGABLE`).
     func toCoreConfig(context: PromotionMutableContext, isDebug: Bool) -> PromotionSDKConfig {
         PromotionSDKConfig(
-            baseUrl: session.baseUrl.isEmpty ? "https://staging1.viettelmoney.vn/" : session.baseUrl,
+            baseUrl: session.baseUrl.isEmpty ? "http://125.235.38.229:8080/" : session.baseUrl,
             requestContextProvider: context,
             environment: session.environment.toCore(),
             availableServices: availableServices.map {

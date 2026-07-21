@@ -67,6 +67,8 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         var otherIsLastPage: Bool
         /// Số item "Ưu đãi của tôi" đang hiện (tăng dần theo "Xem thêm").
         var myVisibleCount: Int
+        /// Ngưỡng cảnh báo sắp hết hạn (ngày) từ result — gán "Còn X ngày" cho card.
+        var expireWarningDate: Int? = nil
     }
 
     /// Debounce search theo ký tự (giống màn Search Android).
@@ -107,13 +109,17 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         self.input = input
         loadInitialPage()
 
-        // Search theo ký tự (debounce) → lọc CLIENT-SIDE trên data đã tải (Eligible API không có keyword).
+        // Search theo ký tự (debounce) → gửi keyword lên SERVER (v1.6 §7.3), reload 2 nhóm từ trang 0.
         input.searchText
             .skip(1)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .distinctUntilChanged()
             .debounce(.milliseconds(Self.searchDebounceMs), scheduler: MainScheduler.instance)
-            .bind(to: keywordRelay)
+            .subscribe(onNext: { [weak self] kw in
+                guard let self = self else { return }
+                self.keywordRelay.accept(kw)   // cập nhật trước để makeEligibleInput gửi kèm
+                self.fetchFirstPage()
+            })
             .disposed(by: disposeBag)
 
         // Pre-select voucher đang áp (nếu có) — khớp Android `preSelectedVoucherIds`.
@@ -159,8 +165,9 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         .map { [weak self] (selectedId, st, keyword) -> [PromotionSection] in
             guard let self = self else { return [] }
             let isSearching = !keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            let filteredMy = isSearching ? PRMOfferSearchFilter.search(query: keyword, in: st.myLoaded) : st.myLoaded
-            let filteredOther = isSearching ? PRMOfferSearchFilter.search(query: keyword, in: st.otherLoaded) : st.otherLoaded
+            // Server đã lọc theo keyword (v1.6) → dùng thẳng data từ state; chỉ giữ highlight.
+            let filteredMy = st.myLoaded
+            let filteredOther = st.otherLoaded
 
             let mapToViewModel: (EligibleOffer) -> MyPromotionCellViewModel = { entity in
                 MyPromotionCellViewModel(
@@ -168,6 +175,8 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
                     buttonTitle: "Chi tiết",
                     showsCheckbox: true,
                     isChecked: selectedId == entity.id,
+                    // "Còn X ngày" khi trong ngưỡng expireWarningDate (v1.6).
+                    stateText: PRMPromotionDate.expiryWarningText(entity.expireDate, warningDays: st.expireWarningDate),
                     checkedImage: UIImage.sdk("prm_ic_circle_check"),
                     uncheckedImage: UIImage.sdk("prm_ic_circle_uncheck"),
                     highlightKeyword: isSearching ? keyword : nil
@@ -260,6 +269,8 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
             tier: nil,
             tabCode: nil,
             section: section,
+            // Server lọc theo tên/mã voucher (v1.6 §7.3) — áp cho load đầu lẫn load-more.
+            keyword: keywordRelay.value.trimmingCharacters(in: .whitespacesAndNewlines),
             myPage: Int32(myPage),
             mySize: Int32(Self.pageSize),
             otherPage: Int32(otherPage),
@@ -291,6 +302,7 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
                     st.myIsLastPage = model.myIsLastPage
                     st.otherIsLastPage = model.otherIsLastPage
                     st.myVisibleCount = Self.myPromotionsInitialVisibleCount
+                    st.expireWarningDate = model.expireWarningDate?.intValue
                     self.stateRelay.accept(st)
                     self.isLoadingRelay.accept(false)
                 },
@@ -319,6 +331,7 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
                     st.myPage = nextPage
                     st.myIsLastPage = model.myIsLastPage
                     st.myVisibleCount = st.myLoaded.count
+                    st.expireWarningDate = model.expireWarningDate?.intValue
                     self.stateRelay.accept(st)
                     self.isFetchingMy.accept(false)
                 },

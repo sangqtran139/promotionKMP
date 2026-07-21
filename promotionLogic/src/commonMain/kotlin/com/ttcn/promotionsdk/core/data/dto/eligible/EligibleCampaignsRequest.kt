@@ -15,6 +15,8 @@ internal data class EligibleCampaignsRequest(
     @SerialName("filterOptions") val filterOptions: EligibleFilterOptionsDto,
     /** `my_offers` | `other_offers`. Null → trả cả 2 nhóm. */
     @SerialName("sectionCode") val sectionCode: String? = null,
+    /** Tìm ưu đãi theo tên/mã voucher (max 255) — cả 2 nhóm; null → không lọc. */
+    @SerialName("keyword") val keyword: String? = null,
     @SerialName("pagination") val pagination: EligiblePagination,
 )
 

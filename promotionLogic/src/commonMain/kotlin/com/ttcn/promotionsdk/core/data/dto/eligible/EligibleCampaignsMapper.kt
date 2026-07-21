@@ -27,8 +27,9 @@ internal fun FindEligibleCampaignsRequest.toEligibleCampaignsRequest() = Eligibl
         checkBudgetAvailability = filterOptions.checkBudgetAvailability,
         includePreview = filterOptions.includePreview,
     ),
-    // sectionCode nay top-level; tabCode/channel bị bỏ khỏi request v1.6.
+    // sectionCode + keyword nay top-level; tabCode/channel bị bỏ khỏi request v1.6.
     sectionCode = section?.code,
+    keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },
     pagination = EligiblePagination(
         myOffers = EligiblePageRequest(page = myPage, size = mySize),
         otherOffers = EligiblePageRequest(page = otherPage, size = otherSize),

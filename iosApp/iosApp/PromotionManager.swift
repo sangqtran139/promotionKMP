@@ -184,7 +184,7 @@ final class PromotionManager: NSObject, PromotionServing {
     // Theme cấu hình tập trung 1 chỗ (nil = mặc định SDK).
     private static let theme: PromotionSDKTheme? = nil   // hoặc PromotionSDKTheme(button: ...)
     // Base URL Promotion BFF — host cấu hình. Đối ứng `PromotionSessionConfig.baseUrl` bên Android.
-    private static let baseUrl = "https://staging1.viettelmoney.vn/"
+    private static let baseUrl = "http://125.235.38.229:8080/"
 
     // MARK: Lifecycle
 

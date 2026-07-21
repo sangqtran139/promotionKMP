@@ -8,6 +8,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersReq
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.withExpiryWarning
 
 internal class MyPromotionViewModel(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
@@ -231,7 +232,8 @@ internal class MyPromotionViewModel(
                     ?: response?.defaultTab
                     ?: requestTabCode
                     ?: tabs.firstOrNull()?.code
-                val incoming = response?.content.orEmpty().map { it.toMyVoucherListItem() }
+                val incoming = response?.content.orEmpty()
+                    .map { it.toMyVoucherListItem().withExpiryWarning(response?.expireWarningDate) }
                 val resolvedPage = response?.number ?: nextPage
                 val resolvedIsLastPage = response?.last ?: true
 
