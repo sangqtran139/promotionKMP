@@ -1,5 +1,5 @@
 //
-//  PromotionCardSeed.swift
+//  PRMPromotionCardSeed.swift
 //  PRMPromotionUI
 //
 //  Dữ liệu tối thiểu để màn Chi tiết vẽ ngay card, trước khi API detail trả về.
@@ -13,7 +13,7 @@
 import Foundation
 @_implementationOnly import PRMKotlinBridge
 
-struct PromotionCardSeed {
+struct PRMPromotionCardSeed {
     /// `voucherId` với voucher đã sở hữu; `voucherId ?? campaignId` với offer ở luồng checkout.
     let id: String
     /// Hiện ở label nhỏ (12pt).

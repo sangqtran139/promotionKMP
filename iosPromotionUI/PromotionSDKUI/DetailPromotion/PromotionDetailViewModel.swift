@@ -142,9 +142,9 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         return f
     }()
 
-    private static func display(from promotion: PromotionCardSeed) -> Display {
-        let dateString = PromotionDate.parse(promotion.expirationDate)
-            .map { "Hạn sử dụng \(PromotionDate.display($0))" } ?? ""
+    private static func display(from promotion: PRMPromotionCardSeed) -> Display {
+        let dateString = PRMPromotionDate.parse(promotion.expirationDate)
+            .map { "Hạn sử dụng \(PRMPromotionDate.display($0))" } ?? ""
         let config = applyConfig(status: promotion.status, displayStatusLabel: promotion.displayStatusLabel)
         return Display(
             card: VoucherCardViewModel(
@@ -165,8 +165,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     }
 
     private static func display(from detail: VoucherDetail) -> Display {
-        let dateString = PromotionDate.parse(detail.expirationDate)
-            .map { "Hạn sử dụng \(PromotionDate.display($0))" } ?? ""
+        let dateString = PRMPromotionDate.parse(detail.expirationDate)
+            .map { "Hạn sử dụng \(PRMPromotionDate.display($0))" } ?? ""
         let config = applyConfig(status: detail.status, displayStatusLabel: detail.displayStatusLabel)
         return Display(
             card: VoucherCardViewModel(

@@ -1,5 +1,5 @@
 //
-//  PromotionDate.swift
+//  PRMPromotionDate.swift
 //  PRMPromotionUI
 //
 //  Thay cho `DateUseCase` của gói PromotionLogic (Swift) cũ. Đây **không** phải nghiệp vụ:
@@ -9,7 +9,7 @@
 
 import Foundation
 
-enum PromotionDate {
+enum PRMPromotionDate {
 
     private static let vnTimeZone = TimeZone(identifier: "Asia/Ho_Chi_Minh")
 

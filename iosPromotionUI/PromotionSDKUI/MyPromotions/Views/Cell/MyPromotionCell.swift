@@ -106,7 +106,7 @@ struct MyPromotionCellViewModel {
             title: voucher.merchantName ?? "",
             description: voucher.title ?? "",
             imageURL: voucher.logo,
-            date: PromotionDate.parse(voucher.expirationDate),
+            date: PRMPromotionDate.parse(voucher.expirationDate),
             buttonTitle: derivedButtonTitle,
             showsCheckbox: showsCheckbox,
             isChecked: isChecked,
@@ -152,7 +152,7 @@ struct MyPromotionCellViewModel {
             title: derivedTitle,
             description: offer.campaignName ?? "",
             imageURL: nil,
-            date: PromotionDate.parse(offer.expireDate),
+            date: PRMPromotionDate.parse(offer.expireDate),
             buttonTitle: derivedButtonTitle,
             showsCheckbox: showsCheckbox,
             isChecked: isChecked,
@@ -206,13 +206,13 @@ final class MyPromotionCell: UITableViewCell {
         var dateString: String?
         var dateColor: UIColor?
         if let date = viewModel.date {
-            if PromotionDate.isExpiringSoon(date, thresholdDays: 3) {
+            if PRMPromotionDate.isExpiringSoon(date, thresholdDays: 3) {
                 let interval = date.timeIntervalSince(Date())
                 let days = max(1, Int(ceil(interval / 86400)))
                 dateString = "HSD: Còn \(days) ngày"
                 dateColor = Colors.warningOrangeColor
             } else {
-                dateString = "HSD: \(PromotionDate.display(date))"
+                dateString = "HSD: \(PRMPromotionDate.display(date))"
             }
         }
 

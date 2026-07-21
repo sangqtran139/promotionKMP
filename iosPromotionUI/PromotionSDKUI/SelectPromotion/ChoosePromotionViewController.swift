@@ -49,8 +49,8 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     // Shimmer skeleton phủ lên table trong lúc tải trang đầu (giống Android).
     private lazy var shimmerView: PRMShimmerReplicatorView = {
         let view = PRMShimmerReplicatorView(
-            itemSize: .fixedHeight(PromotionCardShimmerCell.itemHeight),
-            cellProvider: { PromotionCardShimmerCell() }
+            itemSize: .fixedHeight(PRMPromotionCardShimmerCell.itemHeight),
+            cellProvider: { PRMPromotionCardShimmerCell() }
         )
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true

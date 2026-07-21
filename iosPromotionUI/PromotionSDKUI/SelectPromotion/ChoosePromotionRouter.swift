@@ -14,7 +14,7 @@ final class ChoosePromotionRouter: PRMBaseRouter<ChoosePromotionViewController> 
         // Cờ VOUCHER_DETAIL TẮT → hiện popup PRM_MOB_021, không mở màn chi tiết.
         guard canOpenVoucherDetail() else { return }
         let vc = PromotionDetailBuilder.build(
-            with: .init(promotion: PromotionCardSeed(offer: promotion), customerId: customerId, token: token),
+            with: .init(promotion: PRMPromotionCardSeed(offer: promotion), customerId: customerId, token: token),
             navigator: navigator
         )
         navigator?.pushViewController(vc, animated: true)

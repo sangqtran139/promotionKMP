@@ -12,12 +12,12 @@ final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController
     
     struct DataModel {
         /// Promotion cơ bản (từ list) để hiện card NGAY; màn tự fetch detail đầy đủ theo voucherId.
-        let promotion: PromotionCardSeed
+        let promotion: PRMPromotionCardSeed
         let customerId: String
         let token: String?
         let service: String?
 
-        init(promotion: PromotionCardSeed, customerId: String, token: String? = nil, service: String? = nil) {
+        init(promotion: PRMPromotionCardSeed, customerId: String, token: String? = nil, service: String? = nil) {
             self.promotion = promotion
             self.customerId = customerId
             self.token = token

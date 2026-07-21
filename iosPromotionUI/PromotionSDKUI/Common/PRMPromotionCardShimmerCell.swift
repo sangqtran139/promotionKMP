@@ -1,5 +1,5 @@
 //
-//  PromotionCardShimmerCell.swift
+//  PRMPromotionCardShimmerCell.swift
 //  PromotionSDK
 //
 //  Cell skeleton (shimmer) mô phỏng PromotionCardView lúc đang load.
@@ -9,7 +9,7 @@
 import UIKit
 @_implementationOnly import PRMDesignKit
 
-final class PromotionCardShimmerCell: UIView, PRMShimmerReplicatorViewCell {
+final class PRMPromotionCardShimmerCell: UIView, PRMShimmerReplicatorViewCell {
 
     /// Chiều cao 1 dòng skeleton (card + khoảng cách dưới).
     static let itemHeight: CGFloat = 96

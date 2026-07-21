@@ -287,7 +287,7 @@ final class PromotionSDKImpl: NSObject {
             }
             let nav = navigator ?? viewController.navigationController ?? (viewController as? UINavigationController)
             // Seed tối thiểu từ voucherId — card trống + shimmer cho tới khi fetch detail xong.
-            let seed = PromotionCardSeed(voucherId: voucherId)
+            let seed = PRMPromotionCardSeed(voucherId: voucherId)
             let vc = PromotionDetailBuilder.build(
                 with: .init(promotion: seed, customerId: self.customerId, token: self.token),
                 navigator: nav
