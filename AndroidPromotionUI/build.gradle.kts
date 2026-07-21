@@ -1,8 +1,16 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    // AGP 9 đã tích hợp sẵn Kotlin — thêm `org.jetbrains.kotlin.android` sẽ lỗi.
-    // Không khai version vì AGP đã có trên classpath từ :androidApp.
     id("com.android.library")
+    alias(libs.plugins.kotlinAndroid)
     `maven-publish`
+}
+
+// AGP 8.x không tự căn JVM target Kotlin theo Java như AGP 9 → set tay khớp compileOptions (17).
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+    }
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
@@ -31,8 +39,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     publishing {
