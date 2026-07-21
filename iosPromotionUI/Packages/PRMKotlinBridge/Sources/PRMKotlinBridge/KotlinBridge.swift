@@ -10,7 +10,6 @@
 //
 
 import Foundation
-import RxSwift
 @_exported import PromotionLogic
 
 // MARK: - Kiểu bọc số của Kotlin
@@ -67,26 +66,4 @@ public func toPromotionError(_ error: Error) -> PromotionError {
         errorCode: PromotionErrorCodes.shared.GENERAL,
         message: nsError.localizedDescription
     )
-}
-
-// MARK: - suspend → Single
-
-/// Bọc một hàm `suspend` của Kotlin (Swift thấy là `async throws`) thành `Single` của RxSwift.
-///
-/// ViewModel của SDK đều nhận `Single`, nên đây là **chỗ duy nhất** `Task { }` được phép xuất hiện.
-/// Dispose `Single` sẽ cancel `Task`, và Kotlin nhận `CancellationException`.
-public func singleFromKotlin<T>(_ work: @escaping () async throws -> T) -> Single<T> {
-    return Single.create { observer in
-        let task = Task {
-            do {
-                observer(.success(try await work()))
-            } catch is CancellationError {
-                // Subscription đã bị dispose — Rx không cần biết.
-            } catch {
-                // RxSwift 5.x dùng `.error`, không phải `.failure` như bản 6.
-                observer(.error(toPromotionError(error)))
-            }
-        }
-        return Disposables.create { task.cancel() }
-    }
 }

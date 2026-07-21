@@ -17,7 +17,7 @@ còn giao diện do **mỗi nền tảng tự dựng** bằng công nghệ nativ
 ```
 ┌───────────────────────┐        ┌──────────────────────┐
 │ promotionUI (Android) │        │ promotionUI (iOS)    │
-│ XML View + MVI        │        │ UIKit + MVVM/RxSwift │
+│ XML View + MVI        │        │ UIKit + MVVM/Combine │
 └──────────┬────────────┘        └──────────┬───────────┘
            │                                │
            └────────────┬───────────────────┘
@@ -41,9 +41,10 @@ Hai chế độ dùng SDK:
 | Thành phần | Trạng thái |
 |---|---|
 | `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, 21 test xanh trên cả hai. |
-| `:promotionUI` (Android) | ⏳ Chưa tạo. UI nguồn ở repo `ttcn-promotion-android-sdk`. |
-| `promotionUI` (iOS) | ⏳ Chưa kéo sang. UI nguồn ở repo `ttcn-promotion-ios-sdk`. |
-| Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [ComposeGuide.md](./ComposeGuide.md). |
+| `:AndroidPromotionUI` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionUI/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
+| `iosPromotionUI` (iOS) | ✅ Đã ở trong repo (`iosPromotionUI/`, project `PromotionSDKUI.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
+| App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
+| Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |
 
 ---
 
@@ -61,56 +62,82 @@ Hai chế độ dùng SDK:
 | Bất đồng bộ | Kotlin Coroutines 1.10.2 |
 | DI | Custom DI tự viết (`SdkDi`), không Hilt/Koin/Dagger |
 | Storage | `KeyValueStorage` expect/actual — `SharedPreferences` / `NSUserDefaults` |
-| Database | **Không có.** Không Room, không SQLDelight — xem [StorageGuide.md](./StorageGuide.md) |
+| Database | **Không có.** Không Room, không SQLDelight — xem [common/StorageGuide.md](./common/StorageGuide.md) |
 | Annotation processor | **Không có.** Không kapt, không KSP |
 
 ### UI Android (nguồn: `ttcn-promotion-android-sdk`)
 
 XML View + Data Binding + View Binding, kiến trúc **MVI** trên `PRMBaseViewModel<S, A, E>`.
-Xem [AndroidUIGuide.md](./AndroidUIGuide.md).
+Xem [android/UIGuide.md](./android/UIGuide.md).
 
 ### UI iOS (nguồn: `ttcn-promotion-ios-sdk`)
 
-UIKit (XIB), kiến trúc **MVVM + Builder + Router**, reactive bằng **RxSwift**, modular SPM.
-Xem [IosUIGuide.md](./IosUIGuide.md).
+UIKit (XIB), kiến trúc **MVVM + Builder + Router**, reactive bằng **Combine + async/await**, modular SPM.
+RxSwift đã được gỡ hoàn toàn (không dependency ngoài). Xem [ios/UIGuide.md](./ios/UIGuide.md).
 
 ---
 
 ## 4. Danh mục tài liệu
 
+Docs chia ba tầng: **`common/`** (chung 2 nền tảng — lõi KMP + spec song ánh), **`android/`**, **`ios/`**.
+Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (meta).
+
+**Gốc (meta)**
+
 | File | Nội dung |
 |------|----------|
-| [AI_AGENT_RULES.md](./AI_AGENT_RULES.md) | **Quy tắc bắt buộc** cho AI agent khi làm việc trên repo. |
-| [Architecture.md](./Architecture.md) | Kiến trúc tổng thể: lõi chung + hai UI native, luồng dữ liệu. |
-| [ProjectStructure.md](./ProjectStructure.md) | Cấu trúc thư mục, vai trò từng package, đặt file mới ở đâu. |
-| [PublicApi.md](./PublicApi.md) | **Bề mặt SDK cho app host**: `PromotionSDK`, `PromotionSDKApi`, DTO — song ánh Android ↔ iOS. |
-| [AndroidIntegrationGuide.md](./AndroidIntegrationGuide.md) | **Tích hợp Android cho app host**: khai Maven `promotionUI`, vòng đời, UI, headless, lỗi, theming. |
-| [IosIntegrationGuide.md](./IosIntegrationGuide.md) | **Tích hợp iOS cho app host**: nhúng `PromotionSDKUI.xcframework`, vòng đời, UI, headless, lỗi, theming. |
-| [HeadlessAPI.md](./HeadlessAPI.md) | API của lõi `:promotionLogic`: 5 use case nghiệp vụ + feature flag. Host **không** gọi vào đây. |
-| [NetworkingGuide.md](./NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
-| [DependencyInjection.md](./DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
-| [StorageGuide.md](./StorageGuide.md) | `KeyValueStorage`, cache feature flag. Vì sao không có DB. |
-| [ErrorHandling.md](./ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |
-| [TestingGuide.md](./TestingGuide.md) | Test `commonTest` chạy trên cả hai nền tảng, `MockEngine`. |
-| [CodingStandards.md](./CodingStandards.md) | Quy ước code Kotlin + Swift, prefix `PRM` / `VDS`. |
-| [AndroidUIGuide.md](./AndroidUIGuide.md) | UI Android: XML View, Data/View Binding, RecyclerView, MVI. |
-| [IosUIGuide.md](./IosUIGuide.md) | UI iOS: UIKit, XIB, MVVM + Builder/Router, RxSwift. |
-| [Theming.md](./Theming.md) | Hệ thống theme/token, tùy biến brand cho host — cả hai nền tảng. |
-| [Distribution.md](./Distribution.md) | Phát hành SDK Android: file AAR (hiện tại) ↔ Maven — cách làm, ràng buộc nào mất, ràng buộc nào còn. |
-| [ComposeGuide.md](./ComposeGuide.md) | Trạng thái Compose Multiplatform và điều kiện áp dụng. |
-| [features/](./features/README.md) | Tài liệu theo tính năng, ánh xạ màn hình Android ↔ iOS. |
+| [AI_AGENT_RULES.md](./AI_AGENT_RULES.md) | **Quy tắc bắt buộc** cho AI agent khi làm việc trên repo (ưu tiên cao nhất). |
+
+**`common/` — chung 2 nền tảng**
+
+| File | Nội dung |
+|------|----------|
+| [common/Architecture.md](./common/Architecture.md) | Kiến trúc tổng thể: lõi chung + hai UI native, luồng dữ liệu. |
+| [common/ProjectStructure.md](./common/ProjectStructure.md) | Cấu trúc thư mục, vai trò từng package, đặt file mới ở đâu. |
+| [common/PublicApi.md](./common/PublicApi.md) | **Bề mặt SDK cho app host**: `PromotionSDK`, `PromotionSDKApi`, DTO — song ánh Android ↔ iOS. |
+| [common/HeadlessAPI.md](./common/HeadlessAPI.md) | API của lõi `:promotionLogic`: 5 use case nghiệp vụ + feature flag. Host **không** gọi vào đây. |
+| [common/InitParity.md](./common/InitParity.md) | Spec khởi tạo Android ↔ iOS: `PromotionSDK`/`Options`/`SessionConfig`/`Callback`. |
+| [common/SdkReview.md](./common/SdkReview.md) | Báo cáo rà soát & hoàn thiện SDK (UI public iOS, wrapper, terminology, kiến trúc, version) — kèm ví dụ. |
+| [common/NetworkingGuide.md](./common/NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
+| [common/DependencyInjection.md](./common/DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
+| [common/StorageGuide.md](./common/StorageGuide.md) | `KeyValueStorage`, cache feature flag. Vì sao không có DB. |
+| [common/ErrorHandling.md](./common/ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |
+| [common/TestingGuide.md](./common/TestingGuide.md) | Test `commonTest` chạy trên cả hai nền tảng, `MockEngine`. |
+| [common/CodingStandards.md](./common/CodingStandards.md) | Quy ước code Kotlin + Swift, prefix `PRM` / `VDS`. |
+| [common/Theming.md](./common/Theming.md) | Hệ thống theme/token, tùy biến brand cho host — cả hai nền tảng. |
+| [common/ComposeGuide.md](./common/ComposeGuide.md) | Trạng thái Compose Multiplatform và điều kiện áp dụng. |
+
+**`android/` — riêng Android**
+
+| File | Nội dung |
+|------|----------|
+| [android/UIGuide.md](./android/UIGuide.md) | UI Android: XML View, Data/View Binding, RecyclerView, MVI. |
+| [android/Distribution.md](./android/Distribution.md) | Phát hành SDK Android: Maven (↔ AAR cũ) — cách làm, ràng buộc nào mất/còn. |
+
+**`ios/` — riêng iOS**
+
+| File | Nội dung |
+|------|----------|
+| [ios/UIGuide.md](./ios/UIGuide.md) | UI iOS: UIKit, XIB, MVVM + Builder/Router, **Combine + async/await**. |
+| [ios/Distribution.md](./ios/Distribution.md) | Phát hành SDK iOS: XCFramework, dSYM, slice, **đóng gói (host không cài thêm gì)**. |
+
+**`features/` — theo tính năng (2 nền tảng)**
+
+| File | Nội dung |
+|------|----------|
+| [features/](./features/README.md) | Tài liệu theo tính năng, ánh xạ màn hình Android ↔ iOS ↔ use case. |
 
 ---
 
 ## 5. Thứ tự đọc gợi ý
 
 1. **AI_AGENT_RULES.md** — luật chơi.
-2. **Architecture.md** — bức tranh lớn.
-3. **ProjectStructure.md** — biết file nằm ở đâu.
-4. **PublicApi.md** — thứ đối tác nhìn thấy. Đọc trước khi đổi bất cứ gì `public`.
-5. **HeadlessAPI.md** — bề mặt lõi mà cả hai UI đều gọi.
-6. Guide chuyên đề (Networking, DI, Storage, AndroidUI, IosUI) theo nhu cầu task.
-7. **CodingStandards.md** + **ErrorHandling.md** — trước khi commit.
+2. **common/Architecture.md** — bức tranh lớn.
+3. **common/ProjectStructure.md** — biết file nằm ở đâu.
+4. **common/PublicApi.md** — thứ đối tác nhìn thấy. Đọc trước khi đổi bất cứ gì `public`.
+5. **common/HeadlessAPI.md** — bề mặt lõi mà cả hai UI đều gọi.
+6. Guide chuyên đề: `common/` (Networking, DI, Storage) + `android/UIGuide.md` / `ios/UIGuide.md` theo nhu cầu task.
+7. **common/CodingStandards.md** + **common/ErrorHandling.md** — trước khi commit.
 
 ---
 

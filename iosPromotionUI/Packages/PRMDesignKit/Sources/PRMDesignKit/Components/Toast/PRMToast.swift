@@ -2,7 +2,7 @@
 //  PRMToast.swift
 //  PRMDesignKit
 //
-//  Toast nhẹ tự ẩn — thông báo ngắn (vd lỗi áp dụng voucher). UIKit thuần, không phụ thuộc RxSwift.
+//  Toast nhẹ tự ẩn — thông báo ngắn (vd lỗi áp dụng voucher). UIKit thuần.
 //
 
 import UIKit

@@ -228,8 +228,10 @@ internal class MyPromotionViewModel(
                     ?.sortedBy { it.order }
                     .orEmpty()
                 val tabs = incomingTabs.takeIf { it.isNotEmpty() } ?: uiState.value.tabs
-                val selected = response?.selectedTab
-                    ?: response?.defaultTab
+                // Quy tắc chọn tab active nằm ở domain (dùng chung 2 nền tảng):
+                // SearchCustomerVouchersResult.resolveActiveTab. `tabs.firstOrNull` là fallback
+                // cuối khi response null (dùng list tab đã merge/sort của UI).
+                val selected = response?.resolveActiveTab(requestTabCode)
                     ?: requestTabCode
                     ?: tabs.firstOrNull()?.code
                 val incoming = response?.content.orEmpty()

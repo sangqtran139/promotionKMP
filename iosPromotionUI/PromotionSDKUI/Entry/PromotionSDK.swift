@@ -21,7 +21,7 @@ public final class PromotionSDK {
     // MARK: - Private storage
     //
     // _impl là NSObject để type nội bộ (PromotionSDKImpl) không xuất hiện trong module interface của
-    // framework — tránh app host phải nạp PromotionLogic/RxSwift chỉ để suy ra class layout.
+    // framework — tránh app host phải nạp PromotionLogic/module nội bộ chỉ để suy ra class layout.
 
     private static var _impl: NSObject?
     private static var impl: PromotionSDKImpl? { _impl as? PromotionSDKImpl }

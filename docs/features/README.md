@@ -1,9 +1,9 @@
 # Features — Tài liệu theo tính năng
 
 Mỗi tính năng có **một nghiệp vụ dùng chung** ở `:promotionLogic` và **hai hiện thực UI** —
-Android (MVI, XML View) và iOS (MVVM + RxSwift, UIKit).
+Android (MVI, XML View) và iOS (MVVM + Combine, UIKit).
 
-> Đọc trước: [../Architecture.md](../Architecture.md) và [../HeadlessAPI.md](../HeadlessAPI.md).
+> Đọc trước: [Architecture.md](../common/Architecture.md) và [HeadlessAPI.md](../common/HeadlessAPI.md).
 
 ---
 
@@ -28,7 +28,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 > **Lệch nghiệp vụ cần biết:** `findEligible` (Find Eligible Campaigns) trước đây **chỉ có ở iOS**.
 > Android dùng `searchVouchers` cho luồng chọn ưu đãi. Lõi KMP nay có cả hai — xem
-> [../HeadlessAPI.md §3](../HeadlessAPI.md) để chọn đúng hàm:
+> [HeadlessAPI.md §3](../common/HeadlessAPI.md) để chọn đúng hàm:
 > `searchVouchers` = voucher **đã sở hữu**, không xét đơn.
 > `findEligible` = ưu đãi **đủ điều kiện cho đơn**, trả hai nhóm `myOffers` + `otherOffers`.
 
@@ -45,12 +45,13 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 | Widget nhúng | [EndowView.md](./EndowView.md) |
 | Feature flag | [FeatureFlag.md](./FeatureFlag.md) |
 
-> ⚠️ **Sáu file trên hiện chỉ mô tả phía Android** (chúng được sao chép từ SDK Android gốc).
-> Phần iOS tương ứng nằm ở `ttcn-promotion-ios-sdk/docs/Features/`. Chúng sẽ được gộp khi UI iOS
-> thực sự được kéo sang repo này.
+> ⚠️ **Sáu file trên hiện mô tả kỹ phía Android**; phần triển khai iOS tương ứng **đã có trong repo**
+> tại `iosPromotionUI/PromotionSDKUI/` (không còn ở repo `ttcn-promotion-ios-sdk` riêng nữa). Bảng ánh xạ
+> class iOS ↔ Android ở §1 là điểm tra cứu chính; xem thêm [ios/UIGuide.md](../ios/UIGuide.md) cho pattern
+> Builder/Router/ViewModel/ViewController. Khi cập nhật từng file feature, bổ sung mục iOS ngay bên cạnh mục Android.
 >
 > `FeatureFlag.md` còn ghi *"đang ở dạng scaffold"* — **không còn đúng**. FeatureFlag đã là code thật
-> ở cả hai nền tảng; xem [../StorageGuide.md](../StorageGuide.md) và [../HeadlessAPI.md §4](../HeadlessAPI.md).
+> ở cả hai nền tảng; xem [StorageGuide.md](../common/StorageGuide.md) và [HeadlessAPI.md §4](../common/HeadlessAPI.md).
 
 ---
 

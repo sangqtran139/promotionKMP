@@ -5,7 +5,7 @@
 //  DTO công khai của `PromotionSDKApi`. Đối ứng 1-1 với `PromotionApiModels.kt` bên Android:
 //  cùng tên type, cùng tên field, cùng thứ tự khai báo. Sửa một bên thì sửa cả hai.
 //
-//  Chỉ dùng type của Foundation — không Kotlin, không RxSwift. Type nào của `PRMKotlinBridge` lọt vào
+//  Chỉ dùng type của Foundation — không Kotlin, không type nội bộ. Type nào của `PRMKotlinBridge` lọt vào
 //  đây sẽ bị ghi vào `.swiftinterface` của framework và app host không build được:
 //
 //      error: Unable to find module dependency: 'PRMKotlinBridge'

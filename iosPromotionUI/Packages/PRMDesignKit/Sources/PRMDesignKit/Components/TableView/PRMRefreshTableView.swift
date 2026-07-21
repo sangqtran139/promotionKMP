@@ -7,12 +7,12 @@
 //
 
 import UIKit
-import RxSwift
-import RxRelay
+import Combine
 
 public class PRMRefreshTableView: UITableView {
-    public let refreshTrigger = PublishRelay<Void>()
-    public let loadMoreTrigger = PublishRelay<Void>()
+    /// Kéo-để-làm-mới và cuộn-tới-đáy.
+    public let refreshPublisher = PassthroughSubject<Void, Never>()
+    public let loadMorePublisher = PassthroughSubject<Void, Never>()
     
     public var isHasMorePage: Bool = true
     
@@ -24,7 +24,7 @@ public class PRMRefreshTableView: UITableView {
                 self.addInfiniteScrolling { [weak self] in
                     guard let self = self else { return }
                     if self.isHasMorePage {
-                        self.loadMoreTrigger.accept(())
+                        self.loadMorePublisher.send(())
                     } else {
                         self.infiniteScrollingView?.stopAnimating()
                     }
@@ -57,7 +57,7 @@ public class PRMRefreshTableView: UITableView {
     }
     
     @objc private func handleRefreshControl() {
-        refreshTrigger.accept(())
+        refreshPublisher.send(())
     }
     
     public func startRefreshing() {

@@ -12,10 +12,10 @@ import PRMFoundation
 // MARK: - State (tương tự Android EndowViewState)
 public enum SelectPromtionViewState {
     case loading
-    case notApplied(count: Int)            // Có ưu đãi, chưa chọn → "Sử dụng"
-    case applied(voucherTitle: String)     // Đã chọn ưu đãi → "Hủy"
-    case unavailable(voucherTitle: String) // Đã áp nhưng không còn hợp lệ → "Chọn lại"
-    case empty                             // Không có ưu đãi nào → ẩn nút
+    case notApplied(count: Int)               // Có ưu đãi, chưa chọn → "Sử dụng"
+    case applied(voucherTitles: [String])     // Đã chọn ưu đãi (một/nhiều) → "Hủy"
+    case unavailable(voucherTitles: [String]) // Đã áp nhưng không còn hợp lệ → "Chọn lại"
+    case empty                                // Không có ưu đãi nào → ẩn nút
 }
 
 // MARK: - DataSource Protocol (tương tự Android ViewModel.create())
@@ -156,10 +156,10 @@ final public class PRMEndowView: UIView {
             showLoadingState()
         case .notApplied(let count):
             showNotAppliedState(count: count)
-        case .applied(let voucherTitle):
-            showAppliedState(voucherTitle: voucherTitle)
-        case .unavailable(let voucherTitle):
-            showUnavailableState(voucherTitle: voucherTitle)
+        case .applied(let voucherTitles):
+            showAppliedState(voucherTitles: voucherTitles)
+        case .unavailable(let voucherTitles):
+            showUnavailableState(voucherTitles: voucherTitles)
         case .empty:
             showEmptyState()
         }
@@ -198,16 +198,19 @@ final public class PRMEndowView: UIView {
         actionTapableView.isHidden = false
     }
 
-    private func showAppliedState(voucherTitle: String) {
-        let couponView = createCouponView(text: voucherTitle)
-        couponsStackView.addArrangedSubview(couponView)
+    private func showAppliedState(voucherTitles: [String]) {
+        // Một hoặc nhiều coupon (sẵn sàng multi-select — khớp Android showAppliedState(List)).
+        for title in voucherTitles {
+            couponsStackView.addArrangedSubview(createCouponView(text: title))
+        }
         actionLabel.text = "Hủy"
         actionTapableView.isHidden = false
     }
 
-    private func showUnavailableState(voucherTitle: String) {
-        let couponView = createCouponView(text: voucherTitle, unavailable: true)
-        couponsStackView.addArrangedSubview(couponView)
+    private func showUnavailableState(voucherTitles: [String]) {
+        for title in voucherTitles {
+            couponsStackView.addArrangedSubview(createCouponView(text: title, unavailable: true))
+        }
         actionLabel.text = "Chọn lại"
         actionTapableView.isHidden = false
     }

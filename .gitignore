@@ -20,6 +20,8 @@ node_modules/
 
 # SwiftPM scratch/cache directory
 .spm/
+# SwiftPM per-package build dir (khác `build/` của Gradle) — không được commit artifact biên dịch.
+.build/
 
 # Build outputs of :promotionLogic and :AndroidPromotionUI.
 # Regenerate with:

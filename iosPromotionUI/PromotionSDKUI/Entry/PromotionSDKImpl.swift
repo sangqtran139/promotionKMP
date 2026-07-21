@@ -2,13 +2,12 @@
 //  PromotionSDKImpl.swift
 //  PromotionSDK
 //
-//  Internal implementation box — keeps all PromotionLogic/RxSwift/PRMPromotionUI types out of
+//  Internal implementation box — keeps all PromotionLogic/PRMPromotionUI types out of
 //  PromotionSDK's public class layout and module interface so the consuming app's compiler
 //  never needs to load those modules for class metadata generation.
 //
 
 import UIKit
-@_implementationOnly import RxSwift
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMKotlinBridge
 @_implementationOnly import PRMDesignKit
@@ -49,10 +48,10 @@ final class PromotionSDKImpl: NSObject {
     // `PromotionSDKApi`, và lớp đó gọi `PromotionUseCases` của lõi.
     private let findEligibleUseCase: FindEligibleCampaignsUseCase
     private let validateDiscountsUseCase: ValidateStackableDiscountsUseCase
-    let disposeBag = DisposeBag()
 
     var cachedListModel: EligibleOffersResult?
-    var appliedPromotion: EligibleOffer?
+    /// Voucher đang áp (một/nhiều) — sẵn sàng multi-select; hiện tại gate đơn nên thường 0/1.
+    var appliedPromotions: [EligibleOffer] = []
     weak var activeWidget: PRMEndowView?
 
     init(options: PromotionSDKOptions) {
@@ -389,13 +388,15 @@ final class PromotionSDKImpl: NSObject {
             filterOptions: EligibleFilterOptions(includeExpired: false, checkBudgetAvailability: true, includePreview: true)
         )
         let useCase = findEligibleUseCase
-        singleFromKotlin { try await useCase.invoke(request: request) }
-            .observeOn(MainScheduler.instance)
-            .subscribe(
-                onSuccess: { completion($0) },
-                onError: { _ in completion(nil) }
-            )
-            .disposed(by: disposeBag)
+        // `invoke` là suspend Kotlin (Swift thấy `async throws`); gọi trong Task, `@MainActor` đảm bảo
+        // `completion` chạy trên main thread.
+        Task { @MainActor in
+            do {
+                completion(try await useCase.invoke(request: request))
+            } catch {
+                completion(nil)
+            }
+        }
     }
 
     /// Format số tiền giảm (chuỗi số thô) -> "Giảm x.xxxđ".
@@ -410,35 +411,36 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Auto-apply voucher `isAutoApplied`: validate với order data → áp + báo host. Lỗi → giữ "chưa áp".
-    private func autoApply(_ promotion: EligibleOffer, on view: PRMEndowView) {
+    /// Nhận danh sách (sẵn sàng multi-select) — hiện dormant tới khi `findEligible` trả `isAutoApplied`.
+    private func autoApply(_ promotions: [EligibleOffer], on view: PRMEndowView) {
+        guard !promotions.isEmpty else { return }
         let request = ValidateDiscountsRequest(
             customerId: customerId,
             orderId: orderId ?? "",
             orderValue: orderValue ?? "0",
-            items: [DiscountItemRequest(objectId: promotion.id, objectType: promotion.objectType)]
+            items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }
         )
         let useCase = validateDiscountsUseCase
-        singleFromKotlin { try await useCase.invoke(request: request) }
-            .observeOn(MainScheduler.instance)
-            .subscribe(
-                onSuccess: { [weak self, weak view] result in
-                    guard let self, let view, let result else { return }
-                    let item = result.items.first(where: { $0.objectId == promotion.id })
-                    if item?.valid == false {
-                        // Voucher auto-apply không còn hợp lệ → UNAVAILABLE (không báo host).
-                        view.setState(.unavailable(voucherTitle: promotion.campaignName ?? ""))
-                        return
-                    }
-                    let discount = item?.calculatedDiscount ?? result.totalDiscountAmount
-                    self.appliedPromotion = promotion
-                    view.setState(.applied(voucherTitle: Self.formatDiscount(discount)))
-                    self.onApplyVoucher?(promotion.id)
-                },
-                onError: { _ in
-                    // Validate lỗi → không auto-apply (giữ trạng thái "chưa áp").
+        Task { @MainActor [weak self, weak view] in
+            do {
+                let result = try await useCase.invoke(request: request)
+                guard let self, let view, let result else { return }
+                // Diễn giải valid/discount cho từng offer nằm ở domain (ValidateDiscountsResult) —
+                // dùng chung Android & iOS.
+                let invalid = promotions.filter { !result.isValidFor(objectId: $0.id) }
+                if !invalid.isEmpty {
+                    // Có voucher auto-apply không còn hợp lệ → UNAVAILABLE (không báo host).
+                    view.setState(.unavailable(voucherTitles: invalid.map { $0.campaignName ?? "" }))
+                    return
                 }
-            )
-            .disposed(by: disposeBag)
+                self.appliedPromotions = promotions
+                view.setState(.applied(voucherTitles: promotions.map { Self.formatDiscount(result.discountFor(objectId: $0.id)) }))
+                // Callback ra host giữ ĐƠN (parity Android: gửi id voucher đầu).
+                if let first = promotions.first { self.onApplyVoucher?(first.id) }
+            } catch {
+                // Validate lỗi → không auto-apply (giữ trạng thái "chưa áp").
+            }
+        }
     }
 
     func openChoosePromotion() {
@@ -459,12 +461,12 @@ final class PromotionSDKImpl: NSObject {
                 preloadedOther: cached?.otherOffers ?? [],
                 myIsLastPage: cached?.myIsLastPage ?? true,
                 otherIsLastPage: cached?.otherIsLastPage ?? true,
-                preSelectedVoucherId: appliedPromotion?.id
+                preSelectedVoucherIds: appliedPromotions.map { $0.id }
             ),
             navigator: nav
         )
-        vc.onApplyVoucher = { [weak self, weak host, weak vc] (promotion: EligibleOffer) in
-            guard let self else { return }
+        vc.onApplyVoucher = { [weak self, weak host, weak vc] (promotions: [EligibleOffer]) in
+            guard let self, !promotions.isEmpty else { return }
 
             let pop: () -> Void = {
                 if let navCtrl = host?.navigationController {
@@ -473,45 +475,45 @@ final class PromotionSDKImpl: NSObject {
                     host?.dismiss(animated: true)
                 }
             }
-            let finish: (String) -> Void = { [weak self] displayText in
+            let finish: ([String]) -> Void = { [weak self] titles in
                 guard let self else { return }
-                self.appliedPromotion = promotion
-                self.activeWidget?.setState(.applied(voucherTitle: displayText))
-                self.onApplyVoucher?(promotion.id)
+                self.appliedPromotions = promotions
+                self.activeWidget?.setState(.applied(voucherTitles: titles))
+                // Callback ra host giữ ĐƠN (parity Android: gửi id voucher đầu).
+                if let first = promotions.first { self.onApplyVoucher?(first.id) }
                 pop()
             }
 
-            // Bấm "Áp dụng" -> validate voucher với order data, hiển thị calculatedDiscount.
+            // Bấm "Áp dụng" -> validate TẤT CẢ voucher đã chọn với order data (sẵn sàng multi-select).
             let request = ValidateDiscountsRequest(
                 customerId: self.customerId,
                 orderId: self.orderId ?? "",
                 orderValue: self.orderValue ?? "0",
-                items: [DiscountItemRequest(objectId: promotion.id, objectType: promotion.objectType)]
+                items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }
             )
             let useCase = self.validateDiscountsUseCase
-            singleFromKotlin { try await useCase.invoke(request: request) }
-                .observeOn(MainScheduler.instance)
-                .subscribe(
-                    onSuccess: { [weak self] result in
-                        guard let result else { pop(); return }
-                        let item = result.items.first(where: { $0.objectId == promotion.id })
-                        if item?.valid == false {
-                            // Voucher không còn hợp lệ → UNAVAILABLE (không báo host).
-                            self?.activeWidget?.setState(.unavailable(voucherTitle: promotion.campaignName ?? ""))
-                            pop()
-                            return
-                        }
-                        let discount = item?.calculatedDiscount ?? result.totalDiscountAmount
-                        finish(Self.formatDiscount(discount))
-                    },
-                    onError: { _ in
-                        // Validate lỗi -> KHÔNG áp dụng; ở lại màn chọn + báo lỗi (khớp Android, khớp autoApply).
-                        if let vc = vc {
-                            PRMConfirmationDialog.showError("Không thể áp dụng ưu đãi lúc này. Vui lòng thử lại.", in: vc.view)
-                        }
+            Task { @MainActor [weak self, weak vc] in
+                do {
+                    let result = try await useCase.invoke(request: request)
+                    guard let result else { pop(); return }
+                    guard let self else { pop(); return }
+                    // Bất kỳ voucher nào không hợp lệ → UNAVAILABLE (không báo host) — khớp Android hasInvalid.
+                    // Diễn giải valid/discount cho từng offer nằm ở domain (ValidateDiscountsResult).
+                    let invalid = promotions.filter { !result.isValidFor(objectId: $0.id) }
+                    if !invalid.isEmpty {
+                        self.activeWidget?.setState(.unavailable(voucherTitles: invalid.map { $0.campaignName ?? "" }))
+                        pop()
+                        return
                     }
-                )
-                .disposed(by: self.disposeBag)
+                    let titles = promotions.map { Self.formatDiscount(result.discountFor(objectId: $0.id)) }
+                    finish(titles)
+                } catch {
+                    // Validate lỗi -> KHÔNG áp dụng; ở lại màn chọn + báo lỗi (khớp Android, khớp autoApply).
+                    if let vc = vc {
+                        PRMConfirmationDialog.showError("Không thể áp dụng ưu đãi lúc này. Vui lòng thử lại.", in: vc.view)
+                    }
+                }
+            }
         }
 
         if let navCtrl = nav {
@@ -528,8 +530,8 @@ final class PromotionSDKImpl: NSObject {
 
 extension PromotionSDKImpl: PRMEndowViewDataSource {
     func selectPromtionViewDidAttachToWindow(_ view: PRMEndowView) {
-        if let applied = appliedPromotion {
-            view.setState(.applied(voucherTitle: applied.campaignName ?? ""))
+        if !appliedPromotions.isEmpty {
+            view.setState(.applied(voucherTitles: appliedPromotions.map { $0.campaignName ?? "" }))
             return
         }
         loadVouchers { [weak self, weak view] listModel in
@@ -558,7 +560,7 @@ extension PromotionSDKImpl: PRMEndowViewDelegate {
     func selectPromtionViewDidTapSelect(_ view: PRMEndowView) {
         switch view.currentState {
         case .applied:
-            appliedPromotion = nil
+            appliedPromotions = []
             onClearVoucher?()
             if let cached = cachedListModel {
                 // Đếm theo totalElements (tổng thật từ server), nhất quán với lúc load — không dùng length mảng đã phân trang.

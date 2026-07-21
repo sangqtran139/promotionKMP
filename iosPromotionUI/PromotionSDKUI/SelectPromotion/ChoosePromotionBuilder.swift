@@ -25,7 +25,8 @@ final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController
         let myIsLastPage: Bool
         let otherIsLastPage: Bool
         /// Voucher đang áp dụng (nếu có) → pre-select khi mở lại màn chọn (khớp Android `preSelectedVoucherIds`).
-        let preSelectedVoucherId: String?
+        /// Danh sách để sẵn sàng multi-select; hiện tại thường 0/1 phần tử.
+        let preSelectedVoucherIds: [String]
 
         init(customerId: String,
              token: String?,
@@ -36,7 +37,7 @@ final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController
              preloadedOther: [EligibleOffer] = [],
              myIsLastPage: Bool = true,
              otherIsLastPage: Bool = true,
-             preSelectedVoucherId: String? = nil) {
+             preSelectedVoucherIds: [String] = []) {
             self.customerId = customerId
             self.token = token
             self.orderId = orderId
@@ -46,7 +47,7 @@ final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController
             self.preloadedOther = preloadedOther
             self.myIsLastPage = myIsLastPage
             self.otherIsLastPage = otherIsLastPage
-            self.preSelectedVoucherId = preSelectedVoucherId
+            self.preSelectedVoucherIds = preSelectedVoucherIds
         }
     }
 

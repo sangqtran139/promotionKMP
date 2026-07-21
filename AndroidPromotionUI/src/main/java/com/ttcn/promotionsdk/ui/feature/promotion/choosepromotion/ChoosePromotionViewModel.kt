@@ -32,7 +32,8 @@ import kotlinx.coroutines.launch
  * nhóm campaign công khai khách chưa nhận (`otherOffers`). Bản Android trước đây gọi `searchVouchers`
  * nên section "Ưu đãi khác" luôn rỗng.
  *
- * TODO(search): ô tìm kiếm **chưa hoạt động** — mới có khung, chưa gọi API. Xem [search].
+ * Tìm kiếm chạy **server-side**: `keyword` gửi kèm mỗi request `findEligible` (v1.6 §7.3), server
+ * lọc cả `myOffers` lẫn `otherOffers`. iOS cùng cơ chế (parity) — không còn lọc client trong bộ nhớ.
  */
 internal class ChoosePromotionViewModel(
     private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
@@ -193,14 +194,16 @@ internal class ChoosePromotionViewModel(
         }
     }
 
-    /** [section] null → lấy cả hai nhóm từ trang 0. */
+    /**
+     * [section] null → lấy cả hai nhóm từ trang 0. Rule phân trang độc lập 2 nhóm nằm ở domain
+     * ([FindEligibleCampaignsRequest.forSectionPage]) — dùng chung Android & iOS.
+     */
     private fun buildRequest(
         customerId: String,
         section: EligibleSection?,
         nextPage: Int = 0,
     ): FindEligibleCampaignsRequest {
         val state = uiState.value
-        val isMine = section == EligibleSection.MY_OFFERS
         return FindEligibleCampaignsRequest(
             customerId = customerId,
             orderId = requestContextProvider.getOrderId().orEmpty(),
@@ -210,13 +213,15 @@ internal class ChoosePromotionViewModel(
             // PromotionCheckoutData.orderItems. Cần bổ sung `getOrderItems()` vào provider.
             items = emptyList(),
             tabCode = null,
-            section = section,
             // Server lọc theo tên/mã voucher (v1.6 §7.3); áp cho cả load đầu lẫn load-more.
             keyword = state.keyword,
-            myPage = if (section == null || isMine) nextPage else state.page,
             mySize = state.size,
-            otherPage = if (section == null || !isMine) nextPage else state.otherPage,
             otherSize = state.otherSize,
+        ).forSectionPage(
+            section = section,
+            nextPage = nextPage,
+            currentMyPage = state.page,
+            currentOtherPage = state.otherPage,
         )
     }
 

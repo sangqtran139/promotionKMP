@@ -12,8 +12,6 @@
 		AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000400000001ABCD1234 /* PromotionLogic */; };
 		AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000600000001ABCD1234 /* PRMPromotionUI */; };
 		AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000800000001ABCD1234 /* PRMFoundation */; };
-		AA01000900000001ABCD1234 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000A00000001ABCD1234 /* RxSwift */; };
-		AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = AA01000C00000001ABCD1234 /* RxCocoa */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,8 +55,6 @@
 				AA01000300000001ABCD1234 /* PromotionLogic in Frameworks */,
 				AA01000500000001ABCD1234 /* PRMPromotionUI in Frameworks */,
 				AA01000700000001ABCD1234 /* PRMFoundation in Frameworks */,
-				AA01000900000001ABCD1234 /* RxSwift in Frameworks */,
-				AA01000B00000001ABCD1234 /* RxCocoa in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,8 +143,6 @@
 				AA01000400000001ABCD1234 /* PRMKotlinBridge */,
 				AA01000600000001ABCD1234 /* PRMPromotionUI */,
 				AA01000800000001ABCD1234 /* PRMFoundation */,
-				AA01000A00000001ABCD1234 /* RxSwift */,
-				AA01000C00000001ABCD1234 /* RxCocoa */,
 			);
 			productName = PromotionSDKUI;
 			productReference = 55D4D5622F8C946E0042667F /* PromotionSDKUI.framework */;
@@ -573,14 +567,6 @@
 		AA01000800000001ABCD1234 /* PRMFoundation */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = PRMFoundation;
-		};
-		AA01000A00000001ABCD1234 /* RxSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RxSwift;
-		};
-		AA01000C00000001ABCD1234 /* RxCocoa */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = RxCocoa;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -6,8 +6,7 @@
 //
 
 import UIKit
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
@@ -20,10 +19,12 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
     @IBOutlet private weak var searchHeaderView: UIView!
     @IBOutlet private weak var resultSearchLabel: UILabel!
 
-    // MARK: - Relays
-    private let searchActionRelay = PublishRelay<Void>()
-    private let loadMoreRelay = PublishRelay<Void>()
-    private let selectPromotionRelay = PublishRelay<String>()
+    // MARK: - Event subjects
+    private let searchActionRelay = PassthroughSubject<Void, Never>()
+    private let loadMoreRelay = PassthroughSubject<Void, Never>()
+    private let selectPromotionRelay = PassthroughSubject<String, Never>()
+    /// Nguồn dữ liệu list.
+    private var promotionItems: [MyPromotionCellViewModel] = []
 
     // Shimmer skeleton khi đang tìm kiếm (khớp Android shimmerProvider).
     private let shimmerOverlay: UIView = {
@@ -109,6 +110,8 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         self.tableView.rowHeight = UITableView.automaticDimension
         self.tableView.separatorStyle = .none
         self.tableView.delegate = self
+        // Bind list bằng dataSource cổ điển + reloadData.
+        self.tableView.dataSource = self
     }
 
     // MARK: - Bind ViewModel
@@ -116,37 +119,33 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         super.bindViewModel()
 
         let input = SearchMyPromotionViewModel.Input(
-            searchText: searchTextField.rx.text.orEmpty.asObservable(),
-            searchAction: searchActionRelay.asObservable(),
-            loadMoreTrigger: loadMoreRelay.asObservable(),
+            searchText: searchTextField.textPublisher,
+            searchAction: searchActionRelay.eraseToAnyPublisher(),
+            loadMoreTrigger: loadMoreRelay.eraseToAnyPublisher(),
             selectPromotionByIDRelay: selectPromotionRelay
         )
         let output = viewModel.transform(input: input)
 
+        // Cập nhật mảng nguồn + reload.
         output.promotions
-            .drive(tableView.rx.items(cellIdentifier: "MyPromotionCell", cellType: MyPromotionCell.self)) { [weak self] _, viewModel, cell in
-                cell.delegate = self
-                cell.bindData(viewModel)
+            .sink { [weak self] items in
+                guard let self = self else { return }
+                self.promotionItems = items
+                self.tableView.reloadData()
+                // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
+                self.resultSearchLabel.isHidden = items.isEmpty
             }
-            .disposed(by: disposeBag)
-
-        // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
-        output.promotions
-            .map { $0.isEmpty }
-            .drive(onNext: { [weak self] isEmpty in
-                self?.resultSearchLabel.isHidden = isEmpty
-            })
-            .disposed(by: disposeBag)
+            .store(in: &cancellables)
 
         output.isEmpty
-            .drive(onNext: { [weak self] isEmpty in
+            .sink { [weak self] isEmpty in
                 self?.searchNoResultView.isHidden = !isEmpty
                 self?.tableView.isHidden = isEmpty
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.isLoading
-            .drive(onNext: { [weak self] loading in
+            .sink { [weak self] loading in
                 guard let self = self else { return }
                 self.shimmerOverlay.isHidden = !loading
                 if loading {
@@ -156,8 +155,8 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
                 } else {
                     self.shimmerView.stopAnimating()
                 }
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Action
@@ -173,15 +172,29 @@ extension SearchMyPromotionViewController: UITableViewDelegate {
         let contentHeight = scrollView.contentSize.height
         let frameHeight = scrollView.frame.size.height
         if contentHeight > 0 && offsetY > contentHeight - frameHeight - 100 {
-            loadMoreRelay.accept(())
+            loadMoreRelay.send(())
         }
+    }
+}
+
+// MARK: - UITableViewDataSource
+extension SearchMyPromotionViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        promotionItems.count
+    }
+
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueCell(MyPromotionCell.self, for: indexPath)
+        cell.delegate = self
+        cell.bindData(promotionItems[indexPath.row])
+        return cell
     }
 }
 
 // MARK: - UITextFieldDelegate (search action on return key)
 extension SearchMyPromotionViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        searchActionRelay.accept(())
+        searchActionRelay.send(())
         textField.resignFirstResponder()
         return true
     }
@@ -190,7 +203,7 @@ extension SearchMyPromotionViewController: UITextFieldDelegate {
 // MARK: - MyPromotionCellDelegate
 extension SearchMyPromotionViewController: MyPromotionCellDelegate {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String) {
-        selectPromotionRelay.accept(id)
+        selectPromotionRelay.send(id)
     }
 
     func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String, services: [ServiceSelectorItem]) {

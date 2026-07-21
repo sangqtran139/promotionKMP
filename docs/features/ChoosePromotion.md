@@ -28,17 +28,18 @@ Màn này gọi `FindEligibleCampaignsUseCase` (`POST .../redemption/eligible`),
 `searchVouchers`. Nhờ đó `otherOffers` (campaign công khai khách chưa nhận) mới có dữ liệu — trước
 đây Android gọi `searchVouchers` nên section "Ưu đãi khác" luôn rỗng, lệch với iOS.
 
-`findEligible` **không nhận `keyword`** → ô tìm kiếm **chưa chạy**. Khung đã dựng theo đúng khuôn
-`SearchMyPromotionViewModel`, còn `search()` để trống — xem `TODO(search)`. Không lọc trong bộ nhớ,
-vì lọc client chỉ đúng trên trang đầu và sẽ im lặng trả sai kết quả khi danh sách dài hơn một trang.
+Tìm kiếm chạy **server-side** (parity Android ↔ iOS): `keyword` gửi kèm mỗi request `findEligible`
+(v1.6 §7.3), server lọc cả `myOffers` lẫn `otherOffers`; đổi keyword → reload trang 0, keyword đi
+kèm cả load-more. **Không** lọc client trong bộ nhớ — lọc client chỉ đúng trên trang đã tải và sẽ im
+lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc client qua `PRMOfferSearchFilter`, nay đã gỡ).
 
 ### Action — `ChoosePromotionAction`
 - `LoadInitial` — load lần đầu (cả hai nhóm, `section = null`).
-- `PreloadVouchers(myOffers, otherOffers)` — **nhận data đã load sẵn từ `PRMEndowView`** để tránh gọi API 2 lần; nếu cả hai rỗng thì ViewModel tự gọi API. Mang `List<EligibleOffer>` chứ không phải model UI, vì bộ lọc từ khoá chạy trên `campaignName` của bản gốc. Cả contract này là `internal` — `EligibleOffer` thuộc lõi.
+- `PreloadVouchers(myOffers, otherOffers)` — **nhận data đã load sẵn từ `PRMEndowView`** để tránh gọi API 2 lần; nếu cả hai rỗng thì ViewModel tự gọi API. Mang `List<EligibleOffer>` (model lõi) chứ không phải model UI để giữ nguồn sự thật ở domain, map sang UI khi publish. Cả contract này là `internal` — `EligibleOffer` thuộc lõi.
 - `Refresh` — làm mới.
-- `QueryChanged(keyword)` — gõ mỗi ký tự → debounce 400ms → `search()` (**chưa triển khai**).
+- `QueryChanged(keyword)` — gõ mỗi ký tự → debounce 400ms → `search()` → reload server-side kèm `keyword`.
 - `Search` — bấm Enter: chạy ngay, bỏ debounce.
-- `ClearKeyword` — xoá trắng → hiện lại toàn bộ danh sách đã tải.
+- `ClearKeyword` — xoá trắng → reload danh sách đầy đủ (không gửi `keyword`).
 - `LoadMoreMyVouchers` / `LoadMoreOtherVouchers` — phân trang từng nhóm **độc lập** (`section = MY_OFFERS` / `OTHER_OFFERS`); response chỉ chứa nhóm được hỏi, nhóm kia là null.
 - `ValidateAndApply(selected)` — validate stackable discount cho các voucher đã chọn rồi áp dụng.
 

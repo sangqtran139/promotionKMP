@@ -28,7 +28,27 @@ data class FindEligibleCampaignsRequest(
     val otherPage: Int = 0,
     val otherSize: Int = 10,
     val filterOptions: EligibleFilterOptions = EligibleFilterOptions(),
-)
+) {
+    /**
+     * Bản sao với cặp trang đúng cho lần gọi kế khi hai nhóm phân trang **ĐỘC LẬP** — rule dùng
+     * chung Android & iOS. Chỉ [section] được yêu cầu mới tiến sang [nextPage]; nhóm còn lại giữ
+     * trang hiện tại ([currentMyPage] / [currentOtherPage]). [section] null (load đầu/refresh) →
+     * cả hai nhóm cùng về [nextPage] (thường là 0).
+     */
+    fun forSectionPage(
+        section: EligibleSection?,
+        nextPage: Int,
+        currentMyPage: Int = 0,
+        currentOtherPage: Int = 0,
+    ): FindEligibleCampaignsRequest {
+        val isMine = section == EligibleSection.MY_OFFERS
+        return copy(
+            section = section,
+            myPage = if (section == null || isMine) nextPage else currentMyPage,
+            otherPage = if (section == null || !isMine) nextPage else currentOtherPage,
+        )
+    }
+}
 
 enum class EligibleSection(val code: String) {
     MY_OFFERS("my_offers"),

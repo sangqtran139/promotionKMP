@@ -70,5 +70,5 @@ Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở d
 - Đổi tham số tìm kiếm/phân trang → đồng bộ qua use case `SearchCustomerVouchersUseCase`, **không** gọi thẳng repository.
 - Thêm trạng thái UI → thêm field vào `MyPromotionUiState` (immutable, có default).
 - Click voucher → phát `Effect.OpenVoucherDetail`, không tự điều hướng trong ViewModel.
-- Tab mặc định xác định qua `VoucherTabItem.isDefault` từ response (không hardcode).
+- Tab active xác định qua `SearchCustomerVouchersResult.resolveActiveTab(requestedTab)` — rule **dùng chung Android & iOS** (`selectedTab` → `defaultTab` → tab client yêu cầu → tab đầu theo `order`); UI chỉ đọc, không hardcode "all".
 - Liên quan: [ChoosePromotion.md](./ChoosePromotion.md) (dùng lại `MyVoucherListItem`, `TabItem`).

@@ -13,7 +13,22 @@ data class SearchCustomerVouchersResult(
     val totalElements: Long? = null,
     /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; null nếu không trả. */
     val expireWarningDate: Int? = null,
-)
+) {
+    /**
+     * Tab đang active theo thứ tự ưu tiên nghiệp vụ, **dùng chung Android & iOS**:
+     * server chỉ định ([selectedTab]) → mặc định ([defaultTab]) → tab client vừa yêu cầu
+     * ([requestedTab]) → tab đầu danh sách (theo [VoucherTabItem.order], không phụ thuộc
+     * thứ tự list thô từ server).
+     *
+     * Trước đây quy tắc này nằm inline trong `MyPromotionViewModel` (Android) và bị iOS bỏ qua
+     * (luôn mặc định "all"). Đưa xuống domain để hai nền tảng đọc cùng một nguồn sự thật.
+     */
+    fun resolveActiveTab(requestedTab: String? = null): String? =
+        selectedTab
+            ?: defaultTab
+            ?: requestedTab
+            ?: tabs.minByOrNull { it.order ?: Int.MAX_VALUE }?.code
+}
 
 data class VoucherTabItem(
     val code: String,

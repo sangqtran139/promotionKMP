@@ -3,7 +3,7 @@
 //  PromotionSDK
 //
 //  Public headless API for partners — closure-based only.
-//  No Kotlin, RxSwift or internal SPM types in the public interface.
+//  No Kotlin or internal SPM types in the public interface.
 //
 
 import Foundation

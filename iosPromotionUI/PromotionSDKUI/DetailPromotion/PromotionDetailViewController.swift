@@ -6,8 +6,7 @@
 //
 
 import UIKit
-@_implementationOnly import RxSwift
-@_implementationOnly import RxCocoa
+import Combine
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMDesignKit
@@ -167,49 +166,49 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         let output = viewModel.transform(input: PromotionDetailViewModel.Input())
 
         output.voucherCardViewModel
-            .drive(onNext: { [weak self] vm in
+            .sink { [weak self] vm in
                 self?.configVoucherCardView(voucherCardViewModel: vm)
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.bannerImageName
-            .drive(onNext: { [weak self] urlString in
+            .sink { [weak self] urlString in
                 self?.bannerImageView.setImage(urlString: urlString)
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.tabContents
-            .drive(onNext: { [weak self] contents in
+            .sink { [weak self] contents in
                 guard let self = self else { return }
                 self.applyContent(contents.detail, to: self.detailTextView)
                 self.applyContent(contents.guide, to: self.guideTextView)
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.applyButtonTitle
-            .drive(onNext: { [weak self] title in
+            .sink { [weak self] title in
                 self?.applyButton.setTitle(title, for: .normal)
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.isApplyEnabled
-            .drive(onNext: { [weak self] isEnabled in
+            .sink { [weak self] isEnabled in
                 self?.applyButton.isEnabled = isEnabled
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.isApplyVisible
-            .drive(onNext: { [weak self] isVisible in
+            .sink { [weak self] isVisible in
                 guard let self = self else { return }
                 // Chỉ ẩn/hiện NÚT; luôn giữ chỗ thanh đáy để card cách một khoảng đồng nhất.
                 // Không ACTIVE → nền thanh đáy trong suốt (hoà nền màn), có nút → nền trắng.
                 self.applyButton.isHidden = !isVisible
                 self.applyButton.superview?.backgroundColor = isVisible ? Colors.tokenWhite : .clear
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
 
         output.isLoading
-            .drive(onNext: { [weak self] isLoading in
+            .sink { [weak self] isLoading in
                 guard let self = self else { return }
                 self.shimmerView.isHidden = !isLoading
                 if isLoading {
@@ -217,8 +216,8 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
                 } else {
                     self.shimmerView.stopAnimating()
                 }
-            })
-            .disposed(by: disposeBag)
+            }
+            .store(in: &cancellables)
     }
 
     /// Gán nội dung 1 tab: HTML → attributed; ngược lại → text thường (rỗng = để trống).
