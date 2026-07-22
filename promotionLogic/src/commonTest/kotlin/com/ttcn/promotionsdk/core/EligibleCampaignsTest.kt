@@ -104,7 +104,6 @@ class EligibleCampaignsTest {
 
         val result = useCases.findEligible(
             FindEligibleCampaignsRequest(
-                customerId = "c-1",
                 orderId = "o-1",
                 orderValue = "500000",
                 items = listOf(EligibleOrderItem(skuId = "SKU-1", quantity = 1, unitPrice = "500000")),
@@ -146,7 +145,7 @@ class EligibleCampaignsTest {
         val useCases = eligibleUseCases(mutableListOf(), ELIGIBLE_RESPONSE)
 
         val data = assertIs<PromotionResult.Success<EligibleOffersResult>>(
-            useCases.findEligible(FindEligibleCampaignsRequest("c-1", "o-1", "500000"))
+            useCases.findEligible(FindEligibleCampaignsRequest("o-1", "500000"))
         ).data
 
         assertEquals(listOf("all", "expiring"), data.tabs.map { it.code })
@@ -160,7 +159,6 @@ class EligibleCampaignsTest {
 
         useCases.findEligible(
             FindEligibleCampaignsRequest(
-                customerId = "c-1",
                 orderId = "o-1",
                 orderValue = "500000",
                 items = listOf(EligibleOrderItem(skuId = "SKU-1", quantity = 2, unitPrice = "250000")),
@@ -190,7 +188,7 @@ class EligibleCampaignsTest {
         val captured = mutableListOf<HttpRequestData>()
         val useCases = eligibleUseCases(captured, ELIGIBLE_RESPONSE)
 
-        useCases.findEligible(FindEligibleCampaignsRequest("c-1", "o-1", "500000"))
+        useCases.findEligible(FindEligibleCampaignsRequest("o-1", "500000"))
 
         val body = (captured.single().body as TextContent).text
         assertTrue("sectionCode" !in body, body)

@@ -374,7 +374,6 @@ final class PromotionSDKImpl: NSObject {
         // Luồng "Chọn ưu đãi" dùng Find Eligible Campaigns (my + other), khớp màn chọn (openChoosePromotion).
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
         let request = FindEligibleCampaignsRequest(
-            customerId: customerId,
             orderId: orderId ?? "",
             orderValue: orderValue ?? "0",
             items: eligibleOrderItems(),
@@ -416,7 +415,6 @@ final class PromotionSDKImpl: NSObject {
     private func autoApply(_ promotions: [EligibleOffer], on view: PRMEndowView) {
         guard !promotions.isEmpty else { return }
         let request = ValidateDiscountsRequest(
-            customerId: customerId,
             orderId: orderId ?? "",
             orderValue: orderValue ?? "0",
             items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }
@@ -483,7 +481,6 @@ final class PromotionSDKImpl: NSObject {
 
             // Bấm "Áp dụng" -> validate TẤT CẢ voucher đã chọn với order data (sẵn sàng multi-select).
             let request = ValidateDiscountsRequest(
-                customerId: self.customerId,
                 orderId: self.orderId ?? "",
                 orderValue: self.orderValue ?? "0",
                 items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }

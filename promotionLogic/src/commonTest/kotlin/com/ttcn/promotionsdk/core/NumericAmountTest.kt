@@ -97,7 +97,7 @@ class NumericAmountTest {
 
         val result = useCases.createRedemption(
             CreateRedemptionRequest(
-                customerId = "c-1", orderId = "ORDER-1234", orderValue = "500000",
+                orderId = "ORDER-1234", orderValue = "500000",
                 items = listOf(RedemptionItemRequest(objectId = "v-1", objectType = "CAMPAIGN")),
             )
         )
@@ -128,7 +128,7 @@ class NumericAmountTest {
 
         val result = useCases.validateDiscounts(
             ValidateDiscountsRequest(
-                customerId = "c-1", orderId = "o-1", orderValue = "500000",
+                orderId = "o-1", orderValue = "500000",
                 items = listOf(DiscountItemRequest(objectId = "v-1")),
             )
         )
@@ -160,7 +160,7 @@ class NumericAmountTest {
         }
 
         val result = useCases.findEligible(
-            FindEligibleCampaignsRequest(customerId = "c-1", orderId = "o-1", orderValue = "500000")
+            FindEligibleCampaignsRequest(orderId = "o-1", orderValue = "500000")
         )
 
         val data = assertIs<PromotionResult.Success<EligibleOffersResult>>(result).data

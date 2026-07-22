@@ -65,7 +65,7 @@ class ApiMappingVerifyTest {
         """.trimIndent()
 
         val d = assertIs<PromotionResult.Success<VoucherDetail>>(
-            uc(json).getVoucherDetail(voucherId = "x", customerId = "c")
+            uc(json).getVoucherDetail(voucherId = "x")
         ).data
 
 
@@ -114,7 +114,7 @@ class ApiMappingVerifyTest {
         """.trimIndent()
 
         val r = assertIs<PromotionResult.Success<EligibleOffersResult>>(
-            uc(json).findEligible(FindEligibleCampaignsRequest("c", "o", "500000"))
+            uc(json).findEligible(FindEligibleCampaignsRequest("o", "500000"))
         ).data
         val o = r.myOffers.single()
         assertEquals("v-1", o.id)

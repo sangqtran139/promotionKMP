@@ -87,6 +87,13 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
     private let stateSubject: CurrentValueSubject<PagingState, Never>
     private let isFetchingMy = CurrentValueSubject<Bool, Never>(false)
     private let isFetchingOther = CurrentValueSubject<Bool, Never>(false)
+    /// "Latest wins" cho fetch: mỗi lần reset (fetchFirstPage) tăng 1; response mang token cũ bị bỏ.
+    /// Kotlin/Native KHÔNG hủy coroutine khi hủy `Task`, nên guard token mới thực sự chặn stale;
+    /// `cancel()` chỉ dọn Swift-side. Khớp `MyPromotionViewModel.fetchGeneration`.
+    private var fetchGeneration = 0
+    private var firstPageTask: Task<Void, Never>?
+    private var myPageTask: Task<Void, Never>?
+    private var otherPageTask: Task<Void, Never>?
     /// Đang tải trang đầu (bắt đầu true → hiện shimmer ngay khi mở màn).
     private let isLoadingSubject = CurrentValueSubject<Bool, Never>(true)
     private var didLoadInitial = false
@@ -276,7 +283,6 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         // Keyword hiện tại → gửi lên server (server-side, parity Android); rỗng → nil (không lọc).
         let trimmedKeyword = keywordSubject.value.trimmingCharacters(in: .whitespacesAndNewlines)
         let base = FindEligibleCampaignsRequest(
-            customerId: requestContext.getCustomerId() ?? "",
             orderId: requestContext.getOrderId() ?? "",
             orderValue: requestContext.getOrderValue() ?? "0",
             items: data.orderItems,
@@ -311,17 +317,25 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
 
     /// Fetch trang 0 (my + other) qua Eligible API, reset state.
     private func fetchFirstPage() {
+        // Reset: hủy fetch cũ (kể cả load-more đang chạy) + bump generation để bỏ response cũ.
+        firstPageTask?.cancel()
+        myPageTask?.cancel()
+        otherPageTask?.cancel()
+        fetchGeneration += 1
+        let token = fetchGeneration
         isLoadingSubject.send(true)
-        Task { @MainActor [weak self] in
+        firstPageTask = Task { @MainActor [weak self] in
             guard let self = self else { return }
             let model: EligibleOffersResult?
             do {
                 model = try await self.findEligible(section: nil, nextPage: 0, currentMyPage: 0, currentOtherPage: 0)
             } catch {
-                self.isLoadingSubject.send(false)
+                if token == self.fetchGeneration { self.isLoadingSubject.send(false) }
                 return
             }
-            guard let model else { return }
+            // Có reset mới hơn → bỏ qua kết quả này (tránh đè data mới bằng data cũ).
+            guard token == self.fetchGeneration else { return }
+            guard let model else { self.isLoadingSubject.send(false); return }
             var st = self.stateSubject.value
             st.myLoaded = model.myOffers
             st.otherLoaded = model.otherOffers
@@ -342,17 +356,21 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         guard !st0.myIsLastPage, !isFetchingMy.value else { return }
         isFetchingMy.send(true)
         let nextPage = st0.myPage + 1
+        let token = fetchGeneration
         // Chỉ load-more nhóm myOffers (sectionCode=my_offers) → otherOffers trả null, bỏ qua.
-        Task { @MainActor [weak self] in
+        myPageTask?.cancel()
+        myPageTask = Task { @MainActor [weak self] in
             guard let self = self else { return }
             let model: EligibleOffersResult?
             do {
                 model = try await self.findEligible(section: EligibleSection.myOffers, nextPage: nextPage, currentMyPage: st0.myPage, currentOtherPage: st0.otherPage)
             } catch {
-                self.isFetchingMy.send(false)
+                if token == self.fetchGeneration { self.isFetchingMy.send(false) }
                 return
             }
-            guard let model else { return }
+            // Reset xen giữa → bỏ append (data cũ không được nối vào list đã reset).
+            guard token == self.fetchGeneration else { return }
+            guard let model else { self.isFetchingMy.send(false); return }
             var st = self.stateSubject.value
             st.myLoaded += model.myOffers
             st.myPage = nextPage
@@ -368,17 +386,21 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         guard !st0.otherIsLastPage, !isFetchingOther.value else { return }
         isFetchingOther.send(true)
         let nextPage = st0.otherPage + 1
+        let token = fetchGeneration
         // Chỉ load-more nhóm otherOffers (sectionCode=other_offers) → myOffers trả null, bỏ qua.
-        Task { @MainActor [weak self] in
+        otherPageTask?.cancel()
+        otherPageTask = Task { @MainActor [weak self] in
             guard let self = self else { return }
             let model: EligibleOffersResult?
             do {
                 model = try await self.findEligible(section: EligibleSection.otherOffers, nextPage: nextPage, currentMyPage: st0.myPage, currentOtherPage: st0.otherPage)
             } catch {
-                self.isFetchingOther.send(false)
+                if token == self.fetchGeneration { self.isFetchingOther.send(false) }
                 return
             }
-            guard let model else { return }
+            // Reset xen giữa → bỏ append.
+            guard token == self.fetchGeneration else { return }
+            guard let model else { self.isFetchingOther.send(false); return }
             var st = self.stateSubject.value
             st.otherLoaded += model.otherOffers
             st.otherPage = nextPage

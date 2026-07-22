@@ -182,7 +182,6 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
             } else {
                 // Token do host cấp qua `PromotionRequestContextProvider` của lõi, không gửi từng request.
                 let request = SearchCustomerVouchersRequest(
-                    customerId: customerId,
                     keyword: nil,
                     serviceCode: nil,
                     tab: tab,

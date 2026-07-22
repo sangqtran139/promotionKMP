@@ -106,7 +106,7 @@ class PromotionPipelineTest {
             )
         }
 
-        val result = useCases.searchVouchers(SearchCustomerVouchersRequest(customerId = "c-1", tab = "ALL"))
+        val result = useCases.searchVouchers(SearchCustomerVouchersRequest(tab = "ALL"))
 
         val success = assertIs<PromotionResult.Success<*>>(result)
         val data = success.data as com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersResult
@@ -122,7 +122,8 @@ class PromotionPipelineTest {
 
         // Query params thay cho @Query của Retrofit: null bị bỏ qua, giá trị có mặt được gửi.
         val url = captured.single().url
-        assertEquals("c-1", url.parameters["customerId"])
+        // customerId KHÔNG còn gửi lên server — BFF lấy từ JWT `sub`.
+        assertEquals(null, url.parameters["customerId"])
         assertEquals("ALL", url.parameters["tab"])
         assertEquals(null, url.parameters["keyword"])
         assertTrue(url.encodedPath.endsWith("/api/v1/vtm/customer-vouchers"), url.encodedPath)
@@ -138,7 +139,7 @@ class PromotionPipelineTest {
             respond("""{"success":true,"data":{"voucher":{"id":"v-1"}}}""", HttpStatusCode.OK, jsonHeaders)
         }
 
-        useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")
+        useCases.getVoucherDetail(voucherId = "v-1")
 
         val headers = captured.single().headers
         assertEquals("Bearer abc123", headers[HttpHeaders.Authorization])
@@ -156,7 +157,7 @@ class PromotionPipelineTest {
             respond("""{"success":true,"data":{"voucher":{"id":"v-1"}}}""", HttpStatusCode.OK, jsonHeaders)
         }
 
-        useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")
+        useCases.getVoucherDetail(voucherId = "v-1")
 
         assertEquals("Bearer xyz", captured.single().headers[HttpHeaders.Authorization])
     }
@@ -171,7 +172,7 @@ class PromotionPipelineTest {
             )
         }
 
-        val result = useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")
+        val result = useCases.getVoucherDetail(voucherId = "v-1")
 
         val failure = assertIs<PromotionResult.Failure>(result)
         assertEquals("VOUCHER_EXPIRED", failure.errorCode)
@@ -189,7 +190,7 @@ class PromotionPipelineTest {
             )
         }
 
-        val result = useCases.getVoucherDetail(voucherId = "v-1", customerId = "c-1")
+        val result = useCases.getVoucherDetail(voucherId = "v-1")
 
         val failure = assertIs<PromotionResult.Failure>(result)
         assertEquals("NOT_ELIGIBLE", failure.errorCode)
@@ -223,7 +224,6 @@ class PromotionPipelineTest {
 
         val result = useCases.createRedemption(
             CreateRedemptionRequest(
-                customerId = "c-1",
                 orderId = "o-1",
                 orderValue = "100000",
                 items = listOf(RedemptionItemRequest(objectId = "v-1", objectType = "CAMPAIGN")),
@@ -244,6 +244,7 @@ class PromotionPipelineTest {
         assertTrue("\"sessionOptions\"" in body, body)
         assertTrue("\"timeoutSeconds\":300" in body, body)
         assertTrue("\"priority\":1" in body, body)
-        assertTrue("\"customerId\":\"c-1\"" in body, body)
+        // customerId KHÔNG còn trong body — BFF lấy từ JWT `sub`.
+        assertTrue("\"customerId\"" !in body, body)
     }
 }

@@ -73,7 +73,6 @@ private fun rawUseCase(
 private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
 private val redemptionRequest = CreateRedemptionRequest(
-    customerId = "c-1",
     orderId = "o-1",
     orderValue = "500000",
     items = listOf(RedemptionItemRequest(objectId = "v-1", objectType = "CAMPAIGN")),
@@ -125,7 +124,7 @@ class MalformedResponseTest {
             respond("""{"success":true,"data":{"content":[{"title":"x"}]}}""", HttpStatusCode.OK, jsonHeaders)
         }
 
-        val result = useCases.searchVouchers(SearchCustomerVouchersRequest(customerId = "c-1"))
+        val result = useCases.searchVouchers(SearchCustomerVouchersRequest())
 
         assertIs<PromotionResult.Failure>(result)
     }

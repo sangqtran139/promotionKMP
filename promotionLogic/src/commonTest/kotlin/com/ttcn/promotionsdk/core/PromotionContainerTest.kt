@@ -57,7 +57,7 @@ class PromotionContainerTest {
         val useCase = SearchCustomerVouchersUseCase()
 
         val error = assertFailsWith<PromotionException> {
-            useCase(SearchCustomerVouchersRequest(customerId = "c-1"))
+            useCase(SearchCustomerVouchersRequest())
         }
 
         assertEquals(PromotionErrorCodes.GENERAL, error.errorCode)

@@ -65,12 +65,12 @@ class FeatureFlagGateTest {
         )
     }
 
-    private val searchRequest = SearchCustomerVouchersRequest(customerId = "c-1")
-    private val eligibleRequest = FindEligibleCampaignsRequest(customerId = "c-1", orderId = "o-1", orderValue = "1000")
+    private val searchRequest = SearchCustomerVouchersRequest()
+    private val eligibleRequest = FindEligibleCampaignsRequest(orderId = "o-1", orderValue = "1000")
     private val validateRequest =
-        ValidateDiscountsRequest(customerId = "c-1", orderId = "o-1", orderValue = "1000", items = emptyList())
+        ValidateDiscountsRequest(orderId = "o-1", orderValue = "1000", items = emptyList())
     private val redemptionRequest =
-        CreateRedemptionRequest(customerId = "c-1", orderId = "o-1", orderValue = "1000", items = emptyList())
+        CreateRedemptionRequest(orderId = "o-1", orderValue = "1000", items = emptyList())
 
     @Test
     fun everyMethod_isGatedByItsOwnFlag_andSkipsNetwork() = runTest {
@@ -86,7 +86,7 @@ class FeatureFlagGateTest {
         }
 
         assertBlocked(PromotionFeatureFlag.VOUCHER_LIST) { it.searchVouchers(searchRequest) }
-        assertBlocked(PromotionFeatureFlag.VOUCHER_DETAIL) { it.getVoucherDetail("v-1", "c-1") }
+        assertBlocked(PromotionFeatureFlag.VOUCHER_DETAIL) { it.getVoucherDetail("v-1") }
         assertBlocked(PromotionFeatureFlag.VOUCHER_SELECTION) { it.findEligible(eligibleRequest) }
         assertBlocked(PromotionFeatureFlag.VOUCHER_APPLY) { it.validateDiscounts(validateRequest) }
         assertBlocked(PromotionFeatureFlag.VOUCHER_REDEEM) { it.createRedemption(redemptionRequest) }

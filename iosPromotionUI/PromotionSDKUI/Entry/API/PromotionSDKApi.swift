@@ -64,7 +64,6 @@ public final class PromotionSDKApi {
     ) {
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
         let request = SearchCustomerVouchersRequest(
-            customerId: customerId,
             keyword: keyword,
             serviceCode: serviceCode,
             tab: tab ?? "all",
@@ -116,7 +115,6 @@ public final class PromotionSDKApi {
             )
         }
         let request = FindEligibleCampaignsRequest(
-            customerId: customerId,
             orderId: orderId,
             orderValue: orderValue,
             items: orderItems,
@@ -159,12 +157,11 @@ public final class PromotionSDKApi {
         completion: @escaping (PromotionApiResult<PromotionVoucherDetail>) -> Void
     ) {
         let useCases = self.useCases
-        let customerId = self.customerId
         handle(
             completion,
             map: Self.toVoucherDetail,
             call: {
-                try await useCases.getVoucherDetail(voucherId: voucherId, customerId: customerId, service: serviceCode)
+                try await useCases.getVoucherDetail(voucherId: voucherId, service: serviceCode)
             }
         )
     }
@@ -180,7 +177,6 @@ public final class PromotionSDKApi {
     ) {
         let items = voucherIds.map { DiscountItemRequest(objectId: $0, objectType: objectType) }
         let request = ValidateDiscountsRequest(
-            customerId: customerId,
             orderId: orderId,
             orderValue: orderValue,
             items: items
@@ -220,7 +216,6 @@ public final class PromotionSDKApi {
             RedemptionItemRequest(objectId: $0, objectType: objectType, expectedDiscount: nil)
         }
         let request = CreateRedemptionRequest(
-            customerId: customerId,
             orderId: orderId,
             orderValue: orderValue,
             items: items

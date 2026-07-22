@@ -48,6 +48,9 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     private var canLoadMore = false
     /// Token chống race: mỗi lần search tăng 1; response mang token cũ bị bỏ qua (khớp Android cancel job).
     private var latestSearchToken = 0
+    /// Task async đang chạy — hủy khi có search mới để dọn Swift-side (token guard vẫn là cơ chế chặn
+    /// stale thực sự vì Kotlin/Native không hủy coroutine theo Task). Khớp `MyPromotionViewModel`.
+    private var searchTask: Task<Void, Never>?
 
     init(router: SearchMyPromotionRouter,
          data: SearchMyPromotionBuilder.DataModel,
@@ -181,7 +184,6 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
 
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
         let request = SearchCustomerVouchersRequest(
-            customerId: requestContext.getCustomerId() ?? "",
             keyword: keyword,
             serviceCode: nil,
             tab: "all",
@@ -190,7 +192,8 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
         )
 
         let useCase = searchVouchersUseCase
-        Task { @MainActor [weak self] in
+        searchTask?.cancel()
+        searchTask = Task { @MainActor [weak self] in
             let listModel: SearchCustomerVouchersResult?
             do {
                 listModel = try await useCase.invoke(request: request)

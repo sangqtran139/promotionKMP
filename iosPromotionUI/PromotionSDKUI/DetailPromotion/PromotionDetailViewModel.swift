@@ -59,6 +59,9 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     private let displaySubject: CurrentValueSubject<Display, Never>
     private let isLoadingSubject = CurrentValueSubject<Bool, Never>(true)
     private var didFetch = false
+    /// Task fetch detail — hủy trong `deinit` để dừng việc khi màn bị pop giữa chừng (dọn Swift-side;
+    /// `didFetch` đã chặn double-fetch nên không có race đè). Nhất quán pattern với các VM khác.
+    private var fetchTask: Task<Void, Never>?
     /// Dịch vụ/sản phẩm voucher áp dụng được — seed từ promotion, cập nhật khi fetch detail.
     private var applicableProducts: [ApplicableProduct]
 
@@ -72,6 +75,10 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         // Hiện ngay card từ promotion cơ bản; fetch detail đầy đủ sẽ cập nhật sau.
         self.displaySubject = CurrentValueSubject(Self.display(from: data.promotion))
         super.init(router: router)
+    }
+
+    deinit {
+        fetchTask?.cancel()
     }
 
     /// Danh sách dịch vụ cho bottom sheet "Chọn dịch vụ" (lọc theo applicableProducts của voucher).
@@ -118,12 +125,11 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         didFetch = true
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi, không truyền từng request.
         let voucherId = data.promotion.id
-        let customerId = requestContext.getCustomerId() ?? ""
         let service = requestContext.getService()
         let getDetailUseCase = self.getDetailUseCase
-        Task { @MainActor [weak self] in
+        fetchTask = Task { @MainActor [weak self] in
             do {
-                let detail = try await getDetailUseCase.invoke(voucherId: voucherId, customerId: customerId, service: service)
+                let detail = try await getDetailUseCase.invoke(voucherId: voucherId, service: service)
                 guard let self, let detail else { return }
                 self.applicableProducts = detail.applicableProducts
                 self.displaySubject.send(Self.display(from: detail))

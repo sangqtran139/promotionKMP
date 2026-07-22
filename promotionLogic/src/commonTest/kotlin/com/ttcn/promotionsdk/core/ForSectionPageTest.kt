@@ -15,7 +15,7 @@ import kotlin.test.assertNull
  */
 class ForSectionPageTest {
 
-    private val base = FindEligibleCampaignsRequest(customerId = "c-1", orderId = "o-1", orderValue = "100000")
+    private val base = FindEligibleCampaignsRequest(orderId = "o-1", orderValue = "100000")
 
     @Test
     fun sectionNull_loadsBothFromNextPage() {
@@ -48,6 +48,6 @@ class ForSectionPageTest {
         assertEquals("grab", r.keyword)
         assertEquals(20, r.mySize)
         assertEquals(15, r.otherSize)
-        assertEquals("c-1", r.customerId)
+        assertEquals("o-1", r.orderId)
     }
 }
