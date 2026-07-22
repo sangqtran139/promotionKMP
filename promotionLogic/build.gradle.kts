@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidMultiplatformLibrary)
     alias(libs.plugins.kotlinSerialization)
+    // Bridge Kotlin StateFlow/suspend/sealed → Swift cho tầng UI-logic dùng chung (MyPromotionStore).
+    // Hỗ trợ Kotlin 2.0.0–2.4.0 (đang 2.2.0). Chỉ tác động framework iOS, Android không đổi.
+    alias(libs.plugins.skie)
     `maven-publish`
 }
 
