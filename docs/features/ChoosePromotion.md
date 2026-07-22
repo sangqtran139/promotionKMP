@@ -6,6 +6,13 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 - **Package:** `ui/feature/promotion/choosepromotion`
 - **Thành phần:** `ChoosePromotionFragment`, `ChoosePromotionViewModel`, `ChoosePromotionContract`, `adapter/`
 
+> **Cập nhật (tầng UI-logic dùng chung `ChoosePromotionStore`):**
+> - **Selection** (`selectedIds`, rule single/multi qua `ToggleSelection`, seed `SetPreSelected`) và
+>   **"Xem thêm/Thu gọn"** (`myExpanded` + state-machine `SeeMoreMy`, `mySeeMoreState()`/`visibleMyOffers()`)
+>   nay nằm trong store — dùng chung Android & iOS (trước đây mỗi bên tự viết ở Fragment/VC).
+> - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);
+>   validate & apply do **`EndowStore`** lo (xem [EndowView.md](./EndowView.md)).
+
 ---
 
 ## 1. Contract (MVI)
@@ -46,25 +53,31 @@ lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc 
 ### Effect — `ChoosePromotionEffect`
 - `OpenVoucherDetail(voucherId)` — Fragment mở qua `openPromotionDetail()`, gác bởi cờ `VOUCHER_DETAIL`.
 - `ShowError(errorCode)`.
-- `ApplyValidatedVouchers(details: List<AppliedDiscount>)` — phát khi `validateStackableDiscounts` thành công; `details` map từ domain result sang model public `AppliedDiscount`.
+- `ApplySelectedOffers(offers: List<EligibleOffer>)` — phát khi bấm "Áp dụng"; chỉ **trả offers đang chọn**, không validate.
 
 ---
 
-## 2. Luồng validate & apply
+## 2. Luồng apply (validate nằm ở `EndowStore`)
 
 ```
-User chọn voucher → Action.ValidateAndApply(selected)
-  ViewModel: setState(isValidating=true)
-           → launch { validateStackableDiscountsUseCase(request) }
-           → thành công → sendEffect(ApplyValidatedVouchers(details))
-           → thất bại  → sendEffect(ShowError(code))
-           → setState(isValidating=false)
-Fragment: handleEffect(ApplyValidatedVouchers) → trả kết quả áp dụng về luồng gọi (vd PRMEndowView)
+User bấm "Áp dụng" → Action.ValidateAndApply
+  ViewModel: lọc offers theo store.selectedIds → sendEffect(ApplySelectedOffers(offers))
+Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
+        → PRMEndowView.applySelectedOffers(offers, onSettled)
+        → PRMEndowViewModel.validateAndApply(offers) { state -> onSettled(state.errorCode) }
+        → EndowStore: isValidating=true → validateStackableDiscounts → isValidating=false
+  errorCode != null → showToast(mapPromotionError(code)), **Ở LẠI** màn chọn (không áp)
+  errorCode == null → onBackFragment() (đóng màn; widget đã cập nhật qua state)
 ```
 
-- Request validate được dựng qua extension `toValidateDiscountsRequest()` (`ui/feature/promotion/ext/PromotionUiMapper.kt`).
-- Use case: `ValidateStackableDiscountsUseCase` (Domain) → repository → API.
+> **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`
+> bên iOS (completion của `endowVM.validateAndApply`). Trước đây Android đóng ngay lập tức nên nuốt
+> mất lỗi validate.
+
+- Use case: `ValidateStackableDiscountsUseCase` (Domain) → repository → API, gọi từ `EndowStore`.
 - `objectId` gửi lên là `EligibleOffer.id`: `voucherId` nếu khách đã sở hữu, ngược lại `campaignId`.
+- Pre-select khi mở lại màn: **tất cả** `discountDetails` đang áp (kể cả item không còn hợp lệ) để user
+  thấy và bỏ chọn được — khớp iOS.
 
 ---
 

@@ -16,7 +16,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        let vc = ViewController()
+        // Vào cổng lấy token trước (progress + retry), lấy xong + init SDK mới sang màn chính —
+        // soi gương Android (`PromotionTokenLoadingFragment` → `MainLauncherFragment`).
+        let vc = TokenLoadingViewController()
         let nav = UINavigationController(rootViewController: vc)
         window.rootViewController = nav
         window.makeKeyAndVisible()

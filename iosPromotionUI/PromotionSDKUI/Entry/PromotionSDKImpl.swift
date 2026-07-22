@@ -42,21 +42,25 @@ final class PromotionSDKImpl: NSObject {
         get { context.orderValue }
         set { context.orderValue = newValue }
     }
-    /// Dòng đơn hàng host truyền vào — cần cho Find Eligible Campaigns (orderInfo.items[]).
-    var orderItems: [PromotionOrderItem]
-    // Chỉ hai use case này còn dùng trực tiếp — cho widget checkout. Luồng headless đi qua
-    // `PromotionSDKApi`, và lớp đó gọi `PromotionUseCases` của lõi.
-    private let findEligibleUseCase: FindEligibleCampaignsUseCase
-    private let validateDiscountsUseCase: ValidateStackableDiscountsUseCase
+    /// Dòng đơn hàng host truyền vào — lưu trong `context` (provider) để store dùng chung đọc được.
+    var orderItems: [PromotionOrderItem] {
+        get { context.orderItems }
+        set { context.orderItems = newValue }
+    }
+    /// ViewModel widget checkout — bọc `EndowStore` (findEligible + validate&apply + widget-state),
+    /// đối ứng Android `PRMEndowViewModel`. Trước đây iOS không có VM cho `PRMEndowView`; nghiệp vụ
+    /// (kể cả `loadVouchers`/`setState` tay) dồn ở đây — nay `PromotionSDKImpl` chỉ observe + render.
+    private let endowVM = EndowViewModel()
 
-    var cachedListModel: EligibleOffersResult?
-    /// Voucher đang áp (một/nhiều) — sẵn sàng multi-select; hiện tại gate đơn nên thường 0/1.
-    var appliedPromotions: [EligibleOffer] = []
     weak var activeWidget: PRMEndowView?
+
+    // Theo dõi transition để phát callback host đúng một lần (mirror Android `PRMEndowView.notifyHost`):
+    // count đổi → onUpdateWidgetCount; chuyển sang APPLIED → onApplyVoucher.
+    private var lastNotifiedCount: Int = -1
+    private var lastNotifiedApplied = false
 
     init(options: PromotionSDKOptions) {
         self.context = PromotionMutableContext(session: options.session)
-        self.orderItems = []
         // Khởi tạo lõi Kotlin qua map public→core (đối ứng `options.toCoreConfig` bên Android).
         // `isDebug`: bản DEBUG in toàn bộ request/response của Ktor ra console để đối chiếu schema thật
         // của server với DTO; bản Release tắt hẳn (không log token) — xem `isDebugBuild`.
@@ -65,8 +69,6 @@ final class PromotionSDKImpl: NSObject {
         PromotionContainer.shared.initialize(
             config: options.toCoreConfig(context: context, isDebug: PromotionSDKImpl.isDebugBuild)
         )
-        self.findEligibleUseCase = FindEligibleCampaignsUseCase()
-        self.validateDiscountsUseCase = ValidateStackableDiscountsUseCase()
         super.init()
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
         Task { try? await PromotionFeatureGate.shared.refresh() }
@@ -220,13 +222,15 @@ final class PromotionSDKImpl: NSObject {
         if let orderItems { self.orderItems = orderItems }
     }
 
-    /// Ghi context động — gọi từ `PromotionSDK.updateContext`. Overwrite cả 4 trường (nil = xoá),
+    /// Ghi context động — gọi từ `PromotionSDK.updateContext`. Overwrite cả 5 trường (nil/rỗng = xoá),
     /// đối ứng `PromotionSDK.updateContext` bên Android (ghi thẳng vào `PromotionMutableContext`).
-    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?) {
+    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?,
+                       orderItems: [PromotionOrderItem]) {
         context.orderId = orderId
         context.orderValue = orderValue
         context.serviceCode = serviceCode
         context.metaData = metaData
+        context.orderItems = orderItems
     }
 
     /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PromotionSDK.release()` bên Android:
@@ -236,20 +240,6 @@ final class PromotionSDKImpl: NSObject {
         applyTheme(nil)
     }
 
-    /// Map order items (public) → model của lõi Kotlin cho Find Eligible Campaigns.
-    private func eligibleOrderItems() -> [EligibleOrderItem] {
-        orderItems.map {
-            EligibleOrderItem(
-                skuId: $0.skuId,
-                quantity: Int32($0.quantity),
-                unitPrice: $0.unitPrice,
-                orderItemId: nil,
-                productId: $0.productId,
-                productName: $0.productName,
-                productCategory: $0.productCategory
-            )
-        }
-    }
 
     /// Hai điểm gác của tầng UI, uỷ quyền cho `PromotionFeatureGate` của lõi Kotlin (dùng chung với
     /// Android). Cờ đọc từ cache đồng bộ, không gọi mạng; `completion` về main thread để chỗ gọi
@@ -370,32 +360,33 @@ final class PromotionSDKImpl: NSObject {
     weak var _host: UIViewController?
     weak var _navigator: UINavigationController?
 
-    func loadVouchers(completion: @escaping (EligibleOffersResult?) -> Void) {
-        // Luồng "Chọn ưu đãi" dùng Find Eligible Campaigns (my + other), khớp màn chọn (openChoosePromotion).
-        // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
-        let request = FindEligibleCampaignsRequest(
-            orderId: orderId ?? "",
-            orderValue: orderValue ?? "0",
-            items: eligibleOrderItems(),
-            currency: "VND",
-            channel: "MOBILE",
-            customerType: nil, segment: nil, tier: nil,
-            tabCode: nil,
-            section: nil,
-            keyword: nil,
-            myPage: 0, mySize: 10,
-            otherPage: 0, otherSize: 10,
-            filterOptions: EligibleFilterOptions(includeExpired: false, checkBudgetAvailability: true, includePreview: true)
-        )
-        let useCase = findEligibleUseCase
-        // `invoke` là suspend Kotlin (Swift thấy `async throws`); gọi trong Task, `@MainActor` đảm bảo
-        // `completion` chạy trên main thread.
-        Task { @MainActor in
-            do {
-                completion(try await useCase.invoke(request: request))
-            } catch {
-                completion(nil)
+    /// Map `EndowState` (store) → widget-state — **reactive**, mirror Android `PRMEndowView.renderState`.
+    /// Quyết định 4 trạng thái khớp `EndowStore.widgetState`; phát callback host đúng một lần theo transition.
+    private func render(_ state: EndowState, on view: PRMEndowView) {
+        // Giữ trạng thái loading (shimmer) tới khi nạp xong — mirror Android `renderState` (return sớm).
+        guard state.hasLoadedInitial else { return }
+        if state.discountUnavailable && !state.appliedDiscounts.isEmpty {
+            // Hiển thị số tiền của TẤT CẢ ưu đãi đã áp (mờ ở state .unavailable) — khớp Android
+            // (`ApplyPromotionAdapter` submit cả list, dim item invalid), nhất quán với nhánh .applied.
+            view.setState(.unavailable(voucherTitles: state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) }))
+            lastNotifiedApplied = false
+        } else if !state.appliedDiscounts.isEmpty {
+            view.setState(.applied(voucherTitles: state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) }))
+            if !lastNotifiedApplied {
+                lastNotifiedApplied = true
+                if let firstId = state.appliedDiscounts.first?.objectId { onApplyVoucher?(firstId) }
             }
+        } else if state.totalVoucherCount > 0 {
+            view.setState(.notApplied(count: Int(state.totalVoucherCount)))
+            lastNotifiedApplied = false
+        } else {
+            view.setState(.empty)
+            lastNotifiedApplied = false
+        }
+        let count = Int(state.totalVoucherCount)
+        if count != lastNotifiedCount {
+            lastNotifiedCount = count
+            onUpdateWidgetCount?(count)
         }
     }
 
@@ -410,53 +401,28 @@ final class PromotionSDKImpl: NSObject {
         return "Giảm \(formatted)đ"
     }
 
-    /// Auto-apply voucher `isAutoApplied`: validate với order data → áp + báo host. Lỗi → giữ "chưa áp".
-    /// Nhận danh sách (sẵn sàng multi-select) — hiện dormant tới khi `findEligible` trả `isAutoApplied`.
-    private func autoApply(_ promotions: [EligibleOffer], on view: PRMEndowView) {
+    /// Auto-apply voucher `isAutoApplied`: validate qua EndowStore; `render` (observe) lo cập nhật widget
+    /// + callback host. Dormant tới khi `findEligible` trả `isAutoApplied` (xem TODO ở attach).
+    private func autoApply(_ promotions: [EligibleOffer]) {
         guard !promotions.isEmpty else { return }
-        let request = ValidateDiscountsRequest(
-            orderId: orderId ?? "",
-            orderValue: orderValue ?? "0",
-            items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }
-        )
-        let useCase = validateDiscountsUseCase
-        Task { @MainActor [weak self, weak view] in
-            do {
-                let result = try await useCase.invoke(request: request)
-                guard let self, let view, let result else { return }
-                // Diễn giải valid/discount cho từng offer nằm ở domain (ValidateDiscountsResult) —
-                // dùng chung Android & iOS.
-                let invalid = promotions.filter { !result.isValidFor(objectId: $0.id) }
-                if !invalid.isEmpty {
-                    // Có voucher auto-apply không còn hợp lệ → UNAVAILABLE (không báo host).
-                    view.setState(.unavailable(voucherTitles: invalid.map { $0.campaignName ?? "" }))
-                    return
-                }
-                self.appliedPromotions = promotions
-                view.setState(.applied(voucherTitles: promotions.map { Self.formatDiscount(result.discountFor(objectId: $0.id)) }))
-                // Callback ra host giữ ĐƠN (parity Android: gửi id voucher đầu).
-                if let first = promotions.first { self.onApplyVoucher?(first.id) }
-            } catch {
-                // Validate lỗi → không auto-apply (giữ trạng thái "chưa áp").
-            }
-        }
+        endowVM.validateAndApply(promotions)
     }
 
     func openChoosePromotion() {
         guard let host = _host else { return }
         let nav = _navigator ?? host.navigationController
 
-        // Push NGAY. Truyền data widget đã load (cachedListModel) để tránh double call — giống Android.
-        // Nếu chưa có cache → màn chọn tự fetch trang 0 (hiện shimmer).
-        let cached = cachedListModel
+        // Preload từ EndowStore (offers đã nạp) để tránh gọi API hai lần — giống Android
+        // (`forEndowView` lấy `myVouchers`/`otherVouchers` từ state; lastPage giả định my=false/other=true).
+        let endowState = endowVM.state
         let vc = ChoosePromotionBuilder.build(
             with: .init(
-                orderItems: eligibleOrderItems(),
-                preloadedMy: cached?.myOffers ?? [],
-                preloadedOther: cached?.otherOffers ?? [],
-                myIsLastPage: cached?.myIsLastPage ?? true,
-                otherIsLastPage: cached?.otherIsLastPage ?? true,
-                preSelectedVoucherIds: appliedPromotions.map { $0.id }
+                orderItems: context.getOrderItems(),
+                preloadedMy: endowState.myOffers,
+                preloadedOther: endowState.otherOffers,
+                myIsLastPage: false,
+                otherIsLastPage: true,
+                preSelectedVoucherIds: endowState.appliedDiscounts.map { $0.objectId }
             ),
             navigator: nav
         )
@@ -470,43 +436,17 @@ final class PromotionSDKImpl: NSObject {
                     host?.dismiss(animated: true)
                 }
             }
-            let finish: ([String]) -> Void = { [weak self] titles in
-                guard let self else { return }
-                self.appliedPromotions = promotions
-                self.activeWidget?.setState(.applied(voucherTitles: titles))
-                // Callback ra host giữ ĐƠN (parity Android: gửi id voucher đầu).
-                if let first = promotions.first { self.onApplyVoucher?(first.id) }
-                pop()
-            }
 
-            // Bấm "Áp dụng" -> validate TẤT CẢ voucher đã chọn với order data (sẵn sàng multi-select).
-            let request = ValidateDiscountsRequest(
-                orderId: self.orderId ?? "",
-                orderValue: self.orderValue ?? "0",
-                items: promotions.map { DiscountItemRequest(objectId: $0.id, objectType: $0.objectType) }
-            )
-            let useCase = self.validateDiscountsUseCase
-            Task { @MainActor [weak self, weak vc] in
-                do {
-                    let result = try await useCase.invoke(request: request)
-                    guard let result else { pop(); return }
-                    guard let self else { pop(); return }
-                    // Bất kỳ voucher nào không hợp lệ → UNAVAILABLE (không báo host) — khớp Android hasInvalid.
-                    // Diễn giải valid/discount cho từng offer nằm ở domain (ValidateDiscountsResult).
-                    let invalid = promotions.filter { !result.isValidFor(objectId: $0.id) }
-                    if !invalid.isEmpty {
-                        self.activeWidget?.setState(.unavailable(voucherTitles: invalid.map { $0.campaignName ?? "" }))
-                        pop()
-                        return
-                    }
-                    let titles = promotions.map { Self.formatDiscount(result.discountFor(objectId: $0.id)) }
-                    finish(titles)
-                } catch {
-                    // Validate lỗi -> KHÔNG áp dụng; ở lại màn chọn + báo lỗi (khớp Android, khớp autoApply).
+            // Bấm "Áp dụng" -> validate qua EndowStore; widget cập nhật qua `render` (observe).
+            // Lỗi -> KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công/không-đủ-điều-kiện -> đóng màn.
+            self.endowVM.validateAndApply(promotions) { [weak vc] state in
+                if state.errorCode != nil {
                     if let vc = vc {
                         PRMConfirmationDialog.showError("Không thể áp dụng ưu đãi lúc này. Vui lòng thử lại.", in: vc.view)
                     }
+                    return
                 }
+                pop()
             }
         }
 
@@ -524,27 +464,15 @@ final class PromotionSDKImpl: NSObject {
 
 extension PromotionSDKImpl: PRMEndowViewDataSource {
     func selectPromtionViewDidAttachToWindow(_ view: PRMEndowView) {
-        if !appliedPromotions.isEmpty {
-            view.setState(.applied(voucherTitles: appliedPromotions.map { $0.campaignName ?? "" }))
-            return
-        }
-        loadVouchers { [weak self, weak view] listModel in
+        // Quan sát EndowStore → render widget **reactive** (mirror Android: `PRMEndowView` collect uiState).
+        // Trạng thái áp/không-đủ-điều-kiện persist trong store nên tự khôi phục khi re-attach.
+        endowVM.observe { [weak self, weak view] state in
             guard let self, let view else { return }
-            self.cachedListModel = listModel
-            if let model = listModel {
-                // Số voucher = totalElements của myVouchers + otherVouchers (không đếm length mảng đã phân trang).
-                let total = Int(model.myTotalElements + model.otherTotalElements)
-                view.setState(total == 0 ? .empty : .notApplied(count: total))
-                self.onUpdateWidgetCount?(total)
-                // TODO(auto-apply): `EligibleOffer` không có `isAutoApplied` — API Find Eligible
-                // Campaigns không trả trường này. Bản iOS cũ cũng luôn gán `false` ở
-                // `FindEligibleCampaignsUseCase`, nên nhánh auto-apply chưa từng chạy.
-                // Android auto-apply từ Search API (`VoucherItem.isAutoApplied`) — hai widget đang
-                // dùng hai API khác nhau. Cần backend xác nhận trước khi hợp nhất.
-            } else {
-                view.setState(.empty)
-            }
+            self.render(state, on: view)
         }
+        endowVM.loadInitial()   // idempotent — store bỏ qua nếu đã nạp
+        // TODO(auto-apply): `EligibleOffer` không có `isAutoApplied` (API Find Eligible không trả) →
+        // nhánh `autoApply` chưa từng chạy. Android auto-apply từ Search API; cần backend xác nhận.
     }
 }
 
@@ -554,15 +482,9 @@ extension PromotionSDKImpl: PRMEndowViewDelegate {
     func selectPromtionViewDidTapSelect(_ view: PRMEndowView) {
         switch view.currentState {
         case .applied:
-            appliedPromotions = []
+            // Huỷ áp: xoá ở store → `render` (observe) tự đưa widget về NOT_APPLIED/EMPTY.
+            endowVM.clearApplied()
             onClearVoucher?()
-            if let cached = cachedListModel {
-                // Đếm theo totalElements (tổng thật từ server), nhất quán với lúc load — không dùng length mảng đã phân trang.
-                let total = Int(cached.myTotalElements + cached.otherTotalElements)
-                view.setState(total == 0 ? .empty : .notApplied(count: total))
-            } else {
-                selectPromtionViewDidAttachToWindow(view)
-            }
         default:
             openChoosePromotion()
         }

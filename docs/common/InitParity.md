@@ -25,7 +25,7 @@
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |
 | Session | `session` | ✅ | ✅ | ✅ |
 | Order động | `currentOrderId` / `currentOrderValue` / `currentServiceCode` / `currentMetaData` | ✅ | ✅ | ✅ |
-| Cập nhật context | `updateContext(orderId, orderValue, serviceCode, metaData)` | ✅ | ✅ | ✅ |
+| Cập nhật context | `updateContext(orderId, orderValue, serviceCode, metaData, orderItems)` | ✅ | ✅ | ✅ |
 | Đặt theme | `configure(theme)` | ✅ | ✅ | ✅ |
 | Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `var currentTheme` 🔧 | 🔧 iOS đổi property → hàm |
 | Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | *(thiếu)* 🔧 | 🔧 iOS bổ sung |
@@ -46,7 +46,8 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | `PromotionSessionConfig` | `customerId, accessToken, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`** |
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
 | `PromotionAvailableService` | `serviceCode, serviceName, serviceType = "", iconUrl = ""` | ✅ | ✅ | ✅ |
-| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData` + 7 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
+| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 8 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
+| `PromotionOrderItem` | `skuId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
 > **Enum case (đã chốt):** giữ convention mỗi bên (`PROD`↔`prod`) — N1 *duy nhất được miễn* vì ánh
 > xạ 1-1 hiển nhiên. Mọi tên hàm/tham số khác đã ép trùng chữ tuyệt đối.
@@ -72,9 +73,9 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 Tất cả method đều `default {}` (Kotlin default method / Swift protocol extension) → host chỉ implement cái cần.
 
 `PromotionServiceSelection` nằm **cùng file** `PromotionSDKCallback` ở cả hai bên. Sự kiện chọn dịch vụ
-được các màn nội bộ phát **trực tiếp** qua `PromotionSDK.getCallback()?.onServiceSelected(...)` (iOS:
-`MyPromotion`/`Search`/`PromotionDetail` ViewController; Android: `MyPromotionFragment`/`PromotionDetailFragment`)
-— không còn indirection qua holder runtime.
+được các màn nội bộ phát **trực tiếp** qua `PromotionSDK.getCallback()?.onServiceSelected(...)` từ **đủ
+ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `PromotionDetail`
+(iOS: ViewController; Android: Fragment).
 
 ---
 
@@ -88,6 +89,7 @@ Tất cả method đều `default {}` (Kotlin default method / Swift protocol ex
 | Facade/Impl | 1 `object` gộp | `PromotionSDK` + `PromotionSDKImpl` | iOS cần box giấu type để tránh cross-module deserialization (binary-interface trick). |
 | Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.3](#53-widget). |
 | Enum case (nếu chọn giữ) | `PROD/STAGING` | `prod/staging` | Convention enum mỗi ngôn ngữ (đang chờ ⚠️ §2). |
+| Cách hiện lỗi / thông báo | `Toast` | `PRMConfirmationDialog` (popup) | Idiom nền tảng, áp dụng **nhất quán cho mọi lỗi** ở cả 2 bên (kể cả PRM_MOB_021 khi cờ tính năng TẮT) — không phải lệch riêng của một màn. Nội dung chuỗi thì trùng: `PRMBaseFragment.mapPromotionError` ↔ `PromotionUIStrings.errorMessage` (cùng bộ mã lỗi). |
 
 ---
 
@@ -109,9 +111,10 @@ hàm map options→core, và `PromotionMutableContext` (nội bộ). `availableS
 (`PromotionContainer.requireConfig().availableServices`). Không còn holder Swift riêng
 (`PromotionSessionRuntime` đã xoá). File chỉ-iOS còn lại: `PromotionSDKImpl.swift` (box binary-interface, N1).
 
-> Ánh xạ mapping options→core: Android có `PromotionSDKOptions.toCoreConfig(provider)` (extension trong
-> `PromotionConfig.kt`). iOS đang map inline trong `PromotionSDKImpl.init` → 🔧 tách thành hàm
-> `PromotionSDKOptions.toCoreConfig(context:)` trong `PromotionConfig.swift` cho khớp vị trí.
+> Ánh xạ mapping options→core: Android `PromotionSDKOptions.toCoreConfig(contextProvider)`, iOS
+> `PromotionSDKOptions.toCoreConfig(context:isDebug:)` — cùng là extension trong `PromotionConfig.{kt,swift}`.
+> Lệch duy nhất là `isDebug` (N1: iOS không có `ApplicationInfo.FLAG_DEBUGGABLE` nên host/impl truyền vào).
+> `baseUrl` đi thẳng từ session ở **cả hai** bên — không bên nào có giá trị fallback.
 
 ### 5.3 Widget
 
@@ -170,6 +173,15 @@ class PromotionManager : PromotionServing   // singleton, CHỖ DUY NHẤT impor
 - [x] **B3.** Hợp nhất callback 2 bên theo [§3], bỏ tham số `sdk`, `PromotionSDKServiceSelection→PromotionServiceSelection`, bỏ `onError`. iOS emit đủ 6; Android nối `onAvailabilityChanged` tại 2 gate.
 - [x] **B4.** Wrapper `PromotionManager` đối xứng 2 nền tảng theo [§6] (adapter callback), rewire điểm init chính của demo.
 - [x] **B5.** Cập nhật `docs/PublicApi.md` + demo. Spec này **đã đồng bộ** với code (2026-07-16).
+- [x] **B6.** (2026-07-23) Rà soát lại sau khi rollout shared store, nắn nốt các điểm lệch:
+  `orderItems` vào `updateContext` 2 bên (Android trước đó **không** override `getOrderItems()` → luôn
+  rỗng); Android bổ sung bottom sheet "Chọn dịch vụ" ở màn Tìm kiếm; màn "Chọn ưu đãi" của Android
+  **chờ validate xong** rồi mới đóng (lỗi → ở lại + báo, như iOS); màn chi tiết **bỏ hẳn seed từ ngoài**
+  ở cả 2 bên — chỉ hiển thị khi API detail trả về (xem [features/PromotionDetail.md](../features/PromotionDetail.md));
+  `PRMEndowViewModel`
+  Android đổi tên hàm khớp iOS (`loadInitial`/`setApplied`/`markUnavailable`/`clearApplied`/`consumeError`);
+  iOS bỏ `baseUrl` fallback hardcode, dùng rule "Xem thêm" dùng chung (`mySeeMoreState`/`visibleMyOffers`)
+  và nhận `isEnabled` từ store thay vì tự suy lại.
 
 > ### Emission — đã cân cả 2 nền tảng ✅
 > Contract callback đối xứng tuyệt đối **và** đủ 6 sự kiện đều được phát ở cả hai bên:

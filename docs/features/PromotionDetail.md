@@ -6,6 +6,13 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 - **Package:** `ui/feature/promotion/promotiondetail`
 - **Thành phần:** `PromotionDetailFragment`, `PromotionDetailViewModel`, `PromotionDetailContract`, `PrmContentDetailEndowFragment`, `adapter/PrmCustomFragmentPagerAdapter`
 
+> **KHÔNG seed từ ngoài — quy tắc chốt, áp dụng cả Android & iOS (2026-07-23).**
+> Màn chi tiết **chỉ hiển thị khi `getCustomerVoucherDetail` trả về**. Navigation chỉ mang `voucherId`;
+> dữ liệu từ màn danh sách (tên, logo, HSD, trạng thái) **không** được dùng để dựng card/nút — tránh
+> hai nguồn sự thật lệch nhau (list có thể cũ hơn detail).
+> Trong lúc chờ: shimmer toàn màn (Android `showDetailLoading`, iOS `PromotionDetailShimmerView` +
+> `Display.empty`). Vì vậy `PromotionDetailStore` **không có** intent seed.
+
 ---
 
 ## 1. Contract (MVI)
@@ -22,9 +29,12 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 
 ### Action — `PromotionDetailAction`
 - `LoadDetail(voucherId)` — tải chi tiết voucher.
+- `OpenServiceSelector` — bấm nút "Dùng ngay".
+- `ServiceSelected(service)` — đã chọn dịch vụ trong bottom sheet.
 
 ### Effect — `PromotionDetailEffect`
 - `ShowError(errorCode)`.
+- `ShowServiceSelector(services)`.
 
 ---
 

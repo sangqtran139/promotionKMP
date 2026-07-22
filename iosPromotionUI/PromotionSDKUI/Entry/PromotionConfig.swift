@@ -80,7 +80,9 @@ extension PromotionSDKOptions {
     /// không có `ApplicationInfo.FLAG_DEBUGGABLE`).
     func toCoreConfig(context: PromotionMutableContext, isDebug: Bool) -> PromotionSDKConfig {
         PromotionSDKConfig(
-            baseUrl: session.baseUrl.isEmpty ? "http://125.235.38.229:8080/" : session.baseUrl,
+            // Không fallback: host luôn truyền `baseUrl` (đối ứng Android — trước đây iOS rơi về
+            // một IP staging hardcode, lệch hành vi và không được lọt vào bản phát hành).
+            baseUrl: session.baseUrl,
             requestContextProvider: context,
             environment: session.environment.toCore(),
             availableServices: availableServices.map {
@@ -109,6 +111,8 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     var orderValue: String?
     var serviceCode: String?
     var metaData: String?
+    /// Order items (SKU) của đơn hiện tại — lõi đọc qua `getOrderItems()` cho `findEligible`.
+    var orderItems: [PromotionOrderItem] = []
 
     init(session: PromotionSessionConfig) {
         self.session = session
@@ -125,4 +129,20 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     func getOrderValue() -> String? { orderValue }
     func getService() -> String? { serviceCode }
     func getMetaData() -> String? { metaData }
+
+    /// Map order items (public) → model lõi Kotlin cho Find Eligible Campaigns — dùng chung với
+    /// `ChoosePromotionStore`/`EndowStore` (trước đây map nằm riêng ở `PromotionSDKImpl`).
+    func getOrderItems() -> [EligibleOrderItem] {
+        orderItems.map {
+            EligibleOrderItem(
+                skuId: $0.skuId,
+                quantity: Int32($0.quantity),
+                unitPrice: $0.unitPrice,
+                orderItemId: nil,
+                productId: $0.productId,
+                productName: $0.productName,
+                productCategory: $0.productCategory
+            )
+        }
+    }
 }

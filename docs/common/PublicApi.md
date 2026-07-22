@@ -43,7 +43,8 @@ object PromotionSDK {
     val currentServiceCode: String?
     val currentMetaData: String?
     fun updateContext(orderId: String? = null, orderValue: String? = null,
-                      serviceCode: String? = null, metaData: String? = null)
+                      serviceCode: String? = null, metaData: String? = null,
+                      orderItems: List<PromotionOrderItem> = emptyList())
 
     fun configure(theme: PromotionSDKTheme?)
     fun currentTheme(): PromotionSDKTheme?
@@ -99,6 +100,7 @@ PromotionSDK.initialize(
     )
 )
 PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
+// cần campaign theo SKU → thêm orderItems: [PromotionOrderItem(...)]
 let api = PromotionSDK.api      // PromotionSDKApi
 ```
 
@@ -107,6 +109,12 @@ let api = PromotionSDK.api      // PromotionSDKApi
 > nhật đơn hàng/dịch vụ qua `updateContext(...)` mà **không** init lại. Giá trị động nằm ở
 > `PromotionMutableContext` — lõi đọc lại ở **mỗi** request, nên refresh token = `initialize`/`init`
 > lại với session mới, còn order/service chỉ cần `updateContext`.
+
+**`orderItems` (dòng sản phẩm / SKU).** Truyền qua `updateContext(orderItems = …)` ở **cả hai** nền
+tảng khi cần campaign theo SKU; bỏ trống → chỉ nhận campaign cấp đơn. `ChoosePromotionStore` và
+`EndowStore` đọc lại qua `PromotionRequestContextProvider.getOrderItems()`. iOS còn giữ thêm overload
+tiện tay `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget iOS là factory, xem
+[InitParity §5.3](./InitParity.md#53-widget)).
 
 ---
 

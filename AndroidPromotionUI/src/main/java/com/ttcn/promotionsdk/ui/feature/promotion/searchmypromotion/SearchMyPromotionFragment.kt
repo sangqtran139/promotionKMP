@@ -11,9 +11,13 @@ import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
 import com.ttcn.promotionsdk.databinding.FragmentSearchMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
+import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.ui.entry.PromotionServiceSelection
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorBottomSheet
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
@@ -28,7 +32,11 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         onVoucherClick = { voucher, _ ->
             openPromotionDetail(voucher.voucherId)
         },
-        onUseClick = { _, _ -> },
+        // Bấm "Sử dụng" → bottom sheet chọn dịch vụ, y như màn "Ưu đãi của tôi" và
+        // `SearchMyPromotionViewController.myPromotionCellDidTapUse` bên iOS.
+        onUseClick = { voucher, _ ->
+            viewModel.handleAction(SearchMyPromotionAction.OpenServiceSelector(voucher))
+        },
     )
 
     private var latestState: SearchMyPromotionUiState = SearchMyPromotionUiState()
@@ -79,11 +87,35 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
-                is SearchMyPromotionEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
+                is SearchMyPromotionEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
+                is SearchMyPromotionEffect.ShowServiceSelector -> showServiceSelector(
+                    voucher = effect.voucher,
+                    services = effect.services,
+                )
             }
         }
 
         binding.sfEndow.getInputField().requestFocus()
+    }
+
+    /** Giống hệt `MyPromotionFragment.showServiceSelector` — cùng bottom sheet, cùng sự kiện host. */
+    private fun showServiceSelector(voucher: MyVoucherListItem, services: List<ServiceSelectorUiItem>) {
+        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
+        ServiceSelectorBottomSheet.newInstance(
+            services = services,
+            onServiceSelected = { service ->
+                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
+                PromotionSDK.getCallback()?.onServiceSelected(
+                    PromotionServiceSelection(
+                        voucherId = voucher.voucherId,
+                        serviceCode = service.serviceCode,
+                        serviceName = service.serviceName,
+                        iconUrl = service.iconUrl,
+                    )
+                )
+                viewModel.handleAction(SearchMyPromotionAction.ServiceSelected(voucher, service))
+            },
+        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
     }
 
     private fun renderState(state: SearchMyPromotionUiState) {
@@ -117,12 +149,6 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         )
     }
 
-    private fun mapErrorMessage(errorCode: String): String {
-        return when (errorCode) {
-            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            else -> getString(R.string.prm_error_general)
-        }
-    }
 
     private companion object {
         private const val MIN_KEYWORD_LENGTH = 1

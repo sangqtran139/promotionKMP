@@ -119,14 +119,20 @@ PromotionSDK.updateContext(
     orderId: order.id,
     orderValue: "500000",   // chuỗi số nguyên VNĐ
     serviceCode: "TOPUP",
-    metaData: nil
+    metaData: nil,
+    // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
+    orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
 ```
 
 SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần gọi trước khi mở màn / gọi API. Đọc ngược lại
 qua `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
 
-> ⚠️ `updateContext` / `api` gọi trước `initialize` sẽ **preconditionFailure** (crash) — luôn init trước.
+> ⚠️ Gọi trước `initialize`: `updateContext` / `openMyPromotion` / `openPromotionDetail` /
+> `createEndowView` **không crash** — chúng bỏ qua lệnh và ghi một dòng cảnh báo qua `NSLog`
+> (`[PromotionSDK] … bị gọi trước initialize()`). Riêng **`api`** vẫn `preconditionFailure` vì kiểu trả
+> về không optional. SDK khởi tạo thường là **bất đồng bộ** (chờ login), nên hãy gác điểm vào bằng
+> `PromotionSDK.isInitialized()` — nếu không, nút bấm sẽ như "không ăn" và widget sẽ trống.
 
 ---
 

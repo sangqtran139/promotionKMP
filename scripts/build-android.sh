@@ -10,6 +10,7 @@
 #   ./scripts/build-android.sh --skip-app      # chỉ publish SDK vào ~/.m2
 #   ./scripts/build-android.sh --clean         # dọn build cũ rồi làm lại từ đầu
 #   ./scripts/build-android.sh --install       # build xong cài luôn vào máy/emulator đang cắm
+#   ./scripts/build-android.sh --run           # build → cài → MỞ app trên máy/emulator đang cắm
 #   ./scripts/build-android.sh --version 1.2.0 # publish số version khác (mặc định 1.0.0)
 #
 set -euo pipefail
@@ -19,18 +20,36 @@ cd "$(dirname "$0")/.."   # luôn chạy từ gốc repo, gọi script từ đâ
 SKIP_APP=false
 DO_CLEAN=false
 DO_INSTALL=false
+DO_RUN=false
 SDK_VERSION=""
+
+APP_ID="com.ttcn.promotionsdk.app"
+LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-app) SKIP_APP=true; shift ;;
         --clean)    DO_CLEAN=true; shift ;;
         --install)  DO_INSTALL=true; shift ;;
+        --run)      DO_RUN=true; shift ;;   # --run bao gồm cả --install
         --version)  SDK_VERSION="${2:-}"; shift 2 ;;
-        -h|--help)  sed -n '3,14p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)  sed -n '3,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)          echo "Tham số lạ: $1 (xem --help)" >&2; exit 1 ;;
     esac
 done
+
+# --run kéo theo --install (phải cài mới mở được).
+[[ "$DO_RUN" == true ]] && DO_INSTALL=true
+
+# Tìm adb: PATH → ANDROID_HOME/ANDROID_SDK_ROOT → sdk.dir trong local.properties.
+resolve_adb() {
+    if command -v adb >/dev/null 2>&1; then echo adb; return; fi
+    local sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+    if [[ -z "$sdk" && -f local.properties ]]; then
+        sdk="$(grep -E '^sdk\.dir=' local.properties | head -1 | cut -d= -f2-)"
+    fi
+    [[ -n "$sdk" && -x "$sdk/platform-tools/adb" ]] && echo "$sdk/platform-tools/adb"
+}
 
 GRADLE_ARGS=()
 [[ -n "$SDK_VERSION" ]] && GRADLE_ARGS+=("-PSDK_VERSION=$SDK_VERSION")
@@ -83,4 +102,19 @@ if [[ "$DO_INSTALL" == true ]]; then
     echo "▸ Cài vào thiết bị đang cắm"
     gradle :androidApp:installDebug
     echo "✓ Đã cài."
+fi
+
+if [[ "$DO_RUN" == true ]]; then
+    ADB="$(resolve_adb || true)"
+    if [[ -z "$ADB" ]]; then
+        echo "Không thấy adb (PATH/ANDROID_HOME/local.properties) — app đã cài, tự mở giúp." >&2
+        exit 1
+    fi
+    if ! "$ADB" get-state >/dev/null 2>&1; then
+        echo "Chưa có thiết bị/emulator nào đang cắm. Mở emulator (hoặc cắm máy) rồi chạy lại --run." >&2
+        exit 1
+    fi
+    echo "▸ Mở app: $LAUNCH_ACTIVITY"
+    "$ADB" shell am start -n "$LAUNCH_ACTIVITY" >/dev/null
+    echo "✓ Đã mở app demo trên thiết bị."
 fi

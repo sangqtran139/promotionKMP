@@ -32,8 +32,8 @@ import kotlinx.coroutines.launch
  * (Android: ViewModel; iOS: `PromotionSDKImpl`) và là UI-state native — nhưng **rule quyết định**
  * (`ValidateDiscountsResult.isValidFor/discountFor`) đã dùng chung ở domain.
  *
- * TODO(order-items): request tạm `items = emptyList()` (khớp trạng thái hiện tại của Android). Khi
- * provider có `getOrderItems()`, đọc vào đây để lấy campaign theo SKU (đồng bộ 2 nền tảng).
+ * Order items đọc từ [PromotionContainer.requestContextProvider] (`getOrderItems()`) — dùng chung 2
+ * nền tảng để lấy campaign theo SKU (host chưa cấp → rỗng, chỉ campaign cấp đơn).
  */
 class ChoosePromotionStore(
     private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
@@ -73,7 +73,39 @@ class ChoosePromotionStore(
             }
             ChoosePromotionIntent.LoadMoreMyVouchers -> loadMore(EligibleSection.MY_OFFERS)
             ChoosePromotionIntent.LoadMoreOtherVouchers -> loadMore(EligibleSection.OTHER_OFFERS)
+            is ChoosePromotionIntent.SetPreSelected -> _state.update { it.copy(selectedIds = intent.ids.distinct()) }
+            is ChoosePromotionIntent.ToggleSelection -> onToggleSelection(intent.id)
+            ChoosePromotionIntent.SeeMoreMy -> onSeeMoreMy()
             ChoosePromotionIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
+        }
+    }
+
+    /**
+     * Chọn/bỏ chọn 1 ưu đãi (rule **dùng chung** 2 nền tảng): đang chọn → bỏ; chưa chọn →
+     * [ChoosePromotionState.isMultiSelection] bật thì thêm, tắt thì thay cả danh sách bằng đúng id này.
+     */
+    private fun onToggleSelection(id: String) {
+        _state.update {
+            val cur = it.selectedIds
+            val next = when {
+                id in cur -> cur - id
+                it.isMultiSelection -> cur + id
+                else -> listOf(id)
+            }
+            it.copy(selectedIds = next)
+        }
+    }
+
+    /**
+     * State-machine "Xem thêm / Thu gọn" nhóm "Ưu đãi của tôi" (**dùng chung**): còn item đã tải bị
+     * ẩn → mở hết; đã mở mà còn trang → tải trang kế; đã mở & hết trang → thu gọn.
+     */
+    private fun onSeeMoreMy() {
+        val s = _state.value
+        when {
+            !s.myExpanded && s.myOffers.size > COLLAPSED_MY_COUNT -> _state.update { it.copy(myExpanded = true) }
+            s.myExpanded && !s.myIsLastPage -> loadMore(EligibleSection.MY_OFFERS)
+            else -> _state.update { it.copy(myExpanded = false) }
         }
     }
 
@@ -191,7 +223,7 @@ class ChoosePromotionStore(
         return FindEligibleCampaignsRequest(
             orderId = ctx.getOrderId().orEmpty(),
             orderValue = ctx.getOrderValue().orEmpty(),
-            items = emptyList(), // TODO(order-items): xem doc lớp.
+            items = ctx.getOrderItems(), // Order items từ provider (dùng chung 2 nền tảng).
             tabCode = null,
             keyword = s.keyword.takeIf { it.isNotBlank() },
             mySize = s.mySize,
@@ -226,6 +258,12 @@ data class ChoosePromotionState(
     val myOffers: List<ChooseOffer> = emptyList(),
     val otherOffers: List<ChooseOffer> = emptyList(),
     val expireWarningDate: Int? = null,
+    /** Cho phép chọn nhiều ưu đãi (mặc định chọn đơn — khớp Fragment/VC hiện tại). */
+    val isMultiSelection: Boolean = false,
+    /** id các ưu đãi đang chọn — **selection do store quản** (dùng chung 2 nền tảng). */
+    val selectedIds: List<String> = emptyList(),
+    /** Nhóm "Ưu đãi của tôi" đang mở hết hay thu gọn — do store quản (state-machine `SeeMoreMy`). */
+    val myExpanded: Boolean = false,
     val errorCode: String? = null,
 )
 
@@ -243,10 +281,32 @@ sealed interface ChoosePromotionIntent {
     data object ClearKeyword : ChoosePromotionIntent
     data object LoadMoreMyVouchers : ChoosePromotionIntent
     data object LoadMoreOtherVouchers : ChoosePromotionIntent
+    /** Seed các voucher pre-select (từ discount đang áp trước đó). */
+    data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
+    /** Chọn/bỏ chọn 1 ưu đãi theo id. */
+    data class ToggleSelection(val id: String) : ChoosePromotionIntent
+    /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
+    data object SeeMoreMy : ChoosePromotionIntent
     data object ConsumeError : ChoosePromotionIntent
 }
 
+/** Số item "Ưu đãi của tôi" hiện khi thu gọn — dùng chung 2 nền tảng. */
+const val COLLAPSED_MY_COUNT = 2
+
 private const val DEBOUNCE_MS = 400L
+
+/** Trạng thái nút "Xem thêm/Thu gọn" nhóm của tôi — quy tắc dùng chung, native chỉ render. */
+enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
+
+fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
+    myOffers.size <= COLLAPSED_MY_COUNT && myIsLastPage -> ChooseSeeMoreState.HIDDEN
+    myExpanded && myIsLastPage -> ChooseSeeMoreState.COLLAPSE
+    else -> ChooseSeeMoreState.EXPAND
+}
+
+/** Danh sách "Ưu đãi của tôi" đang hiển thị theo trạng thái mở/thu gọn — dùng chung. */
+fun ChoosePromotionState.visibleMyOffers(): List<ChooseOffer> =
+    if (myExpanded) myOffers else myOffers.take(COLLAPSED_MY_COUNT)
 
 /**
  * View-model 1 ưu đãi eligible: **bọc** domain [EligibleOffer] ([source]) + quyết định hiển thị đã tính.

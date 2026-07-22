@@ -95,6 +95,10 @@ data class PromotionDetailState(
     val errorCode: String? = null,
 )
 
+/**
+ * **Không có intent seed từ ngoài**: màn chi tiết chỉ hiển thị khi `getCustomerVoucherDetail` trả về —
+ * dữ liệu từ màn danh sách không được dùng để dựng card/nút (tránh hai nguồn sự thật lệch nhau).
+ */
 sealed interface PromotionDetailIntent {
     data class LoadDetail(val voucherId: String) : PromotionDetailIntent
     data object ConsumeError : PromotionDetailIntent

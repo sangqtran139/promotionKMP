@@ -26,6 +26,21 @@ public final class PromotionSDK {
     private static var _impl: NSObject?
     private static var impl: PromotionSDKImpl? { _impl as? PromotionSDKImpl }
 
+    /// Đồ thị đang sống, kèm **cảnh báo rõ ràng** khi host gọi trước `initialize`.
+    ///
+    /// Trước đây mỗi điểm vào tự xử lý một kiểu: điều hướng thì `guard … else { return }` (im lặng —
+    /// host thấy "bấm không ăn"), còn `updateContext` thì `preconditionFailure` (**crash app host**).
+    /// Nay thống nhất: **không** crash, log một dòng nêu đúng hàm bị gọi sớm. Đối ứng Android — chỉ
+    /// khác ở chỗ Kotlin ném `IllegalStateException` (host bắt được), Swift `fatalError` thì không,
+    /// nên iOS chọn log thay vì kết liễu tiến trình của host.
+    private static func requireImpl(_ caller: String) -> PromotionSDKImpl? {
+        guard let impl else {
+            NSLog("[PromotionSDK] %@ bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(options:) trước.", caller)
+            return nil
+        }
+        return impl
+    }
+
     /// Callback host nhận sự kiện — truyền qua `PromotionSDKOptions`. Giữ tới `release` (đối ứng
     /// `private var callback` bên Android).
     private static var callback: PromotionSDKCallback?
@@ -67,6 +82,10 @@ public final class PromotionSDK {
 
     /// Bề mặt headless cho host tự dựng UI (lấy voucher, validate, tạo redemption). Phải gọi
     /// `initialize` trước. Không phải use case — xem `PromotionSDKApi`. Đối ứng `PromotionSDK.api` Android.
+    ///
+    /// Đây là điểm vào **duy nhất** còn dừng chương trình khi chưa `initialize` — kiểu trả về không
+    /// optional nên không có giá trị nào an toàn để trả. Đối ứng `check(...)` bên Android. Dùng
+    /// `isInitialized()` để gác trước nếu host không chắc thứ tự khởi tạo.
     public static var api: PromotionSDKApi {
         guard let impl else {
             preconditionFailure("PromotionSDK.initialize() phải được gọi trước khi truy cập api.")
@@ -89,16 +108,19 @@ public final class PromotionSDK {
     ///
     /// Ghi vào context đang sống; **không** cần `initialize` lại. SDK đọc lại các giá trị này ở **mỗi**
     /// request, nên gọi trước khi mở màn hoặc gọi API là đủ. Đối ứng `PromotionSDK.updateContext` Android.
+    ///
+    /// - Parameter orderItems: dòng sản phẩm của đơn — cần khi muốn lấy campaign theo SKU; bỏ trống
+    ///   thì chỉ nhận campaign cấp đơn. (Luồng widget có thể dùng `createEndowView(orderItems:)`.)
     public static func updateContext(
         orderId: String? = nil,
         orderValue: String? = nil,
         serviceCode: String? = nil,
-        metaData: String? = nil
+        metaData: String? = nil,
+        orderItems: [PromotionOrderItem] = []
     ) {
-        guard let impl else {
-            preconditionFailure("PromotionSDK.initialize() phải được gọi trước khi updateContext().")
-        }
-        impl.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode, metaData: metaData)
+        guard let impl = requireImpl("updateContext()") else { return }
+        impl.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode,
+                           metaData: metaData, orderItems: orderItems)
     }
 
     // MARK: - Theming
@@ -132,7 +154,7 @@ public final class PromotionSDK {
     /// Cờ `VOUCHER_LIST` TẮT → hiện popup lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
     public static func openMyPromotion(from viewController: UIViewController) {
-        guard let impl else { return }
+        guard let impl = requireImpl("openMyPromotion(from:)") else { return }
         impl.canOpenVoucherList { enabled in
             guard enabled else {
                 impl.showFeatureDisabledDialog(on: viewController)
@@ -163,14 +185,16 @@ public final class PromotionSDK {
     /// Cờ `VOUCHER_DETAIL` TẮT → hiện popup lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
     public static func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
-        guard let impl else { return }
+        guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
         impl.openPromotionDetail(voucherId: voucherId, on: viewController, navigator: nav)
     }
 
     /// Create the promotion widget view. Attach it to your layout; it manages its own data loading.
     public static func createEndowView(from viewController: UIViewController) -> UIView {
-        guard let impl else { return UIView() }
+        // Chưa init → trả view rỗng (không crash): host đã gắn nó vào layout rồi, huỷ tiến trình ở đây
+        // là tệ nhất. Log ở `requireImpl` cho biết vì sao widget trống.
+        guard let impl = requireImpl("createEndowView(from:)") else { return UIView() }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
         return impl.makeEndowView(presentFrom: viewController, navigator: nav)
     }

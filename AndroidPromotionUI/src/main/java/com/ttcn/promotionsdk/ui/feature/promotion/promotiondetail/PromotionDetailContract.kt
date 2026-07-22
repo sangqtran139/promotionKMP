@@ -13,6 +13,10 @@ internal data class PromotionDetailUiState(
     val actionLabel: String = "",
 )
 
+/**
+ * Màn chi tiết **không nhận dữ liệu seed từ ngoài**: chỉ `voucherId` đi qua navigation, mọi thứ hiển
+ * thị đều đến từ `getCustomerVoucherDetail`. Trong lúc chờ thì hiện shimmer. Giống hệt iOS.
+ */
 internal sealed interface PromotionDetailAction {
     data class LoadDetail(val voucherId: String) : PromotionDetailAction
     data object OpenServiceSelector : PromotionDetailAction

@@ -37,12 +37,11 @@ internal class PromotionViewModelFactory(
 
             ChoosePromotionViewModel::class.java -> ChoosePromotionViewModel(
                 findEligibleCampaignsUseCase = findEligibleCampaignsUseCase,
-                validateStackableDiscountsUseCase = validateStackableDiscountsUseCase,
-                requestContextProvider = requestContextProvider,
             ) as T
 
             SearchMyPromotionViewModel::class.java -> SearchMyPromotionViewModel(
                 searchCustomerVouchersUseCase = searchCustomerVouchersUseCase,
+                config = config,
             ) as T
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")

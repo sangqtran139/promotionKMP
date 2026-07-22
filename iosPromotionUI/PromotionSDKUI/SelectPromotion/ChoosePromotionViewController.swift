@@ -117,6 +117,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     private let seeMoreMyRelay = PassthroughSubject<Void, Never>()
     private let loadMoreOtherRelay = PassthroughSubject<Void, Never>()
     private let toggleSelectionRelay = PassthroughSubject<String, Never>()
+    private let searchActionRelay = PassthroughSubject<Void, Never>()
 
     // MARK: - Bind ViewModel
     override func bindViewModel() {
@@ -124,6 +125,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 
         let input = ChoosePromotionViewModel.Input(
             searchText: searchTextField.textPublisher,
+            searchAction: searchActionRelay.eraseToAnyPublisher(),
             toggleSelectionRelay: toggleSelectionRelay,
             seeMoreMyRelay: seeMoreMyRelay,
             loadMoreOtherRelay: loadMoreOtherRelay
@@ -156,6 +158,14 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
                 self?.currentSelectedPromotions = promotions
             }
             .store(in: &cancellables)
+
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android — trước đây Choose iOS nuốt lỗi).
+        output.errorCode
+            .sink { [weak self] code in
+                guard let self = self else { return }
+                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
+            }
+            .store(in: &cancellables)
     }
     
     //MARK: - Action
@@ -175,9 +185,10 @@ extension ChoosePromotionViewController: SelectPromotionItemCellDelegate {
     }
 }
 
-// MARK: - UITextFieldDelegate
+// MARK: - UITextFieldDelegate (search action on return key)
 extension ChoosePromotionViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        searchActionRelay.send(())
         textField.resignFirstResponder()
         return true
     }

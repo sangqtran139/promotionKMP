@@ -21,11 +21,14 @@ internal data class MyPromotionUiState(
     val vouchers: List<MyVoucherListItem> = emptyList(),
 )
 
+/**
+ * Chỉ khai báo action mà màn thật sự phát — khớp 1-1 `MyPromotionViewModel.Input` bên iOS.
+ * (Tìm kiếm nằm ở màn riêng `SearchMyPromotionFragment`, không phải ở đây.)
+ */
 internal sealed interface MyPromotionAction {
     data object LoadInitialIfNeeded : MyPromotionAction
     data object Refresh : MyPromotionAction
     data class SelectTab(val tabCode: String) : MyPromotionAction
-    data class SearchKeyword(val keyword: String) : MyPromotionAction
     data object LoadMore : MyPromotionAction
     data class OpenServiceSelector(val voucher: MyVoucherListItem) : MyPromotionAction
     data class ServiceSelected(
@@ -57,6 +60,16 @@ internal data class MyVoucherListItem(
     val isSelected: Boolean = false,
     val isAutoApplied: Boolean = false,
     val applicableProducts: List<ApplicableProduct> = emptyList(),
+    /**
+     * Voucher còn dùng được — **quyết định do store tính** (`MyPromotionVoucher.isEnabled` /
+     * `ChooseOffer.isUsable`). UI đọc thẳng, KHÔNG tự suy lại từ [status] (tránh 2 nền tảng lệch rule).
+     */
+    val isEnabled: Boolean = true,
+    /**
+     * Số ngày còn lại khi voucher sắp hết hạn (trong ngưỡng `expireWarningDate` của server) —
+     * **quyết định do store tính**; `null` nếu không áp dụng. UI chỉ format "Còn X ngày".
+     */
+    val expiringInDays: Int? = null,
 )
 
 internal data class TabItem(

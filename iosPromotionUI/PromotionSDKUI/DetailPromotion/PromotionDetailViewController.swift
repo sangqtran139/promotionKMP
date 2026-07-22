@@ -218,6 +218,14 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
                 }
             }
             .store(in: &cancellables)
+
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion — trước đây iOS nuốt lỗi).
+        output.errorCode
+            .sink { [weak self] code in
+                guard let self = self else { return }
+                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
+            }
+            .store(in: &cancellables)
     }
 
     /// Gán nội dung 1 tab: HTML → attributed; ngược lại → text thường (rỗng = để trống).

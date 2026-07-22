@@ -24,11 +24,16 @@ Màn hình **tìm kiếm voucher của khách hàng** theo từ khoá, có phân
 - `QueryChanged(keyword)` — người dùng gõ từ khoá.
 - `Search` — thực hiện tìm kiếm.
 - `LoadMore` — tải trang tiếp.
-- `ClearKeyword` — xoá từ khoá.
-- `Retry` — thử lại sau lỗi.
+- `OpenServiceSelector(voucher)` — bấm "Sử dụng" trên một kết quả.
+- `ServiceSelected(voucher, service)` — đã chọn dịch vụ trong bottom sheet.
+
+> Chỉ khai báo action mà màn **thật sự phát** — khớp 1-1 `SearchMyPromotionViewModel.Input` bên iOS.
+> `SearchMyPromotionIntent.ClearKeyword` / `Retry` của store hiện chưa màn nào dùng (gõ trắng đã đi
+> qua `QueryChanged("")`), nên không có action UI tương ứng.
 
 ### Effect — `SearchMyPromotionEffect`
 - `ShowError(errorCode)`.
+- `ShowServiceSelector(voucher, services)`.
 
 ---
 
@@ -53,9 +58,21 @@ Lỗi → onError → sendEffect(ShowError)
 - Search luôn truyền `tab=all`; keyword free search (không giới hạn độ dài tối thiểu).
 - Response: flat `content[]` + pagination (`number`, `size`, `last`).
 
-## 4. Lưu ý khi sửa
+## 4. Chọn dịch vụ ("Sử dụng")
+
+Bấm "Sử dụng" trên một kết quả → `ServiceSelectorBottomSheet` (đúng bộ dịch vụ như màn "Ưu đãi của
+tôi"): lọc bằng `servicesForApplicableProducts` ở `promotionLogic`, giao giữa `applicableProducts` của
+voucher và `availableServices` host truyền lúc `initialize`. Chọn xong → phát
+`PromotionSDK.getCallback()?.onServiceSelected(...)` cho host.
+
+Đối ứng `SearchMyPromotionViewController.myPromotionCellDidTapUse` bên iOS — xem
+[InitParity §3](../common/InitParity.md#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên).
+
+## 5. Lưu ý khi sửa
 
 - `DEFAULT_PAGE_SIZE` khai báo trong `companion object` của state — đổi ở đây, không hardcode rải rác.
-- Debounce search xử lý trong ViewModel (`DEBOUNCE_MS = 400ms`), không ở Fragment.
+- Debounce search xử lý trong `SearchMyPromotionStore` (`DEBOUNCE_MS = 400ms`), không ở Fragment.
 - Keyword rỗng sau trim → reset kết quả về rỗng, không gọi API.
+- Bấm vào card mở chi tiết bằng `openPromotionDetail(voucher)` (có **seed**) — không dùng bản chỉ
+  truyền `voucherId`, để card + nút hiện ngay không chờ mạng.
 - Hiển thị trạng thái rỗng/lỗi dựa trên `isEmpty` + `Effect.ShowError`.

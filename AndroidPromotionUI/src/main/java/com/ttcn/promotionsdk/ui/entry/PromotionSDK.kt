@@ -9,6 +9,7 @@ import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.ui.entry.api.PromotionOrderItem
 import com.ttcn.promotionsdk.ui.entry.api.PromotionSDKApi
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail.PromotionDetailFragment
@@ -130,6 +131,9 @@ object PromotionSDK {
      * Ghi vào [PromotionMutableContext] đang sống; không cần [initialize] lại. SDK đọc lại các giá trị này
      * ở **mỗi** request, nên gọi trước khi mở màn hoặc gọi API là đủ.
      *
+     * @param orderItems Dòng sản phẩm của đơn — cần khi muốn lấy campaign theo SKU; bỏ trống thì
+     * chỉ nhận campaign cấp đơn. Đối ứng `PromotionSDK.updateContext(orderItems:)` bên iOS.
+     *
      * @throws IllegalStateException nếu [initialize] chưa được gọi.
      */
     @JvmStatic
@@ -139,6 +143,7 @@ object PromotionSDK {
         orderValue: String? = null,
         serviceCode: String? = null,
         metaData: String? = null,
+        orderItems: List<PromotionOrderItem> = emptyList(),
     ) {
         val ctx = checkNotNull(mutableContext) {
             "PromotionSDK.initialize() must be called before updateContext()."
@@ -147,6 +152,7 @@ object PromotionSDK {
         ctx.orderValue = orderValue
         ctx.serviceCode = serviceCode
         ctx.metaData = metaData
+        ctx.orderItems = orderItems
     }
 
     // ─── Theming ─────────────────────────────────────────────────────────────

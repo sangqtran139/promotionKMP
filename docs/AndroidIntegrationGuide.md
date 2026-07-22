@@ -134,6 +134,8 @@ PromotionSDK.updateContext(
     orderValue = "500000",   // chuỗi số nguyên VNĐ
     serviceCode = "TOPUP",
     metaData = null,
+    // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
+    orderItems = listOf(PromotionOrderItem(skuId = "SKU1", quantity = 1, unitPrice = "500000")),
 )
 ```
 

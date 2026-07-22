@@ -9,6 +9,7 @@ import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionState
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionStore
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionVoucher
+import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableProducts
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
 
@@ -50,7 +51,6 @@ internal class MyPromotionViewModel(
             MyPromotionAction.Refresh -> store.dispatch(MyPromotionIntent.Refresh)
             MyPromotionAction.LoadMore -> store.dispatch(MyPromotionIntent.LoadMore)
             is MyPromotionAction.SelectTab -> store.dispatch(MyPromotionIntent.SelectTab(action.tabCode))
-            is MyPromotionAction.SearchKeyword -> store.dispatch(MyPromotionIntent.Search(action.keyword))
             is MyPromotionAction.OpenServiceSelector -> openServiceSelector(action.voucher)
             is MyPromotionAction.ServiceSelected -> Unit // TODO: điều hướng màn dịch vụ khi có đích đến
         }
@@ -68,12 +68,9 @@ internal class MyPromotionViewModel(
         store.dispatch(MyPromotionIntent.ConsumeError)
     }
 
-    // ─── Android-only: bottom sheet "Chọn dịch vụ" (cần config) ──────────────────
+    // ─── Android-only: bottom sheet "Chọn dịch vụ" (render native; lọc dùng chung ở promotionLogic) ──
     private fun openServiceSelector(voucher: MyVoucherListItem) {
-        val applicableProductIds = voucher.applicableProducts.map { it.productId }.toSet()
-        val services = config.availableServices
-            .filter { it.serviceCode in applicableProductIds }
-            .distinctBy { it.serviceCode }
+        val services = servicesForApplicableProducts(voucher.applicableProducts, config.availableServices)
             .map { it.toServiceSelectorUiItem() }
         sendEffect(MyPromotionEffect.ShowServiceSelector(voucher = voucher, services = services))
     }
@@ -128,4 +125,7 @@ internal fun MyPromotionVoucher.toMyVoucherListItem() = MyVoucherListItem(
     objectType = source.objectType,
     isAutoApplied = source.isAutoApplied,
     applicableProducts = source.applicableProducts,
+    // Quyết định hiển thị lấy thẳng từ store (không tự suy lại ở adapter).
+    isEnabled = isEnabled,
+    expiringInDays = expiringInDays,
 )

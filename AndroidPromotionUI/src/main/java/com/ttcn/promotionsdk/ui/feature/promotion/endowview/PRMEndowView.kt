@@ -129,7 +129,7 @@ class PRMEndowView @JvmOverloads constructor(
     /** Cờ TẮT → ẩn widget và không gọi API. Cờ BẬT → hiện và nạp ưu đãi (chỉ nạp một lần). */
     private fun applyFeatureFlag(enabled: Boolean, vm: PRMEndowViewModel) {
         isVisible = enabled
-        if (enabled) vm.loadInitialVouchers()
+        if (enabled) vm.loadInitial()
     }
 
     override fun onDetachedFromWindow() {
@@ -147,12 +147,31 @@ class PRMEndowView @JvmOverloads constructor(
      */
     fun setDiscountDetails(details: List<AppliedDiscount>) {
         val hasInvalid = details.isNotEmpty() && details.any { !it.valid }
-        viewModel?.applyDiscountDetails(details, unavailable = hasInvalid)
+        viewModel?.setApplied(details, unavailable = hasInvalid)
+    }
+
+    /**
+     * Nhận offers user chọn từ màn "Chọn ưu đãi" → [EndowStore] validate & áp (dùng chung iOS).
+     * `internal`: [EligibleOffer] thuộc `promotionLogic`; host dùng qua [ChoosePromotionFragment.forEndowView].
+     *
+     * [onSettled] gọi một lần khi validate xong, kèm **mã lỗi** (`null` = thành công) — màn chọn dùng
+     * để quyết định đóng hay báo lỗi. Đối ứng completion của `endowVM.validateAndApply` bên iOS.
+     */
+    internal fun applySelectedOffers(
+        offers: List<EligibleOffer>,
+        onSettled: ((errorCode: String?) -> Unit)? = null,
+    ) {
+        val vm = viewModel
+        if (vm == null) {
+            onSettled?.invoke(null)
+            return
+        }
+        vm.validateAndApply(offers) { state -> onSettled?.invoke(state.errorCode) }
     }
 
     /** Đánh dấu ưu đãi hiện tại không còn khả dụng mà không thay đổi danh sách. */
     fun markAppliedVoucherUnavailable() {
-        viewModel?.markDiscountUnavailable()
+        viewModel?.markUnavailable()
     }
 
     fun applyToken(token: DiscountBadgeToken?) {
@@ -172,7 +191,7 @@ class PRMEndowView @JvmOverloads constructor(
         // Handle error
         state.error?.let {
             onError?.invoke(it)
-            viewModel?.clearError()
+            viewModel?.consumeError()
         }
 
         if (!state.hasLoadedInitial) return
@@ -180,27 +199,24 @@ class PRMEndowView @JvmOverloads constructor(
         binding.shimmerEndow.stopShimmer()
         binding.shimmerEndow.visibility = GONE
 
-        when {
-            // Ưu đãi đã áp dụng nhưng không còn khả dụng → UNAVAILABLE
-            state.discountUnavailable && state.discountDetails.isNotEmpty() -> {
+        // Trạng thái widget do store quyết định (EndowStore.widgetState) — View chỉ render.
+        when (state.widgetState) {
+            EndowViewState.UNAVAILABLE -> {
                 currentState = EndowViewState.UNAVAILABLE
                 showUnavailableState(state.discountDetails)
             }
 
-            // Đã áp dụng ưu đãi → APPLIED
-            state.discountDetails.isNotEmpty() -> {
+            EndowViewState.APPLIED -> {
                 currentState = EndowViewState.APPLIED
                 showAppliedState(state.discountDetails)
             }
 
-            // Có ưu đãi nhưng chưa chọn → NOT_APPLIED
-            state.totalVoucherCount > 0 -> {
+            EndowViewState.NOT_APPLIED -> {
                 currentState = EndowViewState.NOT_APPLIED
                 showNotAppliedState(state.totalVoucherCount)
             }
 
-            // Không có ưu đãi nào → EMPTY (ẩn nút hành động)
-            else -> {
+            EndowViewState.EMPTY -> {
                 currentState = EndowViewState.EMPTY
                 showEmptyState()
             }
@@ -240,7 +256,7 @@ class PRMEndowView @JvmOverloads constructor(
             when (currentState) {
                 EndowViewState.NOT_APPLIED -> onOpenVoucherSelection?.invoke()
                 EndowViewState.APPLIED -> {
-                    viewModel?.clearDiscountDetails()
+                    viewModel?.clearApplied()
                     PromotionSDK.getCallback()?.onVoucherCleared()
                 }
                 EndowViewState.UNAVAILABLE -> onOpenVoucherSelection?.invoke()

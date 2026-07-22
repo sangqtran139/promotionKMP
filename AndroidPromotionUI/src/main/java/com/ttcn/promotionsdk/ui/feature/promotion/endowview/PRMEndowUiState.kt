@@ -12,6 +12,8 @@ internal data class PRMEndowUiState(
     val totalVoucherCount: Int = 0,
     val hasLoadedInitial: Boolean = false,
     val error: String? = null,
+    /** Trạng thái widget do store (`EndowStore.widgetState`) quyết định — View chỉ render. */
+    val widgetState: EndowViewState = EndowViewState.EMPTY,
 )
 
 enum class EndowViewState {

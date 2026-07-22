@@ -6,6 +6,7 @@ import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailIntent
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailState
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailStore
+import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableProducts
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
 
@@ -59,15 +60,10 @@ internal class PromotionDetailViewModel(
         store.dispatch(PromotionDetailIntent.ConsumeError)
     }
 
-    // ─── Android-only: bottom sheet "Chọn dịch vụ" (cần config) ──────────────────
+    // ─── Android-only: bottom sheet "Chọn dịch vụ" (render native; lọc dùng chung ở promotionLogic) ──
     private fun openServiceSelector() {
-        val applicableProductIds = store.currentState().detail
-            ?.applicableProducts.orEmpty()
-            .map { it.productId }
-            .toSet()
-        val services = config.availableServices
-            .filter { it.serviceCode in applicableProductIds }
-            .distinctBy { it.serviceCode }
+        val applicableProducts = store.currentState().detail?.applicableProducts.orEmpty()
+        val services = servicesForApplicableProducts(applicableProducts, config.availableServices)
             .map { it.toServiceSelectorUiItem() }
         sendEffect(PromotionDetailEffect.ShowServiceSelector(services))
     }

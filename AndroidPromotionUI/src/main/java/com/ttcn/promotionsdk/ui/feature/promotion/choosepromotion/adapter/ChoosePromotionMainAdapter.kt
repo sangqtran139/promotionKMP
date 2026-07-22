@@ -178,17 +178,4 @@ internal class ChoosePromotionMainAdapter(
             old == new
     }
 
-    // ─── Public helpers ───────────────────────────────────────────────────────
-
-    fun updateVoucherSelection(voucherId: String, isMultiSelection: Boolean = true) {
-        val updated = currentList.map { item ->
-            if (item !is ChoosePromotionListItem.VoucherItem) return@map item
-            val selected = when {
-                isMultiSelection -> if (item.data.voucherId == voucherId) !item.data.isSelected else item.data.isSelected
-                else -> item.data.voucherId == voucherId && !item.data.isSelected
-            }
-            item.copy(data = item.data.copy(isSelected = selected))
-        }
-        submitList(updated)
-    }
 }

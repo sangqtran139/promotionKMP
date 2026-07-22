@@ -14,12 +14,11 @@ enum ServiceSelectorBuilder {
 
     /// Trả về danh sách dịch vụ khả dụng cho voucher: giao giữa `applicableProducts.productId`
     /// và `availableServices.serviceCode`, loại trùng theo serviceCode (giữ thứ tự host cung cấp).
+    /// Rule lọc **dùng chung** với Android ở `promotionLogic` (`servicesForApplicableProducts`);
+    /// iOS chỉ đọc config + map sang model bottom sheet.
     static func items(forApplicableProducts products: [ApplicableProduct]) -> [ServiceSelectorItem] {
-        let applicableIds = Set(products.map { $0.productId })
-        var seen = Set<String>()
-        return PromotionContainer.shared.requireConfig().availableServices
-            .filter { applicableIds.contains($0.serviceCode) }
-            .filter { seen.insert($0.serviceCode).inserted }
+        let services = PromotionContainer.shared.requireConfig().availableServices
+        return ServiceSelectorKt.servicesForApplicableProducts(applicableProducts: products, availableServices: services)
             .map { ServiceSelectorItem(serviceCode: $0.serviceCode, serviceName: $0.serviceName, iconUrl: $0.iconUrl) }
     }
 }

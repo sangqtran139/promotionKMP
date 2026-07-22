@@ -13,25 +13,15 @@ import PromotionSDKUI   // chỉ còn cần cho 2 màn Playground (gọi API tĩ
 class ViewController: UIViewController {
 
     // MARK: - Demo data (giả lập host cung cấp)
+    //
+    // Login + `PromotionManager.start(...)` nằm ở `TokenLoadingViewController` (cổng khởi động) —
+    // màn này chỉ hiện SAU KHI SDK đã initialize, nên không cần gác `isReady` ở từng nút.
 
-    /// customerId + token thường có sau khi user login. Demo hardcode.
-    private let demoCustomerId = "CUST-001"
-    private let demoToken: String? = nil
     /// Đơn hàng ở màn thanh toán — truyền vào widget để validate voucher khi "Áp dụng".
     private let demoOrder = OrderContext(id: "ORDER-001", value: "500000")
     /// Id dự phòng cho nút "Mở thẳng chi tiết": khách chưa có voucher, hoặc API lỗi, vẫn vào được màn
     /// chi tiết để xem layout. Màn tự fetch theo id này rồi hiện shimmer → lỗi. Chỉ dùng ở demo.
     private let fallbackVoucherId = "VOUCHER-DEMO-001"
-
-    /// Danh mục dịch vụ HOST cung cấp (map sang bottom sheet "Chọn dịch vụ").
-    /// 3 mã đầu trùng applicableProducts voucher ACTIVE → sẽ hiện; 2 mã cuối bị lọc bỏ (minh hoạ mapping).
-    private let demoServices: [AvailableService] = [
-        AvailableService(code: "P-FOOD-001", name: "Combo gà rán",        type: "FOOD",    iconUrl: "https://picsum.photos/seed/food1/96"),
-        AvailableService(code: "P-FOOD-002", name: "Mì Ý sốt bò",         type: "FOOD",    iconUrl: "https://picsum.photos/seed/food2/96"),
-        AvailableService(code: "P-ALC-001",  name: "Bia lon 330ml",       type: "ALCOHOL", iconUrl: "https://picsum.photos/seed/beer/96"),
-        AvailableService(code: "P-TELCO-001", name: "Nạp tiền điện thoại", type: "TELCO",   iconUrl: "https://picsum.photos/seed/telco/96"),
-        AvailableService(code: "P-BILL-001",  name: "Thanh toán hoá đơn",  type: "BILL",    iconUrl: "https://picsum.photos/seed/bill/96")
-    ]
 
     private var promotions: PromotionServing { PromotionManager.shared }
 
@@ -51,28 +41,7 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         title = "Demo PromotionSDK"
         view.backgroundColor = .systemBackground
-
-        // (1) Đăng nhập lấy token thật (giả lập host), rồi khởi tạo SDK qua manager.
-        loginThenStartPromotions()
         setupLayout()
-    }
-
-    /// Giả lập host: gọi API đăng nhập (2 bước) lấy accessToken + msisdn, rồi start SDK.
-    /// Login lỗi → fallback token=nil, customerId hardcode để demo vẫn chạy (BFF có thể 401).
-    private func loginThenStartPromotions() {
-        LoginService.shared.login { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let login):
-                // customerId = msisdn (số điện thoại) — ngoài đời host truyền vào.
-                self.promotions.start(customerId: login.username, token: login.accessToken, availableServices: self.demoServices)
-                self.showTokenAlert(customerId: login.username, token: login.accessToken)
-            case .failure(let error):
-                print("[Demo] Login lỗi: \(error) — chạy fallback không token")
-                self.promotions.start(customerId: self.demoCustomerId, token: self.demoToken, availableServices: self.demoServices)
-                self.showAlert("Login thất bại", "\(error)\n\nChạy fallback token = nil.")
-            }
-        }
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -180,17 +149,4 @@ class ViewController: UIViewController {
         present(alert, animated: true)
     }
 
-    /// Popup xác nhận login THẬT đã call: hiện customerId + token (preview) + nút Copy full token.
-    private func showTokenAlert(customerId: String, token: String) {
-        let preview = token.count > 60 ? "\(token.prefix(40))…\(token.suffix(12))" : token
-        let message = "customerId (msisdn): \(customerId)\n\n"
-            + "accessToken (\(token.count) ký tự):\n\(preview)\n\n"
-            + "→ đã truyền vào SDK làm Bearer token."
-        let alert = UIAlertController(title: "Login OK — token đã lấy", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Copy token", style: .default) { _ in
-            UIPasteboard.general.string = token
-        })
-        alert.addAction(UIAlertAction(title: "OK", style: .cancel))
-        present(alert, animated: true)
-    }
 }

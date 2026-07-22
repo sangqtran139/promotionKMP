@@ -30,6 +30,10 @@ struct MyPromotionCellViewModel {
     let applicableProducts: [ApplicableProduct]
     /// Keyword highlight title (chỉ dùng ở màn Search). nil = không highlight.
     let highlightKeyword: String?
+    /// Số ngày còn lại khi voucher sắp hết hạn — **do store (promotionLogic) tính** theo
+    /// `expireWarningDate` của server; `nil` = không sắp hết hạn. Cell chỉ format "Còn X ngày",
+    /// KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày → lệch Android).
+    let expiringInDays: Int?
 
     init(id: String,
          title: String,
@@ -45,7 +49,8 @@ struct MyPromotionCellViewModel {
          uncheckedImage: UIImage? = nil,
          isEligible: Bool = true,
          applicableProducts: [ApplicableProduct] = [],
-         highlightKeyword: String? = nil) {
+         highlightKeyword: String? = nil,
+         expiringInDays: Int? = nil) {
         self.id = id
         self.title = title
         self.description = description
@@ -61,40 +66,47 @@ struct MyPromotionCellViewModel {
         self.isEligible = isEligible
         self.applicableProducts = applicableProducts
         self.highlightKeyword = highlightKeyword
+        self.expiringInDays = expiringInDays
     }
 
     /// Voucher khách đã sở hữu (Search API). Không có `estimatedDiscount` / `ineligibleReason` —
     /// hai trường đó chỉ tồn tại ở luồng checkout (`EligibleOffer`).
+    ///
+    /// - Parameter isEnabled: voucher còn dùng được — **quyết định lấy từ store**
+    ///   (`MyPromotionVoucher.isEnabled` ở promotionLogic), cell KHÔNG tự suy lại (đối ứng Android
+    ///   `MyVoucherListItem.isEnabled`). Nhãn trạng thái/nút vẫn format ở native.
     init(voucher: VoucherItem,
+         isEnabled: Bool,
          buttonTitle: String? = nil,
          showsCheckbox: Bool = false,
          isChecked: Bool = false,
          stateText: String? = nil,
          checkedImage: UIImage? = nil,
          uncheckedImage: UIImage? = nil,
-         highlightKeyword: String? = nil) {
+         highlightKeyword: String? = nil,
+         expiringInDays: Int? = nil) {
 
         let state = voucher.displayState()
         var derivedStateText: String? = stateText
         var derivedButtonTitle: String? = buttonTitle
-        var derivedIsDisabled = !state.isUsable
+        let derivedIsDisabled = !isEnabled
 
         // Luôn suy trạng thái theo status: voucher không dùng được phải hiện nhãn trạng thái
         // + disable, kể cả khi caller truyền buttonTitle ("Chi tiết").
         switch state {
         case .used:
-            derivedStateText = stateText ?? voucher.displayStatusLabel ?? "Đã sử dụng"
+            derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.used
             derivedButtonTitle = nil
         case .expired:
-            derivedStateText = stateText ?? voucher.displayStatusLabel ?? "Hết hạn"
+            derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.expired
             derivedButtonTitle = nil
         case .ineligible:
-            derivedStateText = stateText ?? voucher.displayStatusLabel ?? "Không đủ điều kiện"
+            derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.ineligible
             derivedButtonTitle = nil
         case .usable:
             // Nhãn nút lấy từ server — vd voucher AVAILABLE_TO_CLAIM hiện "Nhận" thay vì "Sử dụng".
             if derivedButtonTitle == nil && derivedStateText == nil {
-                derivedButtonTitle = voucher.displayStatusLabel ?? "Sử dụng"
+                derivedButtonTitle = voucher.displayStatusLabel ?? PromotionUIStrings.use
             }
         default:
             derivedStateText = stateText ?? voucher.displayStatusLabel
@@ -114,31 +126,36 @@ struct MyPromotionCellViewModel {
             isDisabled: derivedIsDisabled,
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
-            isEligible: state.isUsable,
+            isEligible: isEnabled,
             applicableProducts: voucher.applicableProducts,
-            highlightKeyword: highlightKeyword
+            highlightKeyword: highlightKeyword,
+            expiringInDays: expiringInDays
         )
     }
 
     /// Ưu đãi đủ/không đủ điều kiện cho đơn hàng (Find Eligible Campaigns).
+    ///
+    /// - Parameter isEnabled: quyết định từ store (`ChooseOffer.isUsable`) — xem init phía trên.
     init(offer: EligibleOffer,
+         isEnabled: Bool,
          buttonTitle: String? = nil,
          showsCheckbox: Bool = false,
          isChecked: Bool = false,
          stateText: String? = nil,
          checkedImage: UIImage? = nil,
          uncheckedImage: UIImage? = nil,
-         highlightKeyword: String? = nil) {
+         highlightKeyword: String? = nil,
+         expiringInDays: Int? = nil) {
 
         var derivedStateText: String? = stateText
         var derivedButtonTitle: String? = buttonTitle
 
-        if !offer.usable {
+        if !isEnabled {
             // Ưu tiên gợi ý từ `unmatchedRules`; lõi không dựng sẵn câu tiếng Việt.
-            derivedStateText = stateText ?? offer.unmatchedRules.first ?? "Không đủ điều kiện"
+            derivedStateText = stateText ?? offer.unmatchedRules.first ?? PromotionUIStrings.ineligible
             derivedButtonTitle = nil
         } else if derivedButtonTitle == nil && derivedStateText == nil {
-            derivedButtonTitle = "Sử dụng"
+            derivedButtonTitle = PromotionUIStrings.use
         }
 
         // Số tiền giảm dự kiến hiện ở label nhỏ phía trên tên ưu đãi.
@@ -159,12 +176,13 @@ struct MyPromotionCellViewModel {
             showsCheckbox: showsCheckbox,
             isChecked: isChecked,
             stateText: derivedStateText,
-            isDisabled: !offer.usable,
+            isDisabled: !isEnabled,
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
-            isEligible: offer.usable,
+            isEligible: isEnabled,
             applicableProducts: [],
-            highlightKeyword: highlightKeyword
+            highlightKeyword: highlightKeyword,
+            expiringInDays: expiringInDays
         )
     }
 
@@ -176,7 +194,7 @@ struct MyPromotionCellViewModel {
         formatter.numberStyle = .decimal
         formatter.groupingSeparator = "."
         let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
-        return "Giảm \(formatted)đ"
+        return PromotionUIStrings.discount(formatted)
     }
 }
 
@@ -207,15 +225,13 @@ final class MyPromotionCell: UITableViewCell {
         self.viewModel = viewModel
         var dateString: String?
         var dateColor: UIColor?
-        if let date = viewModel.date {
-            if PRMPromotionDate.isExpiringSoon(date, thresholdDays: 3) {
-                let interval = date.timeIntervalSince(Date())
-                let days = max(1, Int(ceil(interval / 86400)))
-                dateString = "HSD: Còn \(days) ngày"
-                dateColor = Colors.warningOrangeColor
-            } else {
-                dateString = "HSD: \(PRMPromotionDate.display(date))"
-            }
+        // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
+        // dùng chung Android. Cell chỉ format; KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày).
+        if let days = viewModel.expiringInDays {
+            dateString = PromotionUIStrings.remainingDays(days)
+            dateColor = Colors.warningOrangeColor
+        } else if let date = viewModel.date {
+            dateString = PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
         }
 
         let cardModel = PromotionCardModel(

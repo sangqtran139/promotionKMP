@@ -7,10 +7,10 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
-import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.presentation.choosepromotion.COLLAPSED_MY_COUNT
+import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
 import com.ttcn.promotionsdk.databinding.FragmentChoosePromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
@@ -40,16 +40,19 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     internal var preSelectedVoucherIds: Set<String> = emptySet()
 
     /**
-     * Callback trả về [AppliedDiscount] từ validateStackableDiscounts mới.
-     * [forEndowView] tự nối vào [PRMEndowView.setDiscountDetails]; host chỉ set nếu cần làm thêm.
+     * Callback trả về **offers đang chọn** khi bấm "Áp dụng"; validate + áp do `EndowStore` lo.
+     * [forEndowView] tự nối vào [PRMEndowView.applySelectedOffers].
+     *
+     * Tham số thứ hai là hàm báo **đã validate xong** kèm mã lỗi (`null` = thành công) — màn chỉ
+     * đóng khi áp được, lỗi thì ở lại + báo. Đối ứng completion của `endowVM.validateAndApply` iOS.
+     *
+     * `internal`: [EligibleOffer] thuộc `promotionLogic`.
      */
-    var onApplyVoucher: ((List<AppliedDiscount>) -> Unit)? = null
+    internal var onApplySelectedOffers: ((List<EligibleOffer>, (String?) -> Unit) -> Unit)? = null
 
     // ─── Internal state ───────────────────────────────────────────────────────
+    // Selection + trạng thái mở/thu gọn nay do store (promotionLogic) quản — Fragment chỉ render.
 
-    private val isMultiSelection = false
-    private val currentSelectedVouchers = mutableListOf<MyVoucherListItem>()
-    private var isMyVoucherExpanded = false
     private lateinit var mainAdapter: ChoosePromotionMainAdapter
 
     private val viewModelFactory by lazy { promotionViewModelFactory() }
@@ -68,37 +71,41 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
         collectFlow(viewModel.uiState) { state ->
             binding.shimmerProvider.root.isVisible = state.isLoading
-            binding.btnApply.isEnabled = !state.isValidating
-            binding.btnApply.alpha = if (state.isValidating) 0.5f else 1f
 
-            // Sync currentSelectedVouchers từ preSelectedVoucherIds khi data load xong lần đầu
-            if (state.hasLoadedInitial && currentSelectedVouchers.isEmpty() && preSelectedVoucherIds.isNotEmpty()) {
-                val allVouchers = state.vouchers + state.otherVouchers
-                currentSelectedVouchers.addAll(allVouchers.filter { it.voucherId in preSelectedVoucherIds })
-            }
-
+            updateApplyButtonState(state)
             rebuildList(state)
         }
 
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
                 is ChoosePromotionEffect.ShowError ->
-                    showToast(mapErrorMessage(effect.errorCode))
+                    showToast(mapPromotionError(effect.errorCode))
 
                 is ChoosePromotionEffect.OpenVoucherDetail -> {
                     openPromotionDetail(effect.voucherId)
                 }
 
-                // validateStackableDiscounts thành công → trả AppliedDiscount về host rồi back
-                is ChoosePromotionEffect.ApplyValidatedVouchers -> {
-                    if (effect.details.isEmpty()) {
+                // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate).
+                // Lỗi → KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công → đóng màn. (Giống iOS.)
+                is ChoosePromotionEffect.ApplySelectedOffers -> {
+                    if (effect.offers.isEmpty()) {
                         return@collectFlow
                     }
-                    onApplyVoucher?.invoke(effect.details)
-                    onBackFragment()
+                    val apply = onApplySelectedOffers
+                    if (apply == null) {
+                        onBackFragment()
+                        return@collectFlow
+                    }
+                    apply(effect.offers) { errorCode ->
+                        if (errorCode != null) showToast(mapPromotionError(errorCode))
+                        else onBackFragment()
+                    }
                 }
             }
         }
+
+        // Seed voucher pre-select vào store trước khi load (store giữ selection).
+        viewModel.handleAction(ChoosePromotionAction.SetPreSelected(preSelectedVoucherIds.toList()))
 
         // Truyền data đã load sẵn; nếu rỗng → ViewModel tự gọi API
         viewModel.handleAction(
@@ -113,21 +120,11 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
-            onVoucherClick = { handleVoucherSelection(it) },
+            onVoucherClick = { viewModel.handleAction(ChoosePromotionAction.ToggleSelection(it.voucherId)) },
             onDetailClick  = { openPromotionDetail(it.voucherId) },
-            onSeeMoreMyVoucher = {
-                val state = viewModel.uiState.value
-                if (!isMyVoucherExpanded) {
-                    isMyVoucherExpanded = true
-                    rebuildList(state)
-                } else if (!state.isLastPage) {
-                    viewModel.handleAction(ChoosePromotionAction.LoadMoreMyVouchers)
-                }
-            },
-            onCollapseMyVoucher = {
-                isMyVoucherExpanded = false
-                rebuildList(viewModel.uiState.value)
-            },
+            // Store chạy state-machine "mở hết → tải trang kế → thu gọn" (gộp cả expand & collapse).
+            onSeeMoreMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },
+            onCollapseMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },
         )
 
         binding.rcvVoucher.apply {
@@ -156,15 +153,16 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
         if (state.vouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
-            val visible = if (isMyVoucherExpanded) state.vouchers else state.vouchers.take(COLLAPSED_COUNT)
+            val visible = if (state.myExpanded) state.vouchers else state.vouchers.take(COLLAPSED_MY_COUNT)
             visible.forEach { voucher ->
-                val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                val isSelected = voucher.voucherId in state.selectedIds
                 items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
             }
-            if (state.vouchers.size > COLLAPSED_COUNT) {
+            // Nút "Xem thêm/Thu gọn": trạng thái tính bằng rule dùng chung ở store (state.mySeeMore).
+            if (state.mySeeMore != ChooseSeeMoreState.HIDDEN) {
                 items.add(
                     ChoosePromotionListItem.SeeMoreMyVoucher(
-                        isExpanded = isMyVoucherExpanded && !state.isLastPage
+                        isExpanded = state.mySeeMore == ChooseSeeMoreState.COLLAPSE
                     )
                 )
             }
@@ -173,7 +171,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         if (state.otherVouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
             state.otherVouchers.forEach { voucher ->
-                val isSelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
+                val isSelected = voucher.voucherId in state.selectedIds
                 items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
             }
         }
@@ -181,54 +179,25 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         mainAdapter.submitList(items)
     }
 
-    // ─── Selection ────────────────────────────────────────────────────────────
-
-    private fun handleVoucherSelection(voucher: MyVoucherListItem) {
-        if (isMultiSelection) handleMultiSelection(voucher) else handleSingleSelection(voucher)
-        mainAdapter.updateVoucherSelection(
-            voucherId = voucher.voucherId,
-            isMultiSelection = isMultiSelection,
-        )
-        updateApplyButtonState()
-    }
-
-    private fun handleSingleSelection(voucher: MyVoucherListItem) {
-        val isCurrentlySelected = currentSelectedVouchers.any { it.voucherId == voucher.voucherId }
-        currentSelectedVouchers.clear()
-        if (!isCurrentlySelected) currentSelectedVouchers.add(voucher)
-    }
-
-    private fun handleMultiSelection(voucher: MyVoucherListItem) {
-        if (currentSelectedVouchers.any { it.voucherId == voucher.voucherId }) {
-            currentSelectedVouchers.removeAll { it.voucherId == voucher.voucherId }
-        } else {
-            currentSelectedVouchers.add(voucher)
-        }
-    }
-
     // ─── Buttons ──────────────────────────────────────────────────────────────
 
     private fun setupButtons() {
         binding.btnBack.setOnClickListener { onBackFragment() }
         binding.btnApply.setOnClickListener { onApplyClicked() }
-        updateApplyButtonState()
     }
 
     private fun onApplyClicked() {
-        viewModel.handleAction(
-            ChoosePromotionAction.ValidateAndApply(selected = currentSelectedVouchers.toList())
-        )
+        viewModel.handleAction(ChoosePromotionAction.ValidateAndApply)
     }
 
-    private fun updateApplyButtonState() {
-        if (!isMultiSelection) {
-            binding.layoutReducePrice.isVisible = false
-            return
+    /** Thanh "giảm giá" (chỉ hiện ở chế độ multi-select) — selection lấy từ state store. */
+    private fun updateApplyButtonState(state: ChoosePromotionUiState) {
+        val show = state.isMultiSelection && state.selectedIds.isNotEmpty()
+        binding.layoutReducePrice.isVisible = show
+        if (show) {
+            binding.txtNumberChooseEndow.text =
+                getString(R.string.prm_selected_voucher_count, state.selectedIds.size)
         }
-        val hasSelected = currentSelectedVouchers.isNotEmpty()
-        binding.layoutReducePrice.isVisible = hasSelected
-        if (!hasSelected) return
-        binding.txtNumberChooseEndow.text = getString(R.string.prm_selected_voucher_count, currentSelectedVouchers.size)
     }
 
     // ─── Search ───────────────────────────────────────────────────────────────
@@ -250,15 +219,8 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
 
-    private fun mapErrorMessage(error: String) = when (error) {
-        ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-        ErrorCodes.NO_RESULT -> getString(R.string.prm_no_result)
-        else                  -> getString(R.string.prm_error_general)
-    }
 
     companion object {
-        private const val COLLAPSED_COUNT = 2
-
         /**
          * Dựng màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
          *
@@ -271,19 +233,22 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
          * }
          * ```
          *
-         * Host muốn làm thêm việc gì đó lúc áp thì ghi đè [onApplyVoucher] — nhớ tự gọi
-         * `endowView.setDiscountDetails(...)`, vì set lại sẽ thay callback mặc định.
+         * Host muốn làm thêm việc gì đó lúc áp thì ghi đè [onApplySelectedOffers] — nhớ tự gọi
+         * `endowView.setDiscountDetails(...)` và hàm báo-đã-xong, vì set lại sẽ thay callback mặc định.
          */
         @JvmStatic
         fun forEndowView(endowView: PRMEndowView): ChoosePromotionFragment =
             ChoosePromotionFragment().apply {
                 initialMyOffers = endowView.myVouchers
                 initialOtherOffers = endowView.otherVouchers
+                // Pre-select TẤT CẢ ưu đãi đang áp (kể cả đang UNAVAILABLE) để user thấy & bỏ chọn
+                // được — khớp iOS (`appliedDiscounts.map { $0.objectId }`, không lọc `valid`).
                 preSelectedVoucherIds = endowView.discountDetails
-                    .filter { it.valid }
                     .map { it.objectId }
                     .toSet()
-                onApplyVoucher = { details -> endowView.setDiscountDetails(details) }
+                onApplySelectedOffers = { offers, onSettled ->
+                    endowView.applySelectedOffers(offers, onSettled)
+                }
             }
     }
 }

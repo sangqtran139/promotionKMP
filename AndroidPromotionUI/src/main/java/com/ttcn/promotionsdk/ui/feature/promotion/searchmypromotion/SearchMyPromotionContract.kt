@@ -1,6 +1,7 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 
 internal data class SearchMyPromotionUiState(
     val keyword: String = "",
@@ -17,14 +18,25 @@ internal data class SearchMyPromotionUiState(
     }
 }
 
+/**
+ * Chỉ khai báo action mà màn thật sự phát — khớp 1-1 `SearchMyPromotionViewModel.Input` bên iOS.
+ * (`ClearKeyword`/`Retry` của store chưa màn nào dùng: gõ trắng đã đi qua `QueryChanged("")`.)
+ */
 internal sealed interface SearchMyPromotionAction {
     data class QueryChanged(val keyword: String) : SearchMyPromotionAction
     data object Search : SearchMyPromotionAction
     data object LoadMore : SearchMyPromotionAction
-    data object ClearKeyword : SearchMyPromotionAction
-    data object Retry : SearchMyPromotionAction
+    data class OpenServiceSelector(val voucher: MyVoucherListItem) : SearchMyPromotionAction
+    data class ServiceSelected(
+        val voucher: MyVoucherListItem,
+        val service: ServiceSelectorUiItem,
+    ) : SearchMyPromotionAction
 }
 
 internal sealed interface SearchMyPromotionEffect {
     data class ShowError(val errorCode: String) : SearchMyPromotionEffect
+    data class ShowServiceSelector(
+        val voucher: MyVoucherListItem,
+        val services: List<ServiceSelectorUiItem>,
+    ) : SearchMyPromotionEffect
 }

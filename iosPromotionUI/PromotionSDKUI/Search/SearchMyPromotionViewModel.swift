@@ -26,7 +26,9 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
         let isLoading: AnyPublisher<Bool, Never>
         let isLoadingMore: AnyPublisher<Bool, Never>
         let isEmpty: AnyPublisher<Bool, Never>
-        let validationError: AnyPublisher<String?, Never>
+        /// Phát **mã lỗi** (raw) — view map code → chuỗi. Một-lần như effect bên Android
+        /// (`SearchMyPromotionEffect.ShowError`): subscriber mới KHÔNG nhận lại lỗi cũ.
+        let errorCode: AnyPublisher<String, Never>
     }
 
     let data: SearchMyPromotionBuilder.DataModel
@@ -35,7 +37,7 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     // ─── Store ────────────────────────────────────────────────────────────────
     private let store: SearchMyPromotionStore
     private let stateSubject: CurrentValueSubject<SearchMyPromotionState, Never>
-    private let errorSubject = CurrentValueSubject<String?, Never>(nil)
+    private let errorSubject = PassthroughSubject<String, Never>()
     private var storeCancellable: PromotionCancellable?
 
     init(router: SearchMyPromotionRouter,
@@ -61,12 +63,10 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
 
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
     private func bindStore() {
-        storeCancellable = store.watchState { [weak self] state in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.render(state)
-                self.handleError(state)
-            }
+        storeCancellable = observeStore(watch: { self.store.watchState(onEach: $0) }) { [weak self] state in
+            guard let self = self else { return }
+            self.render(state)
+            self.handleError(state)
         }
     }
 
@@ -107,12 +107,12 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     private func buildOutput() -> Output {
         Output(
             promotions: stateSubject
-                .map { state in state.vouchers.map { MyPromotionCellViewModel(voucher: $0.source, highlightKeyword: state.keyword) } }
+                .map { state in state.vouchers.map { MyPromotionCellViewModel(voucher: $0.source, isEnabled: $0.isEnabled, highlightKeyword: state.keyword, expiringInDays: $0.expiringInDays?.intValue) } }
                 .eraseToAnyPublisher(),
             isLoading: stateSubject.map { $0.isLoading }.eraseToAnyPublisher(),
             isLoadingMore: stateSubject.map { $0.isLoadingMore }.eraseToAnyPublisher(),
             isEmpty: stateSubject.map { !$0.isLoading && $0.isEmpty }.eraseToAnyPublisher(),
-            validationError: errorSubject.eraseToAnyPublisher()
+            errorCode: errorSubject.eraseToAnyPublisher()
         )
     }
 }

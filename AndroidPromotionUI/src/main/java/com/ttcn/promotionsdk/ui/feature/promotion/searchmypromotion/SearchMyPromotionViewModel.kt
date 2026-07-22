@@ -1,20 +1,28 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import androidx.lifecycle.viewModelScope
+import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionState
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionStore
+import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableProducts
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
+import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
 
 /**
  * Lớp bọc mỏng quanh [SearchMyPromotionStore] (tầng UI-logic dùng chung ở `promotionLogic`).
  * **Đồng nhất với `SearchMyPromotionViewModel` bên iOS** — cùng `store` / `bindStore` / `render` /
  * `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
+ *
+ * `OpenServiceSelector`/`ServiceSelected` là phần thuần Android (bottom sheet + `config`) — cùng
+ * khuôn với `MyPromotionViewModel`, đối ứng `SearchMyPromotionViewController` bên iOS.
  */
 internal class SearchMyPromotionViewModel(
     searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
+    private val config: PromotionSDKConfig,
 ) : PRMBaseViewModel<SearchMyPromotionUiState, SearchMyPromotionAction, SearchMyPromotionEffect>(
     SearchMyPromotionUiState(),
 ) {
@@ -41,8 +49,8 @@ internal class SearchMyPromotionViewModel(
             is SearchMyPromotionAction.QueryChanged -> store.dispatch(SearchMyPromotionIntent.QueryChanged(action.keyword))
             SearchMyPromotionAction.Search -> store.dispatch(SearchMyPromotionIntent.Search)
             SearchMyPromotionAction.LoadMore -> store.dispatch(SearchMyPromotionIntent.LoadMore)
-            SearchMyPromotionAction.ClearKeyword -> store.dispatch(SearchMyPromotionIntent.ClearKeyword)
-            SearchMyPromotionAction.Retry -> store.dispatch(SearchMyPromotionIntent.Retry)
+            is SearchMyPromotionAction.OpenServiceSelector -> openServiceSelector(action.voucher)
+            is SearchMyPromotionAction.ServiceSelected -> Unit // TODO: điều hướng màn dịch vụ khi có đích đến
         }
     }
 
@@ -56,6 +64,13 @@ internal class SearchMyPromotionViewModel(
         val code = state.errorCode ?: return
         sendEffect(SearchMyPromotionEffect.ShowError(code))   // view map code → chuỗi
         store.dispatch(SearchMyPromotionIntent.ConsumeError)
+    }
+
+    // ─── Android-only: bottom sheet "Chọn dịch vụ" (render native; lọc dùng chung ở promotionLogic) ──
+    private fun openServiceSelector(voucher: MyVoucherListItem) {
+        val services = servicesForApplicableProducts(voucher.applicableProducts, config.availableServices)
+            .map { it.toServiceSelectorUiItem() }
+        sendEffect(SearchMyPromotionEffect.ShowServiceSelector(voucher = voucher, services = services))
     }
 }
 
