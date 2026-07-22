@@ -228,7 +228,10 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         }
         for tab in tabs {
             let tabView = tabViewsByCode[tab.code]
-            tabView?.titleText = "\(tab.label) (\(tab.count))"
+            // `count` là KotlinInt? → phải unwrap, nếu không interpolate sẽ lòi "Optional(...)".
+            // Khớp Android (`count ?: 0`, luôn hiện "(count)").
+            let count = tab.count?.intValue ?? 0
+            tabView?.titleText = "\(tab.label) (\(count))"
             tabView?.isFocusedState = (tab.code == selectedCode)
         }
     }
