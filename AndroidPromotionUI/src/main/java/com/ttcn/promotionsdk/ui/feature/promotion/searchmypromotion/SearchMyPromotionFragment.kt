@@ -13,7 +13,6 @@ import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.di.PromotionViewModelFactory
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.ui.utils.extension.hideSoftInput
 
 class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
@@ -79,7 +78,7 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
-                is SearchMyPromotionEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
+                is SearchMyPromotionEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
             }
         }
 
@@ -117,12 +116,6 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
         )
     }
 
-    private fun mapErrorMessage(errorCode: String): String {
-        return when (errorCode) {
-            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            else -> getString(R.string.prm_error_general)
-        }
-    }
 
     private companion object {
         private const val MIN_KEYWORD_LENGTH = 1

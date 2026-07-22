@@ -57,6 +57,16 @@ internal data class MyVoucherListItem(
     val isSelected: Boolean = false,
     val isAutoApplied: Boolean = false,
     val applicableProducts: List<ApplicableProduct> = emptyList(),
+    /**
+     * Voucher còn dùng được — **quyết định do store tính** (`MyPromotionVoucher.isEnabled` /
+     * `ChooseOffer.isUsable`). UI đọc thẳng, KHÔNG tự suy lại từ [status] (tránh 2 nền tảng lệch rule).
+     */
+    val isEnabled: Boolean = true,
+    /**
+     * Số ngày còn lại khi voucher sắp hết hạn (trong ngưỡng `expireWarningDate` của server) —
+     * **quyết định do store tính**; `null` nếu không áp dụng. UI chỉ format "Còn X ngày".
+     */
+    val expiringInDays: Int? = null,
 )
 
 internal data class TabItem(

@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.databinding.FragmentMyPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
@@ -93,8 +92,9 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
             latestState = state
             binding.shimmerProvider.root.isVisible = state.isLoading && state.vouchers.isEmpty()
             binding.swipeRefreshLayout.isRefreshing = state.isRefreshing
-            binding.ctlNoResult.isVisible =
-                !state.isLoading && !state.isRefreshingTab && state.isEmpty
+            // Empty-view hiện khi tải xong mà rỗng — khớp iOS (`!isLoading && isEmpty`). KHÔNG gác thêm
+            // `!isRefreshingTab` (nó nuốt mất empty-view khi tab/refresh trả về rỗng).
+            binding.ctlNoResult.isVisible = !state.isLoading && state.isEmpty
             binding.homeList.isVisible = state.vouchers.isNotEmpty() ||
                     homeListAdapter.currentList.isNotEmpty()
 
@@ -135,7 +135,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
-                is MyPromotionEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
+                is MyPromotionEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
                 is MyPromotionEffect.OpenVoucherDetail -> Unit
                 is MyPromotionEffect.ShowServiceSelector -> showServiceSelector(
                     voucher = effect.voucher,
@@ -202,11 +202,4 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
         private const val LOAD_MORE_THRESHOLD = 2
     }
 
-    private fun mapErrorMessage(error: String): String {
-        return when (error) {
-            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            ErrorCodes.NO_RESULT -> getString(R.string.prm_no_result)
-            else -> getString(R.string.prm_error_general)
-        }
-    }
 }

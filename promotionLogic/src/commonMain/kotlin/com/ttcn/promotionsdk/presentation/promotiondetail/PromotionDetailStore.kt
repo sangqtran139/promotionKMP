@@ -48,8 +48,27 @@ class PromotionDetailStore(
 
     fun dispatch(intent: PromotionDetailIntent) {
         when (intent) {
+            is PromotionDetailIntent.Seed -> seed(intent.status)
             is PromotionDetailIntent.LoadDetail -> loadDetail(intent.voucherId)
             PromotionDetailIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
+        }
+    }
+
+    /**
+     * Seed quyết định nút "Dùng ngay" từ trạng thái cơ bản (từ card/promotion) **trước khi** fetch
+     * detail — để hai nền tảng hiện nút ngay, không chờ mạng. Cùng rule với [loadDetail]
+     * (`displayState().isUsable`); KHÔNG đè khi đã có detail thật.
+     */
+    private fun seed(status: String) {
+        val s = VoucherStatus.from(status)
+        val usable = s.displayState().isUsable
+        _state.update {
+            if (it.detail != null) it else it.copy(
+                status = s,
+                actionVisible = usable,
+                actionEnabled = usable,
+                actionLabel = "",
+            )
         }
     }
 
@@ -96,6 +115,8 @@ data class PromotionDetailState(
 )
 
 sealed interface PromotionDetailIntent {
+    /** Seed nút "Dùng ngay" từ trạng thái cơ bản (card/promotion) trước khi fetch detail. */
+    data class Seed(val status: String) : PromotionDetailIntent
     data class LoadDetail(val voucherId: String) : PromotionDetailIntent
     data object ConsumeError : PromotionDetailIntent
 }

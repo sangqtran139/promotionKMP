@@ -74,12 +74,10 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
 
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
     private func bindStore() {
-        storeCancellable = store.watchState { [weak self] state in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.render(state)
-                self.handleError(state)
-            }
+        storeCancellable = observeStore(watch: { self.store.watchState(onEach: $0) }) { [weak self] state in
+            guard let self = self else { return }
+            self.render(state)
+            self.handleError(state)
         }
     }
 
@@ -130,7 +128,7 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
             isRefreshing: stateSubject.map { $0.isRefreshing }.eraseToAnyPublisher(),
             isLoadingMore: stateSubject.map { $0.isLoadingMore }.eraseToAnyPublisher(),
             isLoading: stateSubject.map { $0.isLoading && $0.vouchers.isEmpty }.eraseToAnyPublisher(),
-            promotions: stateSubject.map { $0.vouchers.map { MyPromotionCellViewModel(voucher: $0.source) } }.eraseToAnyPublisher(),
+            promotions: stateSubject.map { $0.vouchers.map { MyPromotionCellViewModel(voucher: $0.source, expiringInDays: $0.expiringInDays?.intValue) } }.eraseToAnyPublisher(),
             tabs: stateSubject.map { $0.tabs }.eraseToAnyPublisher(),
             selectedTabCode: stateSubject.map { $0.selectedTabCode ?? "all" }.eraseToAnyPublisher(),
             canLoadMore: stateSubject.map { !$0.isLastPage }.eraseToAnyPublisher(),

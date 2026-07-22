@@ -102,9 +102,9 @@ internal class MyPromotionAdapter(
             binding.apply {
                 val voucher = item.data
                 val ctx = binding.root.context
-                // Quy tắc dùng chung với iOS, định nghĩa ở promotionLogic. Trước đây Android chỉ
-                // chấp nhận ACTIVE nên voucher AVAILABLE_TO_CLAIM bị khoá, còn iOS thì cho dùng.
-                val canUse = voucher.status.displayState().isUsable
+                // Quyết định "còn dùng được" lấy THẲNG từ store (promotionLogic) — không tự suy lại
+                // từ status ở đây (giữ 2 nền tảng đồng nhất rule; xem MyPromotionVoucher.isEnabled).
+                val canUse = voucher.isEnabled
 
                 imgVoucher.loadPromotionVoucherLogo(voucher.logo)
 
@@ -120,11 +120,20 @@ internal class MyPromotionAdapter(
                         keyword = highlightKeyword,
                         highlightColor = highlightColor,
                     )
-                // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống).
+                // Dòng ngày: store quyết định "sắp hết hạn" (expiringInDays, theo expireWarningDate của
+                // server) → hiện "HSD: Còn X ngày"; ngược lại hiện HSD thường. API không trả HSD → ẩn hẳn.
                 val displayDate = voucher.expirationDate.toVoucherDisplayDate()
-                tvEndDate.isVisible = displayDate.isNotBlank()
-                if (displayDate.isNotBlank()) {
-                    tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                val expiringInDays = voucher.expiringInDays
+                when {
+                    expiringInDays != null -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
+                    }
+                    displayDate.isNotBlank() -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                    }
+                    else -> tvEndDate.isVisible = false
                 }
 
                 ctlTop.alpha = if (canUse) 1f else 0.6f

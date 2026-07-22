@@ -10,9 +10,7 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.ui.di.promotionViewModelFactory
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.databinding.FragmentDetailPromotionBinding
 import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.ui.entry.PromotionSDK
@@ -81,7 +79,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         }
         collectFlow(viewModel.uiEffect) { effect ->
             when (effect) {
-                is PromotionDetailEffect.ShowError -> showToast(mapErrorMessage(effect.errorCode))
+                is PromotionDetailEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
                 is PromotionDetailEffect.ShowServiceSelector -> showServiceSelector(effect.services)
             }
         }
@@ -129,10 +127,10 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         }
         binding.tvUse.isVisible = state.actionVisible
         binding.tvUse.isEnabled = state.actionEnabled
-        binding.tvUse.text = state.actionLabel.ifBlank {
-            if (state.status == VoucherStatus.ACTIVE) getString(R.string.prm_use_now)
-            else detail.displayStatusLabel.orEmpty()
-        }
+        // Nút "Sử dụng ngay" hiện cho MỌI trạng thái usable (actionEnabled do store quyết định) —
+        // khớp iOS/store, không khoá riêng ACTIVE (AVAILABLE/USABLE/AVAILABLE_TO_CLAIM cũng usable).
+        binding.tvUse.text = if (state.actionEnabled) getString(R.string.prm_use_now)
+        else state.actionLabel.ifBlank { detail.displayStatusLabel.orEmpty() }
 
         bindDetailTabsIfNeeded(
             voucherId = detail.voucherId,
@@ -235,11 +233,4 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
     }
 
-    private fun mapErrorMessage(error: String): String {
-        return when (error) {
-            ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-            "error_detail_unavailable" -> getString(R.string.prm_no_result)
-            else -> getString(R.string.prm_error_general)
-        }
-    }
 }

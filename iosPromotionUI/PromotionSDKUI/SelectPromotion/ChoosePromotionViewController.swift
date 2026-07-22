@@ -156,6 +156,14 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
                 self?.currentSelectedPromotions = promotions
             }
             .store(in: &cancellables)
+
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android — trước đây Choose iOS nuốt lỗi).
+        output.errorCode
+            .sink { [weak self] code in
+                guard let self = self else { return }
+                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
+            }
+            .store(in: &cancellables)
     }
     
     //MARK: - Action

@@ -150,6 +150,14 @@ class PRMEndowView @JvmOverloads constructor(
         viewModel?.applyDiscountDetails(details, unavailable = hasInvalid)
     }
 
+    /**
+     * Nhận offers user chọn từ màn "Chọn ưu đãi" → [EndowStore] validate & áp (dùng chung iOS).
+     * `internal`: [EligibleOffer] thuộc `promotionLogic`; host dùng qua [ChoosePromotionFragment.forEndowView].
+     */
+    internal fun applySelectedOffers(offers: List<EligibleOffer>) {
+        viewModel?.validateAndApply(offers)
+    }
+
     /** Đánh dấu ưu đãi hiện tại không còn khả dụng mà không thay đổi danh sách. */
     fun markAppliedVoucherUnavailable() {
         viewModel?.markDiscountUnavailable()
@@ -180,27 +188,24 @@ class PRMEndowView @JvmOverloads constructor(
         binding.shimmerEndow.stopShimmer()
         binding.shimmerEndow.visibility = GONE
 
-        when {
-            // Ưu đãi đã áp dụng nhưng không còn khả dụng → UNAVAILABLE
-            state.discountUnavailable && state.discountDetails.isNotEmpty() -> {
+        // Trạng thái widget do store quyết định (EndowStore.widgetState) — View chỉ render.
+        when (state.widgetState) {
+            EndowViewState.UNAVAILABLE -> {
                 currentState = EndowViewState.UNAVAILABLE
                 showUnavailableState(state.discountDetails)
             }
 
-            // Đã áp dụng ưu đãi → APPLIED
-            state.discountDetails.isNotEmpty() -> {
+            EndowViewState.APPLIED -> {
                 currentState = EndowViewState.APPLIED
                 showAppliedState(state.discountDetails)
             }
 
-            // Có ưu đãi nhưng chưa chọn → NOT_APPLIED
-            state.totalVoucherCount > 0 -> {
+            EndowViewState.NOT_APPLIED -> {
                 currentState = EndowViewState.NOT_APPLIED
                 showNotAppliedState(state.totalVoucherCount)
             }
 
-            // Không có ưu đãi nào → EMPTY (ẩn nút hành động)
-            else -> {
+            EndowViewState.EMPTY -> {
                 currentState = EndowViewState.EMPTY
                 showEmptyState()
             }

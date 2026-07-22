@@ -109,6 +109,8 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     var orderValue: String?
     var serviceCode: String?
     var metaData: String?
+    /// Order items (SKU) của đơn hiện tại — lõi đọc qua `getOrderItems()` cho `findEligible`.
+    var orderItems: [PromotionOrderItem] = []
 
     init(session: PromotionSessionConfig) {
         self.session = session
@@ -125,4 +127,20 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     func getOrderValue() -> String? { orderValue }
     func getService() -> String? { serviceCode }
     func getMetaData() -> String? { metaData }
+
+    /// Map order items (public) → model lõi Kotlin cho Find Eligible Campaigns — dùng chung với
+    /// `ChoosePromotionStore`/`EndowStore` (trước đây map nằm riêng ở `PromotionSDKImpl`).
+    func getOrderItems() -> [EligibleOrderItem] {
+        orderItems.map {
+            EligibleOrderItem(
+                skuId: $0.skuId,
+                quantity: Int32($0.quantity),
+                unitPrice: $0.unitPrice,
+                orderItemId: nil,
+                productId: $0.productId,
+                productName: $0.productName,
+                productCategory: $0.productCategory
+            )
+        }
+    }
 }

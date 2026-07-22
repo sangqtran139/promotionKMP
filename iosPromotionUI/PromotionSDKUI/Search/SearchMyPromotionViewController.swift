@@ -157,6 +157,14 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
                 }
             }
             .store(in: &cancellables)
+
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion — trước đây iOS nuốt lỗi).
+        output.validationError
+            .sink { [weak self] code in
+                guard let self = self, let code = code else { return }
+                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Action

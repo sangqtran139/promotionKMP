@@ -74,7 +74,8 @@ class PromotionTokenLoadingFragment : Fragment() {
         PromotionManager.updateContext(
             orderId = "ORD-DEMO-001",
             orderValue = "500000",
-            serviceCode = "P-FOOD-001",
+            // TEST: để null (khớp iOS demo) — kiểm tra detail có load + nút "Sử dụng ngay" hiện không.
+            serviceCode = null,
             metaData = null,
         )
     }

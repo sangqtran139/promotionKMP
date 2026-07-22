@@ -36,6 +36,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         let isApplyEnabled: AnyPublisher<Bool, Never>
         let isApplyVisible: AnyPublisher<Bool, Never>
         let isLoading: AnyPublisher<Bool, Never>
+        /// Phát **mã lỗi** (raw) — VC map code → chuỗi (đồng nhất Android/MyPromotion).
+        let errorCode: AnyPublisher<String, Never>
     }
 
     /// Gói dữ liệu hiển thị — seed từ `promotion` (cơ bản), cập nhật khi store fetch detail đầy đủ về.
@@ -93,12 +95,10 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
 
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
     private func bindStore() {
-        storeCancellable = store.watchState { [weak self] state in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.render(state)
-                self.handleError(state)
-            }
+        storeCancellable = observeStore(watch: { self.store.watchState(onEach: $0) }) { [weak self] state in
+            guard let self = self else { return }
+            self.render(state)
+            self.handleError(state)
         }
     }
 
@@ -107,6 +107,9 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         // iOS tự kích load lần đầu (VC gọi transform một lần); Android do Fragment kích LoadDetail.
         if !didStart {
             didStart = true
+            // Seed nút "Dùng ngay" vào store từ trạng thái cơ bản (rule dùng chung) trước khi fetch —
+            // store thành nguồn quyết định nút nhất quán cả trước/sau khi có detail.
+            store.dispatch(intent: PromotionDetailIntentSeed(status: data.promotion.status ?? ""))
             store.dispatch(intent: PromotionDetailIntentLoadDetail(voucherId: voucherId))
         }
     }
@@ -141,7 +144,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
             applyButtonTitle: display.map { $0.applyTitle }.eraseToAnyPublisher(),
             isApplyEnabled: display.map { $0.applyEnabled }.eraseToAnyPublisher(),
             isApplyVisible: display.map { $0.applyVisible }.eraseToAnyPublisher(),
-            isLoading: isLoadingSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher()
+            isLoading: isLoadingSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher(),
+            errorCode: errorSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher()
         )
     }
 
@@ -165,7 +169,7 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
             banner: promotion.logo,
             detailContent: "",
             guideContent: "",
-            applyTitle: usable ? "Sử dụng ngay" : "",
+            applyTitle: usable ? PromotionUIStrings.useNow : "",
             applyEnabled: usable,
             applyVisible: usable
         )
@@ -183,13 +187,13 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
             banner: detail.banner,
             detailContent: detail.description_ ?? "",
             guideContent: detail.guideline ?? "",
-            applyTitle: state.actionEnabled ? "Sử dụng ngay" : state.actionLabel,
+            applyTitle: state.actionEnabled ? PromotionUIStrings.useNow : state.actionLabel,
             applyEnabled: state.actionEnabled,
             applyVisible: state.actionVisible
         )
     }
 
     private static func dateString(_ raw: String?) -> String {
-        PRMPromotionDate.parse(raw).map { "Hạn sử dụng \(PRMPromotionDate.display($0))" } ?? ""
+        PRMPromotionDate.parse(raw).map { PromotionUIStrings.expiryDateLong(PRMPromotionDate.display($0)) } ?? ""
     }
 }

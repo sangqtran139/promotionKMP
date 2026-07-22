@@ -6,6 +6,15 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 - **Package:** `ui/feature/promotion/promotiondetail`
 - **Thành phần:** `PromotionDetailFragment`, `PromotionDetailViewModel`, `PromotionDetailContract`, `PrmContentDetailEndowFragment`, `adapter/PrmCustomFragmentPagerAdapter`
 
+> **Lệch có chủ đích Android ↔ iOS — SEED nút/card (chưa đồng bộ, cố ý):**
+> `PromotionDetailStore` có sẵn intent `Seed(status)` (dùng chung). **iOS** dispatch nó để hiện ngay
+> card + nút "Dùng ngay" seed từ voucher cơ bản (dữ liệu list truyền qua navigation) **trước khi** fetch
+> detail. **Android KHÔNG seed**: nav chỉ mang `voucherId`, và màn loading ẩn toàn bộ `contentContainer`
+> sau shimmer → muốn seed hiển thị phải **viết lại màn loading** (thay shimmer bằng card-seed).
+> Quyết định **giữ nguyên** (idiom loading khác nhau: iOS seed-card, Android shimmer-until-loaded) — lợi
+> ích chỉ là bớt "nháy" ~1 nhịp loading, không đáng rủi ro rewrite. Muốn parity thì port pattern
+> `seedDisplay` của iOS: truyền voucher cơ bản qua args + `bindSeedContent` + dispatch `Seed(status)`.
+
 ---
 
 ## 1. Contract (MVI)

@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
 import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
+import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.TabItem
 
@@ -11,7 +11,6 @@ internal data class ChoosePromotionUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
     val isLoadingMoreOther: Boolean = false,
-    val isValidating: Boolean = false,
     val isEmpty: Boolean = false,
     val tabs: List<TabItem> = emptyList(),
     val selectedTabCode: String? = null,
@@ -26,6 +25,14 @@ internal data class ChoosePromotionUiState(
     val isLastOtherPage: Boolean = true,
     val vouchers: List<MyVoucherListItem> = emptyList(),
     val otherVouchers: List<MyVoucherListItem> = emptyList(),
+    /** Cho phép chọn nhiều voucher — do store quyết định. */
+    val isMultiSelection: Boolean = false,
+    /** id các voucher đang chọn — selection do store (promotionLogic) quản, không giữ ở Fragment. */
+    val selectedIds: List<String> = emptyList(),
+    /** Nhóm "Ưu đãi của tôi" đang mở hết hay thu gọn — do store quản (SeeMoreMy). */
+    val myExpanded: Boolean = false,
+    /** Trạng thái nút "Xem thêm/Thu gọn" — tính bằng rule dùng chung ở store. */
+    val mySeeMore: ChooseSeeMoreState = ChooseSeeMoreState.HIDDEN,
 )
 
 internal sealed interface ChoosePromotionAction {
@@ -60,9 +67,17 @@ internal sealed interface ChoosePromotionAction {
     data object LoadMoreMyVouchers : ChoosePromotionAction
     data object LoadMoreOtherVouchers : ChoosePromotionAction
 
-    data class ValidateAndApply(
-        val selected: List<MyVoucherListItem>,
-    ) : ChoosePromotionAction
+    /** Seed voucher pre-select (discount đang áp trước đó) — forward xuống store. */
+    data class SetPreSelected(val ids: List<String>) : ChoosePromotionAction
+
+    /** Chọn/bỏ chọn 1 voucher theo id — store quyết định rule single/multi. */
+    data class ToggleSelection(val id: String) : ChoosePromotionAction
+
+    /** Bấm "Xem thêm/Thu gọn" nhóm của tôi — store chạy state-machine. */
+    data object SeeMoreMy : ChoosePromotionAction
+
+    /** Bấm "Áp dụng": trả offers đang chọn cho widget (EndowStore validate). */
+    data object ValidateAndApply : ChoosePromotionAction
 }
 
 internal sealed interface ChoosePromotionEffect {
@@ -70,10 +85,10 @@ internal sealed interface ChoosePromotionEffect {
     data class ShowError(val errorCode: String) : ChoosePromotionEffect
 
     /**
-     * validateStackableDiscounts thành công.
-     * [details] = list từ discountDetails của response.
+     * Bấm "Áp dụng" → trả **offers đang chọn** cho widget (`PRMEndowView`); việc validate + quyết định
+     * áp/không-đủ-điều-kiện do `EndowStore` lo (dùng chung iOS). Rỗng = bỏ áp.
      */
-    data class ApplyValidatedVouchers(
-        val details: List<AppliedDiscount>,
+    data class ApplySelectedOffers(
+        val offers: List<EligibleOffer>,
     ) : ChoosePromotionEffect
 }

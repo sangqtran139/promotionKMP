@@ -37,8 +37,6 @@ internal class PromotionViewModelFactory(
 
             ChoosePromotionViewModel::class.java -> ChoosePromotionViewModel(
                 findEligibleCampaignsUseCase = findEligibleCampaignsUseCase,
-                validateStackableDiscountsUseCase = validateStackableDiscountsUseCase,
-                requestContextProvider = requestContextProvider,
             ) as T
 
             SearchMyPromotionViewModel::class.java -> SearchMyPromotionViewModel(

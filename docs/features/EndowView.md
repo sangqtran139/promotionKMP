@@ -6,6 +6,22 @@
 - **Package:** `ui/feature/promotion/endowview` (+ `ui/feature/promotion/PromotionIntegrateManager.kt`)
 - **Thành phần:** `PRMEndowView`, `PRMEndowViewModel`, `PRMEndowUiState`, `PromotionIntegrateManager`
 
+> **Cập nhật (tầng UI-logic dùng chung):** Toàn bộ nghiệp vụ widget — `findEligible`, **validate & apply**,
+> và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
+> **`EndowStore`** (`promotionLogic/presentation/endow`), dùng chung Android & iOS.
+> `PRMEndowViewModel` (Android) và `EndowViewModel` (iOS, mới — trước đây iOS không có VM cho widget,
+> logic dồn ở `PromotionSDKImpl`) đều là **lớp bọc mỏng** quanh store.
+> - Validate&apply đi qua `EndowStore.ValidateAndApply(offers)` (trước: Android ở `ChoosePromotionViewModel`,
+>   iOS ở `PromotionSDKImpl`). Màn "Chọn ưu đãi" nay chỉ **trả offers đang chọn** (`ApplySelectedOffers` /
+>   `onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate.
+> - Kết quả validate dùng model shared `EndowAppliedDiscount`; mỗi nền tảng map sang model public riêng
+>   (`AppliedDiscount` bên Android).
+> - **iOS widget reactive off store** (parity Android): `PromotionSDKImpl` bỏ `loadVouchers`/`cachedListModel`/
+>   `setState` tay — nay `endowVM.observe { render(EndowState) }` + `endowVM.loadInitial()`; `render` map
+>   `EndowStore.widgetState` → `PRMEndowView.setState`, callback host (count/applied) theo transition.
+> - **Order items dùng chung**: request `findEligible` lấy `items` từ `PromotionRequestContextProvider.getOrderItems()`
+>   (iOS: `PromotionMutableContext`), thay cho `items = emptyList()` — đồng bộ campaign theo SKU.
+
 ---
 
 ## 1. `PRMEndowView` — custom View

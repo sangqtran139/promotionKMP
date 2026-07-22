@@ -6,6 +6,13 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 - **Package:** `ui/feature/promotion/choosepromotion`
 - **Thành phần:** `ChoosePromotionFragment`, `ChoosePromotionViewModel`, `ChoosePromotionContract`, `adapter/`
 
+> **Cập nhật (tầng UI-logic dùng chung `ChoosePromotionStore`):**
+> - **Selection** (`selectedIds`, rule single/multi qua `ToggleSelection`, seed `SetPreSelected`) và
+>   **"Xem thêm/Thu gọn"** (`myExpanded` + state-machine `SeeMoreMy`, `mySeeMoreState()`/`visibleMyOffers()`)
+>   nay nằm trong store — dùng chung Android & iOS (trước đây mỗi bên tự viết ở Fragment/VC).
+> - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);
+>   validate & apply do **`EndowStore`** lo (xem [EndowView.md](./EndowView.md)).
+
 ---
 
 ## 1. Contract (MVI)

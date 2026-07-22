@@ -98,18 +98,25 @@ if [[ "$DO_RUN" == true ]]; then
         echo "▸ Boot simulator: $DEVICE"
         xcrun simctl boot "$DEVICE" 2>/dev/null || true   # đã boot rồi thì simctl báo lỗi, bỏ qua
         TARGET="$DEVICE"
+    elif xcrun simctl list devices | grep -q "(Booted)"; then
+        TARGET="booted"                                   # tái dùng simulator đang chạy
     else
-        TARGET="booted"
-        if ! xcrun simctl list devices | grep -q "(Booted)"; then
-            echo "Chưa có simulator nào đang chạy. Mở Simulator, hoặc truyền --device 'iPhone 17 Pro'." >&2
+        # Không có simulator nào chạy → tự chọn iPhone khả dụng đầu tiên rồi boot (khỏi mở tay).
+        TARGET=$(xcrun simctl list devices available | awk -F'[()]' '/iPhone/ {print $2; exit}')
+        if [[ -z "$TARGET" ]]; then
+            echo "Không thấy simulator iPhone khả dụng — cài runtime iOS trong Xcode, hoặc --device 'iPhone 17 Pro'." >&2
             exit 1
         fi
+        echo "▸ Không có simulator đang chạy → tự boot iPhone khả dụng đầu tiên ($TARGET)"
+        xcrun simctl boot "$TARGET" 2>/dev/null || true
     fi
+
+    open -a Simulator                                     # mở UI Simulator
+    xcrun simctl bootstatus "$TARGET" -b >/dev/null 2>&1 || true   # chờ boot xong nếu vừa boot
 
     BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist")
     echo "▸ Cài $BUNDLE_ID"
     xcrun simctl install "$TARGET" "$APP"
     xcrun simctl launch "$TARGET" "$BUNDLE_ID"
-    open -a Simulator
     echo "✓ Đã mở app trên simulator."
 fi

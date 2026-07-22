@@ -1,21 +1,16 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionState
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
+import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplyValidatedVouchers
+import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplySelectedOffers
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.appliedDiscountFor
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toMyVoucherListItem
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.withExpiryWarning
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toTabItem
 
@@ -24,13 +19,11 @@ import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toTabItem
  * **Đồng nhất với `ChoosePromotionViewModel` bên iOS** — cùng `store` / `bindStore` / `render` /
  * `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
  *
- * `validateAndApply` giữ ở ViewModel (bất đối xứng có chủ đích: iOS làm ở `PromotionSDKImpl`); nhưng
- * **rule diễn giải** validate đã dùng chung ở domain (`ValidateDiscountsResult` qua `appliedDiscountFor`).
+ * Bấm "Áp dụng" chỉ **trả offers đang chọn** cho widget; validate + áp do `EndowStore` lo (dùng chung
+ * iOS — trước đây Android validate ở đây, iOS ở `PromotionSDKImpl`).
  */
 internal class ChoosePromotionViewModel(
     findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
-    private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
-    private val requestContextProvider: PromotionRequestContextProvider,
 ) : PRMBaseViewModel<ChoosePromotionUiState, ChoosePromotionAction, ChoosePromotionEffect>(
     ChoosePromotionUiState(),
 ) {
@@ -64,14 +57,16 @@ internal class ChoosePromotionViewModel(
             ChoosePromotionAction.ClearKeyword -> store.dispatch(ChoosePromotionIntent.ClearKeyword)
             ChoosePromotionAction.LoadMoreMyVouchers -> store.dispatch(ChoosePromotionIntent.LoadMoreMyVouchers)
             ChoosePromotionAction.LoadMoreOtherVouchers -> store.dispatch(ChoosePromotionIntent.LoadMoreOtherVouchers)
-            is ChoosePromotionAction.ValidateAndApply -> validateAndApply(action.selected)
+            is ChoosePromotionAction.SetPreSelected -> store.dispatch(ChoosePromotionIntent.SetPreSelected(action.ids))
+            is ChoosePromotionAction.ToggleSelection -> store.dispatch(ChoosePromotionIntent.ToggleSelection(action.id))
+            ChoosePromotionAction.SeeMoreMy -> store.dispatch(ChoosePromotionIntent.SeeMoreMy)
+            ChoosePromotionAction.ValidateAndApply -> applySelected()
         }
     }
 
     // ─── State → View ─────────────────────────────────────────────────────────
     private fun render(state: ChoosePromotionState) {
-        // Giữ `isValidating` (state cục bộ của validate, không thuộc store) qua mỗi lần store phát.
-        setState { state.toUiState(isValidating = isValidating) }
+        setState { state.toUiState() }
     }
 
     // ─── Error ──────────────────────────────────────────────────────────────────
@@ -81,45 +76,27 @@ internal class ChoosePromotionViewModel(
         store.dispatch(ChoosePromotionIntent.ConsumeError)
     }
 
-    // ─── VM-only: validate & apply (iOS làm ở PromotionSDKImpl; rule diễn giải dùng chung ở domain) ──
-    private fun validateAndApply(selected: List<MyVoucherListItem>) {
-        if (selected.isEmpty()) {
-            sendEffect(ApplyValidatedVouchers(emptyList()))
-            return
-        }
-        launch {
-            setState { copy(isValidating = true) }
-            val request = selected.toValidateDiscountsRequest(
-                orderId = requestContextProvider.getOrderId().orEmpty(),
-                orderValue = requestContextProvider.getOrderValue().orEmpty(),
-            )
-            runCatching { validateStackableDiscountsUseCase(request) }
-                .onSuccess { response ->
-                    val details = response
-                        ?.let { r -> selected.map { r.appliedDiscountFor(it.voucherId, it.objectType) } }
-                        .orEmpty()
-                    setState { copy(isValidating = false) }
-                    sendEffect(ApplyValidatedVouchers(details))
-                }
-                .onFailure { throwable ->
-                    setState { copy(isValidating = false) }
-                    sendEffect(ShowError(throwable.toErrorCode()))
-                }
-        }
+    // ─── Áp dụng: chỉ trả offers đang chọn cho widget (EndowStore validate) ──────
+    // Selection do store giữ (`selectedIds`); resolve về EligibleOffer đang chọn.
+    private fun applySelected() {
+        val state = store.currentState()
+        val selectedOffers = (state.myOffers + state.otherOffers)
+            .map { it.source }
+            .filter { it.id in state.selectedIds }
+        sendEffect(ApplySelectedOffers(selectedOffers))
     }
 }
 
 /**
  * Chiếu state dùng chung ([ChoosePromotionState]) → **bề mặt view Android** ([ChoosePromotionUiState]).
- * Cùng vai trò với `buildOutput()` bên iOS. [isValidating] giữ từ state cũ (không thuộc store).
+ * Cùng vai trò với `buildOutput()` bên iOS.
  */
-private fun ChoosePromotionState.toUiState(isValidating: Boolean) = ChoosePromotionUiState(
+private fun ChoosePromotionState.toUiState() = ChoosePromotionUiState(
     hasLoadedInitial = hasLoadedInitial,
     isLoading = isLoading,
     isRefreshing = isRefreshing,
     isLoadingMore = isLoadingMore,
     isLoadingMoreOther = isLoadingMoreOther,
-    isValidating = isValidating,
     isEmpty = isEmpty,
     tabs = tabs.map { it.toTabItem() },
     selectedTabCode = selectedTabCode,
@@ -130,9 +107,14 @@ private fun ChoosePromotionState.toUiState(isValidating: Boolean) = ChoosePromot
     otherPage = otherPage,
     otherSize = otherSize,
     isLastOtherPage = otherIsLastPage,
-    vouchers = myOffers.map { it.toVoucherListItem(expireWarningDate) },
-    otherVouchers = otherOffers.map { it.toVoucherListItem(expireWarningDate) },
+    vouchers = myOffers.map { it.toVoucherListItem() },
+    otherVouchers = otherOffers.map { it.toVoucherListItem() },
+    isMultiSelection = isMultiSelection,
+    selectedIds = selectedIds,
+    myExpanded = myExpanded,
+    mySeeMore = mySeeMoreState(),
 )
 
-private fun ChooseOffer.toVoucherListItem(expireWarningDate: Int?): MyVoucherListItem =
-    source.toMyVoucherListItem().withExpiryWarning(expireWarningDate)
+/** Quyết định hiển thị (`isUsable`/`expiringInDays`) lấy thẳng từ store — không tự tính lại. */
+private fun ChooseOffer.toVoucherListItem(): MyVoucherListItem =
+    source.toMyVoucherListItem().copy(isEnabled = isUsable, expiringInDays = expiringInDays)

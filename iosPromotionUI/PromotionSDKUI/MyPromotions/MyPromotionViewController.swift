@@ -316,18 +316,9 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         output.errorCode
             .sink { [weak self] code in
                 guard let self = self else { return }
-                PRMConfirmationDialog.showError(Self.mapErrorMessage(code), in: self.view)
+                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
             }
             .store(in: &cancellables)
-    }
-
-    /// Map mã lỗi (raw từ store) → chuỗi hiển thị — đối ứng `MyPromotionFragment.mapErrorMessage` (Android).
-    private static func mapErrorMessage(_ code: String) -> String {
-        switch code {
-        case "MISSING_CUSTOMER_ID": return "Thiếu thông tin khách hàng."
-        case "NO_RESULT": return "Không có kết quả."
-        default: return "Đã có lỗi xảy ra. Vui lòng thử lại."
-        }
     }
 
 }

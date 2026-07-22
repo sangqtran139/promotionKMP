@@ -11,9 +11,6 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
-import java.text.SimpleDateFormat
-import java.util.Locale
-import kotlin.math.ceil
 
 /**
  * Mapper tầng presentation. Ba nhóm:
@@ -162,32 +159,5 @@ private fun formatEstimatedDiscount(raw: String?): String? {
 private fun Long.groupedByThousands(): String =
     toString().reversed().chunked(3).joinToString(".").reversed()
 
-// ─── Cảnh báo sắp hết hạn (expireWarningDate) ─────────────────────────────────
-
-/**
- * Gán nhãn "Còn X ngày" vào [MyVoucherListItem.displayStatusLabel] khi voucher CÒN dùng được và số
- * ngày đến hết hạn nằm trong ngưỡng [warningDays] (server trả `expireWarningDate`). Ngoài ngưỡng →
- * giữ nguyên.
- */
-internal fun MyVoucherListItem.withExpiryWarning(warningDays: Int?): MyVoucherListItem {
-    if (!status.displayState().isUsable) return this
-    val days = expiringSoonDays(expirationDate, warningDays) ?: return this
-    return copy(displayStatusLabel = "Còn $days ngày")
-}
-
-/**
- * Số ngày từ hôm nay đến hết hạn — chỉ trả khi trong `[0, warningDays]`; ngoài ngưỡng/không parse → null.
- * Dùng `SimpleDateFormat` (minSdk 24 chưa bật core library desugaring nên không dùng `java.time`).
- */
-private fun expiringSoonDays(expiry: String?, warningDays: Int?): Int? {
-    if (warningDays == null || expiry.isNullOrBlank()) return null
-    val millis = parseDateMillis(expiry) ?: return null
-    val days = ceil((millis - System.currentTimeMillis()) / 86_400_000.0).toInt()
-    return if (days in 0..warningDays) days else null
-}
-
-private fun parseDateMillis(s: String): Long? = runCatching {
-    val hasTime = s.contains('T')
-    val pattern = if (hasTime) "yyyy-MM-dd'T'HH:mm:ss" else "yyyy-MM-dd"
-    SimpleDateFormat(pattern, Locale.US).parse(s.take(if (hasTime) 19 else 10))?.time
-}.getOrNull()
+// Cảnh báo "sắp hết hạn" (expireWarningDate) nay do store (promotionLogic) tính một lần cho cả 2 nền
+// tảng — `MyPromotionVoucher.expiringInDays` / `ChooseOffer.expiringInDays`. Không còn tính lại ở đây.
