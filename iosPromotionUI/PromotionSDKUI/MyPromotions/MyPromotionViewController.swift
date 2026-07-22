@@ -212,7 +212,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     }
 
     /// Render tabs động: chỉ dựng lại view khi tập code đổi; còn lại cập nhật label/count + focus.
-    private func renderTabs(_ tabs: [VoucherTabItem], selectedCode: String) {
+    private func renderTabs(_ tabs: [MyPromotionTab], selectedCode: String) {
         let codes = tabs.map { $0.code }
         if codes != currentTabCodes {
             tabStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -228,10 +228,8 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         }
         for tab in tabs {
             let tabView = tabViewsByCode[tab.code]
-            // `count` là KotlinInt? → phải unwrap, nếu không interpolate sẽ lòi "Optional(...)".
-            // Khớp Android (`count ?: 0`, luôn hiện "(count)").
-            let count = tab.count?.intValue ?? 0
-            tabView?.titleText = "\(tab.label) (\(count))"
+            // MyPromotionTab.count là Int32 (store đã quyết định, non-null) — khỏi unwrap.
+            tabView?.titleText = "\(tab.label) (\(tab.count))"
             tabView?.isFocusedState = (tab.code == selectedCode)
         }
     }
@@ -315,12 +313,21 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
             .store(in: &cancellables)
 
         // Lỗi nghiệp vụ → Confirmation Dialog (header "Thông báo" + nút "Đóng"), theo MOB_000 #6.
-        output.errorMessage
-            .sink { [weak self] message in
+        output.errorCode
+            .sink { [weak self] code in
                 guard let self = self else { return }
-                PRMConfirmationDialog.showError(message, in: self.view)
+                PRMConfirmationDialog.showError(Self.mapErrorMessage(code), in: self.view)
             }
             .store(in: &cancellables)
+    }
+
+    /// Map mã lỗi (raw từ store) → chuỗi hiển thị — đối ứng `MyPromotionFragment.mapErrorMessage` (Android).
+    private static func mapErrorMessage(_ code: String) -> String {
+        switch code {
+        case "MISSING_CUSTOMER_ID": return "Thiếu thông tin khách hàng."
+        case "NO_RESULT": return "Không có kết quả."
+        default: return "Đã có lỗi xảy ra. Vui lòng thử lại."
+        }
     }
 
 }

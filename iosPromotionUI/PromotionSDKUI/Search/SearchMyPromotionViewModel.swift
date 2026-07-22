@@ -2,15 +2,15 @@
 //  SearchMyPromotionViewModel.swift
 //  PromotionSDK
 //
-//  Created by thachlh on 11/5/26.
+//  Lớp bọc mỏng quanh SearchMyPromotionStore (tầng UI-logic dùng chung ở promotionLogic).
+//  ĐỒNG NHẤT với `SearchMyPromotionViewModel` bên Android — cùng `store` / `bindStore` / `render` /
+//  `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
+//  Debounce/search/paging nằm ở store; VM chỉ forward input → dispatch, map state → Output.
 //
 
 import Foundation
 import Combine
 @_implementationOnly import PRMKotlinBridge
-
-private let minKeywordLength = 1
-private let debounceMs = 400
 
 final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter>, PRMViewModelType {
 
@@ -30,192 +30,89 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     }
 
     let data: SearchMyPromotionBuilder.DataModel
-    /// Context (customerId/token) đọc từ lõi — đối xứng Android, không threading qua DataModel.
-    private var requestContext: PromotionRequestContextProvider { PromotionContainer.shared.requestContextProvider }
     private(set) var input: Input!
-    private let searchVouchersUseCase: SearchCustomerVouchersUseCase
 
-    // MARK: - State
-    /// Gương của `input.searchText` — giữ giá trị hiện tại cho `withLatestFrom`/load-more.
-    private let searchTextSubject = CurrentValueSubject<String, Never>("")
-    private let accumulatedPromotions = CurrentValueSubject<[VoucherItem], Never>([])
-    /// Keyword của lần search hiện hành — dùng highlight title item (khớp Android).
-    private let searchedKeyword = CurrentValueSubject<String, Never>("")
-    private let isLoadingSubject = CurrentValueSubject<Bool, Never>(false)
-    private let isLoadingMoreSubject = CurrentValueSubject<Bool, Never>(false)
-    private let validationErrorSubject = CurrentValueSubject<String?, Never>(nil)
-    private var currentPage = 0
-    private var canLoadMore = false
-    /// Token chống race: mỗi lần search tăng 1; response mang token cũ bị bỏ qua (khớp Android cancel job).
-    private var latestSearchToken = 0
-    /// Task async đang chạy — hủy khi có search mới để dọn Swift-side (token guard vẫn là cơ chế chặn
-    /// stale thực sự vì Kotlin/Native không hủy coroutine theo Task). Khớp `MyPromotionViewModel`.
-    private var searchTask: Task<Void, Never>?
+    // ─── Store ────────────────────────────────────────────────────────────────
+    private let store: SearchMyPromotionStore
+    private let stateSubject: CurrentValueSubject<SearchMyPromotionState, Never>
+    private let errorSubject = CurrentValueSubject<String?, Never>(nil)
+    private var storeCancellable: PromotionCancellable?
 
     init(router: SearchMyPromotionRouter,
          data: SearchMyPromotionBuilder.DataModel,
          searchVouchersUseCase: SearchCustomerVouchersUseCase = SearchCustomerVouchersUseCase()) {
         self.data = data
-        self.searchVouchersUseCase = searchVouchersUseCase
+        self.store = SearchMyPromotionStore(searchCustomerVouchersUseCase: searchVouchersUseCase)
+        self.stateSubject = CurrentValueSubject(store.currentState())
         super.init(router: router)
+    }
+
+    deinit {
+        storeCancellable?.cancel()
+        store.clear()
     }
 
     func transform(input: Input) -> Output {
         self.input = input
+        bindStore()
+        forward(input)
+        return buildOutput()
+    }
 
-        // Gương text vào subject để load-more / withLatestFrom đọc giá trị mới nhất.
-        input.searchText
-            .sink { [weak self] in self?.searchTextSubject.send($0) }
-            .store(in: &cancellables)
-
-        // Keyword đã debounce (thay `.debounce().distinctUntilChanged()`).
-        let debounced = searchTextSubject
-            .debounce(for: .milliseconds(debounceMs), scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .eraseToAnyPublisher()
-
-        // Bấm search → dùng keyword hiện tại (thay `searchAction.withLatestFrom(searchText)`).
-        let actionKeyword = input.searchAction
-            .map { [weak self] in self?.searchTextSubject.value ?? "" }
-            .eraseToAnyPublisher()
-
-        // Trigger search khi debounce xong hoặc bấm nút search.
-        debounced.merge(with: actionKeyword)
-            .sink { [weak self] keyword in self?.handleSearchTrigger(keyword) }
-            .store(in: &cancellables)
-
-        // Bật loading NGAY khi gõ (stream raw, trước debounce) → shimmer che ngay, tránh nhấp nháy
-        // "không có kết quả" trong ~400ms chờ debounce. Rỗng → tắt loading.
-        input.searchText
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .removeDuplicates()
-            .sink { [weak self] trimmed in
+    // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
+    private func bindStore() {
+        storeCancellable = store.watchState { [weak self] state in
+            DispatchQueue.main.async {
                 guard let self = self else { return }
-                if trimmed.isEmpty {
-                    self.isLoadingSubject.send(false)
-                } else if trimmed.count >= minKeywordLength {
-                    self.isLoadingSubject.send(true)
-                }
+                self.render(state)
+                self.handleError(state)
             }
-            .store(in: &cancellables)
+        }
+    }
 
-        // Load more
+    // ─── Intent forwarding (đối ứng Android.handleAction) ───────────────────────
+    private func forward(_ input: Input) {
+        input.searchText
+            .sink { [weak self] text in self?.store.dispatch(intent: SearchMyPromotionIntentQueryChanged(keyword: text)) }
+            .store(in: &cancellables)
+        input.searchAction
+            .sink { [weak self] in self?.store.dispatch(intent: SearchMyPromotionIntentSearch.shared) }
+            .store(in: &cancellables)
         input.loadMoreTrigger
-            .sink { [weak self] in
-                guard let self = self else { return }
-                let trimmed = self.searchTextSubject.value.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard trimmed.count >= minKeywordLength,
-                      self.canLoadMore,
-                      !self.isLoadingSubject.value,
-                      !self.isLoadingMoreSubject.value else { return }
-                self.performSearch(keyword: trimmed, page: self.currentPage + 1, isRefresh: false)
-            }
+            .sink { [weak self] in self?.store.dispatch(intent: SearchMyPromotionIntentLoadMore.shared) }
             .store(in: &cancellables)
-
-        // Navigate to detail
         input.selectPromotionByIDRelay
             .sink { [weak self] id in
-                guard let self = self else { return }
-                if let promotion = self.accumulatedPromotions.value.first(where: { $0.voucherId == id }) {
-                    self.router.routeToDetail(promotion: promotion)
-                }
+                guard let self = self,
+                      let voucher = self.stateSubject.value.vouchers.first(where: { $0.source.voucherId == id })
+                else { return }
+                self.router.routeToDetail(promotion: voucher.source)
             }
             .store(in: &cancellables)
-
-        let promotions = Publishers.CombineLatest(accumulatedPromotions, searchedKeyword)
-            .map { models, keyword in
-                models.map { MyPromotionCellViewModel(voucher: $0, highlightKeyword: keyword) }
-            }
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
-
-        let isEmpty = Publishers.CombineLatest3(accumulatedPromotions, isLoadingSubject, searchTextSubject)
-            .map { promotions, loading, keyword -> Bool in
-                let trimmed = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
-                return !loading && !trimmed.isEmpty && trimmed.count >= minKeywordLength && promotions.isEmpty
-            }
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
-
-        return Output(
-            promotions: promotions,
-            isLoading: isLoadingSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher(),
-            isLoadingMore: isLoadingMoreSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher(),
-            isEmpty: isEmpty,
-            validationError: validationErrorSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher()
-        )
     }
 
-    /// Xử lý một lần trigger search (thay body `searchTrigger.subscribe(onNext:)`).
-    private func handleSearchTrigger(_ keyword: String) {
-        let trimmed = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if trimmed.isEmpty {
-            accumulatedPromotions.send([])
-            searchedKeyword.send("")
-            currentPage = 0
-            canLoadMore = false
-            validationErrorSubject.send(nil)
-            return
-        }
-
-        if trimmed.count < minKeywordLength {
-            accumulatedPromotions.send([])
-            validationErrorSubject.send("Keyword too short")
-            return
-        }
-
-        validationErrorSubject.send(nil)
-        performSearch(keyword: trimmed, page: 0, isRefresh: true)
+    // ─── State → View ─────────────────────────────────────────────────────────
+    private func render(_ state: SearchMyPromotionState) {
+        stateSubject.send(state)
     }
 
-    private func performSearch(keyword: String, page: Int, isRefresh: Bool) {
-        latestSearchToken += 1
-        let token = latestSearchToken
-        searchedKeyword.send(keyword)
+    // ─── Error ──────────────────────────────────────────────────────────────────
+    private func handleError(_ state: SearchMyPromotionState) {
+        guard let code = state.errorCode else { return }
+        errorSubject.send(code)   // view map code → chuỗi
+        store.dispatch(intent: SearchMyPromotionIntentConsumeError.shared)
+    }
 
-        if isRefresh {
-            isLoadingSubject.send(true)
-            // Search mới hủy hiệu lực load-more đang chờ → tắt spinner đáy để response cũ bị bỏ qua không kẹt.
-            isLoadingMoreSubject.send(false)
-        } else {
-            isLoadingMoreSubject.send(true)
-        }
-
-        // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
-        let request = SearchCustomerVouchersRequest(
-            keyword: keyword,
-            serviceCode: nil,
-            tab: "all",
-            page: boxed(page),
-            size: boxed(10)
+    /// Chiếu state dùng chung → bề mặt view iOS (Output). Đối ứng Android `SearchMyPromotionState.toUiState()`.
+    private func buildOutput() -> Output {
+        Output(
+            promotions: stateSubject
+                .map { state in state.vouchers.map { MyPromotionCellViewModel(voucher: $0.source, highlightKeyword: state.keyword) } }
+                .eraseToAnyPublisher(),
+            isLoading: stateSubject.map { $0.isLoading }.eraseToAnyPublisher(),
+            isLoadingMore: stateSubject.map { $0.isLoadingMore }.eraseToAnyPublisher(),
+            isEmpty: stateSubject.map { !$0.isLoading && $0.isEmpty }.eraseToAnyPublisher(),
+            validationError: errorSubject.eraseToAnyPublisher()
         )
-
-        let useCase = searchVouchersUseCase
-        searchTask?.cancel()
-        searchTask = Task { @MainActor [weak self] in
-            let listModel: SearchCustomerVouchersResult?
-            do {
-                listModel = try await useCase.invoke(request: request)
-            } catch {
-                // Bỏ qua response của search cũ (đã có search mới hơn).
-                guard let self = self, token == self.latestSearchToken else { return }
-                self.isLoadingSubject.send(false)
-                self.isLoadingMoreSubject.send(false)
-                return
-            }
-
-            guard let self = self, token == self.latestSearchToken else { return }
-            self.isLoadingSubject.send(false)
-            self.isLoadingMoreSubject.send(false)
-            guard let listModel else { return }
-            if isRefresh {
-                self.accumulatedPromotions.send(listModel.content)
-            } else {
-                self.accumulatedPromotions.send(self.accumulatedPromotions.value + listModel.content)
-            }
-            self.currentPage = page
-            self.canLoadMore = !(listModel.last?.boolValue ?? true)
-        }
     }
 }
