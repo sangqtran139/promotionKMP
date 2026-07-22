@@ -121,10 +121,12 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         )
         binding.txtVoucherName.text = detail.merchantName.orEmpty()
         binding.tvContent.text = detail.title.orEmpty()
-        binding.tvExpired.text = getString(
-            R.string.prm_expiry_short_format,
-            detail.expirationDate.orEmpty().toVoucherDisplayDate(),
-        )
+        // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống).
+        val displayDate = detail.expirationDate.orEmpty().toVoucherDisplayDate()
+        binding.tvExpired.isVisible = displayDate.isNotBlank()
+        if (displayDate.isNotBlank()) {
+            binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)
+        }
         binding.tvUse.isVisible = state.actionVisible
         binding.tvUse.isEnabled = state.actionEnabled
         binding.tvUse.text = state.actionLabel.ifBlank {

@@ -130,10 +130,12 @@ internal class ChoosePromotionMainAdapter(
 
                 txtVoucherName.text = voucher.merchantName
                 tvContent.text = voucher.title
-                tvEndDate.text = ctx.getString(
-                    R.string.prm_expiry_short_format,
-                    voucher.expirationDate.toVoucherDisplayDate().ifEmpty { ctx.getString(R.string.prm_demo_expiry_date) }
-                )
+                // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống, không dùng date demo).
+                val displayDate = voucher.expirationDate.toVoucherDisplayDate()
+                tvEndDate.isVisible = displayDate.isNotBlank()
+                if (displayDate.isNotBlank()) {
+                    tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                }
 
                 cbUseVoucher.isChecked = voucher.isSelected
                 cbUseVoucher.isClickable = false

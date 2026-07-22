@@ -120,10 +120,12 @@ internal class MyPromotionAdapter(
                         keyword = highlightKeyword,
                         highlightColor = highlightColor,
                     )
-                tvEndDate.text = ctx.getString(
-                    R.string.prm_expiry_short_format,
-                    voucher.expirationDate.toVoucherDisplayDate(),
-                )
+                // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống).
+                val displayDate = voucher.expirationDate.toVoucherDisplayDate()
+                tvEndDate.isVisible = displayDate.isNotBlank()
+                if (displayDate.isNotBlank()) {
+                    tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                }
 
                 ctlTop.alpha = if (canUse) 1f else 0.6f
                 txtExpired.isVisible = !canUse
