@@ -66,10 +66,9 @@ class PromotionUseCases internal constructor(
      */
     suspend fun getVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String? = null,
     ): PromotionResult<VoucherDetail> =
-        gated(PromotionFeatureFlag.VOUCHER_DETAIL) { voucherDetailUseCase(voucherId, customerId, service) }
+        gated(PromotionFeatureFlag.VOUCHER_DETAIL) { voucherDetailUseCase(voucherId, service) }
 
     /**
      * Tìm ưu đãi **đủ điều kiện cho một đơn hàng** (luồng checkout), trả hai nhóm: voucher khách đã

@@ -16,8 +16,8 @@ private const val TAG = "PromotionTestLogin"
 class PromotionTestLoginManager {
 
     private data class LoginRequest(
-        val msisdn: String = "84362634580",
-        val username: String = "84362634580",
+        val msisdn: String = "84983725525",
+        val username: String = "84983725525",
         val userType: String = "msisdn",
         val pin: String = "123123",
         val loginType: String = "BASIC",

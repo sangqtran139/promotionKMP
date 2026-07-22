@@ -40,6 +40,7 @@
     <dimen name="view_size_36">36dp</dimen>
     <dimen name="view_size_37">37dp</dimen>
     <dimen name="view_size_40">40dp</dimen>
+    <dimen name="view_size_44">44dp</dimen>
     <dimen name="view_size_45">45dp</dimen>
     <dimen name="view_size_48">48dp</dimen>
     <dimen name="view_size_50">50dp</dimen>

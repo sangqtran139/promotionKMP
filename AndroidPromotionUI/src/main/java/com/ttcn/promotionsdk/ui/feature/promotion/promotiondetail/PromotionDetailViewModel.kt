@@ -41,17 +41,10 @@ internal class PromotionDetailViewModel(
     private fun loadDetail(voucherId: String) {
         launch {
             setState { copy(isLoading = true) }
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isLoading = false) }
-                sendEffect(PromotionDetailEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
 
             runCatching {
                 getCustomerVoucherDetailUseCase(
                     voucherId = voucherId,
-                    customerId = customerId,
                     service = requestContextProvider.getService(),
                 )
             }.onSuccess { detail ->

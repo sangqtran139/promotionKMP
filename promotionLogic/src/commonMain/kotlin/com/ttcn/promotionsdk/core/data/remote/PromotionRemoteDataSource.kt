@@ -24,7 +24,6 @@ internal class PromotionRemoteDataSource(
     private val apiService: PromotionApiService,
 ) {
     suspend fun searchCustomerVouchers(
-        customerId: String,
         keyword: String?,
         serviceCode: String?,
         tab: String?,
@@ -32,7 +31,6 @@ internal class PromotionRemoteDataSource(
         size: Int?,
     ): SearchCustomerVouchersResponse? = apiCall {
         apiService.searchCustomerVouchers(
-            customerId = customerId,
             keyword = keyword,
             serviceCode = serviceCode,
             tab = tab,
@@ -43,12 +41,10 @@ internal class PromotionRemoteDataSource(
 
     suspend fun getCustomerVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): CustomerVoucherDetail? = apiCall {
         apiService.getCustomerVoucherDetail(
             voucherId = voucherId,
-            customerId = customerId,
             service = service,
         ).requireData()
     }

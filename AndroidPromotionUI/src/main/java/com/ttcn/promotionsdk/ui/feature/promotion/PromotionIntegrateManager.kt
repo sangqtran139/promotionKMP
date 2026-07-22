@@ -82,14 +82,7 @@ class PromotionIntegrateManager internal constructor(
 
         scope.launch {
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                onError(ErrorCodes.MISSING_CUSTOMER_ID)
-                return@launch
-            }
-
             val request = discountDetails.toCreateRedemptionRequest(
-                customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
             )
@@ -101,7 +94,7 @@ class PromotionIntegrateManager internal constructor(
                         ?: false
 
                     if (hasBudgetError) {
-                        revalidateAndUpdate(customerId, onError)
+                        revalidateAndUpdate(onError)
                     } else {
                         onSuccess()
                     }
@@ -109,7 +102,7 @@ class PromotionIntegrateManager internal constructor(
                 .onFailure { throwable ->
                     val exception = throwable as? PromotionException
                     if (exception?.httpStatus == 422 && exception.errorCode == ErrorCodes.INSUFFICIENT_BUDGET) {
-                        revalidateAndUpdate(customerId, onError)
+                        revalidateAndUpdate(onError)
                     } else {
                         onError(throwable.toErrorCode())
                     }
@@ -131,13 +124,11 @@ class PromotionIntegrateManager internal constructor(
      * Tự update [endowView] với discountDetails mới rồi báo lỗi về đối tác.
      */
     private suspend fun revalidateAndUpdate(
-        customerId: String,
         onError: (errorCode: String) -> Unit,
     ) {
         val currentDetails = endowView.discountDetails
 
         val request = currentDetails.toValidateDiscountsRequest(
-            customerId = customerId,
             orderId = requestContextProvider.getOrderId().orEmpty(),
             orderValue = requestContextProvider.getOrderValue().orEmpty(),
         )

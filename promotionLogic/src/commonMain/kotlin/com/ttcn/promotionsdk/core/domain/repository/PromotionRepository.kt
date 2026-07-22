@@ -11,7 +11,6 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 
 internal interface PromotionRepository {
     suspend fun searchCustomerVouchers(
-        customerId: String,
         keyword: String?,
         serviceCode: String?,
         tab: String?,
@@ -21,7 +20,6 @@ internal interface PromotionRepository {
 
     suspend fun getCustomerVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): VoucherDetail?
 

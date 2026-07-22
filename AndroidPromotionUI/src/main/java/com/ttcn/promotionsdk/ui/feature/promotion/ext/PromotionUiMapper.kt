@@ -31,11 +31,9 @@ import kotlin.math.ceil
 
 @JvmName("voucherItemsToValidateDiscountsRequest")
 internal fun List<MyVoucherListItem>.toValidateDiscountsRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,
 ): ValidateDiscountsRequest = ValidateDiscountsRequest(
-    customerId = customerId,
     orderId = orderId,
     orderValue = orderValue,
     items = map { voucher ->
@@ -49,11 +47,9 @@ internal fun List<MyVoucherListItem>.toValidateDiscountsRequest(
  */
 @JvmName("eligibleOffersToValidateDiscountsRequest")
 internal fun List<EligibleOffer>.toValidateDiscountsRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,
 ): ValidateDiscountsRequest = ValidateDiscountsRequest(
-    customerId = customerId,
     orderId = orderId,
     orderValue = orderValue,
     items = map { offer ->
@@ -63,11 +59,9 @@ internal fun List<EligibleOffer>.toValidateDiscountsRequest(
 
 @JvmName("discountDetailsToValidateDiscountsRequest")
 internal fun List<AppliedDiscount>.toValidateDiscountsRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,
 ): ValidateDiscountsRequest = ValidateDiscountsRequest(
-    customerId = customerId,
     orderId = orderId,
     orderValue = orderValue,
     items = map { detail ->
@@ -76,11 +70,9 @@ internal fun List<AppliedDiscount>.toValidateDiscountsRequest(
 )
 
 internal fun List<AppliedDiscount>.toCreateRedemptionRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,
 ): CreateRedemptionRequest = CreateRedemptionRequest(
-    customerId = customerId,
     orderId = orderId,
     orderValue = orderValue,
     items = map { detail ->

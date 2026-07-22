@@ -63,8 +63,8 @@
 
                 <com.ttcn.promotionsdk.ui.widget.PRMCircleImageView
                     android:id="@+id/circleLogo"
-                    android:layout_width="@dimen/view_size_24"
-                    android:layout_height="@dimen/view_size_24"
+                    android:layout_width="@dimen/view_size_44"
+                    android:layout_height="@dimen/view_size_44"
                     android:layout_marginStart="@dimen/view_size_16"
                     android:layout_marginTop="@dimen/view_size_20"
                     android:background="@drawable/prm_background_shimmer_circle"

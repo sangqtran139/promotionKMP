@@ -34,7 +34,6 @@ class SearchCustomerVouchersUseCase private constructor(
         request: SearchCustomerVouchersRequest,
     ): SearchCustomerVouchersResult? = promotionCall {
         repository.searchCustomerVouchers(
-            customerId = request.customerId,
             keyword = request.keyword,
             serviceCode = request.serviceCode,
             tab = request.tab,

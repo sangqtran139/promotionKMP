@@ -20,7 +20,6 @@ import io.ktor.http.contentType
 internal interface PromotionApiService {
 
     suspend fun searchCustomerVouchers(
-        customerId: String,
         keyword: String?,
         serviceCode: String?,
         tab: String?,
@@ -30,7 +29,6 @@ internal interface PromotionApiService {
 
     suspend fun getCustomerVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): ApiResponseTemplate<CustomerVoucherDetail>
 
@@ -58,7 +56,6 @@ internal class KtorPromotionApiService(
 ) : PromotionApiService {
 
     override suspend fun searchCustomerVouchers(
-        customerId: String,
         keyword: String?,
         serviceCode: String?,
         tab: String?,
@@ -66,7 +63,6 @@ internal class KtorPromotionApiService(
         size: Int?,
     ): ApiResponseTemplate<SearchCustomerVouchersResponse> =
         client.get("$BASE_PATH/customer-vouchers") {
-            parameter("customerId", customerId)
             parameter("keyword", keyword)
             parameter("serviceCode", serviceCode)
             parameter("tab", tab)
@@ -76,11 +72,9 @@ internal class KtorPromotionApiService(
 
     override suspend fun getCustomerVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): ApiResponseTemplate<CustomerVoucherDetail> =
         client.get("$BASE_PATH/customer-vouchers/$voucherId") {
-            parameter("customerId", customerId)
             parameter("service", service)
         }.body()
 

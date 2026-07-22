@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.core.util.randomUuidString
  */
 internal fun CreateRedemptionRequest.toRedemptionSessionRequest() = RedemptionSessionRequest(
     idempotencyKey = randomUuidString(),
-    customerInfo = RedemptionCustomerInfo(customerId = customerId),
+    customerInfo = RedemptionCustomerInfo(),
     orderInfo = RedemptionOrderInfo(orderId = orderId, orderValue = orderValue),
     selectedRedeemables = items.mapIndexed { index, item ->
         RedeemableRequest(

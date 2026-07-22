@@ -92,15 +92,8 @@ internal class ChoosePromotionViewModel(
                 )
             }
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isLoading = false, isRefreshing = false) }
-                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-
             runCatching {
-                findEligibleCampaignsUseCase(buildRequest(customerId, section = null))
+                findEligibleCampaignsUseCase(buildRequest(section = null))
             }.onSuccess { result ->
                 myLoaded = result?.myOffers.orEmpty()
                 otherLoaded = result?.otherOffers.orEmpty()
@@ -156,16 +149,9 @@ internal class ChoosePromotionViewModel(
                 if (isMine) copy(isLoadingMore = true) else copy(isLoadingMoreOther = true)
             }
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isLoadingMore = false, isLoadingMoreOther = false) }
-                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-
             val nextPage = if (isMine) state.page + 1 else state.otherPage + 1
             runCatching {
-                findEligibleCampaignsUseCase(buildRequest(customerId, section, nextPage))
+                findEligibleCampaignsUseCase(buildRequest(section, nextPage))
             }.onSuccess { result ->
                 if (isMine) {
                     myLoaded = myLoaded + result?.myOffers.orEmpty()
@@ -199,13 +185,11 @@ internal class ChoosePromotionViewModel(
      * ([FindEligibleCampaignsRequest.forSectionPage]) — dùng chung Android & iOS.
      */
     private fun buildRequest(
-        customerId: String,
         section: EligibleSection?,
         nextPage: Int = 0,
     ): FindEligibleCampaignsRequest {
         val state = uiState.value
         return FindEligibleCampaignsRequest(
-            customerId = customerId,
             orderId = requestContextProvider.getOrderId().orEmpty(),
             orderValue = requestContextProvider.getOrderValue().orEmpty(),
             // TODO(order-items): PromotionRequestContextProvider chưa cung cấp danh sách sản phẩm,
@@ -306,15 +290,7 @@ internal class ChoosePromotionViewModel(
         launch {
             setState { copy(isValidating = true) }
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isValidating = false) }
-                sendEffect(ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-
             val request = selected.toValidateDiscountsRequest(
-                customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
             )

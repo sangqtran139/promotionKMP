@@ -14,7 +14,6 @@ data class StackableDiscountsRequest(
 
 @Serializable
 data class StackableCustomerInfo(
-    @SerialName("customerId") val customerId: String,
     @SerialName("customerType") val customerType: String = "",
     @SerialName("segment") val segment: String = "",
     @SerialName("tier") val tier: String = "",

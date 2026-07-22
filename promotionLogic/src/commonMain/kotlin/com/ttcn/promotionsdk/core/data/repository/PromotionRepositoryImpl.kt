@@ -24,7 +24,6 @@ internal class PromotionRepositoryImpl(
 ) : PromotionRepository {
 
     override suspend fun searchCustomerVouchers(
-        customerId: String,
         keyword: String?,
         serviceCode: String?,
         tab: String?,
@@ -32,7 +31,6 @@ internal class PromotionRepositoryImpl(
         size: Int?,
     ): SearchCustomerVouchersResult? {
         return remoteDataSource.searchCustomerVouchers(
-            customerId = customerId,
             keyword = keyword,
             serviceCode = serviceCode,
             tab = tab,
@@ -43,12 +41,10 @@ internal class PromotionRepositoryImpl(
 
     override suspend fun getCustomerVoucherDetail(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): VoucherDetail? {
         return remoteDataSource.getCustomerVoucherDetail(
             voucherId = voucherId,
-            customerId = customerId,
             service = service,
         )?.toVoucherDetail()
     }

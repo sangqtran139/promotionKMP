@@ -21,6 +21,7 @@ data class PromotionSDKConfig(
 )
 
 interface PromotionRequestContextProvider {
+    /** Giữ cho feature flag (userId → Unleash). KHÔNG còn gửi trong body request các API promotion. */
     fun getCustomerId(): String? = null
     fun getService(): String? = null
     fun getAccessToken(): String? = null

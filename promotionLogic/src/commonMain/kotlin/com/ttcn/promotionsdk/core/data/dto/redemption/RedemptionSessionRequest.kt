@@ -15,7 +15,6 @@ data class RedemptionSessionRequest(
 
 @Serializable
 data class RedemptionCustomerInfo(
-    @SerialName("customerId") val customerId: String,
     @SerialName("customerType") val customerType: String = "",
     @SerialName("segment") val segment: String = "",
     @SerialName("tier") val tier: String = "",

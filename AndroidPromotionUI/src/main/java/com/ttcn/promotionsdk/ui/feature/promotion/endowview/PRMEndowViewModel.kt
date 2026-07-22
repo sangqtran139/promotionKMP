@@ -59,16 +59,9 @@ internal class PRMEndowViewModel(
     fun loadInitialVouchers() {
         if (_uiState.value.hasLoadedInitial) return
         scope.launch {
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                _uiState.update { it.copy(error = ErrorCodes.MISSING_CUSTOMER_ID) }
-                return@launch
-            }
-
             runCatching {
                 findEligibleCampaignsUseCase(
                     FindEligibleCampaignsRequest(
-                        customerId = customerId,
                         orderId = requestContextProvider.getOrderId().orEmpty(),
                         orderValue = requestContextProvider.getOrderValue().orEmpty(),
                         // TODO(order-items): xem ghi chú cùng tên ở ChoosePromotionViewModel.
@@ -139,12 +132,10 @@ internal class PRMEndowViewModel(
 
     @Suppress("unused") // Bật lại khi `findEligible` trả `isAutoApplied` — xem TODO(auto-apply).
     private fun validateAndAutoApply(
-        customerId: String,
         offers: List<EligibleOffer>,
     ) {
         scope.launch {
             val request = offers.toValidateDiscountsRequest(
-                customerId = customerId,
                 orderId = requestContextProvider.getOrderId().orEmpty(),
                 orderValue = requestContextProvider.getOrderValue().orEmpty(),
             )

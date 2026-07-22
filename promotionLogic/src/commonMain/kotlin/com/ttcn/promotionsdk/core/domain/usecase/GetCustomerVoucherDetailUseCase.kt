@@ -26,12 +26,10 @@ class GetCustomerVoucherDetailUseCase private constructor(
     @Throws(PromotionException::class, NetworkException::class, CancellationException::class)
     suspend operator fun invoke(
         voucherId: String,
-        customerId: String,
         service: String?,
     ): VoucherDetail? = promotionCall {
         repository.getCustomerVoucherDetail(
             voucherId = voucherId,
-            customerId = customerId,
             service = service,
         )
     }

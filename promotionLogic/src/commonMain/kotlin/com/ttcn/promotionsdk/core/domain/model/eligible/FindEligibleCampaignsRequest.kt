@@ -8,7 +8,6 @@ package com.ttcn.promotionsdk.core.domain.model.eligible
  * Bỏ trống [items] thì server chỉ trả campaign cấp đơn, không có campaign yêu cầu SKU.
  */
 data class FindEligibleCampaignsRequest(
-    val customerId: String,
     val orderId: String,
     val orderValue: String,
     val items: List<EligibleOrderItem> = emptyList(),

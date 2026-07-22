@@ -118,17 +118,9 @@ internal class SearchMyPromotionViewModel(
                 )
             }
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                setState { copy(isLoading = false, isLoadingMore = false) }
-                sendEffect(SearchMyPromotionEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-
             runCatching {
                 searchCustomerVouchersUseCase(
                     SearchCustomerVouchersRequest(
-                        customerId = customerId,
                         keyword = keyword,
                         serviceCode = null,
                         tab = TAB_ALL,

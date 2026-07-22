@@ -46,11 +46,6 @@ import kotlin.coroutines.cancellation.CancellationException
 class PromotionSDKApi internal constructor(
     private val useCases: PromotionUseCases = PromotionUseCases(),
 ) {
-
-    /** Đọc lại ở mỗi lời gọi: host refresh token / đổi đơn là SDK thấy ngay. */
-    private val customerId: String
-        get() = PromotionContainer.requestContextProvider.getCustomerId().orEmpty()
-
     // ─── Public API ───────────────────────────────────────────────────────────
 
     /**
@@ -69,7 +64,6 @@ class PromotionSDKApi internal constructor(
         size: Int = DEFAULT_PAGE_SIZE,
     ): PromotionApiResult<PromotionVoucherPage> {
         val request = SearchCustomerVouchersRequest(
-            customerId = customerId,
             keyword = keyword,
             serviceCode = serviceCode,
             tab = tab ?: DEFAULT_TAB,
@@ -109,7 +103,6 @@ class PromotionSDKApi internal constructor(
         otherSize: Int = DEFAULT_PAGE_SIZE,
     ): PromotionApiResult<PromotionEligibleResult> {
         val request = FindEligibleCampaignsRequest(
-            customerId = customerId,
             orderId = orderId,
             orderValue = orderValue,
             items = items.map {
@@ -161,7 +154,7 @@ class PromotionSDKApi internal constructor(
         voucherId: String,
         serviceCode: String? = null,
     ): PromotionApiResult<PromotionVoucherDetail> = handle(
-        call = { useCases.getVoucherDetail(voucherId, customerId, serviceCode) },
+        call = { useCases.getVoucherDetail(voucherId, serviceCode) },
         map = ::toVoucherDetail,
     )
 
@@ -176,7 +169,6 @@ class PromotionSDKApi internal constructor(
         objectType: String = DEFAULT_OBJECT_TYPE,
     ): PromotionApiResult<PromotionValidationResult> {
         val request = ValidateDiscountsRequest(
-            customerId = customerId,
             orderId = orderId,
             orderValue = orderValue,
             items = voucherIds.map { DiscountItemRequest(objectId = it, objectType = objectType) },
@@ -212,7 +204,6 @@ class PromotionSDKApi internal constructor(
         objectType: String = DEFAULT_OBJECT_TYPE,
     ): PromotionApiResult<PromotionRedemptionResult> {
         val request = CreateRedemptionRequest(
-            customerId = customerId,
             orderId = orderId,
             orderValue = orderValue,
             items = voucherIds.map { RedemptionItemRequest(objectId = it, objectType = objectType) },

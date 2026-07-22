@@ -194,25 +194,9 @@ internal class MyPromotionViewModel(
                 }
             }
 
-            val customerId = requestContextProvider.getCustomerId()
-            if (customerId.isNullOrBlank()) {
-                if (!shouldApplyResponse(requestId, requestTabCode, reset)) return@launch
-                setState {
-                    copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        isRefreshingTab = false,
-                        isLoadingMore = false,
-                    )
-                }
-                sendEffect(MyPromotionEffect.ShowError(ErrorCodes.MISSING_CUSTOMER_ID))
-                return@launch
-            }
-
             runCatching {
                 searchCustomerVouchersUseCase(
                     SearchCustomerVouchersRequest(
-                        customerId = customerId,
                         keyword = keyword.takeIf { it.isNotBlank() },
                         serviceCode = null,
                         tab = requestTabCode,

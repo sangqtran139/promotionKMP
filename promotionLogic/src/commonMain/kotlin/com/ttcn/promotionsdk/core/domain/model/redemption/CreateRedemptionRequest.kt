@@ -1,7 +1,6 @@
 package com.ttcn.promotionsdk.core.domain.model.redemption
 
 data class CreateRedemptionRequest(
-    val customerId: String,
     val orderId: String,
     val orderValue: String,
     val items: List<RedemptionItemRequest>,

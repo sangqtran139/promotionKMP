@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.core.util.randomUuidString
  */
 internal fun ValidateDiscountsRequest.toStackableDiscountsRequest() = StackableDiscountsRequest(
     idempotencyKey = randomUuidString(),
-    customerInfo = StackableCustomerInfo(customerId = customerId),
+    customerInfo = StackableCustomerInfo(),
     orderInfo = StackableOrderInfo(orderId = orderId, orderValue = orderValue),
     discountRequests = items.mapIndexed { index, item ->
         DiscountRequest(
