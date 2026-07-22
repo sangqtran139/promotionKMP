@@ -219,7 +219,7 @@ final class MyPromotionCell: UITableViewCell {
         }
 
         let cardModel = PromotionCardModel(
-            icon: UIImage.sdk("prm_ic_vtm"),
+            logoURLString: viewModel.imageURL,
             dateString: dateString,
             dateColor: dateColor,
             title: viewModel.title,

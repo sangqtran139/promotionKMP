@@ -271,8 +271,10 @@ public class PromotionCardView: PRMTapableView {
     public func configure(with model: PromotionCardModel) {
         self.model = model
         
-        iconImageView.image = model.icon
-        
+        // Logo từ API: có URL → load; rỗng/lỗi → phủ nền xám (không icon brand mặc định).
+        // `placeholder` = model.icon (thường nil) → nil thì hiện nền xám.
+        iconImageView.setImage(urlString: model.logoURLString, placeholder: model.icon)
+
         dateLabel.text = model.dateString
         dateLabel.textColor = model.dateColor ?? Colors.tokenDark60
         dateLabel.isHidden = (model.dateString?.isEmpty ?? true)

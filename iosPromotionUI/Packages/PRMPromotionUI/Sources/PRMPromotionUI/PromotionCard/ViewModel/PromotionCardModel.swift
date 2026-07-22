@@ -9,6 +9,9 @@
 import UIKit
 
 public struct PromotionCardModel {
+    /// URL logo từ API. Có → load; rỗng/lỗi → phủ nền xám (KHÔNG dùng icon brand mặc định).
+    public var logoURLString: String?
+    /// Placeholder tĩnh (tuỳ chọn) hiển thị lúc chờ/khi không có URL. nil → nền xám.
     public var icon: UIImage?
     public var dateString: String?
     public var dateColor: UIColor?
@@ -25,6 +28,7 @@ public struct PromotionCardModel {
     public var uncheckedImage: UIImage?
     
     public init(
+        logoURLString: String? = nil,
         icon: UIImage? = nil,
         dateString: String? = nil,
         dateColor: UIColor? = nil,
@@ -39,6 +43,7 @@ public struct PromotionCardModel {
         checkedImage: UIImage? = nil,
         uncheckedImage: UIImage? = nil
     ) {
+        self.logoURLString = logoURLString
         self.icon = icon
         self.dateString = dateString
         self.dateColor = dateColor
