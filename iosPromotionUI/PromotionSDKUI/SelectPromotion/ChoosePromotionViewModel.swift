@@ -77,6 +77,9 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
     private static let searchDebounceMs = 400
 
     let data: ChoosePromotionBuilder.DataModel
+    /// Context (customerId/orderId/orderValue/token) đọc từ lõi — **đối xứng Android** (ViewModel lấy
+    /// thẳng `PromotionContainer.requestContextProvider`), không threading qua DataModel.
+    private var requestContext: PromotionRequestContextProvider { PromotionContainer.shared.requestContextProvider }
     private let findEligibleUseCase: FindEligibleCampaignsUseCase
     private(set) var input: Input!
 
@@ -273,9 +276,9 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
         // Keyword hiện tại → gửi lên server (server-side, parity Android); rỗng → nil (không lọc).
         let trimmedKeyword = keywordSubject.value.trimmingCharacters(in: .whitespacesAndNewlines)
         let base = FindEligibleCampaignsRequest(
-            customerId: data.customerId,
-            orderId: data.orderId ?? "",
-            orderValue: data.orderValue ?? "0",
+            customerId: requestContext.getCustomerId() ?? "",
+            orderId: requestContext.getOrderId() ?? "",
+            orderValue: requestContext.getOrderValue() ?? "0",
             items: data.orderItems,
             currency: "VND",
             channel: "MOBILE",
@@ -392,7 +395,7 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter>, P
 
     func routeToDetail(id: String) {
         if let promotion = allLoadedPromotions().first(where: { $0.id == id }) {
-            router.routeToDetail(promotion: promotion, customerId: data.customerId, token: data.token)
+            router.routeToDetail(promotion: promotion)
         }
     }
 }

@@ -11,13 +11,9 @@ import UIKit
 final class SearchMyPromotionBuilder: PRMBaseBuilder<SearchMyPromotionViewController, SearchMyPromotionViewModel, SearchMyPromotionRouter, SearchMyPromotionBuilder.DataModel> {
     
     struct DataModel {
-        let customerId: String
-        let token: String?
-
-        init(customerId: String, token: String? = nil) {
-            self.customerId = customerId
-            self.token = token
-        }
+        // Không còn field context — ViewModel đọc customerId/token từ
+        // PromotionRequestContextProvider của lõi (đối xứng Android).
+        init() {}
     }
     
     static func build(with data: DataModel, navigator: UINavigationController? = nil) -> SearchMyPromotionViewController {

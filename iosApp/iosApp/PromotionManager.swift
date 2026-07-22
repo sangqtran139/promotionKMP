@@ -212,6 +212,9 @@ final class PromotionManager: NSObject, PromotionServing {
         guard let customerId else { return }
         // Đối ứng Android: PromotionSDK.initialize(options) một lần; refresh token = initialize lại
         // với session mới. callback + theme + danh mục dịch vụ gói trong options.
+        // Release trước khi init lại để đóng HttpClient cũ + clear DI (initialize KHÔNG tự release) —
+        // khớp Android `rebuild`. `release()` gọi khi chưa init là vô hại.
+        if PromotionSDK.isInitialized() { PromotionSDK.release() }
         PromotionSDK.initialize(
             options: PromotionSDKOptions(
                 session: PromotionSessionConfig(

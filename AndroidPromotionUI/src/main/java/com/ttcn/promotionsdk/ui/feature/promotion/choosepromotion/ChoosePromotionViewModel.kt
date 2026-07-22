@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCa
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplyValidatedVouchers
 import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.appliedDiscountFor
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toMyVoucherListItem
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.withExpiryWarning
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
@@ -321,7 +321,10 @@ internal class ChoosePromotionViewModel(
 
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
-                    val details = response?.items.orEmpty().toAppliedDiscounts()
+                    // Lặp theo offer đã chọn + diễn giải qua isValidFor/discountFor (đối xứng iOS).
+                    val details = response
+                        ?.let { r -> selected.map { r.appliedDiscountFor(it.voucherId, it.objectType) } }
+                        .orEmpty()
                     setState { copy(isValidating = false) }
                     sendEffect(ApplyValidatedVouchers(details))
                 }

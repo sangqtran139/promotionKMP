@@ -141,7 +141,7 @@ public final class PromotionSDK {
             }
             let nav = viewController.navigationController ?? (viewController as? UINavigationController)
             let vc = MyPromotionBuilder.build(
-                with: .init(customerId: impl.customerId, token: impl.token),
+                with: .init(),
                 navigator: nav
             )
             vc.onClose = {

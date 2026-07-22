@@ -12,11 +12,9 @@ import UIKit
 final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController, ChoosePromotionViewModel, ChoosePromotionRouter, ChoosePromotionBuilder.DataModel> {
     
     struct DataModel {
-        let customerId: String
-        let token: String?
-        /// Thông tin đơn cho Find Eligible Campaigns (màn tự re-fetch/phân trang bằng eligible).
-        let orderId: String?
-        let orderValue: String?
+        // customerId/token/orderId/orderValue KHÔNG còn ở đây — ViewModel đọc thẳng từ
+        // PromotionRequestContextProvider của lõi (đối xứng Android). Chỉ giữ data riêng của màn.
+        /// Dòng đơn hàng cho Find Eligible Campaigns — không có trong provider nên vẫn truyền qua đây.
         let orderItems: [EligibleOrderItem]
         /// Data preload từ widget (cachedListModel) để tránh double API call — giống Android PreloadVouchers.
         /// Rỗng → màn tự fetch trang 0 (hiện shimmer).
@@ -28,20 +26,12 @@ final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController
         /// Danh sách để sẵn sàng multi-select; hiện tại thường 0/1 phần tử.
         let preSelectedVoucherIds: [String]
 
-        init(customerId: String,
-             token: String?,
-             orderId: String? = nil,
-             orderValue: String? = nil,
-             orderItems: [EligibleOrderItem] = [],
+        init(orderItems: [EligibleOrderItem] = [],
              preloadedMy: [EligibleOffer] = [],
              preloadedOther: [EligibleOffer] = [],
              myIsLastPage: Bool = true,
              otherIsLastPage: Bool = true,
              preSelectedVoucherIds: [String] = []) {
-            self.customerId = customerId
-            self.token = token
-            self.orderId = orderId
-            self.orderValue = orderValue
             self.orderItems = orderItems
             self.preloadedMy = preloadedMy
             self.preloadedOther = preloadedOther

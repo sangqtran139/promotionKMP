@@ -52,6 +52,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     /// Id voucher dùng cho callback "Áp dụng".
     let voucherId: String
     let data: PromotionDetailBuilder.DataModel
+    /// Context (customerId) đọc từ lõi — đối xứng Android, không threading qua DataModel.
+    private var requestContext: PromotionRequestContextProvider { PromotionContainer.shared.requestContextProvider }
 
     private let getDetailUseCase: GetCustomerVoucherDetailUseCase
     private let displaySubject: CurrentValueSubject<Display, Never>
@@ -116,8 +118,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         didFetch = true
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi, không truyền từng request.
         let voucherId = data.promotion.id
-        let customerId = data.customerId
-        let service = data.service
+        let customerId = requestContext.getCustomerId() ?? ""
+        let service = requestContext.getService()
         let getDetailUseCase = self.getDetailUseCase
         Task { @MainActor [weak self] in
             do {

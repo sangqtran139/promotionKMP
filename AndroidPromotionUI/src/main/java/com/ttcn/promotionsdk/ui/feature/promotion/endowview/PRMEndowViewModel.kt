@@ -9,7 +9,7 @@ import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.appliedDiscountFor
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -151,8 +151,11 @@ internal class PRMEndowViewModel(
 
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { response ->
-                    val details = response?.items.orEmpty().toAppliedDiscounts()
-                    val hasInvalid = details.isNotEmpty() && details.any { !it.valid }
+                    // Lặp theo offer + diễn giải qua isValidFor/discountFor (đối xứng iOS).
+                    val details = response
+                        ?.let { r -> offers.map { r.appliedDiscountFor(it.id, it.objectType) } }
+                        .orEmpty()
+                    val hasInvalid = details.any { !it.valid }
                     _uiState.update {
                         it.copy(
                             discountDetails = details,

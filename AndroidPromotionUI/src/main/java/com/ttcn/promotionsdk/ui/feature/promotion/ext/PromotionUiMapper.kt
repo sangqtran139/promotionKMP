@@ -4,9 +4,9 @@ import com.ttcn.promotionsdk.core.config.AvailableService
 import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemResult
 import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
 import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.ui.entry.AppliedDiscount
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.MyVoucherListItem
@@ -19,8 +19,8 @@ import kotlin.math.ceil
  * Mapper tầng presentation. Ba nhóm:
  *
  *  1. Dựng **domain request** từ model UI / [AppliedDiscount].
- *  2. Map **domain result ([DiscountItemResult]) → [AppliedDiscount]** cho public surface
- *     (callback, [PRMEndowView]).
+ *  2. Diễn giải **kết quả validate → [AppliedDiscount]** per-offer qua `ValidateDiscountsResult`
+ *     ([appliedDiscountFor]) cho public surface (callback, [PRMEndowView]).
  *  3. Map **domain model ([EligibleOffer], [AvailableService]) → model UI**.
  *
  * [AppliedDiscount] là model **public** của SDK (ui/entry); domain (use case, repository)
@@ -94,16 +94,20 @@ internal fun List<AppliedDiscount>.toCreateRedemptionRequest(
 
 // ─── Map domain result → AppliedDiscount (model public) ──────────────────────
 
-internal fun DiscountItemResult.toAppliedDiscount(): AppliedDiscount = AppliedDiscount(
-    objectId = objectId,
-    objectType = objectType,
-    valid = valid,
-    calculatedDiscount = calculatedDiscount,
-    eligibilityStatus = eligibilityStatus,
-)
-
-internal fun List<DiscountItemResult>.toAppliedDiscounts(): List<AppliedDiscount> =
-    map { it.toAppliedDiscount() }
+/**
+ * Dựng [AppliedDiscount] cho offer [objectId]/[objectType] từ kết quả validate, đi qua đúng hai helper
+ * domain [ValidateDiscountsResult.isValidFor] & [ValidateDiscountsResult.discountFor] — **đối xứng iOS**
+ * (iOS gọi thẳng hai helper này per-offer). Nhờ vậy cả hai nền tảng diễn giải valid/discount cùng một rule,
+ * lặp theo **offer đã chọn** thay vì map mù `response.items`.
+ */
+internal fun ValidateDiscountsResult.appliedDiscountFor(objectId: String, objectType: String): AppliedDiscount =
+    AppliedDiscount(
+        objectId = objectId,
+        objectType = objectType,
+        valid = isValidFor(objectId),
+        calculatedDiscount = discountFor(objectId),
+        eligibilityStatus = itemFor(objectId)?.eligibilityStatus.orEmpty(),
+    )
 
 internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem = ServiceSelectorUiItem(
     serviceCode = serviceCode,

@@ -10,11 +10,12 @@ import UIKit
 
 final class ChoosePromotionRouter: PRMBaseRouter<ChoosePromotionViewController> {
     
-    func routeToDetail(promotion: EligibleOffer, customerId: String, token: String?) {
+    func routeToDetail(promotion: EligibleOffer) {
         // Cờ VOUCHER_DETAIL TẮT → hiện popup PRM_MOB_021, không mở màn chi tiết.
         guard canOpenVoucherDetail() else { return }
+        // customerId/token màn chi tiết tự đọc từ PromotionRequestContextProvider (đối xứng Android).
         let vc = PromotionDetailBuilder.build(
-            with: .init(promotion: PRMPromotionCardSeed(offer: promotion), customerId: customerId, token: token),
+            with: .init(promotion: PRMPromotionCardSeed(offer: promotion)),
             navigator: navigator
         )
         navigator?.pushViewController(vc, animated: true)

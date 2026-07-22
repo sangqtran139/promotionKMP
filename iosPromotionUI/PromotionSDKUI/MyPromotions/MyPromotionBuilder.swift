@@ -10,13 +10,7 @@ import UIKit
 final class MyPromotionBuilder: PRMBaseBuilder<MyPromotionViewController, MyPromotionViewModel, MyPromotionRouter, MyPromotionBuilder.DataModel> {
     
     struct DataModel {
-        let customerId: String
-        let token: String?
-
-        init(customerId: String, token: String? = nil) {
-            self.customerId = customerId
-            self.token = token
-        }
+        init() {}
     }
     
     static func build(with data: DataModel, navigator: UINavigationController? = nil) -> MyPromotionViewController {

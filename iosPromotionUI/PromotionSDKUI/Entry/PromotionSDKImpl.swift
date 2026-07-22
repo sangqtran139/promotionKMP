@@ -207,10 +207,10 @@ final class PromotionSDKImpl: NSObject {
         )
     }
 
-    /// Facade headless chỉ cần `customerId`/`token`: nó gọi thẳng `PromotionUseCases` của lõi Kotlin,
-    /// không nhận use case tiêm từ ngoài nữa.
+    /// Facade headless: đọc customerId/token thẳng từ `PromotionRequestContextProvider` của lõi
+    /// (đối xứng Android), gọi thẳng `PromotionUseCases`; không cần truyền context vào đây.
     func makeApi() -> PromotionSDKApi {
-        PromotionSDKApi(customerId: customerId, token: token)
+        PromotionSDKApi()
     }
 
     /// Cập nhật order cho luồng widget thanh toán (eligible + validate dùng các giá trị này).
@@ -288,7 +288,7 @@ final class PromotionSDKImpl: NSObject {
             // Seed tối thiểu từ voucherId — card trống + shimmer cho tới khi fetch detail xong.
             let seed = PRMPromotionCardSeed(voucherId: voucherId)
             let vc = PromotionDetailBuilder.build(
-                with: .init(promotion: seed, customerId: self.customerId, token: self.token),
+                with: .init(promotion: seed),
                 navigator: nav
             )
             if let nav {
@@ -383,6 +383,7 @@ final class PromotionSDKImpl: NSObject {
             customerType: nil, segment: nil, tier: nil,
             tabCode: nil,
             section: nil,
+            keyword: nil,
             myPage: 0, mySize: 10,
             otherPage: 0, otherSize: 10,
             filterOptions: EligibleFilterOptions(includeExpired: false, checkBudgetAvailability: true, includePreview: true)
@@ -452,10 +453,6 @@ final class PromotionSDKImpl: NSObject {
         let cached = cachedListModel
         let vc = ChoosePromotionBuilder.build(
             with: .init(
-                customerId: customerId,
-                token: token,
-                orderId: orderId,
-                orderValue: orderValue,
                 orderItems: eligibleOrderItems(),
                 preloadedMy: cached?.myOffers ?? [],
                 preloadedOther: cached?.otherOffers ?? [],

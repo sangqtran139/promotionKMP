@@ -36,17 +36,13 @@ public final class PromotionSDKApi {
 
     // MARK: - Private
 
-    private let customerId: String
-    private let token: String?
+    /// customerId đọc thẳng từ `PromotionRequestContextProvider` của lõi ở **mỗi** request — đối xứng
+    /// Android (`PromotionContainer.requestContextProvider.getCustomerId()`). Token host cấp qua provider
+    /// ở tầng network, không truyền từng request.
+    private var customerId: String { PromotionContainer.shared.requestContextProvider.getCustomerId() ?? "" }
     private let useCases: PromotionUseCases
 
-    init(
-        customerId: String,
-        token: String?,
-        useCases: PromotionUseCases = PromotionUseCases()
-    ) {
-        self.customerId = customerId
-        self.token = token
+    init(useCases: PromotionUseCases = PromotionUseCases()) {
         self.useCases = useCases
     }
 
@@ -129,6 +125,7 @@ public final class PromotionSDKApi {
             customerType: nil, segment: nil, tier: nil,
             tabCode: tabCode,
             section: nil,
+            keyword: nil,
             myPage: Int32(myPage), mySize: Int32(mySize),
             otherPage: Int32(otherPage), otherSize: Int32(otherSize),
             filterOptions: EligibleFilterOptions(includeExpired: false, checkBudgetAvailability: true, includePreview: true)

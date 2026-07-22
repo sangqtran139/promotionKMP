@@ -169,9 +169,13 @@ suspend fun validateDiscounts(
 ): PromotionResult<ValidateDiscountsResult>
 ```
 
-`ValidateDiscountsResult` có sẵn `validItems` / `invalidItems`; và cho luồng áp/auto-apply **một** offer:
-`itemFor(objectId)`, `isValidFor(objectId)` (chỉ chặn khi server nói rõ `valid=false`),
-`discountFor(objectId)` (lấy `calculatedDiscount` của dòng, thiếu thì fallback `totalDiscountAmount`) — dùng chung Android & iOS.
+`ValidateDiscountsResult` có sẵn `validItems` / `invalidItems`; và diễn giải **per-offer** (lặp theo offer
+đã chọn): `itemFor(objectId)`, `isValidFor(objectId)` (chỉ chặn khi server nói rõ `valid=false`),
+`discountFor(objectId)` (lấy `calculatedDiscount` của dòng, thiếu thì fallback `totalDiscountAmount`).
+**Cả Android lẫn iOS đều đi qua đúng bộ helper này** — Android qua ext `appliedDiscountFor`, iOS gọi trực tiếp.
+
+> ⚠️ Fallback `discountFor → totalDiscountAmount` mang ngữ nghĩa **một offer** (total = giảm của offer đó).
+> Hiện cả hai nền tảng gate chọn đơn nên đúng; khi bật multi-select cần xem lại fallback (tránh cộng nhầm total cho từng offer).
 
 ### 3.5. `createRedemption`
 

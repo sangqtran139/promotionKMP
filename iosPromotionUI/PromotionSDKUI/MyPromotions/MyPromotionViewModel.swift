@@ -36,6 +36,8 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
     }
 
     let data: MyPromotionBuilder.DataModel
+    /// Context (customerId/token) đọc từ lõi — đối xứng Android, không threading qua DataModel.
+    private var requestContext: PromotionRequestContextProvider { PromotionContainer.shared.requestContextProvider }
     private(set) var input: Input!
 
     // MARK: - State
@@ -76,7 +78,7 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
     }
 
     func routeToSearch() {
-        router.routeToSearch(customerId: data.customerId, token: data.token)
+        router.routeToSearch()
     }
 
     func transform(input: Input) -> Output {
@@ -115,7 +117,7 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
             .sink { [weak self] id in
                 guard let self = self else { return }
                 if let promotion = self.domainPromotions.value.first(where: { $0.voucherId == id }) {
-                    self.router.routeToDetail(promotion: promotion, customerId: self.data.customerId, token: self.data.token)
+                    self.router.routeToDetail(promotion: promotion)
                 }
             }
             .store(in: &cancellables)
@@ -167,7 +169,7 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter>, PRMViewMo
         }
 
         let tab = selectedTabCode.value
-        let customerId = data.customerId
+        let customerId = requestContext.getCustomerId() ?? ""
         let trimmedCustomerId = customerId.trimmingCharacters(in: .whitespacesAndNewlines)
 
         fetchTask = Task { @MainActor [weak self] in

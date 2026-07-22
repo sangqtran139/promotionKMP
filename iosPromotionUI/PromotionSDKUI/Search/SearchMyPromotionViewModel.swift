@@ -30,6 +30,8 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     }
 
     let data: SearchMyPromotionBuilder.DataModel
+    /// Context (customerId/token) đọc từ lõi — đối xứng Android, không threading qua DataModel.
+    private var requestContext: PromotionRequestContextProvider { PromotionContainer.shared.requestContextProvider }
     private(set) var input: Input!
     private let searchVouchersUseCase: SearchCustomerVouchersUseCase
 
@@ -112,7 +114,7 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
             .sink { [weak self] id in
                 guard let self = self else { return }
                 if let promotion = self.accumulatedPromotions.value.first(where: { $0.voucherId == id }) {
-                    self.router.routeToDetail(promotion: promotion, customerId: self.data.customerId, token: self.data.token)
+                    self.router.routeToDetail(promotion: promotion)
                 }
             }
             .store(in: &cancellables)
@@ -179,7 +181,7 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
 
         // Token do host cấp qua `PromotionRequestContextProvider` của lõi.
         let request = SearchCustomerVouchersRequest(
-            customerId: data.customerId,
+            customerId: requestContext.getCustomerId() ?? "",
             keyword: keyword,
             serviceCode: nil,
             tab: "all",

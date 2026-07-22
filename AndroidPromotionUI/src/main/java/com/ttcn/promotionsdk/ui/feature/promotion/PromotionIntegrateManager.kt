@@ -9,7 +9,7 @@ import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toCreateRedemptionRequest
-import com.ttcn.promotionsdk.ui.feature.promotion.ext.toAppliedDiscounts
+import com.ttcn.promotionsdk.ui.feature.promotion.ext.appliedDiscountFor
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toValidateDiscountsRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -144,7 +144,10 @@ class PromotionIntegrateManager internal constructor(
 
         runCatching { validateStackableDiscountsUseCase(request) }
             .onSuccess { response ->
-                val newDetails = response?.items.orEmpty().toAppliedDiscounts()
+                // Lặp theo detail đang áp + diễn giải qua isValidFor/discountFor (đối xứng iOS).
+                val newDetails = response
+                    ?.let { r -> currentDetails.map { r.appliedDiscountFor(it.objectId, it.objectType) } }
+                    .orEmpty()
                 endowView.setDiscountDetails(newDetails)
                 onError(ErrorCodes.INSUFFICIENT_BUDGET)
             }
