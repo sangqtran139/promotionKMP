@@ -1,173 +1,75 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.searchmypromotion
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
+import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionState
+import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionStore
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.mypromotion.toMyVoucherListItem
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
+/**
+ * Lớp bọc mỏng quanh [SearchMyPromotionStore] (tầng UI-logic dùng chung ở `promotionLogic`).
+ * **Đồng nhất với `SearchMyPromotionViewModel` bên iOS** — cùng `store` / `bindStore` / `render` /
+ * `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
+ */
 internal class SearchMyPromotionViewModel(
-    private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
-    private val requestContextProvider: PromotionRequestContextProvider,
+    searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
 ) : PRMBaseViewModel<SearchMyPromotionUiState, SearchMyPromotionAction, SearchMyPromotionEffect>(
     SearchMyPromotionUiState(),
 ) {
 
-    private var debounceJob: Job? = null
+    // ─── Store ────────────────────────────────────────────────────────────────
+    private val store = SearchMyPromotionStore(searchCustomerVouchersUseCase, viewModelScope)
 
+    init {
+        bindStore()
+    }
+
+    private fun bindStore() {
+        launch {
+            store.state.collect { state ->
+                render(state)
+                handleError(state)
+            }
+        }
+    }
+
+    // ─── Intent forwarding ──────────────────────────────────────────────────────
     override fun handleAction(action: SearchMyPromotionAction) {
         when (action) {
-            is SearchMyPromotionAction.QueryChanged -> onQueryChanged(action.keyword)
-            SearchMyPromotionAction.Search -> performSearch(immediate = true)
-            SearchMyPromotionAction.LoadMore -> loadMore()
-            SearchMyPromotionAction.ClearKeyword -> onClearKeyword()
-            SearchMyPromotionAction.Retry -> retrySearch()
+            is SearchMyPromotionAction.QueryChanged -> store.dispatch(SearchMyPromotionIntent.QueryChanged(action.keyword))
+            SearchMyPromotionAction.Search -> store.dispatch(SearchMyPromotionIntent.Search)
+            SearchMyPromotionAction.LoadMore -> store.dispatch(SearchMyPromotionIntent.LoadMore)
+            SearchMyPromotionAction.ClearKeyword -> store.dispatch(SearchMyPromotionIntent.ClearKeyword)
+            SearchMyPromotionAction.Retry -> store.dispatch(SearchMyPromotionIntent.Retry)
         }
     }
 
-    private fun onQueryChanged(keyword: String) {
-        debounceJob?.cancel()
-        setState { copy(keyword = keyword) }
-
-        val trimmedKeyword = keyword.trim()
-        if (trimmedKeyword.isEmpty()) {
-            resetSearchResults()
-        } else {
-            scheduleDebouncedSearch(trimmedKeyword)
-        }
+    // ─── State → View ─────────────────────────────────────────────────────────
+    private fun render(state: SearchMyPromotionState) {
+        setState { state.toUiState() }
     }
 
-    private fun performSearch(immediate: Boolean) {
-        debounceJob?.cancel()
-        val trimmedKeyword = uiState.value.keyword.trim()
-        if (trimmedKeyword.isEmpty()) {
-            resetSearchResults()
-        } else if (immediate) {
-            search(reset = true, keyword = trimmedKeyword)
-        } else {
-            scheduleDebouncedSearch(trimmedKeyword)
-        }
-    }
-
-    private fun scheduleDebouncedSearch(keyword: String) {
-        debounceJob = viewModelScope.launch {
-            delay(DEBOUNCE_MS)
-            search(reset = true, keyword = keyword)
-        }
-    }
-
-    private fun onClearKeyword() {
-        debounceJob?.cancel()
-        setState {
-            copy(
-                keyword = "",
-                vouchers = emptyList(),
-                isLoading = false,
-                isLoadingMore = false,
-                isEmpty = false,
-                isLastPage = true,
-                page = 0,
-            )
-        }
-    }
-
-    private fun retrySearch() {
-        val trimmedKeyword = uiState.value.keyword.trim()
-        if (trimmedKeyword.isEmpty()) return
-        search(reset = true, keyword = trimmedKeyword)
-    }
-
-    private fun loadMore() {
-        val currentState = uiState.value
-        val trimmedKeyword = currentState.keyword.trim()
-        if (trimmedKeyword.isEmpty()) return
-        if (currentState.isLastPage || currentState.isLoadingMore || currentState.isLoading) return
-        search(reset = false, keyword = trimmedKeyword)
-    }
-
-    private fun resetSearchResults() {
-        debounceJob?.cancel()
-        setState {
-            copy(
-                vouchers = emptyList(),
-                isLoading = false,
-                isLoadingMore = false,
-                isEmpty = false,
-                isLastPage = true,
-                page = 0,
-            )
-        }
-    }
-
-    private fun search(reset: Boolean, keyword: String) {
-        val currentState = uiState.value
-        val nextPage = if (reset) 0 else currentState.page + 1
-
-        launch {
-            setState {
-                copy(
-                    isLoading = reset,
-                    isLoadingMore = !reset,
-                    isEmpty = if (reset) false else isEmpty,
-                )
-            }
-
-            runCatching {
-                searchCustomerVouchersUseCase(
-                    SearchCustomerVouchersRequest(
-                        keyword = keyword,
-                        serviceCode = null,
-                        tab = TAB_ALL,
-                        page = nextPage,
-                        size = currentState.pageSize,
-                    )
-                )
-            }.onSuccess { response ->
-                val incoming = response?.content.orEmpty().map { it.toMyVoucherListItem() }
-                val merged = if (reset) incoming else currentState.vouchers + incoming
-
-                setState {
-                    copy(
-                        isLoading = false,
-                        isLoadingMore = false,
-                        vouchers = merged,
-                        isEmpty = merged.isEmpty(),
-                        page = response?.number ?: nextPage,
-                        pageSize = response?.size ?: pageSize,
-                        isLastPage = response?.last ?: true,
-                    )
-                }
-            }.onFailure { throwable ->
-                setState {
-                    if (reset) {
-                        copy(
-                            isLoading = false,
-                            isLoadingMore = false,
-                            vouchers = emptyList(),
-                            isEmpty = true,
-                        )
-                    } else {
-                        copy(isLoading = false, isLoadingMore = false)
-                    }
-                }
-                sendEffect(SearchMyPromotionEffect.ShowError(throwable.toErrorCode()))
-            }
-        }
-    }
-
-    override fun onError(throwable: Throwable) {
-        setState { copy(isLoading = false, isLoadingMore = false) }
-        sendEffect(SearchMyPromotionEffect.ShowError(throwable.toErrorCode()))
-    }
-
-    private companion object {
-        private const val TAB_ALL = "all"
-        private const val DEBOUNCE_MS = 400L
+    // ─── Error ──────────────────────────────────────────────────────────────────
+    private fun handleError(state: SearchMyPromotionState) {
+        val code = state.errorCode ?: return
+        sendEffect(SearchMyPromotionEffect.ShowError(code))   // view map code → chuỗi
+        store.dispatch(SearchMyPromotionIntent.ConsumeError)
     }
 }
+
+/**
+ * Chiếu state dùng chung ([SearchMyPromotionState]) → **bề mặt view Android** ([SearchMyPromotionUiState]).
+ * Cùng vai trò với `buildOutput()` bên iOS (xem `MyPromotionViewModel`).
+ */
+private fun SearchMyPromotionState.toUiState() = SearchMyPromotionUiState(
+    keyword = keyword,
+    vouchers = vouchers.map { it.toMyVoucherListItem() },
+    isLoading = isLoading,
+    isLoadingMore = isLoadingMore,
+    isEmpty = isEmpty,
+    isLastPage = isLastPage,
+    page = page,
+    pageSize = pageSize,
+)

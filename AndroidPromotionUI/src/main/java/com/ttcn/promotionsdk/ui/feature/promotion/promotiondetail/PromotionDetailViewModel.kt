@@ -1,34 +1,68 @@
 package com.ttcn.promotionsdk.ui.feature.promotion.promotiondetail
 
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import androidx.lifecycle.viewModelScope
 import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
+import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailIntent
+import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailState
+import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailStore
 import com.ttcn.promotionsdk.ui.base.PRMBaseViewModel
 import com.ttcn.promotionsdk.ui.feature.promotion.ext.toServiceSelectorUiItem
 
+/**
+ * Lớp bọc mỏng quanh [PromotionDetailStore] (tầng UI-logic dùng chung ở `promotionLogic`).
+ * **Đồng nhất với `PromotionDetailViewModel` bên iOS** — cùng `store` / `bindStore` / `render` /
+ * `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
+ * `OpenServiceSelector`/`ServiceSelected` là phần thuần Android (bottom sheet + `config`).
+ */
 internal class PromotionDetailViewModel(
-    private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
-    private val requestContextProvider: PromotionRequestContextProvider,
+    getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val config: PromotionSDKConfig,
-) :
-    PRMBaseViewModel<PromotionDetailUiState, PromotionDetailAction, PromotionDetailEffect>(
-        PromotionDetailUiState(),
-    ) {
-    override fun handleAction(action: PromotionDetailAction) {
-        when (action) {
-            is PromotionDetailAction.LoadDetail -> loadDetail(action.voucherId)
-            PromotionDetailAction.OpenServiceSelector -> openServiceSelector()
-            is PromotionDetailAction.ServiceSelected -> Unit // TODO: navigate when destination is ready
+) : PRMBaseViewModel<PromotionDetailUiState, PromotionDetailAction, PromotionDetailEffect>(
+    PromotionDetailUiState(),
+) {
+
+    // ─── Store ────────────────────────────────────────────────────────────────
+    private val store = PromotionDetailStore(getCustomerVoucherDetailUseCase, viewModelScope)
+
+    init {
+        bindStore()
+    }
+
+    private fun bindStore() {
+        launch {
+            store.state.collect { state ->
+                render(state)
+                handleError(state)
+            }
         }
     }
 
+    // ─── Intent forwarding ──────────────────────────────────────────────────────
+    override fun handleAction(action: PromotionDetailAction) {
+        when (action) {
+            is PromotionDetailAction.LoadDetail -> store.dispatch(PromotionDetailIntent.LoadDetail(action.voucherId))
+            PromotionDetailAction.OpenServiceSelector -> openServiceSelector()
+            is PromotionDetailAction.ServiceSelected -> Unit // TODO: điều hướng màn dịch vụ khi có đích đến
+        }
+    }
+
+    // ─── State → View ─────────────────────────────────────────────────────────
+    private fun render(state: PromotionDetailState) {
+        setState { state.toUiState() }
+    }
+
+    // ─── Error ──────────────────────────────────────────────────────────────────
+    private fun handleError(state: PromotionDetailState) {
+        val code = state.errorCode ?: return
+        sendEffect(PromotionDetailEffect.ShowError(code))   // view map code → chuỗi
+        store.dispatch(PromotionDetailIntent.ConsumeError)
+    }
+
+    // ─── Android-only: bottom sheet "Chọn dịch vụ" (cần config) ──────────────────
     private fun openServiceSelector() {
-        val applicableProductIds = uiState.value.detail
-            ?.applicableProducts
-            .orEmpty()
+        val applicableProductIds = store.currentState().detail
+            ?.applicableProducts.orEmpty()
             .map { it.productId }
             .toSet()
         val services = config.availableServices
@@ -37,65 +71,17 @@ internal class PromotionDetailViewModel(
             .map { it.toServiceSelectorUiItem() }
         sendEffect(PromotionDetailEffect.ShowServiceSelector(services))
     }
-
-    private fun loadDetail(voucherId: String) {
-        launch {
-            setState { copy(isLoading = true) }
-
-            runCatching {
-                getCustomerVoucherDetailUseCase(
-                    voucherId = voucherId,
-                    service = requestContextProvider.getService(),
-                )
-            }.onSuccess { detail ->
-                val status = VoucherStatus.from(detail?.status)
-                val label = detail?.displayStatusLabel.orEmpty()
-                val actionState = status.toActionUiState(label)
-                setState {
-                    copy(
-                        isLoading = false,
-                        detail = detail,
-                        status = status,
-                        actionVisible = actionState.visible,
-                        actionEnabled = actionState.enabled,
-                        actionLabel = actionState.label,
-                    )
-                }
-                if (detail == null) {
-                    sendEffect(PromotionDetailEffect.ShowError("error_detail_unavailable"))
-                }
-            }.onFailure { throwable ->
-                setState { copy(isLoading = false) }
-                sendEffect(PromotionDetailEffect.ShowError(throwable.toErrorCode()))
-            }
-        }
-    }
-
-    override fun onError(throwable: Throwable) {
-        setState {
-            copy(
-                isLoading = false,
-            )
-        }
-        sendEffect(PromotionDetailEffect.ShowError(throwable.toErrorCode()))
-    }
-
-    /**
-     * Nút "Dùng ngay" hiện khi voucher còn dùng được. Quy tắc trạng thái nằm ở `promotionLogic`
-     * (`VoucherStatus.displayState()`), dùng chung với iOS — không `when` trên từng mã ở đây nữa,
-     * để thêm mã mới vào server không phải sửa hai nền tảng.
-     */
-    private fun VoucherStatus.toActionUiState(displayStatusLabel: String): VoucherActionUiState {
-        return if (displayState().isUsable) {
-            VoucherActionUiState(visible = true, enabled = true, label = "")
-        } else {
-            VoucherActionUiState(visible = false, enabled = false, label = displayStatusLabel)
-        }
-    }
 }
 
-internal data class VoucherActionUiState(
-    val visible: Boolean,
-    val enabled: Boolean,
-    val label: String,
+/**
+ * Chiếu state dùng chung ([PromotionDetailState]) → **bề mặt view Android** ([PromotionDetailUiState]).
+ * Cùng vai trò với `buildOutput()` bên iOS (xem `MyPromotionViewModel`).
+ */
+private fun PromotionDetailState.toUiState() = PromotionDetailUiState(
+    isLoading = isLoading,
+    detail = detail,
+    status = status,
+    actionVisible = actionVisible,
+    actionEnabled = actionEnabled,
+    actionLabel = actionLabel,
 )

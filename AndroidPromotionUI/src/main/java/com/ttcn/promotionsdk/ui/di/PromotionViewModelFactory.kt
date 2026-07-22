@@ -27,13 +27,11 @@ internal class PromotionViewModelFactory(
         return when (modelClass) {
             MyPromotionViewModel::class.java -> MyPromotionViewModel(
                 searchCustomerVouchersUseCase = searchCustomerVouchersUseCase,
-                requestContextProvider = requestContextProvider,
                 config = config,
             ) as T
 
             PromotionDetailViewModel::class.java -> PromotionDetailViewModel(
                 getCustomerVoucherDetailUseCase = getCustomerVoucherDetailUseCase,
-                requestContextProvider = requestContextProvider,
                 config = config,
             ) as T
 
@@ -45,7 +43,6 @@ internal class PromotionViewModelFactory(
 
             SearchMyPromotionViewModel::class.java -> SearchMyPromotionViewModel(
                 searchCustomerVouchersUseCase = searchCustomerVouchersUseCase,
-                requestContextProvider = requestContextProvider,
             ) as T
 
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
