@@ -4,13 +4,10 @@
 //
 
 import UIKit
-import Combine
 
 class PRMBaseViewController<VM>: UIViewController {
 
     let viewModel: VM
-    /// Combine subscriptions.
-    var cancellables = Set<AnyCancellable>()
 
     init(viewModel: VM, nibName: String? = nil, bundle: Bundle? = nil) {
         self.viewModel = viewModel

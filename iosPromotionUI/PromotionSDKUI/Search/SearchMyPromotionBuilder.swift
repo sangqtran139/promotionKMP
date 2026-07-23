@@ -10,9 +10,9 @@ import UIKit
 
 final class SearchMyPromotionBuilder: PRMBaseBuilder<SearchMyPromotionViewController, SearchMyPromotionViewModel, SearchMyPromotionRouter, SearchMyPromotionBuilder.DataModel> {
     
+    /// Rỗng: màn Tìm kiếm không có tham số đầu vào (context đọc từ lõi, keyword do user gõ).
+    /// Chỉ tồn tại để khớp generic `Dependency` của `PRMBaseBuilder` — **không** truyền vào ViewModel.
     struct DataModel {
-        // Không còn field context — ViewModel đọc customerId/token từ
-        // PromotionRequestContextProvider của lõi (đối xứng Android).
         init() {}
     }
     
@@ -26,7 +26,7 @@ final class SearchMyPromotionBuilder: PRMBaseBuilder<SearchMyPromotionViewContro
     }
     
     override func createViewModel(router: SearchMyPromotionRouter, data: DataModel) -> SearchMyPromotionViewModel {
-        return SearchMyPromotionViewModel(router: router, data: data)
+        return SearchMyPromotionViewModel(router: router)
     }
     
     override func createViewController(viewModel: SearchMyPromotionViewModel) -> SearchMyPromotionViewController {

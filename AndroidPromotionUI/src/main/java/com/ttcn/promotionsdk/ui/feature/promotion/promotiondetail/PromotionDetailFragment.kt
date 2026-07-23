@@ -129,8 +129,11 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         binding.tvUse.isEnabled = state.actionEnabled
         // Nút "Sử dụng ngay" hiện cho MỌI trạng thái usable (actionEnabled do store quyết định) —
         // khớp iOS/store, không khoá riêng ACTIVE (AVAILABLE/USABLE/AVAILABLE_TO_CLAIM cũng usable).
-        binding.tvUse.text = if (state.actionEnabled) getString(R.string.prm_use_now)
-        else state.actionLabel.ifBlank { detail.displayStatusLabel.orEmpty() }
+        //
+        // NHÃN: lấy từ server (`displayStatusLabel` → `state.actionLabel`), không phụ thuộc
+        // enabled/disabled. `prm_use_now` chỉ là dự phòng khi API không trả nhãn (hiện `disabledReason`
+        // chỉ có khi usable=false → voucher dùng được sẽ rơi vào nhánh dự phòng này).
+        binding.tvUse.text = state.actionLabel.ifBlank { getString(R.string.prm_use_now) }
 
         bindDetailTabsIfNeeded(
             voucherId = detail.voucherId,

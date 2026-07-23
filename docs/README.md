@@ -17,7 +17,7 @@ còn giao diện do **mỗi nền tảng tự dựng** bằng công nghệ nativ
 ```
 ┌───────────────────────┐        ┌──────────────────────┐
 │ promotionUI (Android) │        │ promotionUI (iOS)    │
-│ XML View + MVI        │        │ UIKit + MVVM/Combine │
+│ XML View + MVI        │        │ UIKit + MVVM/callback│
 └──────────┬────────────┘        └──────────┬───────────┘
            │                                │
            └────────────┬───────────────────┘
@@ -72,7 +72,7 @@ Xem [android/UIGuide.md](./android/UIGuide.md).
 
 ### UI iOS (nguồn: `ttcn-promotion-ios-sdk`)
 
-UIKit (XIB), kiến trúc **MVVM + Builder + Router**, reactive bằng **Combine + async/await**, modular SPM.
+UIKit (XIB), kiến trúc **MVVM + Builder + Router**, ràng buộc View↔VM bằng **callback thuần**, modular SPM.
 RxSwift đã được gỡ hoàn toàn (không dependency ngoài). Xem [ios/UIGuide.md](./ios/UIGuide.md).
 
 ---
@@ -118,7 +118,7 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 
 | File | Nội dung |
 |------|----------|
-| [ios/UIGuide.md](./ios/UIGuide.md) | UI iOS: UIKit, XIB, MVVM + Builder/Router, **Combine + async/await**. |
+| [ios/UIGuide.md](./ios/UIGuide.md) | UI iOS: UIKit, XIB, MVVM + Builder/Router, **callback thuần** (không Combine/Rx). |
 | [ios/Distribution.md](./ios/Distribution.md) | Phát hành SDK iOS: XCFramework, dSYM, slice, **đóng gói (host không cài thêm gì)**. |
 
 **`features/` — theo tính năng (2 nền tảng)**

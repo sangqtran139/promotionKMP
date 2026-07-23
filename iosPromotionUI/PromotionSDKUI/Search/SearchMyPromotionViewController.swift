@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import Combine
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
@@ -19,12 +18,16 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
     @IBOutlet private weak var searchHeaderView: UIView!
     @IBOutlet private weak var resultSearchLabel: UILabel!
 
-    // MARK: - Event subjects
-    private let searchActionRelay = PassthroughSubject<Void, Never>()
-    private let loadMoreRelay = PassthroughSubject<Void, Never>()
-    private let selectPromotionRelay = PassthroughSubject<String, Never>()
     /// Nguồn dữ liệu list.
     private var promotionItems: [MyPromotionCellViewModel] = []
+
+    /// Spinner "đang tải thêm" ở đáy list khi phân trang — đối ứng `MyPromotionListItem.Loading`
+    /// mà Android nối vào cuối danh sách (`buildPromotionListItems(isLoadingMore:)`).
+    private let loadMoreSpinner: UIActivityIndicatorView = {
+        let v = UIActivityIndicatorView(style: .medium)
+        v.hidesWhenStopped = true
+        return v
+    }()
 
     // Shimmer skeleton khi đang tìm kiếm (khớp Android shimmerProvider).
     private let shimmerOverlay: UIView = {
@@ -85,6 +88,14 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         self.configShimmer()
         searchTextField.returnKeyType = .search
         searchTextField.delegate = self
+        // Gõ mỗi ký tự → `queryChanged` (store lo debounce). Target-action thay cho `textPublisher`
+        // của Combine — và KHÔNG phát giá trị đầu lúc bind như publisher cũ (`.prepend`), nên không
+        // còn cú `QueryChanged("")` thừa ngay khi mở màn.
+        searchTextField.addTarget(self, action: #selector(searchTextChanged), for: .editingChanged)
+    }
+
+    @objc private func searchTextChanged(_ sender: UITextField) {
+        viewModel.handleAction(.queryChanged(sender.text ?? ""))
     }
 
     private func configShimmer() {
@@ -115,56 +126,73 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
     }
 
     // MARK: - Bind ViewModel
+    //
+    // Đối ứng `SearchMyPromotionFragment.observeData` bên Android: một `render(state)` cho toàn bộ
+    // bề mặt + một nhánh xử lý effect. Gán `onState` là nhận ngay state hiện tại (VM replay).
     override func bindViewModel() {
         super.bindViewModel()
 
-        let input = SearchMyPromotionViewModel.Input(
-            searchText: searchTextField.textPublisher,
-            searchAction: searchActionRelay.eraseToAnyPublisher(),
-            loadMoreTrigger: loadMoreRelay.eraseToAnyPublisher(),
-            selectPromotionByIDRelay: selectPromotionRelay
-        )
-        let output = viewModel.transform(input: input)
+        viewModel.onState = { [weak self] state in self?.render(state) }
+        viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
+    }
 
-        // Cập nhật mảng nguồn + reload.
-        output.promotions
-            .sink { [weak self] items in
-                guard let self = self else { return }
-                self.promotionItems = items
-                self.tableView.reloadData()
-                // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
-                self.resultSearchLabel.isHidden = items.isEmpty
-            }
-            .store(in: &cancellables)
+    private func render(_ state: SearchMyPromotionViewModel.UiState) {
+        promotionItems = state.promotions
+        tableView.reloadData()
+        // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
+        resultSearchLabel.isHidden = state.promotions.isEmpty
 
-        output.isEmpty
-            .sink { [weak self] isEmpty in
-                self?.searchNoResultView.isHidden = !isEmpty
-                self?.tableView.isHidden = isEmpty
-            }
-            .store(in: &cancellables)
+        shimmerOverlay.isHidden = !state.isLoading
+        if state.isLoading {
+            tableView.isHidden = true
+            searchNoResultView.isHidden = true
+            shimmerView.startAnimating()
+        } else {
+            shimmerView.stopAnimating()
+            searchNoResultView.isHidden = !state.isEmpty
+            tableView.isHidden = state.isEmpty
+        }
 
-        output.isLoading
-            .sink { [weak self] loading in
-                guard let self = self else { return }
-                self.shimmerOverlay.isHidden = !loading
-                if loading {
-                    self.tableView.isHidden = true
-                    self.searchNoResultView.isHidden = true
-                    self.shimmerView.startAnimating()
-                } else {
-                    self.shimmerView.stopAnimating()
-                }
-            }
-            .store(in: &cancellables)
+        renderLoadMore(state.isLoadingMore)
+    }
 
-        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion — trước đây iOS nuốt lỗi).
-        output.errorCode
-            .sink { [weak self] code in
-                guard let self = self else { return }
-                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
-            }
-            .store(in: &cancellables)
+    /// Gắn/gỡ spinner ở đáy list. Chỉ đụng `tableFooterView` khi trạng thái thật sự đổi để không
+    /// bắt table layout lại mỗi lần render.
+    private func renderLoadMore(_ isLoadingMore: Bool) {
+        let isShowing = tableView.tableFooterView === loadMoreSpinner
+        guard isShowing != isLoadingMore else { return }
+
+        if isLoadingMore {
+            loadMoreSpinner.frame = CGRect(x: 0, y: 0, width: tableView.bounds.width, height: 44)
+            tableView.tableFooterView = loadMoreSpinner
+            loadMoreSpinner.startAnimating()
+        } else {
+            loadMoreSpinner.stopAnimating()
+            tableView.tableFooterView = nil
+        }
+    }
+
+    private func handle(_ effect: SearchMyPromotionViewModel.Effect) {
+        switch effect {
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android: Fragment map code → chuỗi).
+        case .showError(let code):
+            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+        case .showServiceSelector(let voucherId, let services):
+            showServiceSelector(voucherId: voucherId, services: services)
+        }
+    }
+
+    /// Giống `SearchMyPromotionFragment.showServiceSelector` bên Android — cùng bottom sheet, cùng sự kiện host.
+    private func showServiceSelector(voucherId: String, services: [ServiceSelectorItem]) {
+        ServiceSelectorBottomSheet.present(from: self, services: services) { [weak self] service in
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
+                voucherId: voucherId,
+                serviceCode: service.serviceCode,
+                serviceName: service.serviceName,
+                iconUrl: service.iconUrl
+            ))
+            self?.viewModel.handleAction(.serviceSelected(service))
+        }
     }
 
     // MARK: - Action
@@ -180,7 +208,7 @@ extension SearchMyPromotionViewController: UITableViewDelegate {
         let contentHeight = scrollView.contentSize.height
         let frameHeight = scrollView.frame.size.height
         if contentHeight > 0 && offsetY > contentHeight - frameHeight - 100 {
-            loadMoreRelay.send(())
+            viewModel.handleAction(.loadMore)
         }
     }
 }
@@ -202,7 +230,7 @@ extension SearchMyPromotionViewController: UITableViewDataSource {
 // MARK: - UITextFieldDelegate (search action on return key)
 extension SearchMyPromotionViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        searchActionRelay.send(())
+        viewModel.handleAction(.search)
         textField.resignFirstResponder()
         return true
     }
@@ -211,17 +239,10 @@ extension SearchMyPromotionViewController: UITextFieldDelegate {
 // MARK: - MyPromotionCellDelegate
 extension SearchMyPromotionViewController: MyPromotionCellDelegate {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String) {
-        selectPromotionRelay.send(id)
+        viewModel.handleAction(.selectPromotion(id))
     }
 
-    func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String, services: [ServiceSelectorItem]) {
-        ServiceSelectorBottomSheet.present(from: self, services: services) { service in
-            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
-                voucherId: voucherId,
-                serviceCode: service.serviceCode,
-                serviceName: service.serviceName,
-                iconUrl: service.iconUrl
-            ))
-        }
+    func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String) {
+        viewModel.handleAction(.openServiceSelector(voucherId))
     }
 }

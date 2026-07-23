@@ -25,7 +25,7 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 | `status` | `VoucherStatus` (UNKNOWN/…)|
 | `actionVisible` | Có hiện nút hành động không |
 | `actionEnabled` | Nút có cho bấm không |
-| `actionLabel` | Nhãn nút (vd "Áp dụng") |
+| `actionLabel` | Nhãn nút — **lấy nguyên từ server** (`VoucherDetail.displayStatusLabel`), store không tự dựng chuỗi |
 
 ### Action — `PromotionDetailAction`
 - `LoadDetail(voucherId)` — tải chi tiết voucher.
@@ -52,7 +52,18 @@ Fragment: render thông tin + cấu hình nút theo state
 ```
 
 - Use case: `GetCustomerVoucherDetailUseCase`.
-- Trạng thái nút (`actionEnabled`, `actionLabel`) **suy ra từ `status`** trong ViewModel, không hardcode ở Fragment.
+- Hiện/ẩn + cho bấm (`actionVisible`, `actionEnabled`) suy ra từ `status` **ở store** (`displayState().isUsable`),
+  không hardcode ở Fragment/VC.
+- **Nhãn nút (`actionLabel`) không hardcode**: store gán thẳng `VoucherDetail.displayStatusLabel` cho **mọi**
+  trạng thái (trước đây bị xoá trắng khi voucher usable, rồi native đè chuỗi cứng "Sử dụng ngay"/"useNow").
+  Native chỉ dùng nhãn mặc định (`R.string.prm_use_now` / `PromotionUIStrings.useNow`) khi server trả rỗng.
+
+  > ⚠️ **Hạn chế phía API:** `displayStatusLabel` hiện map từ `metadata.disabledReason`
+  > ([`VoucherMapper.kt`](../../promotionLogic/src/commonMain/kotlin/com/ttcn/promotionsdk/core/data/dto/voucher/VoucherMapper.kt)),
+  > mà field này **chỉ có giá trị khi `usable="false"`**. Nút "Sử dụng" lại chỉ hiện khi voucher usable →
+  > trên thực tế vẫn luôn rơi vào nhãn dự phòng. Muốn nhãn nút do server quyết định thật sự thì BE phải trả
+  > thêm một field nhãn áp dụng cho cả voucher dùng được; khi có, chỉ cần map nó vào `displayStatusLabel`
+  > là bỏ được nhánh dự phòng, **không phải sửa UI**.
 
 ---
 

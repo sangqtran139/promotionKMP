@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import Combine
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMDesignKit
@@ -160,72 +159,63 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     }
 
     // MARK: - Bind ViewModel
+    //
+    // Đối ứng `PromotionDetailFragment.observeData` bên Android: một `render(state)` cho toàn bộ bề
+    // mặt, một nhánh effect, rồi `start()` (kích fetch detail).
     override func bindViewModel() {
         super.bindViewModel()
 
-        let output = viewModel.transform(input: PromotionDetailViewModel.Input())
+        viewModel.onState = { [weak self] state in self?.render(state) }
+        viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
 
-        output.voucherCardViewModel
-            .sink { [weak self] vm in
-                self?.configVoucherCardView(voucherCardViewModel: vm)
-            }
-            .store(in: &cancellables)
+        viewModel.handleAction(.loadDetail)
+    }
 
-        output.bannerImageName
-            .sink { [weak self] urlString in
-                self?.bannerImageView.setImage(urlString: urlString)
-            }
-            .store(in: &cancellables)
+    private func render(_ state: PromotionDetailViewModel.UiState) {
+        configVoucherCardView(voucherCardViewModel: state.card)
+        bannerImageView.setImage(urlString: state.banner)
 
-        output.tabContents
-            .sink { [weak self] contents in
-                guard let self = self else { return }
-                self.applyContent(contents.detail, to: self.detailTextView)
-                self.applyContent(contents.guide, to: self.guideTextView)
-            }
-            .store(in: &cancellables)
+        applyContent(state.tabContents.detail, to: detailTextView)
+        applyContent(state.tabContents.guide, to: guideTextView)
 
-        output.applyButtonTitle
-            .sink { [weak self] title in
-                self?.applyButton.setTitle(title, for: .normal)
-            }
-            .store(in: &cancellables)
+        applyButton.setTitle(state.applyTitle, for: .normal)
+        applyButton.isEnabled = state.isApplyEnabled
+        // Chỉ ẩn/hiện NÚT; luôn giữ chỗ thanh đáy để card cách một khoảng đồng nhất.
+        // Không ACTIVE → nền thanh đáy trong suốt (hoà nền màn), có nút → nền trắng.
+        applyButton.isHidden = !state.isApplyVisible
+        applyButton.superview?.backgroundColor = state.isApplyVisible ? Colors.tokenWhite : .clear
 
-        output.isApplyEnabled
-            .sink { [weak self] isEnabled in
-                self?.applyButton.isEnabled = isEnabled
-            }
-            .store(in: &cancellables)
+        shimmerView.isHidden = !state.isLoading
+        if state.isLoading {
+            shimmerView.startAnimating()
+        } else {
+            shimmerView.stopAnimating()
+        }
+    }
 
-        output.isApplyVisible
-            .sink { [weak self] isVisible in
-                guard let self = self else { return }
-                // Chỉ ẩn/hiện NÚT; luôn giữ chỗ thanh đáy để card cách một khoảng đồng nhất.
-                // Không ACTIVE → nền thanh đáy trong suốt (hoà nền màn), có nút → nền trắng.
-                self.applyButton.isHidden = !isVisible
-                self.applyButton.superview?.backgroundColor = isVisible ? Colors.tokenWhite : .clear
-            }
-            .store(in: &cancellables)
+    private func handle(_ effect: PromotionDetailViewModel.Effect) {
+        switch effect {
+        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion).
+        case .showError(let code):
+            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+        case .showServiceSelector(let items):
+            showServiceSelector(items)
+        }
+    }
 
-        output.isLoading
-            .sink { [weak self] isLoading in
-                guard let self = self else { return }
-                self.shimmerView.isHidden = !isLoading
-                if isLoading {
-                    self.shimmerView.startAnimating()
-                } else {
-                    self.shimmerView.stopAnimating()
-                }
-            }
-            .store(in: &cancellables)
-
-        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion — trước đây iOS nuốt lỗi).
-        output.errorCode
-            .sink { [weak self] code in
-                guard let self = self else { return }
-                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
-            }
-            .store(in: &cancellables)
+    /// Giống `PromotionDetailFragment.showServiceSelector` bên Android — cùng bottom sheet, cùng
+    /// sự kiện host, rồi vẫn để VM xử lý điều hướng nội bộ.
+    private func showServiceSelector(_ items: [ServiceSelectorItem]) {
+        let voucherId = viewModel.voucherId
+        ServiceSelectorBottomSheet.present(from: self, services: items) { [weak self] service in
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
+                voucherId: voucherId,
+                serviceCode: service.serviceCode,
+                serviceName: service.serviceName,
+                iconUrl: service.iconUrl
+            ))
+            self?.viewModel.handleAction(.serviceSelected(service))
+        }
     }
 
     /// Gán nội dung 1 tab: HTML → attributed; ngược lại → text thường (rỗng = để trống).
@@ -249,16 +239,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
 
     @objc private func didTapApplyButton() {
         // Bấm "Áp dụng" → mở bottom sheet chọn dịch vụ (parity Android tvUse → OpenServiceSelector).
-        let items = self.viewModel.serviceSelectorItems()
-        let voucherId = self.viewModel.voucherId
-        ServiceSelectorBottomSheet.present(from: self, services: items) { service in
-            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
-                voucherId: voucherId,
-                serviceCode: service.serviceCode,
-                serviceName: service.serviceName,
-                iconUrl: service.iconUrl
-            ))
-        }
+        viewModel.handleAction(.openServiceSelector)
     }
 }
 

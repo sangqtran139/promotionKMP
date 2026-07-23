@@ -115,10 +115,13 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 - Lỗi hiển thị đi qua **Effect** (one-shot), không nhồi vào state vĩnh viễn.
 - **Không** `catch {}` rỗng.
 
-### iOS (MVVM + RxSwift)
+### iOS (MVVM + callback thuần)
 
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
-- Phát qua `Driver`/`Signal` riêng cho lỗi, không trộn vào output dữ liệu.
+- Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
+  (đối ứng `uiEffect` bên Android). VC map `code` → chuỗi bằng `PromotionUIStrings.errorMessage`
+  rồi hiện `PRMConfirmationDialog`; state không giữ lại lỗi.
+- ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
 
 ### Cả hai
 

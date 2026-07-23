@@ -1,7 +1,7 @@
 # Features — Tài liệu theo tính năng
 
 Mỗi tính năng có **một nghiệp vụ dùng chung** ở `:promotionLogic` và **hai hiện thực UI** —
-Android (MVI, XML View) và iOS (MVVM + Combine, UIKit).
+Android (MVI, XML View) và iOS (MVVM + callback thuần, UIKit).
 
 > Đọc trước: [Architecture.md](../common/Architecture.md) và [HeadlessAPI.md](../common/HeadlessAPI.md).
 

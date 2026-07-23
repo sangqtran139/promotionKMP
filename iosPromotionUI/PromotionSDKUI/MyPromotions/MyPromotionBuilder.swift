@@ -9,6 +9,8 @@ import UIKit
 
 final class MyPromotionBuilder: PRMBaseBuilder<MyPromotionViewController, MyPromotionViewModel, MyPromotionRouter, MyPromotionBuilder.DataModel> {
     
+    /// Rỗng: màn này không có tham số đầu vào (context đọc từ lõi).
+    /// Chỉ tồn tại để khớp generic `Dependency` của `PRMBaseBuilder` — **không** truyền vào ViewModel.
     struct DataModel {
         init() {}
     }
@@ -23,7 +25,7 @@ final class MyPromotionBuilder: PRMBaseBuilder<MyPromotionViewController, MyProm
     }
     
     override func createViewModel(router: MyPromotionRouter, data: DataModel) -> MyPromotionViewModel {
-        return MyPromotionViewModel(router: router, data: data)
+        return MyPromotionViewModel(router: router)
     }
     
     override func createViewController(viewModel: MyPromotionViewModel) -> MyPromotionViewController {

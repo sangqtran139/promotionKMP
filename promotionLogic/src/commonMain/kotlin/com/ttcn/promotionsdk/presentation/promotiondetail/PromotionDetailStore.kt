@@ -72,7 +72,9 @@ class PromotionDetailStore(
                         status = status,
                         actionVisible = usable,
                         actionEnabled = usable,
-                        actionLabel = if (usable) "" else detail?.displayStatusLabel.orEmpty(),
+                        // Nhãn nút LUÔN lấy từ server (`displayStatusLabel`), kể cả khi usable —
+                        // không tự quyết định chuỗi ở đây. Rỗng thì native mới dùng nhãn mặc định.
+                        actionLabel = detail?.displayStatusLabel.orEmpty(),
                         errorCode = if (detail == null) "error_detail_unavailable" else it.errorCode,
                     )
                 }

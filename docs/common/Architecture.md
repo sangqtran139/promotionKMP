@@ -13,7 +13,7 @@ tầng Data + Domain được chia sẻ giữa Android và iOS qua Kotlin Multip
 │ PRESENTATION — Android       │   │ PRESENTATION — iOS           │
 │ Fragment/View ←→ ViewModel   │   │ ViewController ←→ ViewModel  │
 │ MVI: State / Action / Effect │   │ MVVM + Builder + Router      │
-│ XML View, Data/View Binding  │   │ UIKit XIB, RxSwift           │
+│ XML View, Data/View Binding  │   │ UIKit XIB, callback thuần    │
 └──────────────┬───────────────┘   └──────────────┬───────────────┘
                │      gọi UseCase, nhận domain model
                └──────────────┬───────────────────┘
@@ -169,13 +169,15 @@ Chi tiết: [AndroidUIGuide.md](../android/UIGuide.md).
 
 ## 5. Mô hình UI — iOS (MVVM + Builder/Router)
 
-- **Builder** (`BaseBuilder`): lắp ráp VC + VM + Router, inject dependency.
-- **Router** (`BaseRouter`): điều hướng (push/pop/present).
-- **ViewModel** (`BaseViewModel`): theo `ViewModelType` với `transform(input:) -> Output`, dùng RxSwift.
-- **ViewController** (`BaseViewController`): bind UI, load XIB theo tên class.
+- **Builder** (`PRMBaseBuilder`): lắp ráp VC + VM + Router, inject dependency.
+- **Router** (`PRMBaseRouter`): điều hướng (push/pop/present).
+- **ViewModel** (`PRMBaseViewModel`): bọc store dùng chung ở `promotionLogic`; phơi `onState` /
+  `onEffect` / `handleAction(_:)` bằng **callback thuần** — đối ứng 1-1 `uiState` / `uiEffect` /
+  `handleAction` bên Android. Không Combine, không RxSwift.
+- **ViewController** (`PRMBaseViewController`): bind UI qua **một** `render(state)`, load XIB theo tên class.
 
 Public facade `PromotionSDK` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
-(RxSwift, domain model) — tránh crash đệ quy `deserializeClass`.
+(domain model Kotlin) — tránh crash đệ quy `deserializeClass`.
 
 Chi tiết: [IosUIGuide.md](../ios/UIGuide.md).
 

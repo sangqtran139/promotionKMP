@@ -3,78 +3,90 @@
 //  PromotionSDK
 //
 //  Lớp bọc mỏng quanh PromotionDetailStore (tầng UI-logic dùng chung ở promotionLogic).
-//  ĐỒNG NHẤT với `PromotionDetailViewModel` bên Android — cùng `store` / `bindStore` / `render` /
-//  `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel`). Fetch + quyết định nút
-//  nằm ở store; VM chỉ FORMAT hiển thị (card/HTML/ngày) — phần rendering vốn là của native.
+//  ĐỒNG NHẤT với `PromotionDetailViewModel` bên Android — cùng `store` / `bindStore` /
+//  `handleAction` / `render` / `handleError`, cùng thứ tự. Fetch + quyết định nút nằm ở store;
+//  VM chỉ FORMAT hiển thị (card/HTML/ngày) — phần rendering vốn là của native.
 //
 //  KHÔNG seed từ màn danh sách: mọi thứ hiển thị đều đến từ `getCustomerVoucherDetail`; trong lúc
-//  chờ thì `Display.empty` + shimmer. `data.promotion` chỉ dùng để lấy `voucherId` cần fetch.
+//  chờ là `UiState.initial` + shimmer. `data.promotion` chỉ dùng để lấy `voucherId` cần fetch.
+//
+//  KHÔNG dùng Combine: store đã phơi callback (`watchState`), nên VM cũng phơi callback
+//  (`onState` / `onEffect`) — đối ứng 1-1 `uiState: StateFlow` / `uiEffect: Flow` bên Android.
 //
 
 import Foundation
-import Combine
 @_implementationOnly import PRMKotlinBridge
 
-final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, PRMViewModelType {
-
-    struct Input {}
+final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
 
     /// Nội dung hiển thị theo tab cùng cờ cho biết text có phải HTML không.
     struct ContentDisplay {
         let text: String
         let isHTML: Bool
+
+        static let empty = ContentDisplay(text: "", isHTML: false)
     }
 
     /// Nội dung cả 2 tab, render đồng thời vào 2 trang vuốt được.
     struct TabContents {
         let detail: ContentDisplay
         let guide: ContentDisplay
+
+        static let empty = TabContents(detail: .empty, guide: .empty)
     }
 
-    struct Output {
-        let voucherCardViewModel: AnyPublisher<VoucherCardViewModel, Never>
-        let bannerImageName: AnyPublisher<String?, Never>
-        let tabContents: AnyPublisher<TabContents, Never>
-        let applyButtonTitle: AnyPublisher<String, Never>
-        let isApplyEnabled: AnyPublisher<Bool, Never>
-        let isApplyVisible: AnyPublisher<Bool, Never>
-        let isLoading: AnyPublisher<Bool, Never>
-        /// Phát **mã lỗi** (raw) — VC map code → chuỗi (đồng nhất Android/MyPromotion).
-        let errorCode: AnyPublisher<String, Never>
-    }
+    /// Bề mặt view (đã format) — đối ứng `PromotionDetailUiState` bên Android.
+    struct UiState {
+        var card: VoucherCardViewModel
+        var banner: String?
+        var tabContents: TabContents
+        var applyTitle: String
+        var isApplyEnabled: Bool
+        var isApplyVisible: Bool
+        var isLoading: Bool
 
-    /// Gói dữ liệu hiển thị — chỉ dựng từ detail mà API trả về (không seed từ màn danh sách).
-    private struct Display {
-        let card: VoucherCardViewModel
-        let banner: String?
-        let detailContent: String
-        let guideContent: String
-        let applyTitle: String
-        let applyEnabled: Bool
-        let applyVisible: Bool
-
-        /// Trạng thái trước khi có detail — trống hoàn toàn, shimmer che ở VC.
-        static let empty = Display(
+        /// Trước khi có detail — trống hoàn toàn, shimmer che ở VC.
+        static let initial = UiState(
             card: VoucherCardViewModel(title: "", description: "", logoURL: nil, date: ""),
             banner: nil,
-            detailContent: "",
-            guideContent: "",
+            tabContents: .empty,
             applyTitle: "",
-            applyEnabled: false,
-            applyVisible: false
+            isApplyEnabled: false,
+            isApplyVisible: false,
+            isLoading: true
         )
+    }
+
+    /// Đối ứng `PromotionDetailAction` bên Android — chỉ những gì màn thật sự phát.
+    enum Action {
+        case loadDetail
+        case openServiceSelector
+        case serviceSelected(ServiceSelectorItem)
+    }
+
+    /// Sự kiện một-lần — đối ứng `PromotionDetailEffect` bên Android.
+    enum Effect {
+        case showError(String)
+        case showServiceSelector([ServiceSelectorItem])
     }
 
     /// Id voucher dùng cho callback "Áp dụng".
     let voucherId: String
     let data: PromotionDetailBuilder.DataModel
 
+    /// State hiện tại + kênh phát. Gán `onState` là **nhận ngay** state hiện tại — mô phỏng đúng
+    /// hành vi replay của `StateFlow` bên Android.
+    private(set) var uiState = UiState.initial {
+        didSet { onState?(uiState) }
+    }
+    var onState: ((UiState) -> Void)? {
+        didSet { onState?(uiState) }
+    }
+    /// Một-lần, KHÔNG replay (giống effect bên Android).
+    var onEffect: ((Effect) -> Void)?
+
     // ─── Store ────────────────────────────────────────────────────────────────
     private let store: PromotionDetailStore
-    /// Bề mặt view (đã format) — trống cho tới khi store phát detail (shimmer che trong lúc chờ).
-    private let displaySubject = CurrentValueSubject<Display, Never>(.empty)
-    private let isLoadingSubject = CurrentValueSubject<Bool, Never>(true)
-    private let errorSubject = PassthroughSubject<String, Never>()
     private var storeCancellable: PromotionCancellable?
     private var didStart = false
     /// Dịch vụ/sản phẩm voucher áp dụng được — chỉ có sau khi detail về.
@@ -87,6 +99,7 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         self.store = PromotionDetailStore(getCustomerVoucherDetailUseCase: getDetailUseCase)
         self.voucherId = data.promotion.id
         super.init(router: router)
+        bindStore()   // đối ứng `init { bindStore() }` bên Android
     }
 
     deinit {
@@ -94,20 +107,9 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
         store.clear()
     }
 
-    /// Danh sách dịch vụ cho bottom sheet "Chọn dịch vụ" (thuần iOS — VC gọi).
-    func serviceSelectorItems() -> [ServiceSelectorItem] {
-        ServiceSelectorBuilder.items(forApplicableProducts: applicableProducts)
-    }
-
-    func transform(input: Input) -> Output {
-        bindStore()
-        forward(input)
-        return buildOutput()
-    }
-
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
     private func bindStore() {
-        storeCancellable = observeStore(watch: { self.store.watchState(onEach: $0) }) { [weak self] state in
+        storeCancellable = observeStore(watch: { [store] in store.watchState(onEach: $0) }) { [weak self] state in
             guard let self = self else { return }
             self.render(state)
             self.handleError(state)
@@ -115,75 +117,85 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter>, P
     }
 
     // ─── Intent forwarding (đối ứng Android.handleAction) ───────────────────────
-    private func forward(_ input: Input) {
-        // iOS tự kích load lần đầu (VC gọi transform một lần); Android do Fragment kích LoadDetail.
-        if !didStart {
+    func handleAction(_ action: Action) {
+        switch action {
+        case .loadDetail:
+            // VC gọi một lần lúc bind; `didStart` chặn fetch lặp khi màn được bind lại.
+            guard !didStart else { return }
             didStart = true
             store.dispatch(intent: PromotionDetailIntentLoadDetail(voucherId: voucherId))
+        case .openServiceSelector:
+            openServiceSelector()
+        case .serviceSelected:
+            break   // TODO: điều hướng màn dịch vụ khi có đích đến
         }
     }
 
     // ─── State → View ─────────────────────────────────────────────────────────
+    /// Chỉ hiển thị khi API detail trả về; chưa có thì giữ `UiState.initial` (shimmer che).
     private func render(_ state: PromotionDetailState) {
-        isLoadingSubject.send(state.isLoading)
-        // Chỉ hiển thị khi API detail trả về; chưa có thì giữ `Display.empty` (shimmer che).
-        if let detail = state.detail {
-            applicableProducts = detail.applicableProducts
-            displaySubject.send(Self.display(from: detail, state: state))
+        guard let detail = state.detail else {
+            uiState.isLoading = state.isLoading
+            return
         }
+        applicableProducts = detail.applicableProducts
+        uiState = state.toUiState(detail: detail)
     }
 
     // ─── Error ──────────────────────────────────────────────────────────────────
     private func handleError(_ state: PromotionDetailState) {
         guard let code = state.errorCode else { return }
-        errorSubject.send(code)   // view map code → chuỗi
+        onEffect?(.showError(code))   // view map code → chuỗi
         store.dispatch(intent: PromotionDetailIntentConsumeError.shared)
     }
 
-    /// Chiếu display → bề mặt view iOS (Output). Đối ứng Android `PromotionDetailState.toUiState()`.
-    private func buildOutput() -> Output {
-        let display = displaySubject.receive(on: DispatchQueue.main)
-        let tabContents = display.map { d -> TabContents in
-            TabContents(detail: Self.contentDisplay(d.detailContent), guide: Self.contentDisplay(d.guideContent))
-        }
-        return Output(
-            voucherCardViewModel: display.map { $0.card }.eraseToAnyPublisher(),
-            bannerImageName: display.map { $0.banner }.eraseToAnyPublisher(),
-            tabContents: tabContents.eraseToAnyPublisher(),
-            applyButtonTitle: display.map { $0.applyTitle }.eraseToAnyPublisher(),
-            isApplyEnabled: display.map { $0.applyEnabled }.eraseToAnyPublisher(),
-            isApplyVisible: display.map { $0.applyVisible }.eraseToAnyPublisher(),
-            isLoading: isLoadingSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher(),
-            errorCode: errorSubject.receive(on: DispatchQueue.main).eraseToAnyPublisher()
+    // ─── Bottom sheet "Chọn dịch vụ" (render native; lọc dùng chung ở promotionLogic) ──
+    /// Đối ứng `PromotionDetailViewModel.openServiceSelector()` bên Android.
+    private func openServiceSelector() {
+        let services = ServiceSelectorBuilder.items(forApplicableProducts: applicableProducts)
+        onEffect?(.showServiceSelector(services))
+    }
+
+}
+
+// ─── Map state dùng chung (store) → model UI iOS ──────────────────────────────
+
+/// Chiếu state dùng chung ([PromotionDetailState]) → **bề mặt view iOS** (`UiState`).
+/// Đối ứng 1-1 `private fun PromotionDetailState.toUiState()` bên Android (cũng là hàm mức file).
+///
+/// Nhận [detail] đã unwrap: khác Android (UiState bên đó mang thẳng `detail` nullable), iOS format
+/// sẵn card/HTML/ngày nên chỉ dựng được khi đã có detail — chưa có thì VM giữ `UiState.initial`.
+private extension PromotionDetailState {
+    func toUiState(detail: VoucherDetail) -> PromotionDetailViewModel.UiState {
+        PromotionDetailViewModel.UiState(
+            card: VoucherCardViewModel(
+                title: detail.merchantName ?? "",
+                description: detail.title ?? "",
+                logoURL: detail.logo,
+                date: Self.dateString(detail.expirationDate)
+            ),
+            banner: detail.banner,
+            tabContents: .init(
+                detail: Self.contentDisplay(detail.description_ ?? ""),
+                guide: Self.contentDisplay(detail.guideline ?? "")
+            ),
+            // Nhãn lấy từ server (`displayStatusLabel` → `actionLabel`), không phụ thuộc
+            // enabled/disabled. `useNow` chỉ là dự phòng khi API không trả nhãn — giống Android.
+            applyTitle: actionLabel.isEmpty ? PromotionUIStrings.useNow : actionLabel,
+            isApplyEnabled: actionEnabled,
+            isApplyVisible: actionVisible,
+            isLoading: isLoading
         )
     }
 
     // ─── Display builders (rendering — native format card/ngày/HTML) ─────────────
 
     /// Nội dung 1 tab: rỗng → để trống (không text mặc định); có → render HTML.
-    private static func contentDisplay(_ raw: String) -> ContentDisplay {
-        raw.isEmpty ? ContentDisplay(text: "", isHTML: false) : ContentDisplay(text: raw, isHTML: true)
+    static func contentDisplay(_ raw: String) -> PromotionDetailViewModel.ContentDisplay {
+        raw.isEmpty ? .empty : .init(text: raw, isHTML: true)
     }
 
-    /// Card đầy đủ từ detail; nút lấy **quyết định từ store** (actionVisible/Enabled + label server).
-    private static func display(from detail: VoucherDetail, state: PromotionDetailState) -> Display {
-        Display(
-            card: VoucherCardViewModel(
-                title: detail.merchantName ?? "",
-                description: detail.title ?? "",
-                logoURL: detail.logo,
-                date: dateString(detail.expirationDate)
-            ),
-            banner: detail.banner,
-            detailContent: detail.description_ ?? "",
-            guideContent: detail.guideline ?? "",
-            applyTitle: state.actionEnabled ? PromotionUIStrings.useNow : state.actionLabel,
-            applyEnabled: state.actionEnabled,
-            applyVisible: state.actionVisible
-        )
-    }
-
-    private static func dateString(_ raw: String?) -> String {
+    static func dateString(_ raw: String?) -> String {
         PRMPromotionDate.parse(raw).map { PromotionUIStrings.expiryDateLong(PRMPromotionDate.display($0)) } ?? ""
     }
 }

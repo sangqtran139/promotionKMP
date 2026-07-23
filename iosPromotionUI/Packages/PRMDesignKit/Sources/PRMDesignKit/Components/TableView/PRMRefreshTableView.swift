@@ -13,7 +13,13 @@ public class PRMRefreshTableView: UITableView {
     /// Kéo-để-làm-mới và cuộn-tới-đáy.
     public let refreshPublisher = PassthroughSubject<Void, Never>()
     public let loadMorePublisher = PassthroughSubject<Void, Never>()
-    
+
+    /// Bản closure của 2 publisher trên — cho tầng UI không dùng Combine. Bắn **song song** với
+    /// publisher nên code cũ giữ nguyên, code mới chỉ cần gán closure.
+    public var onRefresh: (() -> Void)?
+    public var onLoadMore: (() -> Void)?
+
+
     public var isHasMorePage: Bool = true
     
     private let vds_refreshControl = UIRefreshControl()
@@ -25,6 +31,7 @@ public class PRMRefreshTableView: UITableView {
                     guard let self = self else { return }
                     if self.isHasMorePage {
                         self.loadMorePublisher.send(())
+                        self.onLoadMore?()
                     } else {
                         self.infiniteScrollingView?.stopAnimating()
                     }
@@ -58,6 +65,7 @@ public class PRMRefreshTableView: UITableView {
     
     @objc private func handleRefreshControl() {
         refreshPublisher.send(())
+        onRefresh?()
     }
     
     public func startRefreshing() {

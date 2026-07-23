@@ -89,6 +89,7 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 | Facade/Impl | 1 `object` gộp | `PromotionSDK` + `PromotionSDKImpl` | iOS cần box giấu type để tránh cross-module deserialization (binary-interface trick). |
 | Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.3](#53-widget). |
 | Enum case (nếu chọn giữ) | `PROD/STAGING` | `prod/staging` | Convention enum mỗi ngôn ngữ (đang chờ ⚠️ §2). |
+| Ràng buộc View↔ViewModel | `StateFlow` + `collectFlow` | closure `onState`/`onEffect` | Không có `Flow` trong Swift. Hình dạng đã **ép trùng**: cùng `handleAction`, cùng `UiState`/`Effect`, `onState` replay state hiện tại khi gán (mô phỏng `StateFlow`). Từ 2026-07-23 iOS **không** còn Combine. |
 | Cách hiện lỗi / thông báo | `Toast` | `PRMConfirmationDialog` (popup) | Idiom nền tảng, áp dụng **nhất quán cho mọi lỗi** ở cả 2 bên (kể cả PRM_MOB_021 khi cờ tính năng TẮT) — không phải lệch riêng của một màn. Nội dung chuỗi thì trùng: `PRMBaseFragment.mapPromotionError` ↔ `PromotionUIStrings.errorMessage` (cùng bộ mã lỗi). |
 
 ---

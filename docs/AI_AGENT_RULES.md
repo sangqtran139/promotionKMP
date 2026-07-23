@@ -35,7 +35,8 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 
 ### 5. Không tự ý đổi kiến trúc
 - Giữ Clean Architecture (Data / Domain / Presentation).
-- Android UI giữ **MVI** (`PRMBaseViewModel<S, A, E>`); iOS UI giữ **MVVM + Builder/Router + RxSwift**.
+- Android UI giữ **MVI** (`PRMBaseViewModel<S, A, E>`); iOS UI giữ **MVVM + Builder/Router**, ràng buộc
+  View↔VM bằng **callback thuần** (`onState`/`onEffect`/`handleAction`) — **không** Combine, **không** RxSwift.
 - Không hợp nhất hai mô hình UI, không đổi sang mô hình khác, trừ khi có yêu cầu rõ ràng.
 
 ### 6. Thêm thư viện phải có lý do và được yêu cầu

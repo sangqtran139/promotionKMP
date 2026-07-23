@@ -1,15 +1,19 @@
 # UIGuide (iOS) — UI iOS
 
 Hướng dẫn UI cho `promotionUI` (iOS). Giao diện làm bằng **UIKit (XIB)**, kiến trúc
-**MVVM + Builder + Router**, reactive bằng **Combine** + **async/await**.
+**MVVM + Builder + Router**, ràng buộc View↔ViewModel bằng **callback thuần** (không framework reactive).
 
 > Gộp từ `UIKitGuide.md` + `StateManagement.md` + `Architecture.md` của SDK iOS gốc.
 > Nguồn code: `ttcn-promotion-ios-sdk/VDSPromotion`.
 >
-> **Cập nhật:** tầng UI đã chuyển từ **RxSwift → Combine + async/await**. RxSwift đã bị gỡ hoàn toàn
-> khỏi mọi package và khỏi `PromotionSDKUI.xcframework` (0 symbol RxSwift trong binary). Lý do chính:
-> Combine/async-await là thành phần của iOS 13+ nên **không link thư viện ngoài** → loại bỏ nguy cơ
-> trùng symbol RxSwift với app host (xem [Distribution (iOS) §3](./Distribution.md)).
+> **Cập nhật (2026-07-23) — đã gỡ Combine khỏi tầng UI.** Trước đó: RxSwift → Combine → nay là
+> **callback thuần**. Lý do: sau khi nghiệp-vụ-trình-bày dồn về store dùng chung ở `promotionLogic`
+> (đã tự lo debounce/paging/latest-wins), Combine ở tầng UI chỉ còn làm **đường ống** giữa callback
+> của store (`watchState`) và UIKit — đếm thực tế: 0 `combineLatest`, 0 `debounce`, 0 `flatMap`;
+> chỉ có `map`/`sink`/`eraseToAnyPublisher`. Bỏ đi thì ViewModel iOS **soi gương được Android**
+> (`onState`↔`uiState`, `onEffect`↔`uiEffect`, `handleAction`↔`handleAction`).
+>
+> SDK vẫn **không link thư viện ngoài** nào (RxSwift đã gỡ từ trước — xem [Distribution (iOS) §3](./Distribution.md)).
 
 ---
 
@@ -20,7 +24,8 @@ Hướng dẫn UI cho `promotionUI` (iOS). Giao diện làm bằng **UIKit (XIB)
 | Ngôn ngữ | Swift 5.x |
 | iOS tối thiểu | 13.0 |
 | UI framework | UIKit (XIB-based) |
-| Reactive | **Combine** (stream/binding) + **async/await** (gọi use case one-shot) |
+| Ràng buộc View↔VM | **Callback thuần** (`onState` / `onEffect` / `handleAction`) — không Combine, không Rx |
+| Bất đồng bộ | **async/await** (`Task`) khi gọi thẳng use case; còn lại state đến từ store dùng chung |
 | Bất đồng bộ lõi | `Task` gọi thẳng `suspend` Kotlin (async/await) |
 | Tổ chức | Modular SPM (local packages) — **không** dependency ngoài |
 | Linter | SwiftLint (`.swiftlint.yml`) |
@@ -39,7 +44,7 @@ Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK
 |-----------|-----------|-------------|
 | **Builder** | `PRMBaseBuilder<VC, VM, R, Dependency>` | Lắp ráp VC + VM + Router, inject dependency |
 | **Router** | `PRMBaseRouter<VC: UIViewController>` (adopt `PRMBaseRouterProtocol`) | Điều hướng: push/pop/present; giữ `viewController` + `navigator` (weak) |
-| **ViewModel** | `PRMBaseViewModel<R: PRMBaseRouterProtocol>` (+ `PRMViewModelType`) | Logic, biến đổi `Input → Output` |
+| **ViewModel** | `PRMBaseViewModel<R: PRMBaseRouterProtocol>` | Bọc store dùng chung; phơi `onState`/`onEffect`/`handleAction` |
 | **ViewController** | `PRMBaseViewController<VM>` | Load XIB, `setupUI()` + `bindViewModel()` |
 
 > Toàn bộ base class mang tiền tố `PRM` (điều 3 [CodingStandards.md](../common/CodingStandards.md)) — đây là tên thật
@@ -49,7 +54,6 @@ Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK
 ```swift
 class PRMBaseViewController<VM>: UIViewController {
     let viewModel: VM
-    var cancellables = Set<AnyCancellable>()   // thay `DisposeBag` của RxSwift
 
     // Nib mặc định = tên class, bundle = bundle chứa framework SDK.
     init(viewModel: VM, nibName: String? = nil, bundle: Bundle? = nil) { ... }
@@ -63,47 +67,66 @@ class PRMBaseViewController<VM>: UIViewController {
     }
 
     func setupUI() {}        // override để cấu hình view
-    func bindViewModel() {}  // override để bind Combine
+    func bindViewModel() {}  // override để gán onState/onEffect
 }
 ```
 
 > XIB phải đặt **cùng tên class** (vd `ChoosePromotionViewController.xib`, `MyPromotionViewController.xib`).
 > `init?(coder:)` bị đánh dấu `unavailable` — luôn khởi tạo qua Builder.
 
-**Protocol reactive** cũng mang tiền tố: `PRMViewModelType { associatedtype Input; associatedtype Output; func transform(input:) -> Output }`.
-
 ---
 
-## 3. State management — Combine
+## 3. State management — callback thuần, soi gương Android
 
-Bảng quy đổi từ RxSwift (bản cũ) sang Combine (bản hiện tại):
+Mỗi ViewModel bọc một store ở `promotionLogic` và phơi đúng 3 thứ:
 
-| RxSwift (cũ) | Combine (nay) | Dùng khi |
-|------|------|----------|
-| `Single<T>` + `singleFromKotlin` | `Task { try await … }` | Một lần request use case (one-shot) |
-| `Observable<T>` | `AnyPublisher<T, Never>` | Stream sự kiện nội bộ ViewModel |
-| `Driver<T>` | `AnyPublisher<T, Never>` + `.receive(on: DispatchQueue.main)` | Bind ra UI (main thread, không lỗi) |
-| `BehaviorRelay<T>` | `CurrentValueSubject<T, Never>` | Giữ **state hiện tại** (đọc `.value`, ghi `.send()`) |
-| `PublishRelay<T>` | `PassthroughSubject<T, Never>` | Sự kiện UI (tap, scroll) — không giữ giá trị |
-| `DisposeBag` | `Set<AnyCancellable>` | Giữ subscription |
-| `searchField.rx.text` | `UITextField.textPublisher` (PRMFoundation) | Text ô search |
-| `tableView.rx.items` | `UITableViewDataSource` + `reloadData()` | Bind list (reload toàn bộ) |
-| `flatMapLatest` | hủy `Task` cũ + token generation guard | "latest wins" cho fetch |
-| `debounce`/`distinctUntilChanged`/`combineLatest`/`withLatestFrom` | tương đương Combine (`.debounce`/`.removeDuplicates`/`Publishers.CombineLatest`/đọc `CurrentValueSubject.value`) | biến đổi stream |
+| iOS | Android | Ghi chú |
+|---|---|---|
+| `var onState: ((UiState) -> Void)?` | `uiState: StateFlow<UiState>` | Gán `onState` là **nhận ngay** state hiện tại (mô phỏng replay của StateFlow bằng `didSet`) |
+| `var onEffect: ((Effect) -> Void)?` | `uiEffect: Flow<Effect>` | Một-lần, **không** replay (lỗi hiện rồi thôi) |
+| `func handleAction(_:)` | `fun handleAction(action)` | Enum `Action` khai báo đúng những gì màn thật sự phát |
 
 ```swift
-protocol PRMViewModelType {
-    associatedtype Input
-    associatedtype Output
-    func transform(input: Input) -> Output
+final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter> {
+    struct UiState { var promotions: [MyPromotionCellViewModel] = []; var isLoading = false /* … */ }
+    enum Action { case queryChanged(String), search, loadMore, selectPromotion(String) }
+    enum Effect { case showError(String) }
+
+    private(set) var uiState = UiState() { didSet { onState?(uiState) } }
+    var onState: ((UiState) -> Void)? { didSet { onState?(uiState) } }   // replay khi gán
+    var onEffect: ((Effect) -> Void)?
+
+    private func bindStore() {                       // đối ứng Android bindStore()
+        storeCancellable = observeStore(watch: { [store] in store.watchState(onEach: $0) }) { [weak self] state in
+            self?.render(state); self?.handleError(state)
+        }
+    }
 }
 ```
 
-- `Input` = nguồn sự kiện do **View** sở hữu (`AnyPublisher`/`PassthroughSubject`: text ô search, tap chọn, scroll đáy).
-- `Output` = `AnyPublisher<_, Never>` đã `.receive(on: DispatchQueue.main)` để View bind an toàn.
-- Mọi subscription đặt trong `transform(...)` và `.store(in: &cancellables)`.
-- Combine **không có `Driver`** (không tự đảm bảo main-thread + no-error + share): phải tự kỷ luật
-  `.receive(on: .main)`; state dùng `CurrentValueSubject` (tự replay giá trị hiện tại như `Driver`).
+ViewController chỉ còn **một** `render(state)` cho cả màn — đối ứng `collectFlow(viewModel.uiState)` bên Android:
+
+```swift
+override func bindViewModel() {
+    viewModel.onState  = { [weak self] in self?.render($0) }
+    viewModel.onEffect = { [weak self] in self?.handle($0) }
+    viewModel.start()          // màn nào cần kích load lần đầu
+}
+```
+
+**Quy đổi những thứ trước đây làm bằng Combine:**
+
+| Trước (Combine) | Nay | Ghi chú |
+|---|---|---|
+| `Input` (publisher/relay) | gọi thẳng `viewModel.handleAction(.x)` | bỏ hẳn lớp `Input`/`transform` |
+| `Output` (struct publisher) | `UiState` (struct giá trị) + `onState` | bỏ `eraseToAnyPublisher` |
+| `.sink { }.store(in:&cancellables)` | gán closure | không cần `Set<AnyCancellable>` |
+| `UITextField.textPublisher` | `addTarget(_:action:for:.editingChanged)` | **khác biệt**: không phát giá trị đầu lúc bind như `.prepend` cũ |
+| `PRMRefreshTableView.refreshPublisher` / `loadMorePublisher` | `onRefresh` / `onLoadMore` (closure, thêm mới ở PRMDesignKit) | publisher cũ vẫn còn để không phá API package |
+| `.receive(on: DispatchQueue.main)` | không cần | `observeStore` đã hop main sẵn |
+| `debounce` / `latest-wins` | **nằm ở store Kotlin** | dùng chung 2 nền tảng, không làm lại ở UI |
+
+> Kỷ luật bắt buộc: closure `onState`/`onEffect` luôn `[weak self]` (y như `.sink` trước đây).
 
 ---
 

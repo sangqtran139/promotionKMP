@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import Combine
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMKotlinBridge
@@ -22,8 +21,6 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     
     // MARK: - Properties
     private var sections: [ChoosePromotionViewModel.PromotionSection] = []
-    /// Danh sách voucher đang chọn — sẵn sàng multi-select; hiện tại gate đơn nên thường 0/1.
-    private var currentSelectedPromotions: [EligibleOffer] = []
 
     /// Callback trả về danh sách promotion đã chọn về host (tương tự Android onApplyVoucher).
     var onApplyVoucher: (([EligibleOffer]) -> Void)?
@@ -87,13 +84,20 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     }
 
     @objc private func didTapApplyButton() {
-        guard !currentSelectedPromotions.isEmpty else { return }
-        onApplyVoucher?(currentSelectedPromotions)
+        // Qua ViewModel (đối ứng Android `ValidateAndApply` → effect `ApplySelectedOffers`);
+        // VM lọc offers đang chọn từ store, VC không tự đọc state.
+        viewModel.handleAction(.validateAndApply)
     }
     
     private func configSearchTextField() {
         self.searchTextField.returnKeyType = .search
         self.searchTextField.delegate = self
+        // Gõ mỗi ký tự → `queryChanged` (store lo debounce). Target-action thay `textPublisher` Combine.
+        self.searchTextField.addTarget(self, action: #selector(searchTextChanged), for: .editingChanged)
+    }
+
+    @objc private func searchTextChanged(_ sender: UITextField) {
+        viewModel.handleAction(.queryChanged(sender.text ?? ""))
     }
     
     private func configTableView() {
@@ -114,58 +118,41 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         }
     }
     
-    private let seeMoreMyRelay = PassthroughSubject<Void, Never>()
-    private let loadMoreOtherRelay = PassthroughSubject<Void, Never>()
-    private let toggleSelectionRelay = PassthroughSubject<String, Never>()
-    private let searchActionRelay = PassthroughSubject<Void, Never>()
-
     // MARK: - Bind ViewModel
+    //
+    // Đối ứng `ChoosePromotionFragment.observeData` bên Android: một `render(state)` cho toàn bộ bề
+    // mặt, một nhánh effect, rồi `start()` (seed pre-select + preload).
     override func bindViewModel() {
         super.bindViewModel()
 
-        let input = ChoosePromotionViewModel.Input(
-            searchText: searchTextField.textPublisher,
-            searchAction: searchActionRelay.eraseToAnyPublisher(),
-            toggleSelectionRelay: toggleSelectionRelay,
-            seeMoreMyRelay: seeMoreMyRelay,
-            loadMoreOtherRelay: loadMoreOtherRelay
-        )
+        viewModel.onState = { [weak self] state in self?.render(state) }
+        viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
 
-        let output = viewModel.transform(input: input)
+        viewModel.handleAction(.loadInitial)
+    }
 
-        output.sections
-            .sink { [weak self] sections in
-                self?.sections = sections
-                self?.promotionsTableView.reloadData()
-            }
-            .store(in: &cancellables)
+    private func render(_ state: ChoosePromotionViewModel.UiState) {
+        sections = state.sections
+        promotionsTableView.reloadData()
 
-        output.isLoading
-            .sink { [weak self] loading in
-                guard let self = self else { return }
-                self.shimmerView.isHidden = !loading
-                if loading {
-                    self.shimmerView.startAnimating()
-                } else {
-                    self.shimmerView.stopAnimating()
-                }
-            }
-            .store(in: &cancellables)
+        shimmerView.isHidden = !state.isLoading
+        if state.isLoading {
+            shimmerView.startAnimating()
+        } else {
+            shimmerView.stopAnimating()
+        }
+    }
 
-        // Tạm thời ẩn thông tin "Đã chọn voucher" — chỉ track danh sách voucher đang chọn cho nút Áp dụng.
-        output.selectedPromotions
-            .sink { [weak self] promotions in
-                self?.currentSelectedPromotions = promotions
-            }
-            .store(in: &cancellables)
-
+    private func handle(_ effect: ChoosePromotionViewModel.Effect) {
+        switch effect {
         // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android — trước đây Choose iOS nuốt lỗi).
-        output.errorCode
-            .sink { [weak self] code in
-                guard let self = self else { return }
-                PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: self.view)
-            }
-            .store(in: &cancellables)
+        case .showError(let code):
+            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+        // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate) — đối ứng
+        // `ChoosePromotionFragment` xử lý effect `ApplySelectedOffers` bên Android.
+        case .applySelectedOffers(let offers):
+            onApplyVoucher?(offers)
+        }
     }
     
     //MARK: - Action
@@ -177,18 +164,18 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 // MARK: - SelectPromotionItemCellDelegate
 extension ChoosePromotionViewController: SelectPromotionItemCellDelegate {
     func selectPromotionItemCellDidTap(_ cell: ChoosePromotionItemCell, id: String) {
-        self.viewModel.input.toggleSelectionRelay.send(id)
+        self.viewModel.handleAction(.toggleSelection(id))
     }
 
     func selectPromotionItemCellDidTapButton(_ cell: ChoosePromotionItemCell, id: String) {
-        self.viewModel.routeToDetail(id: id)
+        self.viewModel.handleAction(.openDetail(id))
     }
 }
 
 // MARK: - UITextFieldDelegate (search action on return key)
 extension ChoosePromotionViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        searchActionRelay.send(())
+        viewModel.handleAction(.search)
         textField.resignFirstResponder()
         return true
     }
@@ -219,7 +206,7 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
             cell.button.setImage(UIImage.sdk(isCollapse ? "ic_up_arrow" : "ic_down_arrow"), for: .normal)
 
             cell.action = { [weak self] in
-                self?.seeMoreMyRelay.send(())
+                self?.viewModel.handleAction(.seeMoreMy)
             }
             return cell
         }
@@ -239,7 +226,7 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
         // VM tự bỏ qua nếu đã hết trang hoặc đang tải.
         guard sectionData.type == .otherPromotions else { return }
         if indexPath.row == sectionData.items.count - 1 {
-            loadMoreOtherRelay.send(())
+            viewModel.handleAction(.loadMoreOtherVouchers)
         }
     }
 

@@ -26,8 +26,6 @@ struct MyPromotionCellViewModel {
     let checkedImage: UIImage?
     let uncheckedImage: UIImage?
     let isEligible: Bool
-    /// Dịch vụ/sản phẩm voucher áp dụng được — dùng mở bottom sheet "Chọn dịch vụ" khi bấm "Dùng".
-    let applicableProducts: [ApplicableProduct]
     /// Keyword highlight title (chỉ dùng ở màn Search). nil = không highlight.
     let highlightKeyword: String?
     /// Số ngày còn lại khi voucher sắp hết hạn — **do store (promotionLogic) tính** theo
@@ -48,7 +46,6 @@ struct MyPromotionCellViewModel {
          checkedImage: UIImage? = nil,
          uncheckedImage: UIImage? = nil,
          isEligible: Bool = true,
-         applicableProducts: [ApplicableProduct] = [],
          highlightKeyword: String? = nil,
          expiringInDays: Int? = nil) {
         self.id = id
@@ -64,7 +61,6 @@ struct MyPromotionCellViewModel {
         self.checkedImage = checkedImage
         self.uncheckedImage = uncheckedImage
         self.isEligible = isEligible
-        self.applicableProducts = applicableProducts
         self.highlightKeyword = highlightKeyword
         self.expiringInDays = expiringInDays
     }
@@ -127,7 +123,6 @@ struct MyPromotionCellViewModel {
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
             isEligible: isEnabled,
-            applicableProducts: voucher.applicableProducts,
             highlightKeyword: highlightKeyword,
             expiringInDays: expiringInDays
         )
@@ -180,7 +175,6 @@ struct MyPromotionCellViewModel {
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
             isEligible: isEnabled,
-            applicableProducts: [],
             highlightKeyword: highlightKeyword,
             expiringInDays: expiringInDays
         )
@@ -200,8 +194,8 @@ struct MyPromotionCellViewModel {
 
 protocol MyPromotionCellDelegate: AnyObject {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String)
-    /// User bấm nút "Dùng" → mở bottom sheet chọn dịch vụ (parity Android onUseClick).
-    func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String, services: [ServiceSelectorItem])
+    /// User bấm nút "Dùng" (parity Android onUseClick) — VC forward sang ViewModel, VM lọc dịch vụ.
+    func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String)
 }
 
 final class MyPromotionCell: UITableViewCell {
@@ -260,8 +254,10 @@ extension MyPromotionCell: PromotionCardViewDelegate {
     }
 
     func promotionCardViewDidTapButton(_ view: PRMPromotionUI.PromotionCardView) {
-        let services = ServiceSelectorBuilder.items(forApplicableProducts: self.viewModel?.applicableProducts ?? [])
-        self.delegate?.myPromotionCellDidTapUse(self, voucherId: self.viewModel?.id ?? "", services: services)
+        // Chỉ báo "user bấm Dùng trên voucher nào". Việc lọc dịch vụ khả dụng là nghiệp vụ → do
+        // ViewModel làm (đối ứng Android `OpenServiceSelector` → `servicesForApplicableProducts`),
+        // cell không tự gọi `ServiceSelectorBuilder` nữa.
+        self.delegate?.myPromotionCellDidTapUse(self, voucherId: self.viewModel?.id ?? "")
     }
 
     func promotionCardView(_ view: PRMPromotionUI.PromotionCardView, didToggleCheckbox isChecked: Bool) {}
