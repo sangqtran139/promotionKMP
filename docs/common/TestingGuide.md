@@ -120,14 +120,37 @@ private class InMemoryStorage : KeyValueStorage {
 test nằm ở `commonTest` và chạy trên **cả hai** target, nên số liệu vẫn phản ánh đúng `commonMain`.
 Vẫn phải chạy `iosSimulatorArm64Test` trước khi commit (mục 5 điều 7).
 
-**Ngưỡng:** LINE ≥ 92%, INSTRUCTION ≥ 90%, BRANCH ≥ 80% — đặt **sát dưới** mức hiện tại để PR làm
+**Ngưỡng:** LINE ≥ 93%, INSTRUCTION ≥ 92%, BRANCH ≥ 90% — đặt **sát dưới** mức hiện tại để PR làm
 tụt coverage là fail ngay, không phải mục tiêu để phấn đấu. Nâng lên mỗi khi bộ test dày thêm.
 
-**Vì sao BRANCH thấp hơn hai chỉ số kia một cách cố hữu:** `suspend` được biên dịch thành state
-machine (`Xxx$method$1`) với `when(label)` dispatch và nhánh `throw IllegalStateException` cho label
-không hợp lệ — **không test nào chạm tới được**. Đo tách ra: class thường ~84%, class `$`
-(lambda coroutine) chỉ ~71%. Đừng loại chúng khỏi phép đo: thân `if`/`when` do ta viết trong
-`scope.launch { }` cũng nằm trong chính class đó, loại đi là giấu logic thật.
+**Cách đẩy BRANCH lên (kinh nghiệm thực tế đợt đưa 31% → 90%):** đừng đoán, hãy đọc **đúng số dòng**
+còn thiếu nhánh từ `report.xml` rồi viết test nhắm thẳng:
+
+```bash
+python3 - <<'EOF'
+import xml.etree.ElementTree as ET
+r = ET.parse("promotionLogic/build/reports/kover/report.xml").getroot()
+for pk in r.findall("package"):
+    for sf in pk.findall("sourcefile"):
+        miss = [l.get('nr') for l in sf.findall('line') if int(l.get('mb', 0)) > 0]
+        if miss: print(f"{sf.get('name')}: {', '.join(miss)}")
+EOF
+```
+
+Bốn nhóm chiếm gần hết phần thiếu, theo thứ tự ROI:
+1. **`result?.x ?: default`** — chỉ chạy khi API trả `data: null`. Một `NullRepo` trả null cho mọi
+   lời gọi phủ được rất nhiều nhánh cùng lúc.
+2. **Payload tối thiểu vs đầy đủ** — mapper toàn `?:`; chỉ test payload đầy đủ thì nửa số nhánh
+   không bao giờ chạy.
+3. **Nhánh chỉ chạy khi sự cố** — timeout, 4xx không parse được body, `success:false`.
+4. **Guard đồng thời** — latest-wins, load-more khi đang refresh. Cần `StandardTestDispatcher`
+   (KHÔNG phải `Unconfined`) để coroutine xếp hàng và dựng được cảnh "response về muộn".
+
+**Nhánh không thể phủ:** `suspend` biên dịch thành state machine (`Xxx$method$1`) với `when(label)`
+dispatch + `throw IllegalStateException` cho label không hợp lệ. Đừng loại chúng khỏi phép đo — thân
+`if`/`when` do ta viết trong `scope.launch { }` cũng nằm trong chính class đó, loại đi là giấu logic
+thật. Cũng có **nhánh chết thật sự**: `ChoosePromotionStore` có `it.isMultiSelection -> cur + id`
+mà không intent nào bật được `isMultiSelection` — đó là code chết, không phải thiếu test.
 
 **Loại trừ khỏi phép đo** (`reports.filters.excludes`): DTO thuần dữ liệu (`*Dto`, `*Request`,
 `*Response`, `$serializer`) và cầu nền tảng (`SdkLockKt`, `PromotionClockKt` — thân hàm nằm ở

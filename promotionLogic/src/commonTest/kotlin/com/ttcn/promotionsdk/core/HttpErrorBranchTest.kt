@@ -224,4 +224,37 @@ class HttpErrorBranchTest {
      * catch, nên bọc lại cho rõ ý (và để không ai tưởng là test lỏng).
      */
     private fun riskyRunTest(block: suspend () -> Unit) = runTest { block() }
+
+    // ─── Các loại timeout đều quy về NetworkException(TIMEOUT) ───────────────
+
+    private fun throwingRepo(e: Throwable): PromotionRepositoryImpl {
+        val client = HttpClient(MockEngine { throw e }) {
+            with(PromotionHttpClient) { configure("https://api.example.com", Ctx(), false) }
+        }
+        return PromotionRepositoryImpl(PromotionRemoteDataSource(KtorPromotionApiService(client)))
+    }
+
+    @Test
+    fun requestTimeout_becomesNetworkTimeout() = riskyRunTest {
+        val e = assertFailsWith<NetworkException> {
+            FindEligibleCampaignsUseCase(throwingRepo(io.ktor.client.plugins.HttpRequestTimeoutException("https://x", 1000))).invoke(eligibleReq)
+        }
+        assertEquals(ErrorCodes.TIMEOUT, e.errorCode)
+    }
+
+    @Test
+    fun connectTimeout_becomesNetworkTimeout() = riskyRunTest {
+        val e = assertFailsWith<NetworkException> {
+            FindEligibleCampaignsUseCase(throwingRepo(io.ktor.client.network.sockets.ConnectTimeoutException("het gio ket noi"))).invoke(eligibleReq)
+        }
+        assertEquals(ErrorCodes.TIMEOUT, e.errorCode)
+    }
+
+    @Test
+    fun socketTimeout_becomesNetworkTimeout() = riskyRunTest {
+        val e = assertFailsWith<NetworkException> {
+            FindEligibleCampaignsUseCase(throwingRepo(io.ktor.client.network.sockets.SocketTimeoutException("het gio doc"))).invoke(eligibleReq)
+        }
+        assertEquals(ErrorCodes.TIMEOUT, e.errorCode)
+    }
 }

@@ -158,13 +158,13 @@ kover {
             // phải mục tiêu để phấn đấu. Nâng lên mỗi khi bộ test dày thêm.
             rule("Line coverage của commonMain") {
                 bound {
-                    minValue = 92
+                    minValue = 93
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
                 }
             }
             rule("Instruction coverage của commonMain") {
                 bound {
-                    minValue = 90
+                    minValue = 92
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.INSTRUCTION
                 }
             }
@@ -174,7 +174,7 @@ kover {
             // class `$` (lambda coroutine) chỉ ~71%.
             rule("Branch coverage của commonMain") {
                 bound {
-                    minValue = 80
+                    minValue = 90
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH
                 }
             }
