@@ -95,8 +95,13 @@ class EndowStore(
                 val myOffers = result?.myOffers.orEmpty()
                 val otherOffers = result?.otherOffers.orEmpty()
                 // Đếm theo totalElements (tổng thật từ server), không theo length mảng đã phân trang.
-                val total = (result?.myTotalElements ?: myOffers.size.toLong()) +
-                    (result?.otherTotalElements ?: otherOffers.size.toLong())
+                //
+                // `myTotalElements`/`otherTotalElements` là `Long` KHÔNG nullable (default 0), nên
+                // `?:` không bao giờ chạy — BFF bỏ trống field là đếm ra 0, widget rơi vào EMPTY và
+                // báo "không có ưu đãi" dù vừa trả về offers. Vì vậy coi 0 = "server không trả" và
+                // lùi về số phần tử đã nạp. Server thật sự có 0 ưu đãi thì list cũng rỗng → vẫn 0.
+                val total = totalOrSize(result?.myTotalElements, myOffers.size) +
+                    totalOrSize(result?.otherTotalElements, otherOffers.size)
                 _state.update {
                     it.copy(
                         isLoading = false,
@@ -150,6 +155,10 @@ class EndowStore(
     private companion object {
         /** Trùng `pageSize` màn chọn (COLLAPSED không liên quan) — giữ như PRMEndowViewModel cũ. */
         private const val PAGE_SIZE = 10
+
+        /** `total` từ server nếu có (> 0); không thì lùi về số phần tử đã nạp. */
+        private fun totalOrSize(total: Long?, size: Int): Int =
+            if (total != null && total > 0) total.toInt() else size
     }
 }
 

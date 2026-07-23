@@ -103,6 +103,34 @@ private class InMemoryStorage : KeyValueStorage {
 
 ---
 
+## 5b. Coverage — Kover
+
+Đo bằng [Kover](https://github.com/Kotlin/kotlinx-kover) (`org.jetbrains.kotlinx.kover`), khai ở
+`promotionLogic/build.gradle.kts`.
+
+```bash
+./gradlew :promotionLogic:koverHtmlReport   # build/reports/kover/html/index.html
+./gradlew :promotionLogic:koverXmlReport    # cho CI
+./gradlew :promotionLogic:koverVerify       # gác ngưỡng, fail nếu tụt
+```
+
+**Đo trên target `android` (JVM).** Kover cần bytecode JVM nên không đo được Kotlin/Native — nhưng
+test nằm ở `commonTest` và chạy trên **cả hai** target, nên số liệu vẫn phản ánh đúng `commonMain`.
+Vẫn phải chạy `iosSimulatorArm64Test` trước khi commit (mục 5 điều 7).
+
+**Ngưỡng:** LINE ≥ 80%, đặt **sát dưới** mức hiện tại để PR làm tụt coverage là fail ngay — không
+phải mục tiêu để phấn đấu. Nâng dần khi bộ test dày lên.
+
+**Loại trừ khỏi phép đo** (`reports.filters.excludes`): DTO thuần dữ liệu (`*Dto`, `*Request`,
+`*Response`, `$serializer`) và cầu nền tảng (`SdkLockKt`, `PromotionClockKt` — thân hàm nằm ở
+`androidMain`/`iosMain`, không thuộc `commonMain`). Đo chúng chỉ làm nhiễu con số.
+
+> ⚠️ Kover **0.9.1 không chạy được** với plugin `androidLibrary` kiểu mới của KMP
+> (`com.android.kotlin.multiplatform.library`): `Could not get unknown property 'compileJavaTaskProvider'`.
+> Phải dùng **≥ 0.9.9**.
+
+---
+
 ## 6. Test UI
 
 `:promotionLogic` không có UI nên không có test UI ở đây.

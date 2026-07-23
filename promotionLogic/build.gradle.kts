@@ -8,6 +8,7 @@ plugins {
     // Bridge Kotlin StateFlow/suspend/sealed → Swift cho tầng UI-logic dùng chung (MyPromotionStore).
     // Hỗ trợ Kotlin 2.0.0–2.4.0 (đang 2.2.0). Chỉ tác động framework iOS, Android không đổi.
     alias(libs.plugins.skie)
+    alias(libs.plugins.kover)
     `maven-publish`
 }
 
@@ -124,6 +125,37 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+        }
+    }
+}
+
+// ─── Coverage (Kover) ─────────────────────────────────────────────────────────
+//
+// Đo trên target **android** (JVM) — Kover cần bytecode JVM nên không đo được Kotlin/Native.
+// Test ở `commonTest` chạy trên CẢ hai target, nên số liệu này phản ánh đúng `commonMain`.
+//
+//   ./gradlew :promotionLogic:koverHtmlReport   → build/reports/kover/html/index.html
+//   ./gradlew :promotionLogic:koverXmlReport    → cho CI
+//   ./gradlew :promotionLogic:koverVerify       → gác ngưỡng
+kover {
+    reports {
+        filters {
+            excludes {
+                // DTO thuần dữ liệu do kotlinx.serialization sinh accessor — đo không có ý nghĩa.
+                classes("*.*Dto", "*.*Response", "*.*Request", "*${'$'}serializer")
+                // Cầu sang nền tảng: thân hàm nằm ở androidMain/iosMain, không phải commonMain.
+                classes("*.SdkLockKt", "*.PromotionClockKt")
+            }
+        }
+        verify {
+            // Ngưỡng đặt SÁT dưới mức hiện tại (LINE 81%) để mọi PR làm tụt coverage là fail ngay,
+            // chứ không phải mục tiêu để phấn đấu. Nâng dần khi bộ test dày lên.
+            rule("Line coverage của commonMain") {
+                bound {
+                    minValue = 80
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                }
+            }
         }
     }
 }
