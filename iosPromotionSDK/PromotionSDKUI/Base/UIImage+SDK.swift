@@ -1,6 +1,6 @@
 //
 //  UIImage+SDK.swift
-//  PRMSDK
+//  PromotionSDK
 //
 
 import UIKit

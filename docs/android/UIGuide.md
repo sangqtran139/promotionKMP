@@ -27,7 +27,7 @@ chứa networking — nó gọi `:promotionLogic`.
 ## 2. Khởi tạo SDK
 
 ```kotlin
-PRMSDK.initialize(context, options)
+PromotionSDK.initialize(context, options)
    └─ options.config.toCoreConfig()               // PromotionConfig (public) → PromotionSDKConfig (lõi)
    └─ PromotionContainer.init(context, config)    // androidMain của :promotionLogic
         ├─ AndroidContextHolder.set(applicationContext)
@@ -39,7 +39,7 @@ PRMSDK.initialize(context, options)
 - Luôn dùng `applicationContext`; **không** giữ tham chiếu Activity tĩnh.
 - Use case chỉ **gọi** được sau `init()`; dựng trước thì không ném, lỗi nổi lên ở `invoke()`.
 - Hai chế độ: **UI mode** (host mở Fragment của SDK) và **headless mode** (host tự dựng UI, gọi
-  `PRMSDK.api`).
+  `PromotionSDK.api`).
 
 Host **không** thấy `PromotionSDKConfig` / `PromotionContainer` của lõi — nó truyền `PromotionConfig`
 và SDK tự map. Bề mặt đầy đủ: [PublicApi.md](../common/PublicApi.md).
@@ -108,7 +108,7 @@ Use case được cấp qua `PromotionViewModelFactory` (xem `ui/di/`), lấy re
 
 > Chỉ facade `PromotionUseCases()` mới trả `PromotionResult` và **không ném**. Nó là type của
 > `:promotionLogic`, **không** dành cho host: host chỉ tích hợp `AndroidPromotionSDK` nên không có
-> `core.*` trên compile classpath. Host tự dựng UI thì gọi `PRMSDK.api` — xem
+> `core.*` trên compile classpath. Host tự dựng UI thì gọi `PromotionSDK.api` — xem
 > [PublicApi.md](../common/PublicApi.md). Trong module này, UI dựng thẳng use case đơn lẻ và tự `runCatching`.
 
 ### Luồng checkout dùng `findEligible`, không phải `searchVouchers`
@@ -134,9 +134,9 @@ nên nó im lặng trả sai kết quả khi danh sách dài hơn một trang. K
 Điều hướng phải đi qua `PromotionFeatureGate` — **object Kotlin trong `promotionLogic`**, dùng chung
 với iOS, không phải một bản riêng của Android:
 
-- `PRMSDK.openMyPromotion()` gác bởi `canOpenVoucherList()`.
+- `PromotionSDK.openMyPromotion()` gác bởi `canOpenVoucherList()`.
 - `PRMBaseFragment.openPromotionDetail(voucherId)` gác bởi `canOpenVoucherDetail()` — dùng hàm này
-  thay cho `addFragment(PRMDetailFragment.newInstance(...))` để không màn nào quên gác.
+  thay cho `addFragment(PromotionDetailFragment.newInstance(...))` để không màn nào quên gác.
 - `PRMEndowView` tự ẩn nếu `canShowVoucherSelection()` trả `false`.
 
 Cờ TẮT → hiện `R.string.prm_feature_disabled` (PRM_MOB_021) và không điều hướng.
@@ -166,7 +166,7 @@ Layout đặt trong `res/layout/`.
 ## 6. View Binding
 
 ```kotlin
-class PRMMyPromotionFragment : PRMBaseFragment(...) {
+class MyPromotionFragment : PRMBaseFragment(...) {
     private var _binding: PrmFragmentMyPromotionBinding? = null
     private val binding get() = _binding!!
 

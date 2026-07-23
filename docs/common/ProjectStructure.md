@@ -102,7 +102,7 @@ promotionLogic/src/
 
 - **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
 - **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
-- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PRMSDK`, `PRMSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
+- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
 - Module DI kết thúc bằng `Module`. Bản Ktor của ApiService bắt đầu bằng `Ktor`.
 - Feature contract Android: `XxxUiState` / `XxxAction` / `XxxEffect`, gộp trong `XxxContract.kt`.

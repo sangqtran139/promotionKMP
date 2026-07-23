@@ -1,6 +1,6 @@
 //
 //  ThemeHex.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Codec màu ↔ hex `#AARRGGBB`. Đối ứng `ThemeHex.kt` bên Android — cùng tên type (`ThemeHex`),
 //  cùng hàm `format` / `parse`, cùng thuật toán, nên JSON theme đọc được ở cả hai nền tảng.

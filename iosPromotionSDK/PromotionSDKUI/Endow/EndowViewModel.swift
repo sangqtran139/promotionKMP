@@ -1,6 +1,6 @@
 //
 //  EndowViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  ViewModel cho widget `PRMEndowView` — bọc `EndowStore` (tầng UI-logic dùng chung ở promotionLogic).
 //  ĐỐI ỨNG Android `PRMEndowViewModel`: trước đây iOS KHÔNG có ViewModel cho custom view — toàn bộ

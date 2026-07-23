@@ -1,6 +1,6 @@
 //
 //  PromotionDetailViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Lớp bọc mỏng quanh PromotionDetailStore (tầng UI-logic dùng chung ở promotionLogic).
 //  ĐỒNG NHẤT với `PromotionDetailViewModel` bên Android — cùng `store` / `bindStore` /

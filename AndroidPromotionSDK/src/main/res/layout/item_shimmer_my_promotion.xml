@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView
+        <com.ttcn.prm.ui.widget.PRMCardView
             android:layout_width="match_parent"
             android:layout_height="@dimen/view_size_138"
             app:prmCvCornerRadius="@dimen/view_size_16"
@@ -29,7 +29,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
-                    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCircleImageView
+                    <com.ttcn.prm.ui.widget.PRMCircleImageView
                         android:id="@+id/imgVoucher"
                         android:layout_width="@dimen/view_size_54"
                         android:layout_height="@dimen/view_size_54"
@@ -40,7 +40,7 @@
                         app:layout_constraintTop_toTopOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+                <com.ttcn.prm.ui.widget.PRMImageView
                     android:id="@+id/imgLine"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -57,7 +57,7 @@
                     app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
                     app:layout_constraintTop_toTopOf="parent">
 
-                    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    <com.ttcn.prm.ui.widget.PRMTextView
                         android:id="@+id/txtVoucherName"
                         android:layout_width="@dimen/view_size_120"
                         android:layout_height="wrap_content"
@@ -69,7 +69,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
-                    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    <com.ttcn.prm.ui.widget.PRMTextView
                         android:id="@+id/tvContent"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -86,7 +86,7 @@
                         app:layout_constraintTop_toBottomOf="@+id/txtVoucherName" />
 
 
-                    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    <com.ttcn.prm.ui.widget.PRMTextView
                         android:id="@+id/tvEndDate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -108,7 +108,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@id/tvContent">
 
-                        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                        <com.ttcn.prm.ui.widget.PRMTextView
                             android:id="@+id/tvUseNow"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -123,7 +123,7 @@
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
-                    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    <com.ttcn.prm.ui.widget.PRMTextView
                         android:id="@+id/tvStatus"
                         android:layout_width="@dimen/view_size_60"
                         android:layout_height="@dimen/view_size_17"
@@ -145,7 +145,7 @@
                         tools:text="Đã hết hạn" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView>
+        </com.ttcn.prm.ui.widget.PRMCardView>
 
 
     </androidx.constraintlayout.widget.ConstraintLayout>

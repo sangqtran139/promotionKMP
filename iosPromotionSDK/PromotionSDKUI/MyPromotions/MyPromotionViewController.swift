@@ -1,6 +1,6 @@
 //
 //  MyPromotionViewController.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 6/5/26.
 //
@@ -295,7 +295,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     /// Giống `MyPromotionFragment.showServiceSelector` bên Android — cùng bottom sheet, cùng sự kiện host.
     private func showServiceSelector(voucherId: String, services: [ServiceSelectorItem]) {
         ServiceSelectorBottomSheet.present(from: self, services: services) { [weak self] service in
-            PRMSDK.getCallback()?.onServiceSelected(selection: PRMServiceSelection(
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
                 voucherId: voucherId,
                 serviceCode: service.serviceCode,
                 serviceName: service.serviceName,

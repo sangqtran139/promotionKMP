@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import PromotionSDK
+import PRM
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {

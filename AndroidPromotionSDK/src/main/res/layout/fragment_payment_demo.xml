@@ -6,7 +6,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <com.ttcn.promotionsdk.promotionsdkui.feature.promotion.endowview.PRMEndowView
+        <com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
             android:id="@+id/endowView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -16,7 +16,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMButton
+        <com.ttcn.prm.ui.widget.PRMButton
             android:id="@+id/btnConfirmPayment"
             android:layout_width="match_parent"
             android:layout_height="0dp"

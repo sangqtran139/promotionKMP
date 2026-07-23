@@ -1,6 +1,6 @@
 //
 //  MyPromotionViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Lớp bọc mỏng quanh MyPromotionStore (tầng UI-logic dùng chung ở promotionLogic).
 //

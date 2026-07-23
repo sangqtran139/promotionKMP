@@ -69,8 +69,8 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 
 - **Logic nghiệp vụ**: chỉ ở `:promotionLogic` (rule 4). Không viết lại bằng Kotlin-riêng-Android hay
   Swift. Kill-switch, gác cờ, chuẩn hoá lỗi, persistence… nằm ở lõi dùng chung.
-- **Bề mặt công khai & model**: `PRMSDKApi`, DTO, `PRMSDKTheme` + token, `PRMThemeJson`,
-  `PromotionThemeDefaults`, `PRMThemeDisplay`, error code, giá trị mặc định (kể cả **màu**) —
+- **Bề mặt công khai & model**: `PromotionSDKApi`, DTO, `PromotionSDKTheme` + token, `PromotionThemeJson`,
+  `PromotionThemeDefaults`, `PromotionThemeDisplay`, error code, giá trị mặc định (kể cả **màu**) —
   phải **cùng tên type, cùng tên field/hàm, cùng thứ tự, cùng cách document, cùng cấu trúc thư mục**.
 - **Sửa một bên = sửa bên kia trong cùng thay đổi.** Thêm field vào token → thêm cả hai + DTO JSON +
   test. Đổi tên hàm → đổi cả hai.

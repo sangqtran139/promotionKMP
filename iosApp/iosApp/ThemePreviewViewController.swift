@@ -4,13 +4,13 @@
 //
 //  Theme Playground — chỉnh màu/bo góc từng token và xem SDK áp dụng trực tiếp.
 //
-//  LƯU Ý: file này (import PromotionSDK) cố tình giữ NHỎ. Toàn bộ UI nặng nằm ở
+//  LƯU Ý: file này (import PRM) cố tình giữ NHỎ. Toàn bộ UI nặng nằm ở
 //  ThemePlaygroundUI.swift (KHÔNG import SDK) để tránh swift-frontend đệ quy quá sâu
 //  (deserializeClass) khi 1 file vừa nạp module SDK vừa type-check khối lượng lớn.
 //
 
 import UIKit
-import PromotionSDK
+import PRM
 
 final class ThemePreviewViewController: UIViewController {
 
@@ -36,7 +36,7 @@ final class ThemePreviewViewController: UIViewController {
     }()
     private var widget: UIView?
     /// Default THẬT của SDK, dạng hex — nguồn để reset và để so "đã đổi hay chưa".
-    private var sdkDisplayDefaults = PRMThemeDisplay.Defaults()
+    private var sdkDisplayDefaults = PromotionThemeDisplay.Defaults()
 
     init() {
         super.init(nibName: nil, bundle: nil)
@@ -49,17 +49,17 @@ final class ThemePreviewViewController: UIViewController {
         view.backgroundColor = .systemGroupedBackground
 
         // Seed form bằng default THẬT của SDK, rồi phủ theme đang áp lên trên.
-        // SDK đã tự khôi phục theme đã lưu lúc khởi tạo (PRMSDK.initialize) → đọc qua `PRMSDK.currentTheme()`,
+        // SDK đã tự khôi phục theme đã lưu lúc khởi tạo (PromotionSDK.initialize) → đọc qua `PromotionSDK.currentTheme()`,
         // demo không tự persist nữa. Mirror ThemePreviewFragment bên Android (dùng PromotionTheme.currentTheme).
-        sdkDisplayDefaults = PRMThemeDisplay.load()
-        loadDraft(from: PRMThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PRMSDK.currentTheme()))
+        sdkDisplayDefaults = PromotionThemeDisplay.load()
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PromotionSDK.currentTheme()))
         setupLayout()
         buildSections()
         reloadWidget()
     }
 
     /// Map display values (default SDK + theme đã lưu) → draft cho các hàng hiển thị.
-    private func loadDraft(from d: PRMThemeDisplay.Defaults) {
+    private func loadDraft(from d: PromotionThemeDisplay.Defaults) {
         let button = d.button.toToken()
         let search = d.searchBar.toToken()
         let list = d.listItem.toToken()
@@ -118,37 +118,37 @@ final class ThemePreviewViewController: UIViewController {
 
     // MARK: - SDK touch points (chỉ những hàm này chạm PromotionSDKUI)
 
-    /// Map DraftTheme (UIColor/CGFloat) → PRMSDKTheme.
-    private func makeTheme() -> PRMSDKTheme {
-        let button = PRMButtonToken(
+    /// Map DraftTheme (UIColor/CGFloat) → PromotionSDKTheme.
+    private func makeTheme() -> PromotionSDKTheme {
+        let button = ButtonToken(
             backgroundColor: draft.buttonBackground, textColor: draft.buttonText,
             shadowColor: draft.buttonShadow, cornerRadius: draft.buttonCorner
         )
-        let search = PRMSearchBarToken(
+        let search = SearchBarToken(
             borderColor: draft.searchBorder, hintTextColor: draft.searchHint,
             textColor: draft.searchText, iconColor: draft.searchIcon, cornerRadius: draft.searchCorner
         )
-        let list = PRMListItemToken(
+        let list = ListItemToken(
             linkTextColor: draft.listLink, usedBadgeTextColor: draft.listUsedText,
             usedBadgeBackgroundColor: draft.listUsedBg,
             radioButtonStrokeColor: draft.listRadioUnselected,
             radioButtonSelectedStrokeColor: draft.listRadioSelected
         )
-        let tabChip = PRMTabChipToken(
+        let tabChip = TabChipToken(
             activeBackgroundColor: draft.tabChipActiveBg, inactiveBackgroundColor: draft.tabChipInactiveBg,
             activeTextColor: draft.tabChipActiveText, inactiveTextColor: draft.tabChipInactiveText,
             cornerRadius: draft.tabChipCorner
         )
-        let tab = PRMTabUnderlineToken(
+        let tab = TabUnderlineToken(
             indicatorColor: draft.tabIndicator, activeTextColor: draft.tabActiveText,
             inactiveTextColor: draft.tabInactiveText, backgroundColor: draft.tabBg
         )
-        let discount = PRMDiscountBadgeToken(
+        let discount = DiscountBadgeToken(
             availableTextColor: draft.dscAvailText, unavailableTextColor: draft.dscUnavailText,
             availableBackgroundColor: draft.dscAvailBg, unavailableBackgroundColor: draft.dscUnavailBg,
             actionTextColor: draft.dscAction
         )
-        return PRMSDKTheme(
+        return PromotionSDKTheme(
             buttonToken: button, searchBarToken: search, listItemToken: list,
             tabChipToken: tabChip, tabUnderlineToken: tab, discountBadgeToken: discount
         )
@@ -156,7 +156,7 @@ final class ThemePreviewViewController: UIViewController {
 
     func applyTheme() {
         let theme = makeTheme()
-        PRMSDK.configure(theme: theme)   // SDK áp + lưu
+        PromotionSDK.configure(theme: theme)   // SDK áp + lưu
         reloadWidget()
         toast("Đã áp dụng + lưu theme")
     }
@@ -171,13 +171,13 @@ final class ThemePreviewViewController: UIViewController {
 
     /// Demo: cùng bộ màu nhưng dựng bằng token trong code, không qua JSON.
     func applyThemeFromObject() {
-        apply(DemoThemeSource.fromObject(), message: "Đã áp theme dựng bằng PRMSDKTheme object")
+        apply(DemoThemeSource.fromObject(), message: "Đã áp theme dựng bằng PromotionSDKTheme object")
     }
 
     /// Áp + lưu vào SDK, rồi nạp lại form/preview để thấy đúng giá trị vừa áp.
-    private func apply(_ theme: PRMSDKTheme, message: String) {
-        PRMSDK.configure(theme: theme)
-        loadDraft(from: PRMThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PRMSDK.currentTheme()))
+    private func apply(_ theme: PromotionSDKTheme, message: String) {
+        PromotionSDK.configure(theme: theme)
+        loadDraft(from: PromotionThemeDisplay.mergeWithSaved(sdk: sdkDisplayDefaults, saved: PromotionSDK.currentTheme()))
         for refresh in rowRefreshers { refresh() }
         for refresh in previewRefreshers { refresh() }
         reloadWidget()
@@ -187,7 +187,7 @@ final class ThemePreviewViewController: UIViewController {
     func resetTheme() {
         draft = DraftTheme()
         loadDraft(from: sdkDisplayDefaults)
-        PRMSDK.configure(theme: nil)     // SDK xoá theme đã lưu
+        PromotionSDK.configure(theme: nil)     // SDK xoá theme đã lưu
         for refresh in rowRefreshers { refresh() }
         for refresh in previewRefreshers { refresh() }
         reloadWidget()
@@ -195,13 +195,13 @@ final class ThemePreviewViewController: UIViewController {
     }
 
     func openMyPromotions() {
-        PRMSDK.configure(theme: makeTheme())
-        PRMSDK.openMyPromotion(from: self)
+        PromotionSDK.configure(theme: makeTheme())
+        PromotionSDK.openMyPromotion(from: self)
     }
 
     func reloadWidget() {
         widget?.removeFromSuperview()
-        let w: UIView = PRMSDK.createEndowView(from: self)
+        let w: UIView = PromotionSDK.createEndowView(from: self)
         w.translatesAutoresizingMaskIntoConstraints = false
         widgetContainer.addSubview(w)
         NSLayoutConstraint.activate([

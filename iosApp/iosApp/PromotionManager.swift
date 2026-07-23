@@ -2,14 +2,14 @@
 //  PromotionManager.swift
 //  PromotionSDKDemo
 //
-//  MẪU THAM KHẢO — Wrapper / Anti-Corruption Layer bọc PRMSDK SDK.
+//  MẪU THAM KHẢO — Wrapper / Anti-Corruption Layer bọc PromotionSDK SDK.
 //
 //  Ý tưởng (giống cách quản lý SDK bên Android): TOÀN BỘ phần app chỉ nói chuyện với
 //  `PromotionManager` (qua protocol `PromotionServing`), KHÔNG gọi SDK rải rác. Khi
 //  upgrade/đổi SDK, chỉ sửa đúng file này.
 //
 //  Gom vào 1 chỗ các ràng buộc dễ sai của SDK:
-//   - SDK là singleton tĩnh (PRMSDK.initialize / updateContext / release) — như Android.
+//   - SDK là singleton tĩnh (PromotionSDK.initialize / updateContext / release) — như Android.
 //   - Token bị "chụp" lúc initialize → refresh token = initialize lại với session mới.
 //   - Order/dịch vụ cập nhật qua updateContext (không re-init).
 //   - `callback` gói trong options → manager là callback, map type SDK sang model APP rồi phát ra.
@@ -19,7 +19,7 @@
 //
 
 import UIKit
-import PromotionSDK
+import PRM
 
 // MARK: - Model của APP (không dùng type SDK ở tầng app → anti-corruption)
 
@@ -154,7 +154,7 @@ protocol PromotionServing: AnyObject {
     var onClosed: (() -> Void)? { get set }
 }
 
-// MARK: - Manager: chỗ DUY NHẤT chạm PRMSDK SDK
+// MARK: - Manager: chỗ DUY NHẤT chạm PromotionSDK SDK
 
 final class PromotionManager: NSObject, PromotionServing {
 
@@ -171,7 +171,7 @@ final class PromotionManager: NSObject, PromotionServing {
     var onAvailabilityChanged: ((Bool) -> Void)?
     var onClosed: (() -> Void)?
 
-    /// Adapter riêng conform `PRMSDKCallback` — tách khỏi manager để tên method callback
+    /// Adapter riêng conform `PromotionSDKCallback` — tách khỏi manager để tên method callback
     /// (`onVoucherCleared()`, `onClosed()`…) không đụng các closure sự kiện cùng tên ở trên.
     private lazy var sdkCallback = PromotionCallbackAdapter(owner: self)
 
@@ -179,11 +179,11 @@ final class PromotionManager: NSObject, PromotionServing {
     private var availableServices: [AvailableService] = []   // host truyền xuống qua start(...)
 
     /// SDK đã sẵn sàng chưa (đã `initialize`, chưa `release`). Công cụ Playground dùng để gác.
-    var isReady: Bool { PRMSDK.isInitialized() }
+    var isReady: Bool { PromotionSDK.isInitialized() }
 
     // Theme cấu hình tập trung 1 chỗ (nil = mặc định SDK).
-    private static let theme: PRMSDKTheme? = nil   // hoặc PRMSDKTheme(button: ...)
-    // Base URL Promotion BFF — host cấu hình. Đối ứng `PRMSessionConfig.baseUrl` bên Android.
+    private static let theme: PromotionSDKTheme? = nil   // hoặc PromotionSDKTheme(button: ...)
+    // Base URL Promotion BFF — host cấu hình. Đối ứng `PromotionSessionConfig.baseUrl` bên Android.
     private static let baseUrl = "http://125.235.38.229:8080/"
 
     // MARK: Lifecycle
@@ -199,25 +199,25 @@ final class PromotionManager: NSObject, PromotionServing {
     }
 
     func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?) {
-        PRMSDK.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode, metaData: metaData)
+        PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode, metaData: metaData)
     }
 
     func stop() {
-        PRMSDK.release()
+        PromotionSDK.release()
         customerId = nil
         availableServices = []
     }
 
     private func rebuild(token: String?) {
         guard let customerId else { return }
-        // Đối ứng Android: PRMSDK.initialize(options) một lần; refresh token = initialize lại
+        // Đối ứng Android: PromotionSDK.initialize(options) một lần; refresh token = initialize lại
         // với session mới. callback + theme + danh mục dịch vụ gói trong options.
         // Release trước khi init lại để đóng HttpClient cũ + clear DI (initialize KHÔNG tự release) —
         // khớp Android `rebuild`. `release()` gọi khi chưa init là vô hại.
-        if PRMSDK.isInitialized() { PRMSDK.release() }
-        PRMSDK.initialize(
-            options: PRMSDKOptions(
-                session: PRMSessionConfig(
+        if PromotionSDK.isInitialized() { PromotionSDK.release() }
+        PromotionSDK.initialize(
+            options: PromotionSDKOptions(
+                session: PromotionSessionConfig(
                     customerId: customerId,
                     accessToken: token ?? "",
                     baseUrl: Self.baseUrl,
@@ -225,7 +225,7 @@ final class PromotionManager: NSObject, PromotionServing {
                     environment: .prod
                 ),
                 availableServices: availableServices.map {
-                    PRMAvailableService(serviceCode: $0.code, serviceName: $0.name, serviceType: $0.type, iconUrl: $0.iconUrl)
+                    PromotionAvailableService(serviceCode: $0.code, serviceName: $0.name, serviceType: $0.type, iconUrl: $0.iconUrl)
                 },
                 theme: Self.theme,
                 callback: sdkCallback
@@ -236,18 +236,18 @@ final class PromotionManager: NSObject, PromotionServing {
     // MARK: Điều hướng / UI
 
     func openMyPromotions(from viewController: UIViewController) {
-        PRMSDK.openMyPromotion(from: viewController)
+        PromotionSDK.openMyPromotion(from: viewController)
     }
 
     func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
-        PRMSDK.openPromotionDetail(voucherId: voucherId, from: viewController)
+        PromotionSDK.openPromotionDetail(voucherId: voucherId, from: viewController)
     }
 
     func makeCheckoutWidget(from viewController: UIViewController, order: OrderContext) -> UIView {
         // Order truyền tại đây → cập nhật context rồi dựng widget, không re-init SDK. Đối ứng Android:
-        // PRMSDK.updateContext(...) trước khi mở màn có voucher.
-        PRMSDK.updateContext(orderId: order.id, orderValue: order.value)
-        return PRMSDK.createEndowView(from: viewController)
+        // PromotionSDK.updateContext(...) trước khi mở màn có voucher.
+        PromotionSDK.updateContext(orderId: order.id, orderValue: order.value)
+        return PromotionSDK.createEndowView(from: viewController)
     }
 
     // MARK: Headless
@@ -255,8 +255,8 @@ final class PromotionManager: NSObject, PromotionServing {
     func fetchVouchers(keyword: String? = nil, serviceCode: String? = nil, tab: String? = nil,
                        page: Int = 0,
                        completion: @escaping (Result<VoucherPage, Error>) -> Void) {
-        guard PRMSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
-        PRMSDK.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.getVouchers(keyword: keyword, serviceCode: serviceCode, tab: tab,
                                  page: page) { result in
             switch result {
             case .success(let r):
@@ -271,8 +271,8 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func findEligibleOffers(order: OrderContext, tab: String?, myPage: Int, otherPage: Int,
                             completion: @escaping (Result<EligibleOffers, Error>) -> Void) {
-        guard PRMSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
-        PRMSDK.api.findEligible(orderId: order.id, orderValue: order.value,
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.findEligible(orderId: order.id, orderValue: order.value,
                                       tabCode: tab, myPage: myPage, otherPage: otherPage) { result in
             switch result {
             case .success(let r):
@@ -289,8 +289,8 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func fetchVoucherDetail(voucherId: String, serviceCode: String?,
                             completion: @escaping (Result<VoucherDetail, Error>) -> Void) {
-        guard PRMSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
-        PRMSDK.api.getVoucherDetail(voucherId: voucherId, serviceCode: serviceCode) { result in
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.getVoucherDetail(voucherId: voucherId, serviceCode: serviceCode) { result in
             switch result {
             case .success(let r): completion(.success(Self.map(r)))
             case .failure(let error): completion(.failure(error))
@@ -300,8 +300,8 @@ final class PromotionManager: NSObject, PromotionServing {
 
     func validate(order: OrderContext, voucherIds: [String],
                   completion: @escaping (Result<ValidationSummary, Error>) -> Void) {
-        guard PRMSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
-        PRMSDK.api.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.validateDiscounts(orderId: order.id, orderValue: order.value, voucherIds: voucherIds) { result in
             switch result {
             case .success(let r):
                 completion(.success(ValidationSummary(isValid: r.overallValid,
@@ -313,8 +313,8 @@ final class PromotionManager: NSObject, PromotionServing {
     }
 
     func createRedemption(order: OrderContext, voucherId: String, completion: @escaping (Result<String, Error>) -> Void) {
-        guard PRMSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
-        PRMSDK.api.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
+        guard PromotionSDK.isInitialized() else { return completion(.failure(Self.notReady)) }
+        PromotionSDK.api.createRedemption(orderId: order.id, orderValue: order.value, voucherIds: [voucherId]) { result in
             switch result {
             case .success(let r): completion(.success(r.sessionId))   // map type SDK → String cho app
             case .failure(let error): completion(.failure(error))
@@ -327,18 +327,18 @@ final class PromotionManager: NSObject, PromotionServing {
     private static let notReady = NSError(domain: "PromotionManager", code: -1,
                                           userInfo: [NSLocalizedDescriptionKey: "SDK chưa khởi tạo (chưa login?)"])
 
-    private nonisolated static func map(_ v: PRMVoucher) -> VoucherSummary {
+    private nonisolated static func map(_ v: PromotionVoucher) -> VoucherSummary {
         VoucherSummary(id: v.id, merchantName: v.merchantName, title: v.title, imageURL: v.imageURL,
                        expireDate: v.expireDate, isUsed: v.isUsed, statusLabel: v.displayStatusLabel)
     }
 
-    private nonisolated static func map(_ o: PRMEligibleOffer) -> EligibleOffer {
+    private nonisolated static func map(_ o: PromotionEligibleOffer) -> EligibleOffer {
         EligibleOffer(id: o.id, name: o.name, objectType: o.objectType, usable: o.usable,
                       estimatedDiscount: o.estimatedDiscount, expireDate: o.expireDate,
                       ineligibleReason: o.ineligibleReason)
     }
 
-    private nonisolated static func map(_ d: PRMVoucherDetail) -> VoucherDetail {
+    private nonisolated static func map(_ d: PromotionVoucherDetail) -> VoucherDetail {
         VoucherDetail(id: d.id, merchantName: d.merchantName, title: d.title, description: d.description,
                       guideline: d.guideline, startDate: d.startDate, expireDate: d.expireDate,
                       bannerURL: d.bannerURL, logoURL: d.logoURL, statusLabel: d.displayStatusLabel)
@@ -347,11 +347,11 @@ final class PromotionManager: NSObject, PromotionServing {
 
 // MARK: - Adapter callback SDK (1-1) → map sang model app rồi phát ra ngoài
 //
-// Tách khỏi PromotionManager để tên method của `PRMSDKCallback` (`onVoucherCleared()`,
+// Tách khỏi PromotionManager để tên method của `PromotionSDKCallback` (`onVoucherCleared()`,
 // `onClosed()`…) không đụng các closure sự kiện cùng tên trên manager. Giữ `weak owner` — manager
 // sở hữu adapter (strong lazy), nên vòng đời khớp nhau.
 
-private final class PromotionCallbackAdapter: PRMSDKCallback {
+private final class PromotionCallbackAdapter: PromotionSDKCallback {
 
     private weak var owner: PromotionManager?
 
@@ -369,7 +369,7 @@ private final class PromotionCallbackAdapter: PRMSDKCallback {
         owner?.onVoucherCountChanged?(count)
     }
 
-    func onServiceSelected(selection: PRMServiceSelection) {
+    func onServiceSelected(selection: PromotionServiceSelection) {
         owner?.onServiceSelected?(ServiceSelection(
             voucherId: selection.voucherId,
             code: selection.serviceCode,

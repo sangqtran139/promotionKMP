@@ -2,7 +2,7 @@
 //  ThemePlaygroundSupport.swift
 //  PromotionSDKDemo
 //
-//  Toàn bộ UI nặng của Theme Playground. File này CỐ TÌNH KHÔNG import PromotionSDK
+//  Toàn bộ UI nặng của Theme Playground. File này CỐ TÌNH KHÔNG import PRM
 //  để swift-frontend không phải deserialize class graph của framework khi type-check
 //  khối lượng lớn (tránh crash đệ quy deserializeClass). Mọi điểm chạm SDK nằm ở
 //  ThemePreviewViewController.swift.

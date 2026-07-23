@@ -1,8 +1,8 @@
 //
 //  PromotionApiModels.swift
-//  PRMSDK
+//  PromotionSDK
 //
-//  DTO công khai của `PRMSDKApi`. Đối ứng 1-1 với `PromotionApiModels.kt` bên Android:
+//  DTO công khai của `PromotionSDKApi`. Đối ứng 1-1 với `PromotionApiModels.kt` bên Android:
 //  cùng tên type, cùng tên field, cùng thứ tự khai báo. Sửa một bên thì sửa cả hai.
 //
 //  Chỉ dùng type của Foundation — không Kotlin, không type nội bộ. Type nào của `PRMKotlinBridge` lọt vào
@@ -19,7 +19,7 @@
 import Foundation
 
 /// 1 voucher trong danh sách trả cho đối tác.
-public struct PRMVoucher {
+public struct PromotionVoucher {
     public let id: String
     public let merchantName: String
     /// Tên ưu đãi.
@@ -48,14 +48,14 @@ public struct PRMVoucher {
 /// Kết quả lấy voucher **của khách** (Search Customer Vouchers).
 ///
 /// API chỉ trả voucher đã sở hữu. Để lấy "Ưu đãi khác" (campaign chưa sở hữu, đủ điều kiện cho đơn)
-/// dùng `PRMSDKApi.findEligible`.
-public struct PRMVoucherPage {
-    public let vouchers: [PRMVoucher]
+/// dùng `PromotionSDKApi.findEligible`.
+public struct PromotionVoucherPage {
+    public let vouchers: [PromotionVoucher]
     public let isLastPage: Bool
     /// Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; nil nếu không trả.
     public let expireWarningDate: Int?
 
-    public init(vouchers: [PRMVoucher], isLastPage: Bool, expireWarningDate: Int? = nil) {
+    public init(vouchers: [PromotionVoucher], isLastPage: Bool, expireWarningDate: Int? = nil) {
         self.vouchers = vouchers
         self.isLastPage = isLastPage
         self.expireWarningDate = expireWarningDate
@@ -63,7 +63,7 @@ public struct PRMVoucherPage {
 }
 
 /// Chi tiết 1 voucher (Get Customer Voucher Detail).
-public struct PRMVoucherDetail {
+public struct PromotionVoucherDetail {
     public let id: String
     public let merchantName: String
     public let title: String
@@ -102,7 +102,7 @@ public struct PRMVoucherDetail {
 }
 
 /// 1 ưu đãi đủ điều kiện (Find Eligible Campaigns) cho luồng checkout.
-public struct PRMEligibleOffer {
+public struct PromotionEligibleOffer {
     /// Định danh để chọn/validate: `voucherId` (nhóm "của tôi") hoặc `campaignId` (nhóm "khác").
     public let id: String
     /// Tên ưu đãi hiển thị.
@@ -140,15 +140,15 @@ public struct PRMEligibleOffer {
 }
 
 /// Kết quả Find Eligible Campaigns: 2 nhóm "của tôi" / "khác", phân trang ĐỘC LẬP.
-public struct PRMEligibleResult {
-    public let myOffers: [PRMEligibleOffer]
-    public let otherOffers: [PRMEligibleOffer]
+public struct PromotionEligibleResult {
+    public let myOffers: [PromotionEligibleOffer]
+    public let otherOffers: [PromotionEligibleOffer]
     public let myIsLastPage: Bool
     public let otherIsLastPage: Bool
     /// Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh BFF; nil nếu không trả.
     public let expireWarningDate: Int?
 
-    public init(myOffers: [PRMEligibleOffer], otherOffers: [PRMEligibleOffer],
+    public init(myOffers: [PromotionEligibleOffer], otherOffers: [PromotionEligibleOffer],
                 myIsLastPage: Bool, otherIsLastPage: Bool, expireWarningDate: Int? = nil) {
         self.myOffers = myOffers
         self.otherOffers = otherOffers
@@ -158,9 +158,9 @@ public struct PRMEligibleResult {
     }
 }
 
-/// 1 dòng sản phẩm trong đơn. Host truyền vào `PRMSDKApi.findEligible` để lấy campaign theo SKU
+/// 1 dòng sản phẩm trong đơn. Host truyền vào `PromotionSDKApi.findEligible` để lấy campaign theo SKU
 /// — đơn không kèm items chỉ nhận campaign cấp đơn.
-public struct PRMOrderItem {
+public struct PromotionOrderItem {
     /// Mã SKU sản phẩm (bắt buộc).
     public let skuId: String
     public let productId: String?
@@ -191,13 +191,13 @@ public struct PRMOrderItem {
 }
 
 /// Kết quả validate một tập voucher với đơn hàng, trước khi áp.
-public struct PRMValidationResult {
+public struct PromotionValidationResult {
     public let overallValid: Bool
     public let totalDiscountAmount: String
     public let finalAmount: String
-    public let items: [PRMDiscountItem]
+    public let items: [PromotionDiscountItem]
 
-    public init(overallValid: Bool, totalDiscountAmount: String, finalAmount: String, items: [PRMDiscountItem]) {
+    public init(overallValid: Bool, totalDiscountAmount: String, finalAmount: String, items: [PromotionDiscountItem]) {
         self.overallValid = overallValid
         self.totalDiscountAmount = totalDiscountAmount
         self.finalAmount = finalAmount
@@ -205,7 +205,7 @@ public struct PRMValidationResult {
     }
 }
 
-public struct PRMDiscountItem {
+public struct PromotionDiscountItem {
     public let objectId: String
     public let discountAmount: String
     public let isValid: Bool
@@ -221,14 +221,14 @@ public struct PRMDiscountItem {
 }
 
 /// Kết quả tạo redemption session.
-public struct PRMRedemptionResult {
+public struct PromotionRedemptionResult {
     public let sessionId: String
     public let totalDiscount: String
     public let finalAmount: String
     /// Lỗi validation nếu có voucher không hợp lệ trong session.
-    public let validationErrors: [PRMRedemptionError]
+    public let validationErrors: [PromotionRedemptionError]
 
-    public init(sessionId: String, totalDiscount: String, finalAmount: String, validationErrors: [PRMRedemptionError] = []) {
+    public init(sessionId: String, totalDiscount: String, finalAmount: String, validationErrors: [PromotionRedemptionError] = []) {
         self.sessionId = sessionId
         self.totalDiscount = totalDiscount
         self.finalAmount = finalAmount
@@ -236,7 +236,7 @@ public struct PRMRedemptionResult {
     }
 }
 
-public struct PRMRedemptionError {
+public struct PromotionRedemptionError {
     /// Mã lỗi nghiệp vụ, vd "VOUCHER_EXPIRED", "INSUFFICIENT_BUDGET".
     public let code: String
     /// Mô tả lỗi có thể hiển thị cho user.

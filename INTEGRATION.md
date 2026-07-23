@@ -83,9 +83,9 @@ class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        PRMSDK.initialize(
+        PromotionSDK.initialize(
             context = this,
-            options = PRMSDKOptions(
+            options = PromotionSDKOptions(
                 config = PromotionSDKConfig(
                     baseUrl       = "https://api.example.com",
                     customerId    = session.customerId,
@@ -103,7 +103,7 @@ class MyApplication : Application() {
 Giải phóng khi không cần nữa (logout, kết thúc luồng thanh toán):
 
 ```kotlin
-PRMSDK.release()
+PromotionSDK.release()
 ```
 
 ### 2.1 Tùy biến giao diện (Theme)
@@ -113,9 +113,9 @@ bỏ trống sẽ giữ giao diện mặc định của SDK.
 
 ```kotlin
 val themeConfig = PromotionThemeConfig(
-    buttonToken       = PRMButtonToken(backgroundColor = Color.parseColor("#EE0033"), cornerRadius = 8f),
-    tabChipToken      = PRMTabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
-    discountBadgeToken = PRMDiscountBadgeToken(availableTextColor = ..., availableBackgroundColor = ...),
+    buttonToken       = ButtonToken(backgroundColor = Color.parseColor("#EE0033"), cornerRadius = 8f),
+    tabChipToken      = TabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
+    discountBadgeToken = DiscountBadgeToken(availableTextColor = ..., availableBackgroundColor = ...),
 )
 ```
 
@@ -123,16 +123,16 @@ Có **2 cách** cấu hình theme:
 
 ```kotlin
 // Cách 1 (khuyến nghị): truyền vào options khi init
-PRMSDK.initialize(
+PromotionSDK.initialize(
     context = this,
-    options = PRMSDKOptions(
+    options = PromotionSDKOptions(
         config = PromotionSDKConfig(/* ... */),
-        theme  = PRMSDKTheme(config = themeConfig),
+        theme  = PromotionSDKTheme(config = themeConfig),
     ),
 )
 
 // Cách 2: gọi SAU init()
-PRMSDK.initialize(context, PRMSDKOptions(config = PromotionSDKConfig(/* ... */)))
+PromotionSDK.initialize(context, PromotionSDKOptions(config = PromotionSDKConfig(/* ... */)))
 PromotionTheme.configure(themeConfig)
 ```
 
@@ -143,8 +143,8 @@ Cả hai cách đều hợp lệ — `init()` chỉ ghi đè theme khi bạn **t
 Bạn cũng có thể **đổi theme lúc runtime**: gọi `PromotionTheme.configure(newConfig)` bất kỳ lúc nào — các view
 đang hiển thị (nút, ô tìm kiếm, `PRMEndowView`) sẽ tự áp lại ngay; danh sách voucher cập nhật ở lần cuộn/refresh kế tiếp.
 
-Token hỗ trợ: `PRMButtonToken`, `PRMSearchBarToken`, `PRMListItemToken`, `PRMTabChipToken`, `PRMTabUnderlineToken`,
-`PRMDiscountBadgeToken`. Chi tiết từng field và cơ chế áp dụng: xem `docs/Theming.md`.
+Token hỗ trợ: `ButtonToken`, `SearchBarToken`, `ListItemToken`, `TabChipToken`, `TabUnderlineToken`,
+`DiscountBadgeToken`. Chi tiết từng field và cơ chế áp dụng: xem `docs/Theming.md`.
 
 ---
 
@@ -154,19 +154,19 @@ SDK cung cấp sẵn màn hình "Ưu đãi của tôi". Đối tác chỉ cần 
 
 ```kotlin
 // Mở màn ưu đãi trên toàn màn hình
-PRMSDK.openMyPromotion(activity)
+PromotionSDK.openMyPromotion(activity)
 
 // Hoặc mở trong container cụ thể
-PRMSDK.openMyPromotion(activity, containerViewId = R.id.fragment_container)
+PromotionSDK.openMyPromotion(activity, containerViewId = R.id.fragment_container)
 ```
 
 Nhận callback khi user áp dụng voucher:
 
 ```kotlin
-PRMSDKOptions(
+PromotionSDKOptions(
     config = ...,
-    callback = object : PRMSDKCallback {
-        override fun onVoucherApplied(discountDetails: List<PRMAppliedDiscount>) {
+    callback = object : PromotionSDKCallback {
+        override fun onVoucherApplied(discountDetails: List<AppliedDiscount>) {
             // Cập nhật UI đơn hàng với discount
         }
         override fun onError(errorCode: String) {
@@ -183,12 +183,12 @@ PRMSDKOptions(
 
 ## 4. Chế độ Headless
 
-Đối tác tự build UI, dùng `PRMSDK.useCases` để gọi API trực tiếp.
+Đối tác tự build UI, dùng `PromotionSDK.useCases` để gọi API trực tiếp.
 
 ### 4.1 Tìm kiếm voucher
 
 ```kotlin
-val useCases = PRMSDK.useCases
+val useCases = PromotionSDK.useCases
 
 val result = useCases.searchVouchers(
     SearchCustomerVouchersRequest(
@@ -281,7 +281,7 @@ if (redemption?.hasErrors == true) {
 
 ```kotlin
 viewModelScope.launch {
-    val useCases = PRMSDK.useCases
+    val useCases = PromotionSDK.useCases
 
     // 1. Load voucher
     val searchResult = useCases.searchVouchers(searchRequest) ?: return@launch
@@ -458,12 +458,12 @@ class `internal`) là **nội bộ SDK**, có thể đổi bất kỳ lúc nào 
 
 | Nhóm | Kiểu công khai |
 |------|----------------|
-| Entry | `PRMSDK`, `PRMSDKOptions`, `PRMSDKCallback`, `PromotionTheme` |
-| Headless | `PRMSDK.useCases` (`PromotionUseCases`) |
+| Entry | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSDKCallback`, `PromotionTheme` |
+| Headless | `PromotionSDK.useCases` (`PromotionUseCases`) |
 | Kết quả headless | `PromotionResult<T>` (`Success`/`Failure`) — `core/domain/model/PromotionResult` |
 | Model nghiệp vụ | `core/domain/model/<feature>/*` — request + result (vd `SearchCustomerVouchersRequest`/`...Result`, `ValidateDiscountsRequest`/`...Result`, `CreateRedemptionRequest`/`...Result`, `VoucherDetail`) |
-| Discount áp dụng | `PRMAppliedDiscount` (`ui/entry`) — dùng ở callback & `PRMEndowView` |
-| UI nhúng | `PRMEndowView`, `PRMChoosePromotionFragment`, `PRMIntegrateManager`, các `PRM*` view/base |
+| Discount áp dụng | `AppliedDiscount` (`ui/entry`) — dùng ở callback & `PRMEndowView` |
+| UI nhúng | `PRMEndowView`, `ChoosePromotionFragment`, `PromotionIntegrateManager`, các `PRM*` view/base |
 
 > **Ổn định:** chỉ các kiểu trong bảng này được giữ ổn định giữa các phiên bản. SDK chưa release
 > chính thức (1.0.0) nên các bản trước đó có thể còn breaking; từ bản phát hành đầu tiên sẽ theo semver.

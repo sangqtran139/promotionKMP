@@ -1,6 +1,6 @@
 //
 //  PRMBaseViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 
 import Foundation

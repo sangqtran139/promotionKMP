@@ -1,13 +1,13 @@
 package com.ttcn.promotionsdk.app
 
-//  MẪU THAM KHẢO — Wrapper / Anti-Corruption Layer bọc PRMSDK SDK.
+//  MẪU THAM KHẢO — Wrapper / Anti-Corruption Layer bọc PromotionSDK SDK.
 //
 //  Đối xứng 1-1 với `PromotionManager.swift` bên iOS (xem docs/InitParity.md §6). Ý tưởng: TOÀN BỘ
 //  phần app chỉ nói chuyện với `PromotionManager` (qua interface `PromotionServing`), KHÔNG gọi SDK
 //  rải rác. Khi upgrade/đổi SDK, chỉ sửa đúng file này.
 //
 //  Gom vào 1 chỗ các ràng buộc dễ sai của SDK:
-//   - SDK là singleton tĩnh (PRMSDK.initialize / updateContext / release) — như iOS.
+//   - SDK là singleton tĩnh (PromotionSDK.initialize / updateContext / release) — như iOS.
 //   - Token bị "chụp" lúc init → refresh token = init lại với session mới.
 //   - Order/dịch vụ cập nhật qua updateContext (không re-init).
 //   - `callback` gói trong options → adapter riêng map type SDK sang model APP rồi phát ra.
@@ -17,18 +17,18 @@ package com.ttcn.promotionsdk.app
 
 import android.content.Context
 import androidx.fragment.app.FragmentActivity
-import com.ttcn.promotionsdk.entry.PRMAvailableService
-import com.ttcn.promotionsdk.entry.PRMEnvironment
-import com.ttcn.promotionsdk.entry.PRMSDK
-import com.ttcn.promotionsdk.entry.PRMSDKCallback
-import com.ttcn.promotionsdk.entry.PRMSDKOptions
-import com.ttcn.promotionsdk.entry.PRMServiceSelection
-import com.ttcn.promotionsdk.entry.PRMSessionConfig
-import com.ttcn.promotionsdk.promotionsdkui.theme.PRMSDKTheme
-import com.ttcn.promotionsdk.entry.api.PRMApiResult
-import com.ttcn.promotionsdk.entry.api.PRMEligibleOffer
-import com.ttcn.promotionsdk.entry.api.PRMVoucher
-import com.ttcn.promotionsdk.entry.api.PRMVoucherDetail
+import com.ttcn.prm.entry.PromotionAvailableService
+import com.ttcn.prm.entry.PromotionEnvironment
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.entry.PromotionSDKCallback
+import com.ttcn.prm.entry.PromotionSDKOptions
+import com.ttcn.prm.entry.PromotionServiceSelection
+import com.ttcn.prm.entry.PromotionSessionConfig
+import com.ttcn.prm.ui.theme.PromotionSDKTheme
+import com.ttcn.prm.entry.api.PromotionApiResult
+import com.ttcn.prm.entry.api.PromotionEligibleOffer
+import com.ttcn.prm.entry.api.PromotionVoucher
+import com.ttcn.prm.entry.api.PromotionVoucherDetail
 
 // ─── Model của APP (không dùng type SDK ở tầng app → anti-corruption) ─────────
 
@@ -112,7 +112,7 @@ interface PromotionServing {
     fun openMyPromotions(activity: FragmentActivity, containerViewId: Int?)
     /** Mở thẳng màn chi tiết một ưu đãi, không qua danh sách (host đã biết `voucherId`). */
     fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int?)
-    // Widget checkout: Android dùng `PRMEndowView` trực tiếp trong layout (+ PRMIntegrateManager),
+    // Widget checkout: Android dùng `PRMEndowView` trực tiếp trong layout (+ PromotionIntegrateManager),
     // không phơi ở wrapper — điểm lệch N1 với iOS `makeCheckoutWidget` (docs/InitParity.md §5.3).
 
     // --- Headless API (không UI) — `suspend` thay cho completion bên iOS (N1) ---
@@ -133,7 +133,7 @@ interface PromotionServing {
     var onClosed: (() -> Unit)?
 }
 
-// ─── Manager: chỗ DUY NHẤT chạm PRMSDK SDK ──────────────────────────────
+// ─── Manager: chỗ DUY NHẤT chạm PromotionSDK SDK ──────────────────────────────
 
 object PromotionManager : PromotionServing {
 
@@ -150,19 +150,19 @@ object PromotionManager : PromotionServing {
     private var availableServices: List<AvailableService> = emptyList()
 
     /** SDK đã sẵn sàng chưa (đã init, chưa release). Công cụ demo dùng để gác. */
-    val isReady: Boolean get() = PRMSDK.isInitialized()
+    val isReady: Boolean get() = PromotionSDK.isInitialized()
 
     // Theme cấu hình tập trung 1 chỗ (null = mặc định SDK).
-    private val theme: PRMSDKTheme? = null
-    // Base URL Promotion BFF — host cấu hình. Đối ứng `PRMSessionConfig.baseUrl` bên iOS.
+    private val theme: PromotionSDKTheme? = null
+    // Base URL Promotion BFF — host cấu hình. Đối ứng `PromotionSessionConfig.baseUrl` bên iOS.
     private const val BASE_URL = "http://125.235.38.229:8080"
 
-    /** Adapter riêng conform `PRMSDKCallback` — map type SDK → model app rồi phát ra ngoài. */
-    private val sdkCallback = object : PRMSDKCallback {
+    /** Adapter riêng conform `PromotionSDKCallback` — map type SDK → model app rồi phát ra ngoài. */
+    private val sdkCallback = object : PromotionSDKCallback {
         override fun onVoucherApplied(voucherId: String) { this@PromotionManager.onVoucherApplied?.invoke(voucherId) }
         override fun onVoucherCleared() { this@PromotionManager.onVoucherCleared?.invoke() }
         override fun onVoucherCountChanged(count: Int) { this@PromotionManager.onVoucherCountChanged?.invoke(count) }
-        override fun onServiceSelected(selection: PRMServiceSelection) {
+        override fun onServiceSelected(selection: PromotionServiceSelection) {
             this@PromotionManager.onServiceSelected?.invoke(
                 ServiceSelection(selection.voucherId, selection.serviceCode, selection.serviceName, selection.iconUrl)
             )
@@ -185,11 +185,11 @@ object PromotionManager : PromotionServing {
     }
 
     override fun updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?) {
-        PRMSDK.updateContext(orderId, orderValue, serviceCode, metaData)
+        PromotionSDK.updateContext(orderId, orderValue, serviceCode, metaData)
     }
 
     override fun stop() {
-        PRMSDK.release()
+        PromotionSDK.release()
         customerId = null
         availableServices = emptyList()
     }
@@ -197,20 +197,20 @@ object PromotionManager : PromotionServing {
     private fun rebuild(token: String?) {
         val ctx = appContext ?: return
         val cid = customerId ?: return
-        if (PRMSDK.isInitialized()) PRMSDK.release()
-        // Đối ứng iOS: PRMSDK.initialize(options) một lần; refresh token = init lại với session mới.
-        PRMSDK.initialize(
+        if (PromotionSDK.isInitialized()) PromotionSDK.release()
+        // Đối ứng iOS: PromotionSDK.initialize(options) một lần; refresh token = init lại với session mới.
+        PromotionSDK.initialize(
             ctx,
-            PRMSDKOptions(
-                session = PRMSessionConfig(
+            PromotionSDKOptions(
+                session = PromotionSessionConfig(
                     customerId = cid,
                     accessToken = token ?: "",
                     baseUrl = BASE_URL,
                     language = "vi-VN",
-                    environment = PRMEnvironment.PROD,
+                    environment = PromotionEnvironment.PROD,
                 ),
                 availableServices = availableServices.map {
-                    PRMAvailableService(it.code, it.name, it.type, it.iconUrl)
+                    PromotionAvailableService(it.code, it.name, it.type, it.iconUrl)
                 },
                 theme = theme,
                 callback = sdkCallback,
@@ -221,11 +221,11 @@ object PromotionManager : PromotionServing {
     // ─── Điều hướng / UI ────────────────────────────────────────────────────────
 
     override fun openMyPromotions(activity: FragmentActivity, containerViewId: Int?) {
-        PRMSDK.openMyPromotion(activity, containerViewId)
+        PromotionSDK.openMyPromotion(activity, containerViewId)
     }
 
     override fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int?) {
-        PRMSDK.openPromotionDetail(voucherId, activity, containerViewId)
+        PromotionSDK.openPromotionDetail(voucherId, activity, containerViewId)
     }
 
     // ─── Headless ─────────────────────────────────────────────────────────────
@@ -236,12 +236,12 @@ object PromotionManager : PromotionServing {
         tab: String?,
         page: Int,
     ): Result<VoucherPage> {
-        if (!PRMSDK.isInitialized()) return Result.failure(notReady())
-        return when (val r = PRMSDK.api.getVouchers(keyword, serviceCode, tab, page)) {
-            is PRMApiResult.Success -> Result.success(
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (val r = PromotionSDK.api.getVouchers(keyword, serviceCode, tab, page)) {
+            is PromotionApiResult.Success -> Result.success(
                 VoucherPage(mine = r.data.vouchers.map(::map), mineIsLastPage = r.data.isLastPage)
             )
-            is PRMApiResult.Failure -> Result.failure(r.error)
+            is PromotionApiResult.Failure -> Result.failure(r.error)
         }
     }
 
@@ -251,9 +251,9 @@ object PromotionManager : PromotionServing {
         myPage: Int,
         otherPage: Int,
     ): Result<EligibleOffers> {
-        if (!PRMSDK.isInitialized()) return Result.failure(notReady())
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
         return when (
-            val r = PRMSDK.api.findEligible(
+            val r = PromotionSDK.api.findEligible(
                 orderId = order.id,
                 orderValue = order.value,
                 tabCode = tab,
@@ -261,7 +261,7 @@ object PromotionManager : PromotionServing {
                 otherPage = otherPage,
             )
         ) {
-            is PRMApiResult.Success -> Result.success(
+            is PromotionApiResult.Success -> Result.success(
                 EligibleOffers(
                     mine = r.data.myOffers.map(::map),
                     others = r.data.otherOffers.map(::map),
@@ -269,33 +269,33 @@ object PromotionManager : PromotionServing {
                     othersIsLastPage = r.data.otherIsLastPage,
                 )
             )
-            is PRMApiResult.Failure -> Result.failure(r.error)
+            is PromotionApiResult.Failure -> Result.failure(r.error)
         }
     }
 
     override suspend fun fetchVoucherDetail(voucherId: String, serviceCode: String?): Result<VoucherDetail> {
-        if (!PRMSDK.isInitialized()) return Result.failure(notReady())
-        return when (val r = PRMSDK.api.getVoucherDetail(voucherId, serviceCode)) {
-            is PRMApiResult.Success -> Result.success(map(r.data))
-            is PRMApiResult.Failure -> Result.failure(r.error)
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (val r = PromotionSDK.api.getVoucherDetail(voucherId, serviceCode)) {
+            is PromotionApiResult.Success -> Result.success(map(r.data))
+            is PromotionApiResult.Failure -> Result.failure(r.error)
         }
     }
 
     override suspend fun validate(order: OrderContext, voucherIds: List<String>): Result<ValidationSummary> {
-        if (!PRMSDK.isInitialized()) return Result.failure(notReady())
-        return when (val r = PRMSDK.api.validateDiscounts(order.id, order.value, voucherIds)) {
-            is PRMApiResult.Success -> Result.success(
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (val r = PromotionSDK.api.validateDiscounts(order.id, order.value, voucherIds)) {
+            is PromotionApiResult.Success -> Result.success(
                 ValidationSummary(r.data.overallValid, r.data.totalDiscountAmount, r.data.finalAmount)
             )
-            is PRMApiResult.Failure -> Result.failure(r.error)
+            is PromotionApiResult.Failure -> Result.failure(r.error)
         }
     }
 
     override suspend fun createRedemption(order: OrderContext, voucherId: String): Result<String> {
-        if (!PRMSDK.isInitialized()) return Result.failure(notReady())
-        return when (val r = PRMSDK.api.createRedemption(order.id, order.value, listOf(voucherId))) {
-            is PRMApiResult.Success -> Result.success(r.data.sessionId) // map type SDK → String cho app
-            is PRMApiResult.Failure -> Result.failure(r.error)
+        if (!PromotionSDK.isInitialized()) return Result.failure(notReady())
+        return when (val r = PromotionSDK.api.createRedemption(order.id, order.value, listOf(voucherId))) {
+            is PromotionApiResult.Success -> Result.success(r.data.sessionId) // map type SDK → String cho app
+            is PromotionApiResult.Failure -> Result.failure(r.error)
         }
     }
 
@@ -303,7 +303,7 @@ object PromotionManager : PromotionServing {
 
     private fun notReady() = IllegalStateException("SDK chưa khởi tạo (chưa login?)")
 
-    private fun map(v: PRMVoucher) = VoucherSummary(
+    private fun map(v: PromotionVoucher) = VoucherSummary(
         id = v.id,
         merchantName = v.merchantName,
         title = v.title,
@@ -313,7 +313,7 @@ object PromotionManager : PromotionServing {
         statusLabel = v.displayStatusLabel,
     )
 
-    private fun map(o: PRMEligibleOffer) = EligibleOffer(
+    private fun map(o: PromotionEligibleOffer) = EligibleOffer(
         id = o.id,
         name = o.name,
         objectType = o.objectType,
@@ -323,7 +323,7 @@ object PromotionManager : PromotionServing {
         ineligibleReason = o.ineligibleReason,
     )
 
-    private fun map(d: PRMVoucherDetail) = VoucherDetail(
+    private fun map(d: PromotionVoucherDetail) = VoucherDetail(
         id = d.id,
         merchantName = d.merchantName,
         title = d.title,

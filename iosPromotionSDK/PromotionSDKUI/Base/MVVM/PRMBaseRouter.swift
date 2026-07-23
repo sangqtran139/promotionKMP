@@ -1,6 +1,6 @@
 //
 //  PRMBaseRouter.swift
-//  PRMSDK
+//  PromotionSDK
 //
 
 import UIKit

@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+        <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtTitleEndow"
             style="@style/fontPRMSfDisplayBold18"
             android:layout_width="wrap_content"
@@ -50,7 +50,7 @@
 
         </com.facebook.shimmer.ShimmerFrameLayout>
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+        <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtNumberEndow"
             style="@style/fontPRMSfDisplayMedium16"
             android:layout_width="0dp"
@@ -81,7 +81,7 @@
             app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
             tools:listitem="@layout/item_list_promotion_apply" />
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+        <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtStatusEndow"
             style="@style/fontPRMSfDisplayMedium16"
             android:layout_width="wrap_content"

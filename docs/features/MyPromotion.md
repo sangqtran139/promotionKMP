@@ -1,10 +1,10 @@
 # Feature: My Promotion
 
 Màn hình hiển thị **danh sách voucher của khách hàng** với tab, phân trang và tìm kiếm.
-Đây là màn hình UI mode chính được host mở qua `PRMSDK` (`PRMMyPromotionFragment`).
+Đây là màn hình UI mode chính được host mở qua `PromotionSDK` (`MyPromotionFragment`).
 
 - **Package:** `ui/feature/promotion/mypromotion`
-- **Thành phần:** `PRMMyPromotionFragment`, `MyPromotionViewModel`, `MyPromotionContract`, `adapter/`
+- **Thành phần:** `MyPromotionFragment`, `MyPromotionViewModel`, `MyPromotionContract`, `adapter/`
 
 ---
 

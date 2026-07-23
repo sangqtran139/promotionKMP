@@ -1,6 +1,6 @@
 //
 //  ChoosePromotionItemCell.swift
-//  PRMSDK
+//  PromotionSDK
 //
 
 import UIKit

@@ -1,6 +1,6 @@
 //
 //  ChoosePromotionViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Lớp bọc mỏng quanh ChoosePromotionStore (tầng UI-logic dùng chung ở promotionLogic).
 //  ĐỒNG NHẤT với `ChoosePromotionViewModel` bên Android — cùng `store` / `bindStore` /

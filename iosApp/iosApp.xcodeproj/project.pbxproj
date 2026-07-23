@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		554C61F22FB437570091059A /* PromotionSDK.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PromotionSDK.xcframework */; };
-		554C61F32FB437570091059A /* PromotionSDK.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PromotionSDK.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		554C61F22FB437570091059A /* PRM.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PRM.xcframework */; };
+		554C61F32FB437570091059A /* PRM.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PRM.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -18,7 +18,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				554C61F32FB437570091059A /* PromotionSDK.xcframework in Embed Frameworks */,
+				554C61F32FB437570091059A /* PRM.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -26,7 +26,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		55B9CE9D2F8C979D00184BBF /* PromotionSDK.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = PromotionSDK.xcframework; path = ../iosPromotionSDK/build/PromotionSDK.xcframework; sourceTree = SOURCE_ROOT; };
+		55B9CE9D2F8C979D00184BBF /* PRM.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = PRM.xcframework; path = ../iosPromotionSDK/build/PRM.xcframework; sourceTree = SOURCE_ROOT; };
 		55D4D5852F8C96950042667F /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -56,7 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				554C61F22FB437570091059A /* PromotionSDK.xcframework in Frameworks */,
+				554C61F22FB437570091059A /* PRM.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,7 +66,7 @@
 		55B9CE9C2F8C979D00184BBF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				55B9CE9D2F8C979D00184BBF /* PromotionSDK.xcframework */,
+				55B9CE9D2F8C979D00184BBF /* PRM.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

@@ -1,6 +1,6 @@
 //
 //  SeeMoreCell.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 27/5/26.
 //

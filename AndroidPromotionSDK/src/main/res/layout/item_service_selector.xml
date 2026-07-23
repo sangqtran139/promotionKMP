@@ -13,7 +13,7 @@
         android:importantForAccessibility="no"
         android:scaleType="centerCrop" />
 
-    <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+    <com.ttcn.prm.ui.widget.PRMTextView
         android:id="@+id/tvServiceName"
         style="@style/fontPRMRegular12"
         android:layout_width="match_parent"

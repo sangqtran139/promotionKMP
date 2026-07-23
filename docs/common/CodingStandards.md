@@ -41,38 +41,35 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
 
 ### Tiền tố
 
-- **Lõi `:promotionLogic`**: *không* prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
-- **Mọi type `public` của UI SDK (cả Android lẫn iOS) dùng tiền tố `PRM`** — `PRMSDK`, `PRMSDKOptions`,
-  `PRMSessionConfig`, `PRMBaseFragment`, `PRMEndowView`, `PRMButtonToken`.
-- **Quy tắc đặt tên:** thêm `PRM` vào đầu, và **gộp chữ `Promotion` đứng đầu** để không sinh ra
-  `PRMPromotion…`:
+**`PRM` là tên của package/module, KHÔNG phải tiền tố dán vào mọi class.** Việc tránh trùng tên khi
+nhúng vào host do **namespace** lo, nên tên type giữ nguyên nghĩa, dễ đọc:
 
-  | Cũ | Mới |
-  |---|---|
-  | `PromotionSDK` | `PRMSDK` |
-  | `PromotionSDKOptions` | `PRMSDKOptions` |
-  | `PromotionSessionConfig` | `PRMSessionConfig` |
-  | `PromotionAvailableService` | `PRMAvailableService` |
-  | `AppliedDiscount` | `PRMAppliedDiscount` |
-  | `ButtonToken` | `PRMButtonToken` |
+| | Android | iOS |
+|---|---|---|
+| Namespace / module | `com.ttcn.prm` | `PRM` (`import PRM`) |
+| Type bề mặt host | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSessionConfig`, `AppliedDiscount` | y hệt |
 
-  Chữ `Promotion` **ở giữa** thì giữ: `ChoosePromotionFragment` → `PRMChoosePromotionFragment`.
+- **Lõi `:promotionLogic`**: *không* prefix, package riêng `com.ttcn.promotionsdk.*`.
+  `PromotionUseCases`, `PromotionSDKConfig`, `EligibleOffer`.
+- **UI SDK**: base class và custom view **public** vẫn dùng `PRM` — `PRMBaseFragment`, `PRMEndowView`,
+  `PRMButton`. Đây là những thứ host **kế thừa/đặt thẳng vào layout** nên tên dễ đụng nhất.
+- Type bề mặt SDK khác giữ tên mô tả: `PromotionSDK`, `PromotionSDKApi`, `ButtonToken`… — **không**
+  ép thành `PRMSDK`/`PRMButtonToken` (tối nghĩa, và namespace đã đủ tách biệt).
 - **Bắt buộc trùng chữ Android ↔ iOS.** Cùng một khái niệm phải cùng tên type ở hai bên (điều 10
   [AI_AGENT_RULES](../AI_AGENT_RULES.md)). Đổi tên một bên = đổi cả hai trong cùng thay đổi.
-- **Type `internal`/`private` không cần prefix** — chúng không lọt ra host (`MyPromotionViewController`,
-  `PromotionSDKImpl`, `PromotionUIStrings`, các ViewModel).
-- **Lõi `:promotionLogic` vẫn KHÔNG prefix** — `PromotionUseCases`, `PromotionSDKConfig`, `EligibleOffer`.
-  Lõi không nằm trên compile classpath của host nên không có nguy cơ trùng tên.
+- **Type `internal`/`private`** không cần bận tâm (`MyPromotionViewController`, `PromotionSDKImpl`,
+  `PromotionUIStrings`, các ViewModel).
 
-Mục đích của prefix là tránh trùng tên khi nhúng vào host app.
-
-> ⚠️ Khi đổi tên hàng loạt: dùng `perl -pi -e 's/\bTên\b/TênMới/g'`, **không** dùng `sed` của macOS —
-> BSD sed không hỗ trợ word-boundary `\b`, thiếu nó thì `PromotionSDKConfig` (type của **lõi**, không
-> được đổi) sẽ bị cắt nhầm thành `PRMSDKConfig`.
+> ⚠️ **Module iOS tên `PRM`, không được đặt trùng tên một type public bên trong.** Nếu module trùng tên
+> class (từng thử `PromotionSDK`/`PromotionSDK`), `.swiftinterface` sinh ra `PromotionSDK.PromotionVoucher`
+> và Swift hiểu là type **lồng trong class** → build gãy:
+> `error: 'PromotionVoucher' is not a member type of class 'PromotionSDK.PromotionSDK'`.
 >
-> ⚠️ Trên iOS, **module** vẫn tên `PromotionSDK` còn **class entry** tên `PRMSDK`. Đừng để chúng trùng
-> tên: nếu class trùng tên module, `.swiftinterface` sinh ra `PromotionSDK.PRMVoucher` sẽ bị Swift hiểu
-> là type lồng trong class → `error: 'PRMVoucher' is not a member type of class 'PromotionSDK.PromotionSDK'`.
+> ⚠️ **Đổi tên hàng loạt: dùng `perl -pi -e 's/\bTên\b/TênMới/g'`, KHÔNG dùng `sed` của macOS** —
+> BSD sed không có word-boundary `\b`. Thiếu nó thì `PromotionSDKConfig` (type của **lõi**) bị cắt nhầm.
+>
+> ⚠️ **Android: `core.utils` (module UI) khác `core.util` (lõi)** — số nhiều/số ít. Khi sed package phải
+> phân biệt, nếu không sẽ đổi nhầm import của lõi thành package của module.
 
 ---
 

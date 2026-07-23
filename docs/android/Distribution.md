@@ -292,7 +292,7 @@ Hai nguyên nhân khác nhau, đừng lẫn:
 1. **App tự dùng** MaterialButton/ConstraintLayout/TabLayout trong layout của nó. Host thật cũng
    phải khai thứ chính mình dùng — bình thường, không phải khuyết điểm của Maven.
 2. **SDK phơi androidx ra public API nhưng khai `implementation`.** `PRMBaseFragment<VB> : Fragment()`,
-   `PRMBaseActivity<VB> : AppCompatActivity()`, `PRMSDK.openMyPromotion(activity: FragmentActivity)`
+   `PRMBaseActivity<VB> : AppCompatActivity()`, `PromotionSDK.openMyPromotion(activity: FragmentActivity)`
    — host **buộc phải** thấy `Fragment`/`AppCompatActivity` lúc compile để kế thừa. Nhưng
    `implementation` đẩy chúng xuống scope **runtime** trong metadata, nên host không thấy.
 

@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import PromotionSDK
+import PRM
 
 // MARK: - APIPlaygroundViewController
 
@@ -231,14 +231,14 @@ final class APIPlaygroundViewController: UIViewController {
     private func callGetVouchers(cardIndex: Int) {
         setLoading(true, at: cardIndex)
         let page = getVouchersPage
-        PRMSDK.api.getVouchers(
+        PromotionSDK.api.getVouchers(
             page: page,
             size: 10
         ) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let r):
-                let mapItems: ([PRMVoucher]) -> [[String: Any]] = { vouchers in
+                let mapItems: ([PromotionVoucher]) -> [[String: Any]] = { vouchers in
                     vouchers.prefix(5).map { ["id": $0.id, "merchant": $0.merchantName, "title": $0.title] }
                 }
                 let responseJSON = self.formatJSON([
@@ -261,8 +261,8 @@ final class APIPlaygroundViewController: UIViewController {
     private func callFindEligible(cardIndex: Int) {
         setLoading(true, at: cardIndex)
         let myPage = findEligibleMyPage
-        let items = [PRMOrderItem(skuId: "SKU-01", productId: "P-01", quantity: 1, unitPrice: "500000")]
-        PRMSDK.api.findEligible(
+        let items = [PromotionOrderItem(skuId: "SKU-01", productId: "P-01", quantity: 1, unitPrice: "500000")]
+        PromotionSDK.api.findEligible(
             orderId: "ORDER-1234",
             orderValue: "500000",
             items: items,
@@ -274,7 +274,7 @@ final class APIPlaygroundViewController: UIViewController {
             guard let self else { return }
             switch result {
             case .success(let r):
-                let mapItems: ([PRMEligibleOffer]) -> [[String: Any]] = { offers in
+                let mapItems: ([PromotionEligibleOffer]) -> [[String: Any]] = { offers in
                     offers.prefix(5).map {
                         ["id": $0.id, "name": $0.name, "usable": $0.usable,
                          "estimatedDiscount": $0.estimatedDiscount ?? "",
@@ -304,7 +304,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callGetVoucherDetail(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        PRMSDK.api.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
+        PromotionSDK.api.getVoucherDetail(voucherId: "VC-ACT-0002") { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let d):
@@ -325,7 +325,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callValidateDiscounts(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        PRMSDK.api.validateDiscounts(
+        PromotionSDK.api.validateDiscounts(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -356,7 +356,7 @@ final class APIPlaygroundViewController: UIViewController {
 
     private func callCreateRedemption(cardIndex: Int) {
         setLoading(true, at: cardIndex)
-        PRMSDK.api.createRedemption(
+        PromotionSDK.api.createRedemption(
             orderId: "ORDER-1234",
             orderValue: "500000",
             voucherIds: ["VOUCHER-001"]
@@ -410,7 +410,7 @@ final class APIPlaygroundViewController: UIViewController {
         return str
     }
 
-    private func formatError(_ error: PRMSDKError) -> String {
+    private func formatError(_ error: PromotionSDKError) -> String {
         var dict: [String: Any] = [
             "error": true,
             "type": errorType(error),
@@ -420,7 +420,7 @@ final class APIPlaygroundViewController: UIViewController {
         return formatJSON(dict)
     }
 
-    private func errorType(_ error: PRMSDKError) -> String {
+    private func errorType(_ error: PromotionSDKError) -> String {
         switch error {
         case .networkFailure:  return "networkFailure"
         case .sessionExpired:  return "sessionExpired"
@@ -446,7 +446,7 @@ extension APIPlaygroundViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         let card = cards[section]
-        return "[\(card.method)] PRMSDK.api.\(card.title)(...)"
+        return "[\(card.method)] PromotionSDK.api.\(card.title)(...)"
     }
 }
 

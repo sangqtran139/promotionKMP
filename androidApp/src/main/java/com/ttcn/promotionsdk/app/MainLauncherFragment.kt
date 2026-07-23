@@ -7,7 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
-import com.ttcn.promotionsdk.promotionsdkui.base.PRMBaseFragment
+import com.ttcn.prm.ui.base.PRMBaseFragment
 import kotlinx.coroutines.launch
 
 class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {

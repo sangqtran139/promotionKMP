@@ -1,6 +1,6 @@
 //
 //  ChoosePromotionViewController.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 14/5/26.
 //

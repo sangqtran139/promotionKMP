@@ -1,6 +1,6 @@
 //
 //  PRMPromotionCardShimmerCell.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Cell skeleton (shimmer) mô phỏng PromotionCardView lúc đang load.
 //  Dùng chung cho màn Chọn ưu đãi & Ưu đãi của tôi, qua PRMShimmerReplicatorView (PRMDesignKit).

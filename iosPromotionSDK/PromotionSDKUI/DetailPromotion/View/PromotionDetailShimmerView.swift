@@ -1,6 +1,6 @@
 //
 //  PromotionDetailShimmerView.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Skeleton (shimmer) cho màn Chi tiết ưu đãi lúc đang gọi API chi tiết.
 //  Mô phỏng bố cục thật: banner → voucher card → hàng tab → card nội dung → nút áp dụng.

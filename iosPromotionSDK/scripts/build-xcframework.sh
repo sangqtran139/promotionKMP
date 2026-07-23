@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Build PromotionSDK.xcframework (device + simulator slices).
+# Build PRM.xcframework (device + simulator slices).
 #
 # Usage:
 #   ./scripts/build-xcframework.sh [output_dir]
 #
-# Output: <output_dir>/PromotionSDK.xcframework  (default output_dir = ./build)
+# Output: <output_dir>/PRM.xcframework  (default output_dir = ./build)
 #
 # Trước khi chạy, phải có Frameworks/PromotionLogic.xcframework — sinh từ Gradle:
 #   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
@@ -14,11 +14,11 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
-PROJECT="$ROOT/PromotionSDK.xcodeproj"
-SCHEME="PromotionSDK"
-FRAMEWORK="PromotionSDK.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
+PROJECT="$ROOT/PRM.xcodeproj"
+SCHEME="PRM"
+FRAMEWORK="PRM.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
 BUILD_DIR="${1:-$ROOT/build}"
-OUT="$BUILD_DIR/PromotionSDK.xcframework"
+OUT="$BUILD_DIR/PRM.xcframework"
 
 KOTLIN_XCF="$ROOT/Frameworks/PromotionLogic.xcframework"
 # Luôn dựng lại và đồng bộ, KHÔNG chỉ khi thiếu.
@@ -37,7 +37,7 @@ mkdir -p "$BUILD_DIR"
 # `-debug-symbols` của create-xcframework CHỈ nhận đường dẫn tuyệt đối. Tham số $1 có thể là
 # đường dẫn tương đối, nên chuẩn hoá ngay ở đây thay vì nhớ ra lúc lệnh đã fail.
 BUILD_DIR="$(cd "$BUILD_DIR" && pwd)"
-OUT="$BUILD_DIR/PromotionSDK.xcframework"
+OUT="$BUILD_DIR/PRM.xcframework"
 
 archive() {
   local destination="$1" archive_path="$2"

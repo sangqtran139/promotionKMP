@@ -9,7 +9,7 @@
         android:background="@color/color_FBFBFB"
         app:layoutDescription="@xml/home_scene">
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView
+        <com.ttcn.prm.ui.widget.PRMCardView
             android:id="@+id/cardViewTop"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -28,6 +28,6 @@
                 android:background="@color/color_FBFBFB"
                 android:paddingTop="@dimen/view_size_10" />
 
-        </com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView>
+        </com.ttcn.prm.ui.widget.PRMCardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

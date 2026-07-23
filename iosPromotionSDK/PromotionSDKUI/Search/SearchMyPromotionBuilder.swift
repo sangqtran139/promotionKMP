@@ -1,6 +1,6 @@
 //
 //  SearchMyPromotionBuilder.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 11/5/26.
 //

@@ -1,23 +1,23 @@
 //
 //  PromotionApiResult.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Đối ứng 1-1 với `PromotionApiResult.kt` bên Android. Sửa một bên thì sửa cả hai.
 //
 
 import Foundation
 
-/// Kết quả của `PRMSDKApi`. Bên Android là `sealed interface PromotionApiResult<T>` với hai
+/// Kết quả của `PromotionSDKApi`. Bên Android là `sealed interface PromotionApiResult<T>` với hai
 /// nhánh `Success` / `Failure`; Swift đã có `Result` nên chỉ cần đặt tên chung để hai tài liệu khớp nhau.
 ///
 /// API **không ném lỗi nghiệp vụ**: mọi thất bại về `.failure`.
-public typealias PromotionApiResult<T> = Result<T, PRMSDKError>
+public typealias PromotionApiResult<T> = Result<T, PromotionSDKError>
 
 /// Lỗi trả về từ SDK. Đối tác switch trên enum này để xử lý từng loại.
 ///
-/// Bên Android là `sealed class PRMSDKError : Exception()`, và `errorDescription` ở đây tương
+/// Bên Android là `sealed class PromotionSDKError : Exception()`, và `errorDescription` ở đây tương
 /// ứng với `message` của `Throwable` bên đó.
-public enum PRMSDKError: Error, LocalizedError {
+public enum PromotionSDKError: Error, LocalizedError {
     /// Lỗi từ server: `code` là HTTP status nếu có, `message` là mô tả của server.
     case networkFailure(code: Int?, message: String)
     /// Token hết hạn — host refresh token rồi gọi lại.

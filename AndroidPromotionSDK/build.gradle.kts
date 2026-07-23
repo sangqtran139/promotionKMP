@@ -22,7 +22,7 @@ version = sdkVersion
 
 android {
     // Giữ đúng namespace của SDK gốc: `R` và `databinding.*` sinh ra ở com.ttcn.promotionsdk.*
-    namespace = "com.ttcn.promotionsdk"
+    namespace = "com.ttcn.prm"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     buildFeatures {

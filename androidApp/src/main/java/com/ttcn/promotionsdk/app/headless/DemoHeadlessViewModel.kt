@@ -2,8 +2,8 @@ package com.ttcn.promotionsdk.app.headless
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.entry.PRMSDK
-import com.ttcn.promotionsdk.entry.api.PRMApiResult
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.entry.api.PromotionApiResult
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -11,18 +11,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Chế độ headless: đối tác tự dựng UI, chỉ gọi [PRMSDK.api].
+ * Chế độ headless: đối tác tự dựng UI, chỉ gọi [PromotionSDK.api].
  *
- * Không một import nào từ `promotionLogic` — đó là mục đích của lớp wrapper `PRMSDKApi`:
+ * Không một import nào từ `promotionLogic` — đó là mục đích của lớp wrapper `PromotionSDKApi`:
  * host chỉ tích hợp AndroidPromotionSDK, lõi nằm ngoài compile classpath.
  */
 class DemoHeadlessViewModel : ViewModel() {
 
-    private val api = PRMSDK.api
+    private val api = PromotionSDK.api
 
-    // ─── Đọc lại giá trị đã set qua PRMSDK.updateContext() ─────────────
-    private val orderId get() = PRMSDK.currentOrderId.orEmpty()
-    private val orderValue get() = PRMSDK.currentOrderValue.orEmpty()
+    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateContext() ─────────────
+    private val orderId get() = PromotionSDK.currentOrderId.orEmpty()
+    private val orderValue get() = PromotionSDK.currentOrderValue.orEmpty()
 
     // ─── State ────────────────────────────────────────────────────────────────
     private val _isLoading = MutableStateFlow(false)
@@ -37,13 +37,13 @@ class DemoHeadlessViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            val s = PRMSDK.session
+            val s = PromotionSDK.session
             emit("── SDK context ──────────────────────")
             emit("   customerId  : ${s?.customerId ?: "(null)"}")
             emit("   language    : ${s?.language ?: "(null)"}")
-            emit("   orderId     : ${PRMSDK.currentOrderId ?: "(null)"}")
-            emit("   orderValue  : ${PRMSDK.currentOrderValue ?: "(null)"}")
-            emit("   serviceCode : ${PRMSDK.currentServiceCode ?: "(null)"}")
+            emit("   orderId     : ${PromotionSDK.currentOrderId ?: "(null)"}")
+            emit("   orderValue  : ${PromotionSDK.currentOrderValue ?: "(null)"}")
+            emit("   serviceCode : ${PromotionSDK.currentServiceCode ?: "(null)"}")
             emit("─────────────────────────────────────")
         }
     }
@@ -52,7 +52,7 @@ class DemoHeadlessViewModel : ViewModel() {
     fun searchVouchers() {
         launchStep {
             when (val result = api.getVouchers(page = 0, size = 10)) {
-                is PRMApiResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val vouchers = result.data.vouchers
                     firstVoucherId = vouchers.firstOrNull()?.id
                     emit("✅ getVouchers")
@@ -61,7 +61,7 @@ class DemoHeadlessViewModel : ViewModel() {
                     if (vouchers.size > 3) emit("   ... +${vouchers.size - 3} more")
                 }
 
-                is PRMApiResult.Failure -> emit("❌ getVouchers: ${result.error.message}")
+                is PromotionApiResult.Failure -> emit("❌ getVouchers: ${result.error.message}")
             }
         }
     }
@@ -71,7 +71,7 @@ class DemoHeadlessViewModel : ViewModel() {
         val voucherId = requireVoucherId() ?: return
         launchStep {
             when (val result = api.getVoucherDetail(voucherId)) {
-                is PRMApiResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val detail = result.data
                     emit("✅ getVoucherDetail [${detail.id}]")
                     emit("   title      : ${detail.title}")
@@ -80,7 +80,7 @@ class DemoHeadlessViewModel : ViewModel() {
                     emit("   status     : ${detail.status}")
                 }
 
-                is PRMApiResult.Failure -> emit("❌ getVoucherDetail: ${result.error.message}")
+                is PromotionApiResult.Failure -> emit("❌ getVoucherDetail: ${result.error.message}")
             }
         }
     }
@@ -95,7 +95,7 @@ class DemoHeadlessViewModel : ViewModel() {
                 voucherIds = listOf(voucherId),
             )
             when (result) {
-                is PRMApiResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val data = result.data
                     validatedVoucherIds = data.items.filter { it.isValid }.map { it.objectId }
                     emit("✅ validateDiscounts")
@@ -107,7 +107,7 @@ class DemoHeadlessViewModel : ViewModel() {
                     }
                 }
 
-                is PRMApiResult.Failure -> emit("❌ validateDiscounts: ${result.error.message}")
+                is PromotionApiResult.Failure -> emit("❌ validateDiscounts: ${result.error.message}")
             }
         }
     }
@@ -125,7 +125,7 @@ class DemoHeadlessViewModel : ViewModel() {
                 voucherIds = validatedVoucherIds,
             )
             when (result) {
-                is PRMApiResult.Success -> {
+                is PromotionApiResult.Success -> {
                     val data = result.data
                     emit("✅ createRedemption")
                     emit("   sessionId    : ${data.sessionId}")
@@ -137,7 +137,7 @@ class DemoHeadlessViewModel : ViewModel() {
                     }
                 }
 
-                is PRMApiResult.Failure -> emit("❌ createRedemption: ${result.error.message}")
+                is PromotionApiResult.Failure -> emit("❌ createRedemption: ${result.error.message}")
             }
         }
     }

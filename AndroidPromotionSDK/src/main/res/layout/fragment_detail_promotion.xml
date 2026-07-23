@@ -19,7 +19,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+            <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgBanner"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/tokenSizing184"
@@ -41,7 +41,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/prm_ic_back_with_bg" />
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView
+        <com.ttcn.prm.ui.widget.PRMCardView
             android:id="@+id/cardViewTop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -61,7 +61,7 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="@dimen/view_size_16">
 
-                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCircleImageView
+                <com.ttcn.prm.ui.widget.PRMCircleImageView
                     android:id="@+id/circleLogo"
                     android:layout_width="@dimen/view_size_44"
                     android:layout_height="@dimen/view_size_44"
@@ -71,7 +71,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/txtVoucherName"
                     style="@style/fontPRMDisPlayRegular14"
                     android:layout_width="wrap_content"
@@ -83,7 +83,7 @@
                     app:layout_constraintTop_toTopOf="@+id/circleLogo"
                     tools:text="The Coffee House" />
 
-                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/tvContent"
                     style="@style/fontSfDisplayBold16"
                     android:layout_width="0dp"
@@ -97,7 +97,7 @@
                     app:layout_constraintTop_toBottomOf="@+id/circleLogo"
                     tools:text="Giảm 50k cho hóa đơn từ 200k áp dụng tại cửa hàng The Coffee House" />
 
-                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/tvExpired"
                     style="@style/fontPRMDisPlayRegular14"
                     android:layout_width="wrap_content"
@@ -110,7 +110,7 @@
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
-        </com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView>
+        </com.ttcn.prm.ui.widget.PRMCardView>
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ctlContent"
@@ -171,7 +171,7 @@
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMButton
+        <com.ttcn.prm.ui.widget.PRMButton
             android:id="@+id/tvUse"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

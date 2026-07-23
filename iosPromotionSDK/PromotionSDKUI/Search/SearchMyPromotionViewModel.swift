@@ -1,6 +1,6 @@
 //
 //  SearchMyPromotionViewModel.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Lớp bọc mỏng quanh SearchMyPromotionStore (tầng UI-logic dùng chung ở promotionLogic).
 //  ĐỒNG NHẤT với `SearchMyPromotionViewModel` bên Android — cùng `store` / `bindStore` /

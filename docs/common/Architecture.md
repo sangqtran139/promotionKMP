@@ -53,23 +53,23 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
 └─────────────────────────────────────┬──────────────────────────────────────┘
                                       ▼
   PromotionManager        (androidApp / iosApp — wrapper / anti-corruption)
-  • map model APP ⇄ model SDK   • singleton   • adapter cho PRMSDKCallback
+  • map model APP ⇄ model SDK   • singleton   • adapter cho PromotionSDKCallback
   • nuốt ràng buộc: token chụp lúc init · updateContext trước màn có voucher
                                       │  gọi entry tĩnh
                                       ▼
-  PRMSDK            ← ENTRY công khai; chữ ký chỉ Foundation/UIKit (iOS) /
+  PromotionSDK            ← ENTRY công khai; chữ ký chỉ Foundation/UIKit (iOS) /
                             không lộ core type (Android). Android: `object`;
                             iOS: `final class` + `_impl: NSObject` box.
   ├─ vòng đời   initialize · release · isInitialized · updateContext · configure(theme)
   ├─ màn hình   openMyPromotion · openPromotionDetail · createEndowView → PRMEndowView
-  ├─ headless   api: PRMSDKApi
-  └─ sự kiện    PRMSDKCallback (6 sự kiện)
+  ├─ headless   api: PromotionSDKApi
+  └─ sự kiện    PromotionSDKCallback (6 sự kiện)
                                       │
         Android: `object` giữ callback/context rồi uỷ quyền.
         iOS: PromotionSDKImpl (box) giữ đồ thị sống + phát 6 sự kiện.
                                       ▼
-  PRMSDKApi        ← RANH GIỚI headless: map model lõi → DTO,
-                            PromotionResult → PRMApiResult. KHÔNG chứa nghiệp vụ.
+  PromotionSDKApi        ← RANH GIỚI headless: map model lõi → DTO,
+                            PromotionResult → PromotionApiResult. KHÔNG chứa nghiệp vụ.
                                       │
                                       ▼
   PromotionContainer  (core/di, `object` dùng chung KMP)  →  SdkDi (engine DI nội bộ)
@@ -84,8 +84,8 @@ Các nút thắt cần nhớ:
 
 - **`PromotionManager`** là chỗ *duy nhất* host chạm SDK — upgrade/đổi SDK chỉ sửa một file. Hợp đồng
   `PromotionServing` đối xứng hai nền tảng, xem [InitParity.md §6](./InitParity.md#6-wrapper-host--hợp-đồng-chung).
-- **`PRMSDK`** giữ chữ ký sạch (không lộ RxSwift/Kotlin/core type) — xem [PublicApi.md](./PublicApi.md).
-- **`PRMSDKApi`** là *ranh giới phân phối* (map DTO), **không** phải use case — nghiệp vụ, gác cờ,
+- **`PromotionSDK`** giữ chữ ký sạch (không lộ RxSwift/Kotlin/core type) — xem [PublicApi.md](./PublicApi.md).
+- **`PromotionSDKApi`** là *ranh giới phân phối* (map DTO), **không** phải use case — nghiệp vụ, gác cờ,
   chuẩn hoá `errorCode` đều nằm ở `PromotionUseCases` của lõi.
 - **`PromotionContainer` / `SdkDi`** là DI tự viết — **không** sửa (xem [DependencyInjection.md](./DependencyInjection.md)).
 - **`PromotionFeatureGate`** gác cờ cho *cả* UI lẫn headless — kill-switch không có cửa sau.
@@ -176,7 +176,7 @@ Chi tiết: [AndroidUIGuide.md](../android/UIGuide.md).
   `handleAction` bên Android. Không Combine, không RxSwift.
 - **ViewController** (`PRMBaseViewController`): bind UI qua **một** `render(state)`, load XIB theo tên class.
 
-Public facade `PRMSDK` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
+Public facade `PromotionSDK` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ
 (domain model Kotlin) — tránh crash đệ quy `deserializeClass`.
 
 Chi tiết: [IosUIGuide.md](../ios/UIGuide.md).

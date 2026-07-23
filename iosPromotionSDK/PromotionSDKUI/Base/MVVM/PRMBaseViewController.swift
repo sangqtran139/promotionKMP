@@ -1,6 +1,6 @@
 //
 //  PRMBaseViewController.swift
-//  PRMSDK
+//  PromotionSDK
 //
 
 import UIKit

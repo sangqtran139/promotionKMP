@@ -1,6 +1,6 @@
 //
 //  StoreObserving.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Cầu observe store dùng chung cho các ViewModel bọc shared store (promotionLogic).
 //  Gom phần lặp lại: `store.watchState { ... }` + hop về main thread + trả PromotionCancellable.

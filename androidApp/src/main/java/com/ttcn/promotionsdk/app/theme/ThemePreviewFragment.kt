@@ -31,22 +31,22 @@ import com.ttcn.promotionsdk.app.databinding.FragmentThemePreviewBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeColorTokenBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
-import com.ttcn.promotionsdk.databinding.ItemChoosePromotionBinding
-import com.ttcn.promotionsdk.entry.PRMSDK
-import com.ttcn.promotionsdk.promotionsdkui.feature.promotion.endowview.PRMEndowView
-import com.ttcn.promotionsdk.promotionsdkui.theme.PRMSDKTheme
-import com.ttcn.promotionsdk.promotionsdkui.theme.applytoken.PRMListItemTheme
-import com.ttcn.promotionsdk.promotionsdkui.theme.PRMThemeDisplay
-import com.ttcn.promotionsdk.promotionsdkui.theme.PRMThemeDisplay.Defaults
-import com.ttcn.promotionsdk.promotionsdkui.theme.applytoken.PRMTabUnderlineTheme
-import com.ttcn.promotionsdk.promotionsdkui.theme.toToken
-import com.ttcn.promotionsdk.promotionsdkui.widget.PRMSearchType
-import com.ttcn.promotionsdk.promotionsdkui.theme.applytoken.PRMTokenColorParser
-import com.ttcn.promotionsdk.promotionsdkui.theme.applytoken.PRMTokenDrawableFactory
-import com.ttcn.promotionsdk.promotionsdkui.widget.PRMButton
-import com.ttcn.promotionsdk.promotionsdkui.widget.PRMSearchField
+import com.ttcn.prm.databinding.ItemChoosePromotionBinding
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
+import com.ttcn.prm.ui.theme.PromotionSDKTheme
+import com.ttcn.prm.ui.theme.applytoken.PromotionListItemTheme
+import com.ttcn.prm.ui.theme.PromotionThemeDisplay
+import com.ttcn.prm.ui.theme.PromotionThemeDisplay.Defaults
+import com.ttcn.prm.ui.theme.applytoken.TabUnderlineTheme
+import com.ttcn.prm.ui.theme.toToken
+import com.ttcn.prm.ui.widget.PRMSearchType
+import com.ttcn.prm.ui.theme.applytoken.TokenColorParser
+import com.ttcn.prm.ui.theme.applytoken.TokenDrawableFactory
+import com.ttcn.prm.ui.widget.PRMButton
+import com.ttcn.prm.ui.widget.PRMSearchField
 import kotlin.math.roundToInt
-import com.ttcn.promotionsdk.R as SdkR
+import com.ttcn.prm.R as SdkR
 
 class ThemePreviewFragment : Fragment() {
 
@@ -76,7 +76,7 @@ class ThemePreviewFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        sdkDefaults = PRMThemeDisplay.load(requireContext())
+        sdkDefaults = PromotionThemeDisplay.load(requireContext())
         reloadDisplayValues()
 
         headerTopPadding = binding.headerContainer.paddingTop
@@ -118,8 +118,8 @@ class ThemePreviewFragment : Fragment() {
 
     private fun reloadDisplayValues() {
         // SDK là nơi lưu theme; đọc lại theme đang áp (đã khôi phục từ lần trước nếu có).
-        val saved = PRMSDK.currentTheme()
-        themeDisplay = PRMThemeDisplay.mergeWithSaved(requireContext(), sdkDefaults, saved)
+        val saved = PromotionSDK.currentTheme()
+        themeDisplay = PromotionThemeDisplay.mergeWithSaved(requireContext(), sdkDefaults, saved)
     }
 
     private fun registerFields() {
@@ -548,12 +548,12 @@ class ThemePreviewFragment : Fragment() {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return null
         val withHash = if (trimmed.startsWith("#")) trimmed else "#$trimmed"
-        if (PRMTokenColorParser.parse(withHash) == null) return null
+        if (TokenColorParser.parse(withHash) == null) return null
         return withHash.uppercase()
     }
 
     private fun updatePaletteSwatch(swatch: View, paletteIcon: View, hex: String?) {
-        val color = hex?.let { PRMTokenColorParser.parse(it) }
+        val color = hex?.let { TokenColorParser.parse(it) }
         if (color != null) {
             swatch.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -598,7 +598,7 @@ class ThemePreviewFragment : Fragment() {
         var currentArgb = Color.BLACK
         val initial = normalizeHex(targetEditText.text.toString())
         if (initial != null) {
-            PRMTokenColorParser.parse(initial)?.let { parsed ->
+            TokenColorParser.parse(initial)?.let { parsed ->
                 currentArgb = parsed
                 includeAlpha = initial.length == 9
             }
@@ -652,7 +652,7 @@ class ThemePreviewFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 normalizeHex(edtHex.text.toString())?.let { hex ->
                     includeAlpha = hex.length == 9
-                    PRMTokenColorParser.parse(hex)?.let { refreshFromArgb(it) }
+                    TokenColorParser.parse(hex)?.let { refreshFromArgb(it) }
                 }
                 true
             } else {
@@ -783,10 +783,10 @@ class ThemePreviewFragment : Fragment() {
             val radius = token.cornerRadius ?: 7f
             val bg = if (selected) token.activeBackgroundColor else token.inactiveBackgroundColor
             val fg = if (selected) token.activeTextColor else token.inactiveTextColor
-            val bgColor = bg?.let { PRMTokenColorParser.parse(it) } ?: Color.GRAY
-            val fgColor = fg?.let { PRMTokenColorParser.parse(it) } ?: Color.BLACK
+            val bgColor = bg?.let { TokenColorParser.parse(it) } ?: Color.GRAY
+            val fgColor = fg?.let { TokenColorParser.parse(it) } ?: Color.BLACK
             tv.setTextColor(fgColor)
-            tv.background = PRMTokenDrawableFactory.roundedRect(bgColor, radius, requireContext())
+            tv.background = TokenDrawableFactory.roundedRect(bgColor, radius, requireContext())
             row.addView(tv)
         }
         showBottomSheet(R.string.prm_theme_sheet_component_rv_tabs, row)
@@ -802,7 +802,7 @@ class ThemePreviewFragment : Fragment() {
             ).also { it.gravity = android.view.Gravity.BOTTOM }
             setBackgroundColor(
                 themeDisplay.tabUnderline.backgroundColor
-                    ?.let { PRMTokenColorParser.parse(it) }
+                    ?.let { TokenColorParser.parse(it) }
                     ?: ContextCompat.getColor(requireContext(), SdkR.color.color_D3D3D3),
             )
         }
@@ -810,7 +810,7 @@ class ThemePreviewFragment : Fragment() {
             addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_info)))
             addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_guide)))
             setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            PRMTabUnderlineTheme.applyToken(this, themeDisplay.tabUnderline)
+            TabUnderlineTheme.applyToken(this, themeDisplay.tabUnderline)
         }
         val container = FrameLayout(requireContext()).apply {
             addView(vIndicator)
@@ -844,12 +844,12 @@ class ThemePreviewFragment : Fragment() {
 
         val activeBinding = ItemChoosePromotionBinding.inflate(inflater, container, false)
         bindListItemPreviewState(activeBinding, showExpiredBadge = false)
-        PRMListItemTheme.applyToken(activeBinding, token)
+        PromotionListItemTheme.applyToken(activeBinding, token)
         container.addView(activeBinding.root)
 
         val expiredBinding = ItemChoosePromotionBinding.inflate(inflater, container, false)
         bindListItemPreviewState(expiredBinding, showExpiredBadge = true)
-        PRMListItemTheme.applyToken(expiredBinding, token)
+        PromotionListItemTheme.applyToken(expiredBinding, token)
         val expiredLp = expiredBinding.root.layoutParams as LinearLayout.LayoutParams
         expiredLp.topMargin = pad
         expiredBinding.root.layoutParams = expiredLp
@@ -885,8 +885,8 @@ class ThemePreviewFragment : Fragment() {
     }
 
     private fun onReset() {
-        PRMSDK.configure(null)   // SDK xoá theme đã lưu
-        sdkDefaults = PRMThemeDisplay.load(requireContext())
+        PromotionSDK.configure(null)   // SDK xoá theme đã lưu
+        sdkDefaults = PromotionThemeDisplay.load(requireContext())
         themeDisplay = sdkDefaults
         buildCards()
     }
@@ -911,8 +911,8 @@ class ThemePreviewFragment : Fragment() {
     }
 
     /** Áp + lưu vào SDK, rồi nạp lại form để thấy đúng giá trị vừa áp. */
-    private fun applyTheme(theme: PRMSDKTheme, @StringRes messageRes: Int) {
-        PRMSDK.configure(theme)
+    private fun applyTheme(theme: PromotionSDKTheme, @StringRes messageRes: Int) {
+        PromotionSDK.configure(theme)
         reloadDisplayValues()
         buildCards()
         Toast.makeText(requireContext(), getString(messageRes), Toast.LENGTH_LONG).show()
@@ -920,8 +920,8 @@ class ThemePreviewFragment : Fragment() {
 
     private fun onApply() {
         syncFieldsFromViews()
-        val config = PRMThemeDisplay.themeFromDisplayValues(themeDisplay, sdkDefaults)
-        PRMSDK.configure(config)   // SDK áp + lưu
+        val config = PromotionThemeDisplay.themeFromDisplayValues(themeDisplay, sdkDefaults)
+        PromotionSDK.configure(config)   // SDK áp + lưu
         parentFragmentManager.popBackStack()
         Toast.makeText(
             requireActivity(),

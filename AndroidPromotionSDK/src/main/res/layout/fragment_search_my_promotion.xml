@@ -24,7 +24,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/prm_ic_back_in_onboarding" />
 
-        <com.ttcn.promotionsdk.promotionsdkui.widget.PRMSearchField
+        <com.ttcn.prm.ui.widget.PRMSearchField
             android:id="@+id/sfEndow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -44,7 +44,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sfEndow">
 
-            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+            <com.ttcn.prm.ui.widget.PRMTextView
                 android:id="@+id/tvTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -78,7 +78,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/sfEndow">
 
-            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+            <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgNoData"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -87,7 +87,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+            <com.ttcn.prm.ui.widget.PRMTextView
                 android:id="@+id/tvNoResult"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -104,7 +104,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/imgNoData" />
 
-            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+            <com.ttcn.prm.ui.widget.PRMTextView
                 android:id="@+id/tvNoResultSubtext"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -1,6 +1,6 @@
 //
 //  ServiceSelectorBuilder.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Lọc danh mục dịch vụ host cung cấp (`PromotionContainer.requireConfig().availableServices`)
 //  theo `applicableProducts` của voucher → items cho bottom sheet "Chọn dịch vụ".

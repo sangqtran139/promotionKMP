@@ -1,9 +1,9 @@
 //
 //  PromotionSDKImpl.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Internal implementation box — keeps all PromotionLogic/PRMPromotionUI types out of
-//  PRMSDK's public class layout and module interface so the consuming app's compiler
+//  PromotionSDK's public class layout and module interface so the consuming app's compiler
 //  never needs to load those modules for class metadata generation.
 //
 
@@ -12,7 +12,7 @@ import UIKit
 @_implementationOnly import PRMKotlinBridge
 @_implementationOnly import PRMDesignKit
 
-// Internal callbacks used by PRMSDK to communicate back.
+// Internal callbacks used by PromotionSDK to communicate back.
 typealias OnApplyVoucher = (String) -> Void  // voucherId
 typealias OnClearVoucher = () -> Void
 
@@ -43,7 +43,7 @@ final class PromotionSDKImpl: NSObject {
         set { context.orderValue = newValue }
     }
     /// Dòng đơn hàng host truyền vào — lưu trong `context` (provider) để store dùng chung đọc được.
-    var orderItems: [PRMOrderItem] {
+    var orderItems: [PromotionOrderItem] {
         get { context.orderItems }
         set { context.orderItems = newValue }
     }
@@ -59,7 +59,7 @@ final class PromotionSDKImpl: NSObject {
     private var lastNotifiedCount: Int = -1
     private var lastNotifiedApplied = false
 
-    init(options: PRMSDKOptions) {
+    init(options: PromotionSDKOptions) {
         self.context = PromotionMutableContext(session: options.session)
         // Khởi tạo lõi Kotlin qua map public→core (đối ứng `options.toCoreConfig` bên Android).
         // `isDebug`: bản DEBUG in toàn bộ request/response của Ktor ra console để đối chiếu schema thật
@@ -78,7 +78,7 @@ final class PromotionSDKImpl: NSObject {
 
     /// Lúc khởi tạo: host truyền theme → áp + lưu; không truyền → khôi phục theme đã lưu.
     /// Phải gọi **sau** `PromotionContainer.initialize` (đã chạy trong init) để `preferences` sẵn sàng.
-    func restoreOrApplyTheme(_ theme: PRMSDKTheme?) {
+    func restoreOrApplyTheme(_ theme: PromotionSDKTheme?) {
         if let theme {
             applyTheme(theme)
             PromotionThemeStore.save(theme)
@@ -88,7 +88,7 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// `configure(theme:)`: áp + persist. `nil` = reset và xoá theme đã lưu.
-    func applyAndPersistTheme(_ theme: PRMSDKTheme?) {
+    func applyAndPersistTheme(_ theme: PromotionSDKTheme?) {
         applyTheme(theme)
         if let theme {
             PromotionThemeStore.save(theme)
@@ -98,7 +98,7 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Map public theme (UIColor/CGFloat) → PRMDesignKit registry config. Truyền nil để reset.
-    func applyTheme(_ theme: PRMSDKTheme?) {
+    func applyTheme(_ theme: PromotionSDKTheme?) {
         guard let theme else {
             PRMThemeRegistry.shared.clear()
             return
@@ -161,23 +161,23 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Map config nội bộ trong registry → public theme (đảo ngược applyTheme).
-    func currentTheme() -> PRMSDKTheme? {
+    func currentTheme() -> PromotionSDKTheme? {
         guard let config = PRMThemeRegistry.shared.current else { return nil }
-        return PRMSDKTheme(
+        return PromotionSDKTheme(
             buttonToken: config.button.map {
-                PRMButtonToken(
+                ButtonToken(
                     backgroundColor: $0.backgroundColor, textColor: $0.textColor,
                     shadowColor: $0.shadowColor, cornerRadius: $0.cornerRadius
                 )
             },
             searchBarToken: config.searchBar.map {
-                PRMSearchBarToken(
+                SearchBarToken(
                     borderColor: $0.borderColor, hintTextColor: $0.hintTextColor,
                     textColor: $0.textColor, iconColor: $0.iconColor, cornerRadius: $0.cornerRadius
                 )
             },
             listItemToken: config.listItem.map {
-                PRMListItemToken(
+                ListItemToken(
                     linkTextColor: $0.linkTextColor, usedBadgeTextColor: $0.usedBadgeTextColor,
                     usedBadgeBackgroundColor: $0.usedBadgeBackgroundColor,
                     radioButtonStrokeColor: $0.radioUnselectedColor,
@@ -185,7 +185,7 @@ final class PromotionSDKImpl: NSObject {
                 )
             },
             tabChipToken: config.tabChip.map {
-                PRMTabChipToken(
+                TabChipToken(
                     activeBackgroundColor: $0.activeBackgroundColor,
                     inactiveBackgroundColor: $0.inactiveBackgroundColor,
                     activeTextColor: $0.activeTextColor, inactiveTextColor: $0.inactiveTextColor,
@@ -193,13 +193,13 @@ final class PromotionSDKImpl: NSObject {
                 )
             },
             tabUnderlineToken: config.tabUnderline.map {
-                PRMTabUnderlineToken(
+                TabUnderlineToken(
                     indicatorColor: $0.indicatorColor, activeTextColor: $0.activeTextColor,
                     inactiveTextColor: $0.inactiveTextColor, backgroundColor: $0.backgroundColor
                 )
             },
             discountBadgeToken: config.discountBadge.map {
-                PRMDiscountBadgeToken(
+                DiscountBadgeToken(
                     availableTextColor: $0.availableTextColor, unavailableTextColor: $0.unavailableTextColor,
                     availableBackgroundColor: $0.availableBackgroundColor,
                     unavailableBackgroundColor: $0.unavailableBackgroundColor,
@@ -211,21 +211,21 @@ final class PromotionSDKImpl: NSObject {
 
     /// Facade headless: đọc customerId/token thẳng từ `PromotionRequestContextProvider` của lõi
     /// (đối xứng Android), gọi thẳng `PromotionUseCases`; không cần truyền context vào đây.
-    func makeApi() -> PRMSDKApi {
-        PRMSDKApi()
+    func makeApi() -> PromotionSDKApi {
+        PromotionSDKApi()
     }
 
     /// Cập nhật order cho luồng widget thanh toán (eligible + validate dùng các giá trị này).
-    func updateOrder(orderId: String?, orderValue: String?, orderItems: [PRMOrderItem]? = nil) {
+    func updateOrder(orderId: String?, orderValue: String?, orderItems: [PromotionOrderItem]? = nil) {
         if let orderId { self.orderId = orderId }
         if let orderValue { self.orderValue = orderValue }
         if let orderItems { self.orderItems = orderItems }
     }
 
-    /// Ghi context động — gọi từ `PRMSDK.updateContext`. Overwrite cả 5 trường (nil/rỗng = xoá),
-    /// đối ứng `PRMSDK.updateContext` bên Android (ghi thẳng vào `PromotionMutableContext`).
+    /// Ghi context động — gọi từ `PromotionSDK.updateContext`. Overwrite cả 5 trường (nil/rỗng = xoá),
+    /// đối ứng `PromotionSDK.updateContext` bên Android (ghi thẳng vào `PromotionMutableContext`).
     func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?,
-                       orderItems: [PRMOrderItem]) {
+                       orderItems: [PromotionOrderItem]) {
         context.orderId = orderId
         context.orderValue = orderValue
         context.serviceCode = serviceCode
@@ -233,7 +233,7 @@ final class PromotionSDKImpl: NSObject {
         context.orderItems = orderItems
     }
 
-    /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PRMSDK.release()` bên Android:
+    /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PromotionSDK.release()` bên Android:
     /// **không** xoá theme đã lưu (nó sống qua release/init), chỉ reset registry đang chạy.
     func teardown() {
         PromotionContainer.shared.clear()
@@ -258,7 +258,7 @@ final class PromotionSDKImpl: NSObject {
 
     /// Popup lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
     func showFeatureDisabledDialog(on viewController: UIViewController) {
-        let message = PRMSDKError.featureDisabled.errorDescription
+        let message = PromotionSDKError.featureDisabled.errorDescription
             ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
         PRMConfirmationDialog.showError(message, in: viewController.view)
     }

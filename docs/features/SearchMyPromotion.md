@@ -3,7 +3,7 @@
 Màn hình **tìm kiếm voucher của khách hàng** theo từ khoá, có phân trang và trạng thái rỗng/lỗi.
 
 - **Package:** `ui/feature/promotion/searchmypromotion`
-- **Thành phần:** `PRMSearchMyPromotionFragment`, `SearchMyPromotionViewModel`, `SearchMyPromotionContract`
+- **Thành phần:** `SearchMyPromotionFragment`, `SearchMyPromotionViewModel`, `SearchMyPromotionContract`
 
 ---
 
@@ -63,7 +63,7 @@ Lỗi → onError → sendEffect(ShowError)
 Bấm "Sử dụng" trên một kết quả → `ServiceSelectorBottomSheet` (đúng bộ dịch vụ như màn "Ưu đãi của
 tôi"): lọc bằng `servicesForApplicableProducts` ở `promotionLogic`, giao giữa `applicableProducts` của
 voucher và `availableServices` host truyền lúc `initialize`. Chọn xong → phát
-`PRMSDK.getCallback()?.onServiceSelected(...)` cho host.
+`PromotionSDK.getCallback()?.onServiceSelected(...)` cho host.
 
 Đối ứng `SearchMyPromotionViewController.myPromotionCellDidTapUse` bên iOS — xem
 [InitParity §3](../common/InitParity.md#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên).

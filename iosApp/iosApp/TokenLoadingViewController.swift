@@ -75,7 +75,7 @@ final class TokenLoadingViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Demo PRMSDK"
+        title = "Demo PromotionSDK"
         view.backgroundColor = .systemBackground
         setupLayout()
         startLogin()
@@ -136,7 +136,7 @@ final class TokenLoadingViewController: UIViewController {
         }
     }
 
-    /// Đi qua wrapper `PromotionManager` (anti-corruption) — không gọi `PRMSDK` trực tiếp.
+    /// Đi qua wrapper `PromotionManager` (anti-corruption) — không gọi `PromotionSDK` trực tiếp.
     private func initSdk(customerId: String, token: String) {
         promotions.start(customerId: customerId, token: token, availableServices: demoServices)
     }

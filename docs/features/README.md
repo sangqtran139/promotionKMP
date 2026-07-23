@@ -13,14 +13,14 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 | Tính năng | Màn Android | Màn iOS | Use case dùng |
 |---|---|---|---|
-| Ưu đãi của tôi | `PRMMyPromotionFragment` | `MyPromotionViewController` | `searchVouchers` |
-| Chọn ưu đãi (checkout) | `PRMChoosePromotionFragment` | `ChoosePromotionViewController` | `findEligible`, `validateDiscounts`, `createRedemption` |
-| Chi tiết ưu đãi | `PRMDetailFragment` | `PromotionDetailViewController` | `getVoucherDetail` |
-| Tìm kiếm ưu đãi | `PRMSearchMyPromotionFragment` | `SearchMyPromotionViewController` | `searchVouchers` (kèm `keyword`) |
+| Ưu đãi của tôi | `MyPromotionFragment` | `MyPromotionViewController` | `searchVouchers` |
+| Chọn ưu đãi (checkout) | `ChoosePromotionFragment` | `ChoosePromotionViewController` | `findEligible`, `validateDiscounts`, `createRedemption` |
+| Chi tiết ưu đãi | `PromotionDetailFragment` | `PromotionDetailViewController` | `getVoucherDetail` |
+| Tìm kiếm ưu đãi | `SearchMyPromotionFragment` | `SearchMyPromotionViewController` | `searchVouchers` (kèm `keyword`) |
 | Widget nhúng | `PRMEndowView` | `PRMEndowView` | `findEligible` |
-| Entry point | `PRMSDK` | `PRMSDK` | — |
-| Callback host | `PRMSDKCallback` | `PRMSDKCallback` | — |
-| Theme | `PRMSDKTheme` | `PRMSDKTheme` | — |
+| Entry point | `PromotionSDK` | `PromotionSDK` | — |
+| Callback host | `PromotionSDKCallback` | `PromotionSDKCallback` | — |
+| Theme | `PromotionSDKTheme` | `PromotionSDKTheme` | — |
 | Feature flag | `FeatureFlagViewModel` | `BaseRouter+FeatureFlag` | `featureFlags.*` |
 
 > Bản iOS cũ tên `VDSPromotion`, `SelectPromotionViewController`, `SelectPromtionView` (thiếu chữ `o`).

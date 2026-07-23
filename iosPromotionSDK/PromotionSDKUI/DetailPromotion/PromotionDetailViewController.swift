@@ -1,6 +1,6 @@
 //
 //  PromotionDetailViewController.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 13/5/26.
 //
@@ -208,7 +208,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     private func showServiceSelector(_ items: [ServiceSelectorItem]) {
         let voucherId = viewModel.voucherId
         ServiceSelectorBottomSheet.present(from: self, services: items) { [weak self] service in
-            PRMSDK.getCallback()?.onServiceSelected(selection: PRMServiceSelection(
+            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
                 voucherId: voucherId,
                 serviceCode: service.serviceCode,
                 serviceName: service.serviceName,

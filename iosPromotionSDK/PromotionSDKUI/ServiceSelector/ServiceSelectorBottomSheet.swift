@@ -1,6 +1,6 @@
 //
 //  ServiceSelectorBottomSheet.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Bottom sheet "Chọn dịch vụ" — hiện khi user bấm "Áp dụng" trên voucher.
 //  Liệt kê các dịch vụ khả dụng (lưới 3 cột) được lọc theo `applicableProducts`

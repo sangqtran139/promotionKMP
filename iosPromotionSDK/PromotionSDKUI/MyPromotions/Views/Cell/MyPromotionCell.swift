@@ -1,7 +1,7 @@
 
 //
 //  MyPromotionCell.swift
-//  PRMSDK
+//  PromotionSDK
 //
 //  Created by thachlh on 6/5/26.
 //

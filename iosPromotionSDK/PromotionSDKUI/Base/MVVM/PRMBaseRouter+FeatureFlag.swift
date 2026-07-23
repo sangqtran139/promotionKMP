@@ -25,7 +25,7 @@ extension PRMBaseRouter {
             return true
         }
         if let container = viewController?.view ?? navigator?.topViewController?.view {
-            let message = PRMSDKError.featureDisabled.errorDescription
+            let message = PromotionSDKError.featureDisabled.errorDescription
                 ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
             PRMConfirmationDialog.showError(message, in: container)
         }

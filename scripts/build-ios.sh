@@ -5,14 +5,14 @@
 # Chuỗi phụ thuộc (phải đúng thứ tự, script này ép sẵn):
 #
 #   :promotionLogic (Kotlin)  ──gradle──▶  PromotionLogic.xcframework   (lõi, static)
-#            └─ link tĩnh vào ──▶  PromotionSDK.xcframework           (UI, Swift)
+#            └─ link tĩnh vào ──▶  PRM.xcframework           (UI, Swift)
 #                                          └─ iosApp link + embed
 #
 # Khác Android: iOS **không** đi qua Maven. Host nhận thẳng một XCFramework
-# (docs/Distribution.md §6). Nên "publish" ở đây = dựng PromotionSDK.xcframework.
+# (docs/Distribution.md §6). Nên "publish" ở đây = dựng PRM.xcframework.
 #
 #   ./scripts/build-ios.sh                 # dựng XCFramework → build app demo (simulator)
-#   ./scripts/build-ios.sh --skip-app      # chỉ dựng PromotionSDK.xcframework
+#   ./scripts/build-ios.sh --skip-app      # chỉ dựng PRM.xcframework
 #   ./scripts/build-ios.sh --clean         # xoá DerivedData của app rồi làm lại
 #   ./scripts/build-ios.sh --run           # build xong cài + mở trên simulator đang boot
 #   ./scripts/build-ios.sh --device 'iPhone 17 Pro'   # chọn simulator (mặc định: máy đang boot)
@@ -47,19 +47,19 @@ fi
 
 DERIVED="$PWD/iosApp/build/DerivedData"
 APP_NAME="iosApp.app"
-XCFRAMEWORK="iosPromotionSDK/build/PromotionSDK.xcframework"
+XCFRAMEWORK="iosPromotionSDK/build/PRM.xcframework"
 
 if [[ "$DO_CLEAN" == true ]]; then
     echo "▸ Dọn DerivedData của app demo"
     rm -rf "$DERIVED"
 fi
 
-# ─── 1. Dựng PromotionSDK.xcframework ──────────────────────────────────────────────────────
+# ─── 1. Dựng PRM.xcframework ──────────────────────────────────────────────────────
 # Script này tự gọi Gradle dựng PromotionLogic.xcframework rồi copy vào iosPromotionSDK/Frameworks/
 # TRƯỚC khi archive Swift — sửa Kotlin xong mà dùng header cũ thì lỗi hiện ra tận SwiftCompile
 # ("cannot find ... in scope"), rất khó lần.
 
-echo "▸ Dựng PromotionSDK.xcframework (kèm lõi PromotionLogic từ Gradle)"
+echo "▸ Dựng PRM.xcframework (kèm lõi PromotionLogic từ Gradle)"
 ./iosPromotionSDK/scripts/build-xcframework.sh
 
 if [[ ! -d "$XCFRAMEWORK" ]]; then
