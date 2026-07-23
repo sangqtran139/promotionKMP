@@ -18,7 +18,7 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         // SDK được :androidApp tiêu thụ dạng artifact Maven (docs/Distribution.md). Bước 1 là ~/.m2:
-        //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+        //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
         // Giới hạn đúng group của SDK — mavenLocal() thả rông sẽ tranh resolve với mọi thư viện khác
         // và cho ra build không tái lập được.
         mavenLocal {
@@ -37,4 +37,4 @@ dependencyResolutionManagement {
 
 include(":androidApp")
 include(":promotionLogic")
-include(":AndroidPromotionUI")
+include(":AndroidPromotionSDK")

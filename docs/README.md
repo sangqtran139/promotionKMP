@@ -41,7 +41,7 @@ Hai chế độ dùng SDK:
 | Thành phần | Trạng thái |
 |---|---|
 | `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, 21 test xanh trên cả hai. |
-| `:AndroidPromotionUI` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionUI/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
+| `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
 | `iosPromotionUI` (iOS) | ✅ Đã ở trong repo (`iosPromotionUI/`, project `PromotionSDKUI.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
 | Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |

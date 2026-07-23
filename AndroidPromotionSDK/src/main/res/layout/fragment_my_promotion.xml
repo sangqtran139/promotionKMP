@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/prm_bg_endow"
+        android:clickable="true"
+        android:focusable="true"
+        app:layoutDescription="@xml/prm_home_scene">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <androidx.appcompat.widget.AppCompatImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="@dimen/view_size_45"
+                android:layout_height="@dimen/view_size_45"
+                android:layout_marginStart="@dimen/view_size_8"
+                android:layout_marginTop="@dimen/view_size_35"
+                android:background="?selectableItemBackground"
+                android:padding="@dimen/view_size_8"
+                android:tint="@color/black"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/prm_ic_back_in_onboarding" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/ctrTop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/tokenSpacing24"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/btnBack">
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    android:id="@+id/tvEndow"
+                    style="@style/fontPRMSfDisplayBold22"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prm_my_promotion"
+                    android:textColor="@color/black"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+                    android:layout_width="@dimen/tokenSizing32"
+                    android:layout_height="@dimen/tokenSizing32"
+                    android:layout_marginStart="@dimen/view_size_10"
+                    android:src="@drawable/prm_ic_my_endow_new"
+                    app:layout_constraintBottom_toBottomOf="@+id/tvEndow"
+                    app:layout_constraintStart_toEndOf="@+id/tvEndow"
+                    app:layout_constraintTop_toTopOf="@+id/tvEndow" />
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+                    android:id="@+id/imgSearch"
+                    android:layout_width="@dimen/tokenSizing32"
+                    android:layout_height="@dimen/tokenSizing32"
+                    android:layout_marginEnd="@dimen/view_size_15"
+                    android:src="@drawable/prm_ic_search_endow"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/tvEndow" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="@dimen/_25sdp"
+            android:background="@drawable/my_prm_bg"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ctlHeader">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTabs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/view_size_24"
+                android:orientation="horizontal"
+                android:paddingStart="@dimen/view_size_10"
+                android:paddingEnd="@dimen/view_size_10"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:itemCount="3"
+                tools:listitem="@layout/item_tag_my_promotion" />
+
+            <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+                android:id="@+id/swipeRefreshLayout"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="@dimen/tokenSpacing10"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rvTabs">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/homeList"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginTop="@dimen/view_size_10"
+                    android:background="@color/color_FBFBFB"
+                    android:orientation="vertical"
+                    android:visibility="visible"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/rvTabs"
+                    tools:listitem="@layout/prm_item_promotion" />
+            </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/ctlNoResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/view_size_20"
+                android:layout_marginBottom="@dimen/_110sdp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rvTabs">
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMImageView
+                    android:id="@+id/imgNoData"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/prm_il_chua_co_uu_dai_new_vers"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    android:id="@+id/tvHotDeal"
+                    style="@style/fontPRMSfDisplayBold18"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/view_size_40"
+                    android:layout_marginTop="@dimen/view_size_10"
+                    android:layout_marginEnd="@dimen/view_size_40"
+                    android:gravity="center"
+                    android:lineHeight="@dimen/view_size_22"
+                    android:text="@string/prm_deal_hot"
+                    android:textColor="@color/black"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/imgNoData" />
+
+                <com.ttcn.promotionsdk.promotionsdkui.widget.PRMTextView
+                    android:id="@+id/tvContentText"
+                    style="@style/fontPRMSfDisplayRegular16"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/view_size_40"
+                    android:layout_marginTop="@dimen/view_size_10"
+                    android:layout_marginEnd="@dimen/view_size_40"
+                    android:gravity="center"
+                    android:lineHeight="@dimen/view_size_22"
+                    android:text="@string/prm_hot_deal_description"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvHotDeal" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/tokenSpacing20"
+            android:layout_marginBottom="@dimen/tokenSpacing32"
+            android:backgroundTint="@color/tokenWhite"
+            android:src="@drawable/prm_ic_arrow_up_vector"
+            android:visibility="gone"
+            app:borderWidth="@dimen/view_size_0"
+            app:fabSize="mini"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:maxImageSize="@dimen/_13sdp"
+            tools:ignore="ContentDescription"
+            tools:visibility="visible" />
+
+        <include
+            android:id="@+id/shimmer_provider"
+            layout="@layout/shimmer_my_promotion"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginStart="@dimen/view_size_15"
+            android:layout_marginTop="@dimen/_42sdp"
+            android:layout_marginEnd="@dimen/view_size_15"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ctlHeader" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
+

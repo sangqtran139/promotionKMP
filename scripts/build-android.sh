@@ -3,8 +3,8 @@
 # Build SDK Android + app demo trên một máy bất kỳ.
 #
 # Từ khi SDK phát hành qua Maven (docs/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR trong
-# libs/ nữa — nó khai toạ độ `com.ttcn.promotion:promotionUI`. Nghĩa là **phải publish SDK trước**,
-# nếu không Gradle báo "Could not find com.ttcn.promotion:promotionUI". Script này ép đúng thứ tự đó.
+# libs/ nữa — nó khai toạ độ `com.ttcn.promotion:promotionSDK`. Nghĩa là **phải publish SDK trước**,
+# nếu không Gradle báo "Could not find com.ttcn.promotion:promotionSDK". Script này ép đúng thứ tự đó.
 #
 #   ./scripts/build-android.sh                 # publish SDK → build app demo (APK debug)
 #   ./scripts/build-android.sh --skip-app      # chỉ publish SDK vào ~/.m2
@@ -83,7 +83,7 @@ fi
 # cũ trong ~/.m2 — im lặng, không cảnh báo (docs/Distribution.md §5).
 
 echo "▸ Publish SDK vào ~/.m2 (promotionLogic + promotionUI)"
-gradle :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+gradle :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 
 if [[ "$SKIP_APP" == true ]]; then
     echo "✓ Xong. SDK đã nằm trong ~/.m2/repository/com/ttcn/promotion/"

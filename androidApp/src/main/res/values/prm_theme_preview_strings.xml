@@ -20,7 +20,7 @@
     <string name="prm_theme_apply_object">Apply object</string>
     <string name="prm_theme_json_applied">Applied theme from assets/promotion_theme.json</string>
     <string name="prm_theme_json_invalid">promotion_theme.json is invalid — theme unchanged</string>
-    <string name="prm_theme_object_applied">Applied theme built in code (PromotionSDKTheme object)</string>
+    <string name="prm_theme_object_applied">Applied theme built in code (PRMSDKTheme object)</string>
 
     <string name="prm_theme_section_button">Button</string>
     <string name="prm_theme_section_search_bar">Search Bar</string>

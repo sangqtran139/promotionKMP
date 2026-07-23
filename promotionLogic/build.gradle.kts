@@ -15,7 +15,7 @@ val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
 
 // Toạ độ Maven: `com.ttcn.promotion:promotion-logic:<SDK_VERSION>`.
 // KMP **tự sinh publication** cho mọi target khi có plugin maven-publish — không tạo tay
-// MavenPublication như bên :AndroidPromotionUI. Xem docs/Distribution.md §3.3.
+// MavenPublication như bên :AndroidPromotionSDK. Xem docs/Distribution.md §3.3.
 group = "com.ttcn.promotion"
 version = sdkVersion
 
@@ -35,8 +35,8 @@ publishing {
 // `XCFramework` bên dưới) nên chỉ còn một target — bỏ module gốc, cho variant android lấy thẳng
 // tên module.
 //
-// > **Artifact này phải giữ đúng tên module** — khác `:AndroidPromotionUI` (publish dưới tên
-// > `promotionUI`, đổi thoải mái vì host khai thẳng toạ độ đó). Lý do: `:AndroidPromotionUI` khai
+// > **Artifact này phải giữ đúng tên module** — khác `:AndroidPromotionSDK` (publish dưới tên
+// > `promotionUI`, đổi thoải mái vì host khai thẳng toạ độ đó). Lý do: `:AndroidPromotionSDK` khai
 // > `implementation(projects.promotionLogic)`, và Gradle ghi vào POM của nó toạ độ
 // > `group:<tên-module>` = `com.ttcn.promotion:promotionLogic`. Rename ở publication **không** đổi
 // > được toạ độ đó → POM trỏ một đằng, repo có một nẻo, host nhận
@@ -93,7 +93,7 @@ kotlin {
     }
 
     androidLibrary {
-        // Nhường namespace `com.ttcn.promotionsdk` cho AndroidPromotionUI, để `R` và
+        // Nhường namespace `com.ttcn.promotionsdk` cho AndroidPromotionSDK, để `R` và
         // `databinding.*` của UI resolve đúng như trong SDK gốc, không phải sửa import.
         namespace = "com.ttcn.promotionsdk.core"
         compileSdk = libs.versions.android.compileSdk.get().toInt()

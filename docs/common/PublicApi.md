@@ -6,13 +6,13 @@ SDK có **hai bề mặt**, đừng lẫn:
 
 | | Ai gọi | Ở đâu | Type |
 |---|---|---|---|
-| **Bề mặt host** | App đối tác | `AndroidPromotionUI` / `PromotionSDKUI` | DTO riêng của UI SDK |
+| **Bề mặt host** | App đối tác | `AndroidPromotionSDK` / `PromotionSDKUI` | DTO riêng của UI SDK |
 | **Bề mặt lõi** | UI của chính SDK | `promotionLogic` | `PromotionUseCases`, `PromotionResult`, domain model |
 
 Bề mặt lõi được tài liệu ở [HeadlessAPI.md](./HeadlessAPI.md). **Host không với tới được nó** — đó là
 chủ đích, không phải quy ước lỏng lẻo:
 
-- **Android** — `AndroidPromotionUI` khai `implementation(projects.promotionLogic)`, nên
+- **Android** — `AndroidPromotionSDK` khai `implementation(projects.promotionLogic)`, nên
   `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host. Thử import là lỗi compile:
   `Unresolved reference 'PromotionUseCases'`.
 - **iOS** — `PromotionSDKUI` khai `@_implementationOnly import PRMKotlinBridge`. Type Kotlin lọt vào chữ

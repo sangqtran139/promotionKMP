@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentHeadlessDemoBinding
-import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.promotionsdkui.base.PRMBaseFragment
 import kotlinx.coroutines.launch
 
 class DemoHeadlessFragment : PRMBaseFragment<FragmentHeadlessDemoBinding>() {

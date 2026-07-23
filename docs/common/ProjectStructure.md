@@ -116,7 +116,7 @@ promotionLogic/src/
 - `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
-- `ui/entry/` và `ui/entry/api/` của `AndroidPromotionUI` — **public API thật sự**; thay đổi =
+- `ui/entry/` và `ui/entry/api/` của `AndroidPromotionSDK` — **public API thật sự**; thay đổi =
   breaking cho host app, và phải sửa đối ứng bên `PromotionSDKUI/Entry/API/` của iOS.
   Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).

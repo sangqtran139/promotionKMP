@@ -6,7 +6,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
-import com.ttcn.promotionsdk.ui.base.PRMBaseActivity
+import com.ttcn.promotionsdk.promotionsdkui.base.PRMBaseActivity
 
 class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
 

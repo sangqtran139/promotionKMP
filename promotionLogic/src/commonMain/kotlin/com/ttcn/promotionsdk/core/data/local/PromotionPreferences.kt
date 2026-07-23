@@ -9,7 +9,7 @@ package com.ttcn.promotionsdk.core.data.local
  * không phải thêm type mới. Tầng UI lấy instance qua `PromotionContainer.preferences` — giống nhau
  * trên Android và iOS.
  *
- * Public vì tầng UI nằm ở **module khác** (AndroidPromotionUI / PromotionSDKUI); các `actual`
+ * Public vì tầng UI nằm ở **module khác** (AndroidPromotionSDK / PromotionSDKUI); các `actual`
  * (`SharedPrefStorage` / `UserDefaultsStorage`) vẫn nội bộ.
  */
 interface PromotionPreferences {

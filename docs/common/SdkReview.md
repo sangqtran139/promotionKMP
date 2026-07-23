@@ -112,9 +112,9 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ┌───────────────────────── Host app (Android / iOS) ─────────────────────────┐
 │  chỉ chạm: PromotionSDK(.initialize/open*/makeEndowView/api) + DTO public   │
 └─────────────────────────────────────────────────────────────────────────────┘
-   │ Android: Maven com.ttcn.promotion:promotionUI      │ iOS: PromotionSDKUI.xcframework
+   │ Android: Maven com.ttcn.promotion:promotionSDK      │ iOS: PromotionSDKUI.xcframework
    ▼                                                     ▼
-┌──────────── AndroidPromotionUI ───────────┐  ┌──────── iosPromotionUI/PromotionSDKUI ────────┐
+┌──────────── AndroidPromotionSDK ───────────┐  ┌──────── iosPromotionUI/PromotionSDKUI ────────┐
 │ entry PromotionSDK · Fragment/View         │  │ entry PromotionSDK · PromotionSDKImpl · VC     │
 │ · *ViewModel (kế PRMBaseViewModel) — MỎNG  │  │ · *ViewModel · EndowViewModel · PRMEndowView   │
 └───────────────────────┬─────────────────────┘  └───────────────────────┬────────────────────────┘
@@ -145,7 +145,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
    `watchState` → publisher). Lỗi: `state.errorCode` one-shot → VM phát effect → view map code → chuỗi.
 
 ### 4.4 Đóng gói
-- **Android:** 2 artifact Maven — `com.ttcn.promotion:promotionLogic` (KMP AAR) + `com.ttcn.promotion:promotionUI`
+- **Android:** 2 artifact Maven — `com.ttcn.promotion:promotionLogic` (KMP AAR) + `com.ttcn.promotion:promotionSDK`
   (UI). Host khai toạ độ `promotionUI` (kéo theo `promotionLogic`).
 - **iOS:** 1 `PromotionSDKUI.xcframework` (link tĩnh `PromotionLogic.xcframework` + 4 package `PRM*`). Build:
   `scripts/build-ios.sh` (gradle dựng `PromotionLogic.xcframework` → archive Swift → xcframework).
@@ -155,18 +155,18 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ## 5. Đánh version & Maven
 
 **Nguồn version tập trung:** `gradle.properties:19` → **`SDK_VERSION=1.0.0`**.
-- `promotionLogic/build.gradle.kts` và `AndroidPromotionUI/build.gradle.kts` đọc `findProperty("SDK_VERSION") ?: "1.0.0"`;
-  `group = "com.ttcn.promotion"`; `AndroidPromotionUI` artifactId = **`promotionUI`**; expose `BuildConfig.SDK_VERSION`.
+- `promotionLogic/build.gradle.kts` và `AndroidPromotionSDK/build.gradle.kts` đọc `findProperty("SDK_VERSION") ?: "1.0.0"`;
+  `group = "com.ttcn.promotion"`; `AndroidPromotionSDK` artifactId = **`promotionUI`**; expose `BuildConfig.SDK_VERSION`.
 - iOS: `MARKETING_VERSION = 1.0.0` (`PromotionSDKUI.xcodeproj`) — giữ trùng số.
 - **`CHANGELOG.md`** (Keep a Changelog + SemVer): mục `[1.0.0] — 2026-07-20`.
 
 **Publish (Android → Maven):**
 ```bash
-./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal   # 1.0.0
+./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal   # 1.0.0
 ./gradlew ... -PSDK_VERSION=1.2.0                                                        # đổi version
 # hoặc: ./scripts/build-android.sh --version 1.2.0   (ép đúng thứ tự: publish SDK → build app demo)
 ```
-Host Android khai `implementation("com.ttcn.promotion:promotionUI:<SDK_VERSION>")`.
+Host Android khai `implementation("com.ttcn.promotion:promotionSDK:<SDK_VERSION>")`.
 
 **Phát hành iOS:** dựng lại `PromotionSDKUI.xcframework` (`./scripts/build-ios.sh --skip-app`) rồi giao cho host
 (không qua Maven — xem [docs/ios/Distribution.md](../ios/Distribution.md)).

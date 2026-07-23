@@ -8,7 +8,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * Kill-switch: "tính năng này có được phép chạy không?".
  *
  * Đây là **luật nghiệp vụ**, không phải chuyện UI — nên nó nằm ở lõi Kotlin, dùng chung cho
- * `AndroidPromotionUI` và `iosPromotionUI`. Hai nền tảng chỉ khác nhau ở cách **hiển thị** thông báo
+ * `AndroidPromotionSDK` và `iosPromotionUI`. Hai nền tảng chỉ khác nhau ở cách **hiển thị** thông báo
  * khi bị chặn (Toast vs popup), không khác nhau ở chỗ *khi nào* bị chặn.
  *
  * ```kotlin

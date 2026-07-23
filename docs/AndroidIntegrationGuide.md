@@ -10,7 +10,7 @@
 
 ## 0. TL;DR
 
-- Thêm **một** dòng dependency Maven `com.ttcn.promotion:promotionUI` — Gradle tự kéo `promotionLogic`,
+- Thêm **một** dòng dependency Maven `com.ttcn.promotion:promotionSDK` — Gradle tự kéo `promotionLogic`,
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.promotionsdk.ui.entry.*` (`PromotionSDK`, `PromotionSDKApi`,
   `PromotionSDKTheme`, `PromotionSDKCallback`…).
@@ -43,7 +43,7 @@ Hệ quả cho host:
 
 | Mục | Giá trị |
 |---|---|
-| Artifact | Maven: `com.ttcn.promotion:promotionUI:1.0.0` (AAR + POM/`.module`) |
+| Artifact | Maven: `com.ttcn.promotion:promotionSDK:1.0.0` (AAR + POM/`.module`) |
 | Package public | `com.ttcn.promotionsdk.ui.entry.*` |
 | minSdk | **24** |
 | Namespace SDK | `com.ttcn.promotionsdk` (dùng chung `R` / databinding) |
@@ -66,7 +66,7 @@ repositories {
 
 // build.gradle.kts (app module host)
 dependencies {
-    implementation("com.ttcn.promotion:promotionUI:1.0.0")
+    implementation("com.ttcn.promotion:promotionSDK:1.0.0")
 }
 ```
 

@@ -1,9 +1,9 @@
 # UIGuide (Android) — UI Android
 
-Hướng dẫn UI cho `:AndroidPromotionUI`. Giao diện làm bằng **XML View + Data Binding + View Binding**,
+Hướng dẫn UI cho `:AndroidPromotionSDK`. Giao diện làm bằng **XML View + Data Binding + View Binding**,
 kiến trúc **MVI**. Không dùng Compose — xem [ComposeGuide.md](../common/ComposeGuide.md).
 
-> Nguồn code: `AndroidPromotionUI/` (kéo từ `ttcn-promotion-android-sdk`).
+> Nguồn code: `AndroidPromotionSDK/` (kéo từ `ttcn-promotion-android-sdk`).
 
 ---
 
@@ -107,7 +107,7 @@ Use case được cấp qua `PromotionViewModelFactory` (xem `ui/di/`), lấy re
 `PromotionContainer.initialize(...)` đã dựng.
 
 > Chỉ facade `PromotionUseCases()` mới trả `PromotionResult` và **không ném**. Nó là type của
-> `:promotionLogic`, **không** dành cho host: host chỉ tích hợp `AndroidPromotionUI` nên không có
+> `:promotionLogic`, **không** dành cho host: host chỉ tích hợp `AndroidPromotionSDK` nên không có
 > `core.*` trên compile classpath. Host tự dựng UI thì gọi `PromotionSDK.api` — xem
 > [PublicApi.md](../common/PublicApi.md). Trong module này, UI dựng thẳng use case đơn lẻ và tự `runCatching`.
 

@@ -49,7 +49,7 @@ enum class VoucherStatus {
 }
 
 /**
- * Trạng thái hiển thị, dùng chung cho `AndroidPromotionUI` và `iosPromotionUI`.
+ * Trạng thái hiển thị, dùng chung cho `AndroidPromotionSDK` và `iosPromotionUI`.
  * Thay cho `PromotionDisplayState` (Swift) và phép so sánh `status == ACTIVE` (Android).
  */
 enum class VoucherDisplayState {

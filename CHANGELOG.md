@@ -26,5 +26,5 @@ Bản phát hành ổn định đầu tiên. Từ đây bề mặt public tuân 
 - Feature flag **không** phơi ra host — mọi điểm vào tự gác qua `PromotionFeatureGate`.
 
 ### Phân phối
-- Android: Maven (`com.ttcn.promotion:promotionUI:1.0.0`) — xem [docs/Distribution.md](./docs/Distribution.md).
+- Android: Maven (`com.ttcn.promotion:promotionSDK:1.0.0`) — xem [docs/Distribution.md](./docs/Distribution.md).
 - iOS: `PromotionSDKUI.xcframework`.

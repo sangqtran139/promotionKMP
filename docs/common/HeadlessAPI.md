@@ -2,7 +2,7 @@
 
 Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném exception ra ngoài**.
 
-> **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionUI` và `PromotionSDKUI` gọi vào đây.
+> **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionSDK` và `PromotionSDKUI` gọi vào đây.
 > Host không với tới được `com.ttcn.promotionsdk.core.*`: Android khai
 > `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PRMKotlinBridge`.
 >

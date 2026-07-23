@@ -23,9 +23,9 @@ node_modules/
 # SwiftPM per-package build dir (khác `build/` của Gradle) — không được commit artifact biên dịch.
 .build/
 
-# Build outputs of :promotionLogic and :AndroidPromotionUI.
+# Build outputs of :promotionLogic and :AndroidPromotionSDK.
 # Regenerate with:
-#   ./gradlew :promotionLogic:assembleRelease :AndroidPromotionUI:assembleRelease
+#   ./gradlew :promotionLogic:assembleRelease :AndroidPromotionSDK:assembleRelease
 #   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
 *.aar
 *.xcframework/

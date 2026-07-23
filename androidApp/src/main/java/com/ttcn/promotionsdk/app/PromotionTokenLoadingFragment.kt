@@ -56,7 +56,7 @@ class PromotionTokenLoadingFragment : Fragment() {
         }
     }
 
-    // Đi qua wrapper PromotionManager (anti-corruption) — không gọi PromotionSDK trực tiếp.
+    // Đi qua wrapper PromotionManager (anti-corruption) — không gọi PRMSDK trực tiếp.
     private fun initSdk(token: String) {
         PromotionManager.start(
             requireContext(),

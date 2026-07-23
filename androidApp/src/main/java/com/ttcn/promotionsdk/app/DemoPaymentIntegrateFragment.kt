@@ -4,9 +4,9 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.R
 import com.ttcn.promotionsdk.databinding.FragmentPaymentDemoBinding
-import com.ttcn.promotionsdk.ui.base.PRMBaseFragment
-import com.ttcn.promotionsdk.ui.feature.promotion.PromotionIntegrateManager
-import com.ttcn.promotionsdk.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
+import com.ttcn.promotionsdk.promotionsdkui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.promotionsdkui.feature.promotion.PRMIntegrateManager
+import com.ttcn.promotionsdk.promotionsdkui.feature.promotion.choosepromotion.PRMChoosePromotionFragment
 
 class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
 
@@ -14,10 +14,10 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
         FragmentPaymentDemoBinding.inflate(inflater, container, false)
 
     // SDK Manager — đối tác khởi tạo 1 lần, truyền endowView vào
-    private lateinit var promotionIntegrateManager: PromotionIntegrateManager
+    private lateinit var promotionIntegrateManager: PRMIntegrateManager
 
     override fun setupUI() {
-        promotionIntegrateManager = PromotionIntegrateManager.create(binding.endowView)
+        promotionIntegrateManager = PRMIntegrateManager.create(binding.endowView)
 
         // ─── Wire endowView callbacks ─────────────────────────────────────────
         binding.endowView.apply {
@@ -43,7 +43,7 @@ class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>
     // ─── Navigation ───────────────────────────────────────────────────────────
 
     private fun openVoucherSelectionScreen() {
-        addFragment(ChoosePromotionFragment.forEndowView(binding.endowView))
+        addFragment(PRMChoosePromotionFragment.forEndowView(binding.endowView))
     }
 
     // ─── Payment ──────────────────────────────────────────────────────────────

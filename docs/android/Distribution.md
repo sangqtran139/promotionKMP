@@ -1,6 +1,6 @@
 # Distribution (Android) — Maven
 
-SDK Android phát hành bằng **Maven**: publish `com.ttcn.promotion:promotionUI` (kèm POM + Gradle
+SDK Android phát hành bằng **Maven**: publish `com.ttcn.promotion:promotionSDK` (kèm POM + Gradle
 Module Metadata), host khai **một** dòng. Trước đây là file AAR — host chép hai file vào `libs/` rồi
 tự khai toàn bộ dependency; §1 giữ lại vì nó giải thích *vì sao* đổi.
 
@@ -9,7 +9,7 @@ Tài liệu này: cách phát hành, cách host tích hợp, và — phần quan
 
 > Phát hành **iOS** (XCFramework) là kênh riêng — xem [../ios/Distribution.md](../ios/Distribution.md).
 
-**Trạng thái:** `:promotionLogic` và `:AndroidPromotionUI` đã có `maven-publish`; `:androidApp` tiêu
+**Trạng thái:** `:promotionLogic` và `:AndroidPromotionSDK` đã có `maven-publish`; `:androidApp` tiêu
 thụ SDK bằng toạ độ Maven từ `mavenLocal()`. Repo thật (Nexus/Artifactory) là bước còn lại — §3.4.
 
 **Máy mới thì chạy một lệnh:**
@@ -21,10 +21,10 @@ thụ SDK bằng toạ độ Maven từ `mavenLocal()`. Repo thật (Nexus/Artif
 ```
 
 Script ép đúng thứ tự **publish trước, build app sau** — bỏ bước publish thì Gradle báo
-`Could not find com.ttcn.promotion:promotionUI`. Tương đương chạy tay:
+`Could not find com.ttcn.promotion:promotionSDK`. Tương đương chạy tay:
 
 ```bash
-./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 ./gradlew :androidApp:assembleDebug
 ```
 
@@ -33,7 +33,7 @@ Script ép đúng thứ tự **publish trước, build app sau** — bỏ bướ
 `androidApp/build.gradle.kts` từng tiêu thụ SDK bằng file, y như host thật:
 
 ```kotlin
-implementation(fileTree("libs") { include("*.aar") })   // promotionLogic.aar + AndroidPromotionUI-1.0.0-release.aar
+implementation(fileTree("libs") { include("*.aar") })   // promotionLogic.aar + AndroidPromotionSDK-1.0.0-release.aar
 
 // AAR không mang theo dependency → khai tay 20+ dòng:
 implementation(libs.ktor.client.core)
@@ -65,7 +65,7 @@ chính xác hơn POM). File này khai đúng thứ SDK cần, kèm version. Host
 
 ```kotlin
 repositories { mavenLocal() }                                  // hoặc Nexus nội bộ
-dependencies { implementation("com.ttcn.promotion:promotionUI:1.0.0") }
+dependencies { implementation("com.ttcn.promotion:promotionSDK:1.0.0") }
 ```
 
 Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppCompat, Glide, Gson… đúng
@@ -75,7 +75,7 @@ version SDK đã compile. Hai mươi dòng khai tay biến mất, và cùng vớ
 **`implementation` vẫn là `implementation`.** Trong metadata, `implementation(projects.promotionLogic)`
 xuất hiện ở scope **runtime**, không phải compile. Nghĩa là host kéo được `promotionLogic` để chạy
 nhưng **không** thấy `com.ttcn.promotionsdk.core.*` trên compile classpath — đúng ranh giới mà
-`AndroidPromotionUI/build.gradle.kts` đang cố giữ. Cách file-AAR hiện tại thì ngược lại: host phải tự
+`AndroidPromotionSDK/build.gradle.kts` đang cố giữ. Cách file-AAR hiện tại thì ngược lại: host phải tự
 `implementation(libs.ktor…)`, nên Ktor và coroutines **nằm luôn trên compile classpath của host** —
 rò rỉ thứ đáng lẽ giấu.
 
@@ -90,22 +90,22 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 | Module | groupId | artifactId | Đổi tên được? |
 |---|---|---|---|
 | `:promotionLogic` | `com.ttcn.promotion` | `promotionLogic` | **Không** — xem cảnh báo dưới |
-| `:AndroidPromotionUI` | `com.ttcn.promotion` | `promotionUI` | Được — host khai thẳng toạ độ này |
+| `:AndroidPromotionSDK` | `com.ttcn.promotion` | `promotionUI` | Được — host khai thẳng toạ độ này |
 
 `SDK_VERSION` đã có sẵn (property, mặc định `1.0.0`) — dùng lại làm `version`.
 
-> **artifactId của lõi phải trùng tên module.** `:AndroidPromotionUI` khai
+> **artifactId của lõi phải trùng tên module.** `:AndroidPromotionSDK` khai
 > `implementation(projects.promotionLogic)`, và Gradle ghi vào POM của nó toạ độ `group:<tên-module>`
 > = `com.ttcn.promotion:promotionLogic`. Rename ở publication (thành `promotion-logic` chẳng hạn)
 > **không** đổi được toạ độ trong POM đó: POM vẫn trỏ `promotionLogic`, mà trên repo chỉ có
 > `promotion-logic` → host nhận `Could not find com.ttcn.promotion:promotionLogic`. Đã dính thật, và
 > configuration cache còn giấu lỗi một lượt (build "xanh" nhờ POM cũ trong cache).
 >
-> `:AndroidPromotionUI` **không** dính ràng buộc này — không module nào trỏ vào nó bằng
+> `:AndroidPromotionSDK` **không** dính ràng buộc này — không module nào trỏ vào nó bằng
 > `projects.…`, host gõ toạ độ bằng tay — nên nó publish dưới tên `promotionUI` cho đối xứng với
 > `promotionLogic`. Muốn đổi cả tên lõi thì phải đổi **tên module** trong `settings.gradle.kts`.
 
-### 3.2. `:AndroidPromotionUI` (thư viện Android thường)
+### 3.2. `:AndroidPromotionSDK` (thư viện Android thường)
 
 ```kotlin
 plugins {
@@ -189,7 +189,7 @@ com/ttcn/promotion/
 **Bước 1 — `mavenLocal()`** (`~/.m2/repository`). Không cần hạ tầng, không credentials:
 
 ```bash
-./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 ```
 
 Đủ để chứng minh luồng chạy và để `androidApp` tiêu thụ như host thật.
@@ -226,7 +226,7 @@ dependencyResolutionManagement {
 ```kotlin
 // androidApp/build.gradle.kts
 dependencies {
-    implementation("com.ttcn.promotion:promotionUI:$sdkVersion")   // hết fileTree, 20 dòng còn 4
+    implementation("com.ttcn.promotion:promotionSDK:$sdkVersion")   // hết fileTree, 20 dòng còn 4
 
     // androidx/material vẫn phải khai — xem §5.1, đây KHÔNG phải thừa:
     implementation(libs.androidx.appcompat)
@@ -246,7 +246,7 @@ dependencies {
 **Đã kiểm chứng trên máy** (`./gradlew :androidApp:dependencies`):
 
 ```
-+--- com.ttcn.promotion:promotionUI:1.0.0
++--- com.ttcn.promotion:promotionSDK:1.0.0
 |    +--- com.ttcn.promotion:promotionLogic:1.0.0
 |    |    \--- com.ttcn.promotion:promotionLogic-android:1.0.0
 |    |         +--- io.ktor:ktor-client-core:3.3.0        ← tự kéo, host không khai
@@ -299,7 +299,7 @@ Hai nguyên nhân khác nhau, đừng lẫn:
 Cách ship file AAR ngày trước **che** lỗi này: host khai tay tất cả nên tình cờ có đủ. Maven làm nó
 lộ ra — đó là tin tốt, nhưng bản thân Maven **không sửa** nó.
 
-**Sửa tận gốc** = trong `:AndroidPromotionUI`, đổi sang `api(...)` đúng những lib nằm trong signature
+**Sửa tận gốc** = trong `:AndroidPromotionSDK`, đổi sang `api(...)` đúng những lib nằm trong signature
 public:
 
 ```kotlin
@@ -331,6 +331,6 @@ kỹ thuật đã biết**, không phải trạng thái mong muốn.
 ## 6. Liên quan
 
 - [../common/PublicApi.md](../common/PublicApi.md) — bề mặt SDK cho host; đổi là breaking, ảnh hưởng chính sách version.
-- [../common/ProjectStructure.md](../common/ProjectStructure.md) — vai trò `:promotionLogic` / `:AndroidPromotionUI`.
+- [../common/ProjectStructure.md](../common/ProjectStructure.md) — vai trò `:promotionLogic` / `:AndroidPromotionSDK`.
 - [../ios/Distribution.md](../ios/Distribution.md) — kênh phát hành iOS (XCFramework).
 - [../AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — điều 6 (thêm thư viện phải có lý do), điều 8 (đổi API thì cập nhật docs).

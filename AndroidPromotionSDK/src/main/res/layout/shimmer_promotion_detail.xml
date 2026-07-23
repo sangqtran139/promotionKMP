@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:id="@+id/shimmer_detail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/color_FBFBFB"
+        app:shimmer_base_color="@color/colorWhite"
+        app:shimmer_colored="false"
+        app:shimmer_duration="@integer/shimmer_duration"
+        app:shimmer_highlight_color="@color/colorWhite"
+        app:shimmer_repeat_delay="@integer/shimmer_repeat_delay">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <View
+                android:id="@+id/shimmer_banner"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tokenSizing184"
+                android:background="@drawable/prm_background_shimmer"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Card: matches cardViewTop — chỉ marginTop=-30dp, không translationY -->
+            <com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView
+                android:id="@+id/shimmer_card"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_13"
+                android:layout_marginTop="-30dp"
+                android:layout_marginEnd="@dimen/view_size_13"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/shimmer_banner"
+                app:prmCvBottomLeftRadius="@dimen/view_size_16"
+                app:prmCvBottomRightRadius="@dimen/view_size_16"
+                app:prmCvTopLeftRadius="@dimen/view_size_16"
+                app:prmCvTopRightRadius="@dimen/view_size_16">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingBottom="@dimen/view_size_16">
+
+                    <View
+                        android:id="@+id/shimmer_logo"
+                        android:layout_width="@dimen/view_size_24"
+                        android:layout_height="@dimen/view_size_24"
+                        android:layout_marginStart="@dimen/view_size_16"
+                        android:layout_marginTop="@dimen/view_size_20"
+                        android:background="@drawable/prm_background_shimmer_circle"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:id="@+id/shimmer_merchant"
+                        android:layout_width="@dimen/view_size_80"
+                        android:layout_height="@dimen/view_size_14"
+                        android:layout_marginStart="@dimen/view_size_8"
+                        android:background="@drawable/prm_background_shimmer"
+                        app:layout_constraintBottom_toBottomOf="@+id/shimmer_logo"
+                        app:layout_constraintStart_toEndOf="@+id/shimmer_logo"
+                        app:layout_constraintTop_toTopOf="@+id/shimmer_logo" />
+
+                    <View
+                        android:id="@+id/shimmer_title"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/view_size_16"
+                        android:layout_marginTop="@dimen/view_size_7"
+                        android:layout_marginEnd="@dimen/view_size_8"
+                        android:background="@drawable/prm_background_shimmer"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                        app:layout_constraintTop_toBottomOf="@+id/shimmer_logo" />
+
+                    <View
+                        android:id="@+id/shimmer_title2"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/view_size_16"
+                        android:layout_marginTop="@dimen/view_size_6"
+                        android:layout_marginEnd="@dimen/view_size_60"
+                        android:background="@drawable/prm_background_shimmer"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                        app:layout_constraintTop_toBottomOf="@+id/shimmer_title" />
+
+                    <View
+                        android:id="@+id/shimmer_date"
+                        android:layout_width="@dimen/view_size_120"
+                        android:layout_height="@dimen/view_size_14"
+                        android:layout_marginTop="@dimen/view_size_7"
+                        android:background="@drawable/prm_background_shimmer"
+                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                        app:layout_constraintTop_toBottomOf="@+id/shimmer_title2" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.ttcn.promotionsdk.promotionsdkui.widget.PRMCardView>
+
+            <LinearLayout
+                android:id="@+id/shimmer_tabs"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_13"
+                android:layout_marginEnd="@dimen/view_size_13"
+                android:orientation="horizontal"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/shimmer_card">
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/view_size_36"
+                    android:layout_marginEnd="@dimen/view_size_8"
+                    android:layout_weight="1"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/view_size_36"
+                    android:layout_weight="1"
+                    android:background="@drawable/prm_background_shimmer" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/shimmer_content"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/view_size_13"
+                android:layout_marginTop="@dimen/view_size_16"
+                android:layout_marginEnd="@dimen/view_size_13"
+                android:orientation="vertical"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/shimmer_tabs">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/view_size_14"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/view_size_14"
+                    android:layout_marginTop="@dimen/view_size_8"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/view_size_14"
+                    android:layout_marginTop="@dimen/view_size_8"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="@dimen/_150sdp"
+                    android:layout_height="@dimen/view_size_14"
+                    android:layout_marginTop="@dimen/view_size_8"
+                    android:background="@drawable/prm_background_shimmer" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/shimmer_button"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/tokenSizing56"
+                android:layout_marginStart="@dimen/tokenSpacing12"
+                android:layout_marginEnd="@dimen/tokenSpacing12"
+                android:layout_marginBottom="@dimen/tokenSpacing12"
+                android:background="@drawable/prm_background_shimmer"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </com.facebook.shimmer.ShimmerFrameLayout>
+
+</layout>

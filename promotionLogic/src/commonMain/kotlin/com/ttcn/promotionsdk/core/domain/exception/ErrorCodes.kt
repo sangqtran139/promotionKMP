@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.core.domain.exception
 
 /**
- * Mã lỗi công khai, dùng chung cho `AndroidPromotionUI` và `iosPromotionUI`.
+ * Mã lỗi công khai, dùng chung cho `AndroidPromotionSDK` và `iosPromotionUI`.
  *
  * `PromotionResult.Failure.errorCode` luôn là một trong các mã này, hoặc mã nghiệp vụ do server trả.
  * UI tra chuỗi hiển thị theo mã — **lõi không chứa chuỗi tiếng Việt**.
@@ -19,7 +19,7 @@ object PromotionErrorCodes {
 }
 
 /**
- * Tên cũ, giữ để `AndroidPromotionUI` và `iosPromotionUI` không phải sửa import khi bê UI sang.
+ * Tên cũ, giữ để `AndroidPromotionSDK` và `iosPromotionUI` không phải sửa import khi bê UI sang.
  * Code mới nên dùng [PromotionErrorCodes].
  */
 typealias ErrorCodes = PromotionErrorCodes

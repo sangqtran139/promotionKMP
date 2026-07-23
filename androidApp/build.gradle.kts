@@ -55,12 +55,12 @@ dependencies {
     // đúng version SDK đã compile. Host **không** phải khai tay dependency nào của SDK.
     //
     // Trước khi build app, phải có artifact trong ~/.m2:
-    //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionUI:publishToMavenLocal
+    //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
     //
     // Sửa SDK xong mà quên publish thì app vẫn build với bản cũ — im lặng, y như "quên syncSdkAars"
     // ngày trước. Vòng lặp dev nhanh thì dùng `implementation(projects.androidPromotionUI)`;
     // để nghiệm thu bộ artifact như host thật thì giữ dòng dưới. Xem docs/Distribution.md §5.
-    implementation("com.ttcn.promotion:promotionUI:$sdkVersion")
+    implementation("com.ttcn.promotion:promotionSDK:$sdkVersion")
 
     // ─── androidx/material: HOST vẫn phải khai ───────────────────────────────────────────
     // Hai lý do khác nhau, đừng lẫn:
