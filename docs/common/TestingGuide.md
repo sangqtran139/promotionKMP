@@ -109,6 +109,8 @@ private class InMemoryStorage : KeyValueStorage {
 `promotionLogic/build.gradle.kts`.
 
 ```bash
+./scripts/test-report.sh                    # chạy cả 2 target + sinh báo cáo gộp (khuyến nghị)
+./scripts/test-report.sh --json             # kèm bản .json cho CI
 ./gradlew :promotionLogic:koverHtmlReport   # build/reports/kover/html/index.html
 ./gradlew :promotionLogic:koverXmlReport    # cho CI
 ./gradlew :promotionLogic:koverVerify       # gác ngưỡng, fail nếu tụt
@@ -118,8 +120,14 @@ private class InMemoryStorage : KeyValueStorage {
 test nằm ở `commonTest` và chạy trên **cả hai** target, nên số liệu vẫn phản ánh đúng `commonMain`.
 Vẫn phải chạy `iosSimulatorArm64Test` trước khi commit (mục 5 điều 7).
 
-**Ngưỡng:** LINE ≥ 80%, đặt **sát dưới** mức hiện tại để PR làm tụt coverage là fail ngay — không
-phải mục tiêu để phấn đấu. Nâng dần khi bộ test dày lên.
+**Ngưỡng:** LINE ≥ 92%, INSTRUCTION ≥ 90%, BRANCH ≥ 80% — đặt **sát dưới** mức hiện tại để PR làm
+tụt coverage là fail ngay, không phải mục tiêu để phấn đấu. Nâng lên mỗi khi bộ test dày thêm.
+
+**Vì sao BRANCH thấp hơn hai chỉ số kia một cách cố hữu:** `suspend` được biên dịch thành state
+machine (`Xxx$method$1`) với `when(label)` dispatch và nhánh `throw IllegalStateException` cho label
+không hợp lệ — **không test nào chạm tới được**. Đo tách ra: class thường ~84%, class `$`
+(lambda coroutine) chỉ ~71%. Đừng loại chúng khỏi phép đo: thân `if`/`when` do ta viết trong
+`scope.launch { }` cũng nằm trong chính class đó, loại đi là giấu logic thật.
 
 **Loại trừ khỏi phép đo** (`reports.filters.excludes`): DTO thuần dữ liệu (`*Dto`, `*Request`,
 `*Response`, `$serializer`) và cầu nền tảng (`SdkLockKt`, `PromotionClockKt` — thân hàm nằm ở

@@ -141,19 +141,41 @@ kover {
     reports {
         filters {
             excludes {
-                // DTO thuần dữ liệu do kotlinx.serialization sinh accessor — đo không có ý nghĩa.
-                classes("*.*Dto", "*.*Response", "*.*Request", "*${'$'}serializer")
+                // DTO thuần dữ liệu: `equals`/`hashCode`/`copy`/`componentN` do COMPILER sinh, mỗi
+                // field một nhánh — đo chúng là đo Kotlin compiler, không phải code ta viết. Một mình
+                // EligibleCustomerProfile đã "thiếu" 74 nhánh dù không có dòng logic nào.
+                //
+                // Lọc theo @Serializable (chính xác) thay vì đoán theo tên: trong repo này CHỈ có DTO
+                // dùng annotation đó — domain model, presentation store và mapper đều không.
+                annotatedBy("kotlinx.serialization.Serializable")
+                classes("*${'$'}serializer")
                 // Cầu sang nền tảng: thân hàm nằm ở androidMain/iosMain, không phải commonMain.
                 classes("*.SdkLockKt", "*.PromotionClockKt")
             }
         }
         verify {
-            // Ngưỡng đặt SÁT dưới mức hiện tại (LINE 81%) để mọi PR làm tụt coverage là fail ngay,
-            // chứ không phải mục tiêu để phấn đấu. Nâng dần khi bộ test dày lên.
+            // Ngưỡng đặt SÁT dưới mức hiện tại để mọi PR làm tụt coverage là fail ngay, chứ không
+            // phải mục tiêu để phấn đấu. Nâng lên mỗi khi bộ test dày thêm.
             rule("Line coverage của commonMain") {
                 bound {
-                    minValue = 80
+                    minValue = 92
                     coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.LINE
+                }
+            }
+            rule("Instruction coverage của commonMain") {
+                bound {
+                    minValue = 90
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.INSTRUCTION
+                }
+            }
+            // BRANCH thấp hơn hai chỉ số trên một cách CỐ HỮU: `suspend` biên dịch thành state
+            // machine (`Xxx$method$1`) với `when(label)` dispatch + nhánh `throw IllegalStateException`
+            // cho label không hợp lệ — không test nào chạm tới được. Đo riêng: class thường đạt ~84%,
+            // class `$` (lambda coroutine) chỉ ~71%.
+            rule("Branch coverage của commonMain") {
+                bound {
+                    minValue = 80
+                    coverageUnits = kotlinx.kover.gradle.plugin.dsl.CoverageUnit.BRANCH
                 }
             }
         }
