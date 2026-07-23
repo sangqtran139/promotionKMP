@@ -57,6 +57,15 @@ final class LoginService {
             case .failure(let error):
                 self.finish(completion, .failure(error))
             case .success(let response):
+                // BE có thể hoàn tất ngay ở bước 1 (`code = "00"` + accessToken, KHÔNG trả requestId)
+                // — luồng hiện tại của server. Khi đó bỏ qua bước 2.
+                if response.status?.code == "00",
+                   let token = response.data?.accessToken, !token.isEmpty {
+                    let username = response.data?.username ?? self.msisdn
+                    self.finish(completion, .success(LoginResult(accessToken: token, username: username)))
+                    return
+                }
+                // Ngược lại: BE yêu cầu OTP (`AUT0014`) → phải có requestId để đi bước 2.
                 guard let requestId = response.data?.requestId, !requestId.isEmpty else {
                     self.finish(completion, .failure(LoginError.missingRequestId))
                     return

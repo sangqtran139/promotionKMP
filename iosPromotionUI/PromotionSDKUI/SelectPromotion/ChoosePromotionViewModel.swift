@@ -13,7 +13,7 @@
 
 import Foundation
 import UIKit
-@_implementationOnly import PRMFoundation
+@_implementationOnly import PRMFoundation   // UIImage.sdk(_:) cho ảnh checkbox của cell
 @_implementationOnly import PRMKotlinBridge
 
 final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
