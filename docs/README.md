@@ -16,7 +16,7 @@ còn giao diện do **mỗi nền tảng tự dựng** bằng công nghệ nativ
 
 ```
 ┌───────────────────────┐        ┌──────────────────────┐
-│ promotionUI (Android) │        │ promotionUI (iOS)    │
+│ promotionSDK (Android) │        │ promotionSDK (iOS)    │
 │ XML View + MVI        │        │ UIKit + MVVM/callback│
 └──────────┬────────────┘        └──────────┬───────────┘
            │                                │
@@ -32,7 +32,7 @@ còn giao diện do **mỗi nền tảng tự dựng** bằng công nghệ nativ
 Hai chế độ dùng SDK:
 
 - **Headless** — host tự dựng UI, chỉ gọi nghiệp vụ qua `PromotionUseCases()`.
-- **UI mode** — host nhúng màn hình sẵn có của `promotionUI`.
+- **UI mode** — host nhúng màn hình sẵn có của `promotionSDK`.
 
 ---
 
@@ -42,7 +42,7 @@ Hai chế độ dùng SDK:
 |---|---|
 | `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, 21 test xanh trên cả hai. |
 | `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
-| `iosPromotionUI` (iOS) | ✅ Đã ở trong repo (`iosPromotionUI/`, project `PromotionSDKUI.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
+| `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PRMSDK.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
 | Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |
 
@@ -94,9 +94,9 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 |------|----------|
 | [common/Architecture.md](./common/Architecture.md) | Kiến trúc tổng thể: lõi chung + hai UI native, luồng dữ liệu. |
 | [common/ProjectStructure.md](./common/ProjectStructure.md) | Cấu trúc thư mục, vai trò từng package, đặt file mới ở đâu. |
-| [common/PublicApi.md](./common/PublicApi.md) | **Bề mặt SDK cho app host**: `PromotionSDK`, `PromotionSDKApi`, DTO — song ánh Android ↔ iOS. |
+| [common/PublicApi.md](./common/PublicApi.md) | **Bề mặt SDK cho app host**: `PRMSDK`, `PRMSDKApi`, DTO — song ánh Android ↔ iOS. |
 | [common/HeadlessAPI.md](./common/HeadlessAPI.md) | API của lõi `:promotionLogic`: 5 use case nghiệp vụ + feature flag. Host **không** gọi vào đây. |
-| [common/InitParity.md](./common/InitParity.md) | Spec khởi tạo Android ↔ iOS: `PromotionSDK`/`Options`/`SessionConfig`/`Callback`. |
+| [common/InitParity.md](./common/InitParity.md) | Spec khởi tạo Android ↔ iOS: `PRMSDK`/`Options`/`SessionConfig`/`Callback`. |
 | [common/SdkReview.md](./common/SdkReview.md) | Báo cáo rà soát & hoàn thiện SDK (UI public iOS, wrapper, terminology, kiến trúc, version) — kèm ví dụ. |
 | [common/NetworkingGuide.md](./common/NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
 | [common/DependencyInjection.md](./common/DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |

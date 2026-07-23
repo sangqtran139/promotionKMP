@@ -1,6 +1,6 @@
 # Distribution (iOS) — XCFramework
 
-**Không đi qua Maven.** Host iOS nhận thẳng **một** `PromotionSDKUI.xcframework`; kênh phát hành là
+**Không đi qua Maven.** Host iOS nhận thẳng **một** `PRMSDK.xcframework`; kênh phát hành là
 xcframework rời (SPM/CocoaPods đóng gói quanh nó). Hai nền tảng có hai kênh phát hành khác nhau — bình
 thường, không phải thiếu sót.
 
@@ -10,7 +10,7 @@ Một lệnh, đối xứng với Android:
 
 ```bash
 ./scripts/build-ios.sh              # dựng XCFramework → build app demo (simulator)
-./scripts/build-ios.sh --skip-app   # chỉ dựng PromotionSDKUI.xcframework
+./scripts/build-ios.sh --skip-app   # chỉ dựng PRMSDK.xcframework
 ./scripts/build-ios.sh --run        # build xong cài + mở trên simulator
 ```
 
@@ -18,12 +18,12 @@ Chuỗi phụ thuộc mà script ép đúng thứ tự:
 
 ```
 :promotionLogic (Kotlin) ──gradle──▶ PromotionLogic.xcframework   (lõi, static)
-             └─ link tĩnh vào ─────▶ PromotionSDKUI.xcframework   (UI, Swift)
+             └─ link tĩnh vào ─────▶ PRMSDK.xcframework   (UI, Swift)
                                               └─ iosApp link + embed
 ```
 
-Bước 1 do `iosPromotionUI/scripts/build-xcframework.sh` lo (nó tự gọi Gradle dựng lõi rồi copy vào
-`iosPromotionUI/Frameworks/` **trước khi** archive Swift — dùng header cũ thì lỗi hiện ra tận
+Bước 1 do `iosPromotionSDK/scripts/build-xcframework.sh` lo (nó tự gọi Gradle dựng lõi rồi copy vào
+`iosPromotionSDK/Frameworks/` **trước khi** archive Swift — dùng header cũ thì lỗi hiện ra tận
 `SwiftCompile` với "cannot find … in scope", rất khó lần).
 
 > **Scheme `iosApp` phải là shared scheme** (`xcshareddata/xcschemes`, đã commit). Để trong
@@ -44,8 +44,8 @@ chỉ trần — kể cả phần Kotlin.
 `build-xcframework.sh` đặt dSYM **cạnh** xcframework:
 
 ```
-iosPromotionUI/build/
-├── PromotionSDKUI.xcframework          ← giao cho host
+iosPromotionSDK/build/
+├── PRMSDK.xcframework          ← giao cho host
 └── PromotionSDKUI.framework.dSYM       ← GIỮ LẠI, đừng để rơi
 ```
 
@@ -61,8 +61,8 @@ Host không cần dSYM để build — chỉ người giữ bản phát hành c�
 Kiểm tra dSYM đúng với binary đang phát hành (hai UUID phải trùng):
 
 ```bash
-dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.framework.dSYM/Contents/Resources/DWARF/PromotionSDKUI
-dwarfdump --uuid iosPromotionUI/build/PromotionSDKUI.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
+dwarfdump --uuid iosPromotionSDK/build/PromotionSDKUI.framework.dSYM/Contents/Resources/DWARF/PromotionSDKUI
+dwarfdump --uuid iosPromotionSDK/build/PRMSDK.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
 ```
 
 ## 2. Slice — host không phải khai gì
@@ -86,7 +86,7 @@ simulator là ăn lỗi link *"building for iOS Simulator, but linking in object
 
 ## 3. Đóng gói: host **không phải cài thêm gì** — cơ chế và ràng buộc
 
-Bất biến của SDK iOS: host kéo **đúng một** `PromotionSDKUI.xcframework`, `import PromotionSDKUI`,
+Bất biến của SDK iOS: host kéo **đúng một** `PRMSDK.xcframework`, `import PromotionSDKUI`,
 xong. Không khai RxSwift, không thêm SPM package, không chép resource bundle. Ba cơ chế giữ bất biến
 này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
@@ -99,7 +99,7 @@ này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
    binary. → Không có framework động nào phải nhúng kèm. `build-xcframework.sh` in danh sách framework
    động ở cuối; kỳ vọng là *"(không có — mọi dependency đã link tĩnh)"*.
 
-2. **Public interface chỉ chạm UIKit/Foundation.** `Entry/PromotionSDK.swift` không phơi bất kỳ type
+2. **Public interface chỉ chạm UIKit/Foundation.** `Entry/PRMSDK.swift` không phơi bất kỳ type
    nào của RxSwift/PromotionLogic; `_impl` cất sau `NSObject`, còn `PromotionSDKImpl`/`PRMBaseViewModel`
    dùng `@_implementationOnly import RxSwift`. → Compiler của host **không** phải nạp RxSwift hay
    PromotionLogic để suy ra layout khi build. Đây là điều kiện để "cài xong dùng luôn".

@@ -8,18 +8,18 @@
 
 ## 0. TL;DR
 
-- Kéo **một** file `PromotionSDKUI.xcframework` vào project, đặt **Embed & Sign**. Xong. Không CocoaPods,
+- Kéo **một** file `PRMSDK.xcframework` vào project, đặt **Embed & Sign**. Xong. Không CocoaPods,
   không SPM, không cài Kotlin/RxSwift.
-- Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
+- Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PRMSDK`, `PRMSDKApi`, `PRMSDKTheme`…).
 - `import PromotionSDKUI` là import **duy nhất** host cần.
-- Cấu hình một lần bằng `PromotionSDK.initialize(options:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
-  sự kiện qua `PromotionSDKCallback`.
+- Cấu hình một lần bằng `PRMSDK.initialize(options:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
+  sự kiện qua `PRMSDKCallback`.
 
 ---
 
 ## 1. SDK đóng gói thế nào (vì sao host "sạch")
 
-SDK ship dạng **một dynamic framework** đóng trong `PromotionSDKUI.xcframework` (binary là Mach-O
+SDK ship dạng **một dynamic framework** đóng trong `PRMSDK.xcframework` (binary là Mach-O
 `DYLIB`). Kotlin (`PromotionLogic`), RxSwift, và các module UI nội bộ (`PRMPromotionUI`, `PRMDesignKit`,
 `PRMKotlinBridge`, `PRMFoundation`) đều được **link tĩnh vào bên trong** framework động này và **giấu** sau
 `@_implementationOnly`. Bằng chứng: file `.swiftinterface` công khai của framework **chỉ** import
@@ -41,7 +41,7 @@ Hệ quả cho host:
 
 | Mục | Giá trị |
 |---|---|
-| Artifact | `PromotionSDKUI.xcframework` (một file duy nhất) |
+| Artifact | `PRMSDK.xcframework` (một file duy nhất) |
 | Module import | `import PromotionSDKUI` |
 | iOS tối thiểu | **iOS 13.0** |
 | Slice | `ios-arm64` (thiết bị) + `ios-arm64_x86_64-simulator` (simulator) |
@@ -54,9 +54,9 @@ Hệ quả cho host:
 
 ### 3.1. Kéo tay (Xcode)
 
-1. Kéo `PromotionSDKUI.xcframework` vào project navigator.
+1. Kéo `PRMSDK.xcframework` vào project navigator.
 2. Chọn target host → tab **General** → **Frameworks, Libraries, and Embedded Content**.
-3. Đặt `PromotionSDKUI.xcframework` = **Embed & Sign**.
+3. Đặt `PRMSDK.xcframework` = **Embed & Sign**.
    > Bắt buộc "Embed" vì đây là **dynamic framework**: dylib phải được copy vào `.app/Frameworks` thì mới
    > load được lúc runtime. Ngoài ra framework còn kèm resource bundle (`PRMDesignKit`, `PRMPromotionUI`,
    > `PRMFoundation`) và các `.nib`. Để "Do Not Embed" → crash `dyld: Library not loaded` khi mở app.
@@ -67,22 +67,22 @@ Hệ quả cho host:
 ```swift
 import PromotionSDKUI
 
-print(PromotionSDK.isInitialized()) // false — link OK là được
+print(PRMSDK.isInitialized()) // false — link OK là được
 ```
 
 ---
 
 ## 4. Vòng đời SDK
 
-`PromotionSDK` là **singleton tĩnh** — mọi điểm vào là `static`. SDK giữ **một** phiên sống tại một thời điểm.
+`PRMSDK` là **singleton tĩnh** — mọi điểm vào là `static`. SDK giữ **một** phiên sống tại một thời điểm.
 
 ```swift
 import PromotionSDKUI
 
 // Sau khi login thành công:
-PromotionSDK.initialize(
-    options: PromotionSDKOptions(
-        session: PromotionSessionConfig(
+PRMSDK.initialize(
+    options: PRMSDKOptions(
+        session: PRMSessionConfig(
             customerId: user.id,
             accessToken: auth.accessToken,
             baseUrl: "http://125.235.38.229:8080/",
@@ -90,20 +90,20 @@ PromotionSDK.initialize(
             environment: .prod          // .prod | .staging, mặc định .prod
         ),
         availableServices: [            // cho bottom sheet "Chọn dịch vụ" (có thể để rỗng)
-            PromotionAvailableService(serviceCode: "TOPUP", serviceName: "Nạp tiền", iconUrl: iconUrl)
+            PRMAvailableService(serviceCode: "TOPUP", serviceName: "Nạp tiền", iconUrl: iconUrl)
         ],
         theme: nil,                     // nil = SDK tự khôi phục theme đã lưu (xem §9)
-        callback: myCallback            // đối tượng conform PromotionSDKCallback (xem §7)
+        callback: myCallback            // đối tượng conform PRMSDKCallback (xem §7)
     )
 )
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo | `PromotionSDK.initialize(options:)` |
-| Kiểm tra đã init | `PromotionSDK.isInitialized() -> Bool` |
-| Giải phóng (logout) | `PromotionSDK.release()` |
-| Lấy callback đã set | `PromotionSDK.getCallback() -> PromotionSDKCallback?` |
+| Khởi tạo | `PRMSDK.initialize(options:)` |
+| Kiểm tra đã init | `PRMSDK.isInitialized() -> Bool` |
+| Giải phóng (logout) | `PRMSDK.release()` |
+| Lấy callback đã set | `PRMSDK.getCallback() -> PRMSDKCallback?` |
 
 **Refresh access token:** token bị "chụp" lúc init. Muốn đổi token = **gọi lại** `initialize(options:)` với
 `session` mới (SDK tự dựng lại đồ thị nội bộ). `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
@@ -115,24 +115,24 @@ PromotionSDK.initialize(
 Giữ **một** phiên từ lúc login, tới màn có voucher mới bơm đơn hàng — **không** re-init:
 
 ```swift
-PromotionSDK.updateContext(
+PRMSDK.updateContext(
     orderId: order.id,
     orderValue: "500000",   // chuỗi số nguyên VNĐ
     serviceCode: "TOPUP",
     metaData: nil,
     // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
-    orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
+    orderItems: [PRMOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
 ```
 
 SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần gọi trước khi mở màn / gọi API. Đọc ngược lại
-qua `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
+qua `PRMSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PRMSDK.session`.
 
 > ⚠️ Gọi trước `initialize`: `updateContext` / `openMyPromotion` / `openPromotionDetail` /
 > `createEndowView` **không crash** — chúng bỏ qua lệnh và ghi một dòng cảnh báo qua `NSLog`
-> (`[PromotionSDK] … bị gọi trước initialize()`). Riêng **`api`** vẫn `preconditionFailure` vì kiểu trả
+> (`[PRMSDK] … bị gọi trước initialize()`). Riêng **`api`** vẫn `preconditionFailure` vì kiểu trả
 > về không optional. SDK khởi tạo thường là **bất đồng bộ** (chờ login), nên hãy gác điểm vào bằng
-> `PromotionSDK.isInitialized()` — nếu không, nút bấm sẽ như "không ăn" và widget sẽ trống.
+> `PRMSDK.isInitialized()` — nếu không, nút bấm sẽ như "không ăn" và widget sẽ trống.
 
 ---
 
@@ -142,19 +142,19 @@ SDK tự lo navigation: nếu `viewController` có `navigationController` → **
 
 ```swift
 // "Ưu đãi của tôi"
-PromotionSDK.openMyPromotion(from: self)
+PRMSDK.openMyPromotion(from: self)
 
 // Chi tiết một ưu đãi (đã biết voucherId, vd từ push notification / deeplink)
-PromotionSDK.openPromotionDetail(voucherId: "V123", from: self)
+PRMSDK.openPromotionDetail(voucherId: "V123", from: self)
 
 // Widget checkout — gắn vào layout của bạn, tự load dữ liệu
-let widget = PromotionSDK.createEndowView(from: self, orderId: order.id, orderValue: "500000")
+let widget = PRMSDK.createEndowView(from: self, orderId: order.id, orderValue: "500000")
 container.addSubview(widget)
 
 // Widget checkout kèm dòng sản phẩm (lấy campaign theo SKU)
-let widget2 = PromotionSDK.createEndowView(
+let widget2 = PRMSDK.createEndowView(
     from: self, orderId: order.id, orderValue: "500000",
-    orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
+    orderItems: [PRMOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
 ```
 
@@ -164,16 +164,16 @@ cần hỏi cờ — chỉ cần lắng nghe callback để ẩn điểm vào (x
 
 ---
 
-## 7. Nhận sự kiện — `PromotionSDKCallback`
+## 7. Nhận sự kiện — `PRMSDKCallback`
 
 Tất cả method đều có default (protocol extension) → chỉ implement cái cần.
 
 ```swift
-final class MyPromotionCallback: PromotionSDKCallback {
+final class MyPromotionCallback: PRMSDKCallback {
     func onVoucherApplied(voucherId: String) { /* user áp voucher thành công */ }
     func onVoucherCleared() { /* user bỏ chọn voucher */ }
     func onVoucherCountChanged(count: Int) { /* widget load xong, biết số voucher khả dụng */ }
-    func onServiceSelected(selection: PromotionServiceSelection) { /* điều hướng tới dịch vụ đã chọn */ }
+    func onServiceSelected(selection: PRMServiceSelection) { /* điều hướng tới dịch vụ đã chọn */ }
     func onAvailabilityChanged(enabled: Bool) { /* enabled == false → ẩn điểm vào ưu đãi */ }
     func onClosed() { /* màn SDK đóng (user back) */ }
 }
@@ -193,15 +193,15 @@ final class MyPromotionCallback: PromotionSDKCallback {
 
 ---
 
-## 8. Headless API (tự dựng UI) — `PromotionSDK.api`
+## 8. Headless API (tự dựng UI) — `PRMSDK.api`
 
-Không dùng UI có sẵn thì gọi trực tiếp `PromotionSDK.api` (kiểu `PromotionSDKApi`). Closure-based, chạy về
+Không dùng UI có sẵn thì gọi trực tiếp `PRMSDK.api` (kiểu `PRMSDKApi`). Closure-based, chạy về
 main thread. **Phải `initialize` trước.**
 
 ```swift
-PromotionSDK.api.getVouchers(keyword: "grab", page: 0) { result in
+PRMSDK.api.getVouchers(keyword: "grab", page: 0) { result in
     switch result {
-    case .success(let page):  // PromotionVoucherPage(vouchers: [PromotionVoucher], isLastPage)
+    case .success(let page):  // PRMVoucherPage(vouchers: [PRMVoucher], isLastPage)
         render(page.vouchers)
     case .failure(let error): // PromotionSDKError
         show(error.errorDescription)
@@ -247,17 +247,17 @@ Mỗi case có sẵn `errorDescription` tiếng Việt để hiển thị. `.net
 ## 10. Theming
 
 ```swift
-PromotionSDK.configure(theme: PromotionSDKTheme(
-    buttonToken: ButtonToken(/* ... */),
+PRMSDK.configure(theme: PRMSDKTheme(
+    buttonToken: PRMButtonToken(/* ... */),
     // 6 token: buttonToken, searchBarToken, listItemToken, tabChipToken, tabUnderlineToken, discountBadgeToken
 ))
 ```
 
 - `configure(theme:)` áp **và lưu lại** → sống qua các lần mở app. Truyền `nil` = xoá, về mặc định SDK.
-- Truyền `theme` trong `PromotionSDKOptions` lúc init cũng được; để `nil` = SDK tự khôi phục theme đã lưu.
+- Truyền `theme` trong `PRMSDKOptions` lúc init cũng được; để `nil` = SDK tự khôi phục theme đã lưu.
 - Nhóm token để `nil` = giữ mặc định SDK cho nhóm đó.
 - Nên cấu hình **một lần** lúc khởi tạo — view đã render chỉ đổi khi được dựng lại.
-- Đọc theme đang áp: `PromotionSDK.currentTheme() -> PromotionSDKTheme?`.
+- Đọc theme đang áp: `PRMSDK.currentTheme() -> PRMSDKTheme?`.
 
 ---
 
@@ -270,16 +270,16 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 | Đặt xcframework "Do Not Embed" | **Embed & Sign** (framework có resource bundle) |
 | `import PromotionLogic` / `PRMKotlinBridge` | Chỉ `import PromotionSDKUI` |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled:)` |
-| Rải `PromotionSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
+| Rải `PRMSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
 
 ---
 
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(options:)
-vào màn có voucher       → PromotionSDK.updateContext(orderId:orderValue:...)
+login thành công        → PRMSDK.initialize(options:)
+vào màn có voucher       → PRMSDK.updateContext(orderId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
-refresh access token     → PromotionSDK.initialize(options:) lại (session mới)
-logout                   → PromotionSDK.release()
+refresh access token     → PRMSDK.initialize(options:) lại (session mới)
+logout                   → PRMSDK.release()
 ```

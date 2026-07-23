@@ -90,7 +90,7 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 | Module | groupId | artifactId | Đổi tên được? |
 |---|---|---|---|
 | `:promotionLogic` | `com.ttcn.promotion` | `promotionLogic` | **Không** — xem cảnh báo dưới |
-| `:AndroidPromotionSDK` | `com.ttcn.promotion` | `promotionUI` | Được — host khai thẳng toạ độ này |
+| `:AndroidPromotionSDK` | `com.ttcn.promotion` | `promotionSDK` | Được — host khai thẳng toạ độ này |
 
 `SDK_VERSION` đã có sẵn (property, mặc định `1.0.0`) — dùng lại làm `version`.
 
@@ -102,7 +102,7 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 > configuration cache còn giấu lỗi một lượt (build "xanh" nhờ POM cũ trong cache).
 >
 > `:AndroidPromotionSDK` **không** dính ràng buộc này — không module nào trỏ vào nó bằng
-> `projects.…`, host gõ toạ độ bằng tay — nên nó publish dưới tên `promotionUI` cho đối xứng với
+> `projects.…`, host gõ toạ độ bằng tay — nên nó publish dưới tên `promotionSDK` cho đối xứng với
 > `promotionLogic`. Muốn đổi cả tên lõi thì phải đổi **tên module** trong `settings.gradle.kts`.
 
 ### 3.2. `:AndroidPromotionSDK` (thư viện Android thường)
@@ -126,7 +126,7 @@ publishing {
     publications {
         create<MavenPublication>("release") {
             afterEvaluate { from(components["release"]) }
-            artifactId = "promotionUI"        // đổi tên ở đây an toàn — §3.1
+            artifactId = "promotionSDK"        // đổi tên ở đây an toàn — §3.1
         }
     }
     repositories {
@@ -174,8 +174,8 @@ package, mỗi cái là một AAR thật**:
 
 ```
 com/ttcn/promotion/
-├── promotionUI/1.0.0/promotionUI-1.0.0-release.aar   ← host Android khai cái này
-└── promotionLogic/1.0.0/promotionLogic-1.0.0.aar     ← lõi, promotionUI tự kéo về
+├── promotionSDK/1.0.0/promotionSDK-1.0.0-release.aar   ← host Android khai cái này
+└── promotionLogic/1.0.0/promotionLogic-1.0.0.aar     ← lõi, promotionSDK tự kéo về
 ```
 
 > Muốn publish cả iOS về sau (consumer Kotlin/Native) thì **bỏ** khối `afterEvaluate` này — KMP quay
@@ -292,7 +292,7 @@ Hai nguyên nhân khác nhau, đừng lẫn:
 1. **App tự dùng** MaterialButton/ConstraintLayout/TabLayout trong layout của nó. Host thật cũng
    phải khai thứ chính mình dùng — bình thường, không phải khuyết điểm của Maven.
 2. **SDK phơi androidx ra public API nhưng khai `implementation`.** `PRMBaseFragment<VB> : Fragment()`,
-   `PRMBaseActivity<VB> : AppCompatActivity()`, `PromotionSDK.openMyPromotion(activity: FragmentActivity)`
+   `PRMBaseActivity<VB> : AppCompatActivity()`, `PRMSDK.openMyPromotion(activity: FragmentActivity)`
    — host **buộc phải** thấy `Fragment`/`AppCompatActivity` lúc compile để kế thừa. Nhưng
    `implementation` đẩy chúng xuống scope **runtime** trong metadata, nên host không thấy.
 

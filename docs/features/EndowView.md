@@ -1,10 +1,10 @@
 # Feature: Endow View (điểm tích hợp vào màn thanh toán)
 
 Đây là feature **tích hợp quan trọng nhất** cho host app: một **custom View** (`PRMEndowView`) cùng
-**`PromotionIntegrateManager`** để nhúng phần "ưu đãi/voucher" trực tiếp vào màn hình thanh toán của đối tác.
+**`PRMIntegrateManager`** để nhúng phần "ưu đãi/voucher" trực tiếp vào màn hình thanh toán của đối tác.
 
-- **Package:** `ui/feature/promotion/endowview` (+ `ui/feature/promotion/PromotionIntegrateManager.kt`)
-- **Thành phần:** `PRMEndowView`, `PRMEndowViewModel`, `PRMEndowUiState`, `PromotionIntegrateManager`
+- **Package:** `ui/feature/promotion/endowview` (+ `ui/feature/promotion/PRMIntegrateManager.kt`)
+- **Thành phần:** `PRMEndowView`, `PRMEndowViewModel`, `PRMEndowUiState`, `PRMIntegrateManager`
 
 > **Cập nhật (tầng UI-logic dùng chung):** Toàn bộ nghiệp vụ widget — `findEligible`, **validate & apply**,
 > và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
@@ -15,7 +15,7 @@
 >   iOS ở `PromotionSDKImpl`). Màn "Chọn ưu đãi" nay chỉ **trả offers đang chọn** (`ApplySelectedOffers` /
 >   `onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate.
 > - Kết quả validate dùng model shared `EndowAppliedDiscount`; mỗi nền tảng map sang model public riêng
->   (`AppliedDiscount` bên Android).
+>   (`PRMAppliedDiscount` bên Android).
 > - **iOS widget reactive off store** (parity Android): `PromotionSDKImpl` bỏ `loadVouchers`/`cachedListModel`/
 >   `setState` tay — nay `endowVM.observe { render(EndowState) }` + `endowVM.loadInitial()`; `render` map
 >   `EndowStore.widgetState` → `PRMEndowView.setState`, callback host (count/applied) theo transition.
@@ -29,13 +29,13 @@
 - Kế thừa `ConstraintLayout`, inflate `PrmViewEndowBinding` (View Binding).
 - Tự gắn vòng đời qua `findViewTreeLifecycleOwner()` + coroutine scope nội bộ (`SupervisorJob`).
 - Dùng `ApplyPromotionAdapter` để hiển thị các voucher đã áp dụng.
-- Theme hoá qua `PromotionThemeRegistry` / `DiscountBadgeToken`.
+- Theme hoá qua `PromotionThemeRegistry` / `PRMDiscountBadgeToken`.
 
 ### State — `PRMEndowUiState` (`internal`)
 
 `internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.
 Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; host lấy chúng gián tiếp
-qua `ChoosePromotionFragment.forEndowView(endowView)`.
+qua `PRMChoosePromotionFragment.forEndowView(endowView)`.
 
 | Field | Ý nghĩa |
 |-------|---------|
@@ -61,7 +61,7 @@ lấy cờ này từ `searchVouchers` và nhánh auto-apply có chạy; đổi s
 chủ đích để hai nền tảng khớp nhau. `validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
 Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
-### `EndowViewState` (trạng thái hiển thị)
+### `PRMEndowViewState` (trạng thái hiển thị)
 - `EMPTY` — chưa có voucher.
 - `NOT_APPLIED` — có voucher nhưng chưa áp dụng.
 - `APPLIED` — đã áp dụng.
@@ -69,14 +69,14 @@ Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
 ---
 
-## 2. `PromotionIntegrateManager` — SDK manager cho đối tác
+## 2. `PRMIntegrateManager` — SDK manager cho đối tác
 
 Đối tác **khởi tạo 1 lần** và gọi `confirmRedemption()` khi user bấm thanh toán. Toàn bộ logic
-createRedemption / revalidate / cập nhật UI được ẩn bên trong; DI resolve tự động (`PromotionIntegrateManager.create(...)`).
+createRedemption / revalidate / cập nhật UI được ẩn bên trong; DI resolve tự động (`PRMIntegrateManager.create(...)`).
 
 ```kotlin
 // Khởi tạo (trong Fragment.setupUI)
-val promotionManager = PromotionIntegrateManager.create(binding.endowView)
+val promotionManager = PRMIntegrateManager.create(binding.endowView)
 
 // Khi bấm thanh toán
 btnConfirmPayment.setOnClickListener {
@@ -104,9 +104,9 @@ Phụ thuộc bên trong (resolve qua DI): `CreateRedemptionSessionUseCase`, `Va
 Host nhúng <PRMEndowView/> vào layout thanh toán
    → PRMEndowView nạp voucher (myVouchers/otherVouchers)
    → User mở Choose Promotion (nhận PreloadVouchers từ Endow để tránh double API)
-   → chọn & validate → ApplyValidatedVouchers → Endow cập nhật discountDetails + EndowViewState.APPLIED
+   → chọn & validate → ApplyValidatedVouchers → Endow cập nhật discountDetails + PRMEndowViewState.APPLIED
 Host bấm thanh toán
-   → PromotionIntegrateManager.confirmRedemption()
+   → PRMIntegrateManager.confirmRedemption()
         → validateStackableDiscounts (revalidate)
         → createRedemptionSession
         → onSuccess(proceed) / onError(errorCode)
@@ -116,7 +116,7 @@ Host bấm thanh toán
 
 ## 4. Lưu ý khi sửa (quan trọng — đây là public-facing)
 
-- `PromotionIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật `INTEGRATION.md` + docs (AI_AGENT_RULES điều 7).
+- `PRMIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật `INTEGRATION.md` + docs (AI_AGENT_RULES điều 7).
 - **Luôn** gọi `clear()` khi view/Fragment huỷ để giải phóng scope (tránh leak).
 - Giữ tối ưu `PreloadVouchers` để không gọi API trùng giữa Endow và Choose Promotion.
 - Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionException` (xem `../ErrorHandling.md`).

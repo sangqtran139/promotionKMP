@@ -4,7 +4,7 @@ Màn hình **chọn voucher để áp dụng vào đơn hàng**, có **validate 
 Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riêng từng danh sách.
 
 - **Package:** `ui/feature/promotion/choosepromotion`
-- **Thành phần:** `ChoosePromotionFragment`, `ChoosePromotionViewModel`, `ChoosePromotionContract`, `adapter/`
+- **Thành phần:** `PRMChoosePromotionFragment`, `ChoosePromotionViewModel`, `ChoosePromotionContract`, `adapter/`
 
 > **Cập nhật (tầng UI-logic dùng chung `ChoosePromotionStore`):**
 > - **Selection** (`selectedIds`, rule single/multi qua `ToggleSelection`, seed `SetPreSelected`) và

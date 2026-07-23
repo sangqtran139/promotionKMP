@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import PromotionSDKUI
+import PromotionSDK
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {

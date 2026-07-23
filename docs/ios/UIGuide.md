@@ -1,6 +1,6 @@
 # UIGuide (iOS) — UI iOS
 
-Hướng dẫn UI cho `promotionUI` (iOS). Giao diện làm bằng **UIKit (XIB)**, kiến trúc
+Hướng dẫn UI cho `promotionSDK` (iOS). Giao diện làm bằng **UIKit (XIB)**, kiến trúc
 **MVVM + Builder + Router**, ràng buộc View↔ViewModel bằng **callback thuần** (không framework reactive).
 
 > Gộp từ `UIKitGuide.md` + `StateManagement.md` + `Architecture.md` của SDK iOS gốc.
@@ -181,10 +181,10 @@ Quy tắc:
 
 ## 5. Public API & "NSObject box"
 
-Class công khai `PromotionSDK` **không** giữ trực tiếp type nội bộ:
+Class công khai `PRMSDK` **không** giữ trực tiếp type nội bộ:
 
 ```swift
-public final class PromotionSDK {
+public final class PRMSDK {
     private let _impl: NSObject
     private var impl: PromotionSDKImpl { _impl as! PromotionSDKImpl }
 }
@@ -199,7 +199,7 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 
 ---
 
-## 6. Module SPM (`iosPromotionUI/Packages/`)
+## 6. Module SPM (`iosPromotionSDK/Packages/`)
 
 | Module | Tầng | Trách nhiệm |
 |--------|------|-------------|
@@ -212,7 +212,7 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 Đã **xoá** khỏi bản KMP: `PromotionLogic` (Swift), `Repository`, `CoreNetwork`, `CoreDatabase` —
 kéo theo Realm, Alamofire, SwiftyJSON, KeychainSwift. Và nay **cả RxSwift cũng đã bị gỡ**:
 tầng UI dùng Combine + async/await (thành phần của iOS 13+). → **Không còn dependency ngoài nào** —
-mọi thứ trong `PromotionSDKUI.xcframework` là code của SDK + hệ điều hành.
+mọi thứ trong `PRMSDK.xcframework` là code của SDK + hệ điều hành.
 
 Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dưới.
 
@@ -224,12 +224,12 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 | Component UI tái dùng, generic | `PRMDesignKit` |
 | Component UI gắn nghiệp vụ ưu đãi | `PRMPromotionUI` |
 | Màn hình mới | `PromotionSDKUI` — bộ Builder/Router/ViewModel/ViewController |
-| Public method cho đối tác | `PromotionSDK` / `PromotionSDKApi` — chỉ Foundation/UIKit type ở chữ ký |
+| Public method cho đối tác | `PRMSDK` / `PRMSDKApi` — chỉ Foundation/UIKit type ở chữ ký |
 | Extension/helper chung | `PRMFoundation` |
 
 ### Tên class đồng nhất với Android
 
-`PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKTheme`, `MyPromotionViewController`,
+`PRMSDK`, `PRMSDKCallback`, `PRMSDKTheme`, `MyPromotionViewController`,
 `ChoosePromotionViewController`, `PromotionDetailViewController`, `SearchMyPromotionViewController`,
 `PRMEndowView`. Tên hàm cũng vậy: `openMyPromotion`, `openPromotionDetail`, `createEndowView`.
 
@@ -249,7 +249,7 @@ guard PromotionFeatureGate.shared.canOpenVoucherDetail() else { showDialog(); re
 | Việc | Gọi ở đâu |
 |---|---|
 | Mở màn "Chi tiết ưu đãi" | `BaseRouter.canOpenVoucherDetail()` — gate + popup PRM_MOB_021 |
-| Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion` → `impl.canOpenVoucherList` |
+| Mở màn "Ưu đãi của tôi" | `PRMSDK.openMyPromotion` → `impl.canOpenVoucherList` |
 | Hiện widget checkout | `PromotionSDKImpl.applyFlag()` |
 | 5 hàm headless | Đã gác sẵn bên trong `PromotionUseCases` của lõi — Swift **không** gác lại |
 | Nạp cờ lúc init | `PromotionSDKImpl.init` → `gate.refresh()` |
@@ -269,21 +269,21 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 
 > **Ràng buộc, đã kiểm chứng bằng compiler.** Kể cả khi muốn phơi ra, type Kotlin không thể xuất hiện
 > trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PRMKotlinBridge`.
-> App host chỉ có `PromotionSDKUI.xcframework`, không có module đó, nên build hỏng ngay:
+> App host chỉ có `PRMSDK.xcframework`, không có module đó, nên build hỏng ngay:
 >
 > ```
 > error: Unable to find module dependency: 'PRMKotlinBridge'
 > ```
 >
 > `PromotionSDKImpl` thì được phép nhắc tới type Kotlin, vì nó import `PRMKotlinBridge` dạng
-> `@_implementationOnly`. Đây cũng chính là lý do `PromotionSDKApi` phải map model Kotlin → DTO Swift
+> `@_implementationOnly`. Đây cũng chính là lý do `PRMSDKApi` phải map model Kotlin → DTO Swift
 > chứ không trả thẳng — xem mục dưới.
 
-### `PromotionSDKApi` — ranh giới, không phải use case
+### `PRMSDKApi` — ranh giới, không phải use case
 
 Tên cũ là `PromotionSDKUseCases`, gây hiểu lầm: nó **không** chứa nghiệp vụ. Gác cờ, bắt lỗi, chuẩn
 hoá `errorCode` đều nằm trong `PromotionUseCases` của lõi (dùng chung với Android). Lớp này chỉ uỷ
-quyền, rồi đổi model Kotlin sang DTO Swift và `PromotionResult` sang `PromotionApiResult`.
+quyền, rồi đổi model Kotlin sang DTO Swift và `PromotionResult` sang `PRMApiResult`.
 
 Nó tồn tại **vì ranh giới phân phối**, không phải vì khẩu vị. Cả hai nền tảng nay đều có mapper, và
 hai file là song ánh — xem [PublicApi.md](../common/PublicApi.md):
@@ -299,7 +299,7 @@ Ràng buộc bên iOS **cứng hơn**: type Kotlin lọt vào chữ ký public b
 nên hỏng ngay cả khi host chưa dùng tới nó. Android chỉ hỏng ở đúng chỗ host chạm vào.
 
 Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
-`PromotionSDKApi.swift`, `PromotionApiModels.swift`, `PromotionApiResult.swift`.
+`PRMSDKApi.swift`, `PromotionApiModels.swift`, `PRMApiResult.swift`.
 
 > **Cạm bẫy đã mất một buổi.** Đổi chữ ký public rồi dựng lại xcframework, app host **vẫn** compile
 > theo chữ ký cũ: Xcode cache module nhị phân ở `SwiftExplicitPrecompiledModules/` và không tự dọn.
@@ -311,7 +311,7 @@ Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/en
 ## 8. Quy tắc
 
 1. **Business logic không được viết bằng Swift.** Mọi nghiệp vụ mới thuộc `:promotionLogic`.
-   `PromotionSDKApi` chỉ là lớp mỏng chuyển `PromotionResult` → `PromotionApiResult`.
+   `PRMSDKApi` chỉ là lớp mỏng chuyển `PromotionResult` → `PRMApiResult`.
 2. ViewModel **không** gọi thẳng repository; đi qua use case của lõi KMP (`try await useCase.invoke`).
 3. `Output` luôn là `AnyPublisher<_, Never>` đã `.receive(on: DispatchQueue.main)` — an toàn thread, không lỗi.
 4. Mọi subscription `.store(in: &cancellables)`; use case one-shot gọi trong `Task { @MainActor }`.

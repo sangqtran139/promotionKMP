@@ -20,7 +20,7 @@ chủ đích, không phải quy ước lỏng lẻo:
   `error: Unable to find module dependency: 'PRMKotlinBridge'`.
 
 Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi ra tới host. Nơi làm việc đó là
-`PromotionSDKApi` — xem §3.
+`PRMSDKApi` — xem §3.
 
 ---
 
@@ -29,32 +29,32 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 ### Android
 
 ```kotlin
-object PromotionSDK {
-    fun initialize(context: Context, options: PromotionSDKOptions)
+object PRMSDK {
+    fun initialize(context: Context, options: PRMSDKOptions)
     fun release()
     fun isInitialized(): Boolean
-    fun getCallback(): PromotionSDKCallback?
+    fun getCallback(): PRMSDKCallback?
 
-    val api: PromotionSDKApi                        // bề mặt headless; ném IllegalStateException nếu chưa initialize
+    val api: PRMSDKApi                        // bề mặt headless; ném IllegalStateException nếu chưa initialize
 
-    val session: PromotionSessionConfig?            // session đã truyền lúc initialize
+    val session: PRMSessionConfig?            // session đã truyền lúc initialize
     val currentOrderId: String?
     val currentOrderValue: String?
     val currentServiceCode: String?
     val currentMetaData: String?
     fun updateContext(orderId: String? = null, orderValue: String? = null,
                       serviceCode: String? = null, metaData: String? = null,
-                      orderItems: List<PromotionOrderItem> = emptyList())
+                      orderItems: List<PRMOrderItem> = emptyList())
 
-    fun configure(theme: PromotionSDKTheme?)
-    fun currentTheme(): PromotionSDKTheme?
+    fun configure(theme: PRMSDKTheme?)
+    fun currentTheme(): PRMSDKTheme?
 
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null)
     fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int? = null)
 }
 ```
 
-> Thứ tự thành viên + tên hàm **khớp 1:1** với `PromotionSDK` bên iOS. Xem [InitParity.md](./InitParity.md).
+> Thứ tự thành viên + tên hàm **khớp 1:1** với `PRMSDK` bên iOS. Xem [InitParity.md](./InitParity.md).
 
 `openPromotionDetail` mở **thẳng** màn chi tiết theo `voucherId`, không qua danh sách — dùng khi host
 đã biết id (bấm push notification, deeplink từ banner ngoài SDK). Đối ứng
@@ -62,22 +62,22 @@ object PromotionSDK {
 đường vào nội bộ: kill-switch không có cửa sau chỉ vì host gọi thẳng entry.
 
 ```kotlin
-PromotionSDK.initialize(
+PRMSDK.initialize(
     context,
-    PromotionSDKOptions(
-        session = PromotionSessionConfig(
+    PRMSDKOptions(
+        session = PRMSessionConfig(
             customerId = "CUST-001",
             accessToken = token,
             baseUrl = "https://...",
             language = "vi-VN",
-            environment = PromotionEnvironment.PROD,
+            environment = PRMEnvironment.PROD,
         ),
-        availableServices = listOf(PromotionAvailableService("P-FOOD-001", "Mua đồ ăn")),
+        availableServices = listOf(PRMAvailableService("P-FOOD-001", "Mua đồ ăn")),
         callback = myCallback,
     ),
 )
-PromotionSDK.updateContext(orderId = orderId, orderValue = orderValue)   // cập nhật khi vào màn có voucher
-val api = PromotionSDK.api
+PRMSDK.updateContext(orderId = orderId, orderValue = orderValue)   // cập nhật khi vào màn có voucher
+val api = PRMSDK.api
 ```
 
 Order/dịch vụ **động** đi qua `updateContext` (ghi vào `PromotionMutableContext`, lõi đọc lại ở **mỗi**
@@ -86,26 +86,26 @@ request) — không cần `initialize` lại. Refresh token = `initialize` lại
 ### iOS
 
 ```swift
-PromotionSDK.initialize(
-    options: PromotionSDKOptions(
-        session: PromotionSessionConfig(
+PRMSDK.initialize(
+    options: PRMSDKOptions(
+        session: PRMSessionConfig(
             customerId: "CUST-001",
             accessToken: token,
             baseUrl: "https://...",
             language: "vi-VN",
             environment: .prod
         ),
-        availableServices: [PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Mua đồ ăn")],
-        callback: self          // PromotionSDKCallback
+        availableServices: [PRMAvailableService(serviceCode: "P-FOOD-001", serviceName: "Mua đồ ăn")],
+        callback: self          // PRMSDKCallback
     )
 )
-PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
-// cần campaign theo SKU → thêm orderItems: [PromotionOrderItem(...)]
-let api = PromotionSDK.api      // PromotionSDKApi
+PRMSDK.updateContext(orderId: orderId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
+// cần campaign theo SKU → thêm orderItems: [PRMOrderItem(...)]
+let api = PRMSDK.api      // PRMSDKApi
 ```
 
 > **Mô hình vòng đời hai bên giờ ĐỐI ỨNG nhau.** Cả hai đều là singleton tĩnh: cấu hình một lần qua
-> `PromotionSDK.initialize(options:)` (iOS) / `PromotionSDK.initialize(context, options)` (Android), rồi cập
+> `PRMSDK.initialize(options:)` (iOS) / `PRMSDK.initialize(context, options)` (Android), rồi cập
 > nhật đơn hàng/dịch vụ qua `updateContext(...)` mà **không** init lại. Giá trị động nằm ở
 > `PromotionMutableContext` — lõi đọc lại ở **mỗi** request, nên refresh token = `initialize`/`init`
 > lại với session mới, còn order/service chỉ cần `updateContext`.
@@ -126,41 +126,41 @@ popup + `onAvailabilityChanged(enabled:)` (iOS). Xem [HeadlessAPI.md §4](./Head
 
 ---
 
-## 3. `PromotionSDKApi` — ranh giới, không phải use case
+## 3. `PRMSDKApi` — ranh giới, không phải use case
 
 Nó **không** chứa nghiệp vụ. Gác cờ, bắt lỗi, chuẩn hoá `errorCode` đều nằm trong `PromotionUseCases`
 của lõi, dùng chung hai nền tảng. Lớp này làm đúng một việc: **uỷ quyền rồi map** — model lõi → DTO,
-`PromotionResult` → `PromotionApiResult`.
+`PromotionResult` → `PRMApiResult`.
 
 Hai file dưới đây là **song ánh**. Cùng tên type, cùng tên field, cùng thứ tự khai báo, cùng tên
 tham số, cùng cách xử lý `NO_RESULT`. **Sửa một bên thì sửa cả hai.**
 
 | Android `ui/entry/api/` | iOS `PromotionSDKUI/Entry/API/` |
 |---|---|
-| `PromotionSDKApi.kt` | `PromotionSDKApi.swift` |
+| `PRMSDKApi.kt` | `PRMSDKApi.swift` |
 | `PromotionApiModels.kt` | `PromotionApiModels.swift` |
-| `PromotionApiResult.kt` | `PromotionApiResult.swift` |
+| `PRMApiResult.kt` | `PRMApiResult.swift` |
 
 ### 3.1. Năm hàm
 
 ```kotlin
 suspend fun getVouchers(keyword: String? = null, serviceCode: String? = null, tab: String? = null,
-                        page: Int = 0, size: Int = 10): PromotionApiResult<PromotionVoucherPage>
+                        page: Int = 0, size: Int = 10): PRMApiResult<PRMVoucherPage>
 
-suspend fun findEligible(orderId: String, orderValue: String, items: List<PromotionOrderItem> = emptyList(),
+suspend fun findEligible(orderId: String, orderValue: String, items: List<PRMOrderItem> = emptyList(),
                          tabCode: String? = null, myPage: Int = 0, mySize: Int = 10,
-                         otherPage: Int = 0, otherSize: Int = 10): PromotionApiResult<PromotionEligibleResult>
+                         otherPage: Int = 0, otherSize: Int = 10): PRMApiResult<PRMEligibleResult>
 
-suspend fun getVoucherDetail(voucherId: String, serviceCode: String? = null): PromotionApiResult<PromotionVoucherDetail>
+suspend fun getVoucherDetail(voucherId: String, serviceCode: String? = null): PRMApiResult<PRMVoucherDetail>
 
 suspend fun validateDiscounts(orderId: String, orderValue: String, voucherIds: List<String>,
-                              objectType: String = "CAMPAIGN"): PromotionApiResult<PromotionValidationResult>
+                              objectType: String = "CAMPAIGN"): PRMApiResult<PRMValidationResult>
 
 suspend fun createRedemption(orderId: String, orderValue: String, voucherIds: List<String>,
-                             objectType: String = "CAMPAIGN"): PromotionApiResult<PromotionRedemptionResult>
+                             objectType: String = "CAMPAIGN"): PRMApiResult<PRMRedemptionResult>
 ```
 
-Bên iOS y hệt, chỉ thay `suspend` bằng `completion: @escaping (PromotionApiResult<T>) -> Void`. Đó là
+Bên iOS y hệt, chỉ thay `suspend` bằng `completion: @escaping (PRMApiResult<T>) -> Void`. Đó là
 **khác biệt duy nhất được phép** giữa hai file.
 
 `getVouchers` phân trang bằng `page`/`size`. `findEligible` dùng `myPage`/`otherPage` vì nó trả **hai
@@ -170,19 +170,19 @@ Chọn hàm nào: xem [HeadlessAPI.md §3](./HeadlessAPI.md).
 ### 3.2. Kết quả và lỗi
 
 ```kotlin
-sealed interface PromotionApiResult<out T> {
-    data class Success<out T>(val data: T) : PromotionApiResult<T>
-    data class Failure(val error: PromotionSDKError) : PromotionApiResult<Nothing>
+sealed interface PRMApiResult<out T> {
+    data class Success<out T>(val data: T) : PRMApiResult<T>
+    data class Failure(val error: PromotionSDKError) : PRMApiResult<Nothing>
 }
 ```
 
-iOS: `typealias PromotionApiResult<T> = Result<T, PromotionSDKError>` — Swift đã có `Result` sẵn,
+iOS: `typealias PRMApiResult<T> = Result<T, PromotionSDKError>` — Swift đã có `Result` sẵn,
 đặt cùng tên để tài liệu hai bên đọc như một.
 
 ```kotlin
-when (val r = PromotionSDK.api.getVouchers()) {
-    is PromotionApiResult.Success -> render(r.data.vouchers)
-    is PromotionApiResult.Failure -> when (r.error) {
+when (val r = PRMSDK.api.getVouchers()) {
+    is PRMApiResult.Success -> render(r.data.vouchers)
+    is PRMApiResult.Failure -> when (r.error) {
         is PromotionSDKError.FeatureDisabled -> showUnavailable()
         is PromotionSDKError.NetworkFailure  -> showError(r.error.message)
         else                                 -> showError(r.error.message)
@@ -208,16 +208,16 @@ Mười type, thứ tự khai báo trong file đúng như bảng này:
 
 | Type | Ghi chú |
 |---|---|
-| `PromotionVoucher` | `id`, `merchantName`, `title`, `imageURL`, `expireDate`, `isUsed`, `status`, `displayStatusLabel` |
-| `PromotionVoucherPage` | `vouchers`, `isLastPage` |
-| `PromotionVoucherDetail` | thêm `description`, `guideline`, `startDate`, `bannerURL`, `logoURL` |
-| `PromotionEligibleOffer` | `id` = `voucherId` nếu đã sở hữu, ngược lại `campaignId`; `usable = false` → hiển thị mờ |
-| `PromotionEligibleResult` | `myOffers`, `otherOffers`, `myIsLastPage`, `otherIsLastPage` |
-| `PromotionOrderItem` | `skuId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
-| `PromotionValidationResult` | `overallValid`, `totalDiscountAmount`, `finalAmount`, `items` |
-| `PromotionDiscountItem` | `objectId`, `discountAmount`, `isValid`, `eligibilityStatus` |
-| `PromotionRedemptionResult` | `sessionId`, `totalDiscount`, `finalAmount`, `validationErrors` |
-| `PromotionRedemptionError` | `code`, `message` |
+| `PRMVoucher` | `id`, `merchantName`, `title`, `imageURL`, `expireDate`, `isUsed`, `status`, `displayStatusLabel` |
+| `PRMVoucherPage` | `vouchers`, `isLastPage` |
+| `PRMVoucherDetail` | thêm `description`, `guideline`, `startDate`, `bannerURL`, `logoURL` |
+| `PRMEligibleOffer` | `id` = `voucherId` nếu đã sở hữu, ngược lại `campaignId`; `usable = false` → hiển thị mờ |
+| `PRMEligibleResult` | `myOffers`, `otherOffers`, `myIsLastPage`, `otherIsLastPage` |
+| `PRMOrderItem` | `skuId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
+| `PRMValidationResult` | `overallValid`, `totalDiscountAmount`, `finalAmount`, `items` |
+| `PRMDiscountItem` | `objectId`, `discountAmount`, `isValid`, `eligibilityStatus` |
+| `PRMRedemptionResult` | `sessionId`, `totalDiscount`, `finalAmount`, `validationErrors` |
+| `PRMRedemptionError` | `code`, `message` |
 
 Hai quy ước đã chốt, đừng đảo lại:
 
@@ -234,15 +234,15 @@ Hai quy ước đã chốt, đừng đảo lại:
 | Type | Dùng để |
 |---|---|
 | `PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
-| `ChoosePromotionFragment.forEndowView(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. |
-| `PromotionIntegrateManager.create(endowView)` | Gọi `confirmRedemption(onSuccess, onError)` khi bấm thanh toán. |
-| `AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
-| `PromotionSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
+| `PRMChoosePromotionFragment.forEndowView(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. |
+| `PRMIntegrateManager.create(endowView)` | Gọi `confirmRedemption(onSuccess, onError)` khi bấm thanh toán. |
+| `PRMAppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PRMSDKCallback`). **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
+| `PRMSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin
 binding.endowView.onOpenVoucherSelection = {
-    addFragment(ChoosePromotionFragment.forEndowView(binding.endowView))
+    addFragment(PRMChoosePromotionFragment.forEndowView(binding.endowView))
 }
 ```
 
@@ -263,7 +263,7 @@ chạm vào `EligibleOffer`, một type của lõi.
    phải thấy `Unresolved reference`.
 2. **Model MVI, adapter, ViewModel đều `internal`.** Chúng mang `EligibleOffer`, `VoucherItem`,
    `VoucherStatus` — type của lõi.
-3. Thêm/đổi DTO hoặc hàm ở `PromotionSDKApi` → **sửa cả Kotlin lẫn Swift trong cùng một commit**, giữ
+3. Thêm/đổi DTO hoặc hàm ở `PRMSDKApi` → **sửa cả Kotlin lẫn Swift trong cùng một commit**, giữ
    nguyên tên và thứ tự. Cập nhật file này.
 4. Đổi chữ ký public của iOS → app host phải `⇧⌘K` (Clean Build Folder). `build-xcframework.sh` đã tự
    dọn `SwiftExplicitPrecompiledModules`, nhưng cache của Xcode vẫn có thể nói dối nếu bạn build tay.

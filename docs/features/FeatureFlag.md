@@ -17,8 +17,8 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 
 > **SDK không phơi API hỏi cờ ra host.** App đối tác không cần biết cờ nào đang bật: mọi điểm vào đều
 > tự gác, và khi bị chặn thì SDK hiện thông báo PRM_MOB_021 (iOS còn báo qua
-> `onAvailabilityChanged(enabled:)`). `PromotionSDK.featureFlags` (Android) và
-> `PromotionSDK.isEnabled(feature:)` (iOS) đã bị gỡ — không nơi nào dùng chúng.
+> `onAvailabilityChanged(enabled:)`). `PRMSDK.featureFlags` (Android) và
+> `PRMSDK.isEnabled(feature:)` (iOS) đã bị gỡ — không nơi nào dùng chúng.
 
 ---
 
@@ -61,10 +61,10 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 
 | Việc | Android | iOS |
 |---|---|---|
-| Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion()` | `PromotionSDK.openMyPromotion(from:)` |
+| Mở màn "Ưu đãi của tôi" | `PRMSDK.openMyPromotion()` | `PRMSDK.openMyPromotion(from:)` |
 | Mở màn "Chi tiết ưu đãi" | `PRMBaseFragment.openPromotionDetail()` | `BaseRouter.canOpenVoucherDetail()` |
 | Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
-| Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
+| Nạp cờ lúc init | `PRMSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
 Cả hai nền tảng đều **không** phơi API hỏi cờ cho host — xem ghi chú ở đầu file.
 
@@ -84,7 +84,7 @@ Cả hai nền tảng đều **không** phơi API hỏi cờ cho host — xem gh
 
 Mã lỗi chung: `PromotionErrorCodes.FEATURE_DISABLED` = `"PRM_MOB_021"`.
 
-> **Cạm bẫy đã gặp.** Android từng nạp cờ lúc `PromotionSDK.initialize()` rồi **không đọc lại ở đâu cả** —
+> **Cạm bẫy đã gặp.** Android từng nạp cờ lúc `PRMSDK.initialize()` rồi **không đọc lại ở đâu cả** —
 > tắt `VOUCHER_DETAIL` trên server thì iOS chặn màn chi tiết, Android vẫn vào bình thường. Thêm màn
 > mới thì phải gác ở tầng UI; facade không thấy được điều hướng.
 

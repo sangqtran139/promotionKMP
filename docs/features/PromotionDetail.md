@@ -1,10 +1,10 @@
 # Feature: Promotion Detail
 
 Màn hình **chi tiết một voucher** — hiển thị thông tin, trạng thái và nút hành động (áp dụng…).
-Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmentPagerAdapter`.
+Có thêm tab nội dung qua `PRMContentDetailEndowFragment` + `PRMCustomFragmentPagerAdapter`.
 
 - **Package:** `ui/feature/promotion/promotiondetail`
-- **Thành phần:** `PromotionDetailFragment`, `PromotionDetailViewModel`, `PromotionDetailContract`, `PrmContentDetailEndowFragment`, `adapter/PrmCustomFragmentPagerAdapter`
+- **Thành phần:** `PRMDetailFragment`, `PromotionDetailViewModel`, `PromotionDetailContract`, `PRMContentDetailEndowFragment`, `adapter/PRMCustomFragmentPagerAdapter`
 
 > **KHÔNG seed từ ngoài — quy tắc chốt, áp dụng cả Android & iOS (2026-07-23).**
 > Màn chi tiết **chỉ hiển thị khi `getCustomerVoucherDetail` trả về**. Navigation chỉ mang `voucherId`;
@@ -69,8 +69,8 @@ Fragment: render thông tin + cấu hình nút theo state
 
 ## 3. Tab nội dung
 
-- `PrmContentDetailEndowFragment` hiển thị nội dung mô tả/điều khoản.
-- `PrmCustomFragmentPagerAdapter` quản lý các tab nội dung.
+- `PRMContentDetailEndowFragment` hiển thị nội dung mô tả/điều khoản.
+- `PRMCustomFragmentPagerAdapter` quản lý các tab nội dung.
 
 ---
 

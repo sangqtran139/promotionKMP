@@ -13,14 +13,14 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 | Tính năng | Màn Android | Màn iOS | Use case dùng |
 |---|---|---|---|
-| Ưu đãi của tôi | `MyPromotionFragment` | `MyPromotionViewController` | `searchVouchers` |
-| Chọn ưu đãi (checkout) | `ChoosePromotionFragment` | `ChoosePromotionViewController` | `findEligible`, `validateDiscounts`, `createRedemption` |
-| Chi tiết ưu đãi | `PromotionDetailFragment` | `PromotionDetailViewController` | `getVoucherDetail` |
-| Tìm kiếm ưu đãi | `SearchMyPromotionFragment` | `SearchMyPromotionViewController` | `searchVouchers` (kèm `keyword`) |
+| Ưu đãi của tôi | `PRMMyPromotionFragment` | `MyPromotionViewController` | `searchVouchers` |
+| Chọn ưu đãi (checkout) | `PRMChoosePromotionFragment` | `ChoosePromotionViewController` | `findEligible`, `validateDiscounts`, `createRedemption` |
+| Chi tiết ưu đãi | `PRMDetailFragment` | `PromotionDetailViewController` | `getVoucherDetail` |
+| Tìm kiếm ưu đãi | `PRMSearchMyPromotionFragment` | `SearchMyPromotionViewController` | `searchVouchers` (kèm `keyword`) |
 | Widget nhúng | `PRMEndowView` | `PRMEndowView` | `findEligible` |
-| Entry point | `PromotionSDK` | `PromotionSDK` | — |
-| Callback host | `PromotionSDKCallback` | `PromotionSDKCallback` | — |
-| Theme | `PromotionSDKTheme` | `PromotionSDKTheme` | — |
+| Entry point | `PRMSDK` | `PRMSDK` | — |
+| Callback host | `PRMSDKCallback` | `PRMSDKCallback` | — |
+| Theme | `PRMSDKTheme` | `PRMSDKTheme` | — |
 | Feature flag | `FeatureFlagViewModel` | `BaseRouter+FeatureFlag` | `featureFlags.*` |
 
 > Bản iOS cũ tên `VDSPromotion`, `SelectPromotionViewController`, `SelectPromtionView` (thiếu chữ `o`).
@@ -46,7 +46,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 | Feature flag | [FeatureFlag.md](./FeatureFlag.md) |
 
 > ⚠️ **Sáu file trên hiện mô tả kỹ phía Android**; phần triển khai iOS tương ứng **đã có trong repo**
-> tại `iosPromotionUI/PromotionSDKUI/` (không còn ở repo `ttcn-promotion-ios-sdk` riêng nữa). Bảng ánh xạ
+> tại `iosPromotionSDK/PromotionSDKUI/` (không còn ở repo `ttcn-promotion-ios-sdk` riêng nữa). Bảng ánh xạ
 > class iOS ↔ Android ở §1 là điểm tra cứu chính; xem thêm [ios/UIGuide.md](../ios/UIGuide.md) cho pattern
 > Builder/Router/ViewModel/ViewController. Khi cập nhật từng file feature, bổ sung mục iOS ngay bên cạnh mục Android.
 >
@@ -57,7 +57,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 ## 3. Cấu trúc chuẩn của một feature
 
-### Android (`:promotionUI`)
+### Android (`:promotionSDK`)
 
 ```
 feature/<nhóm>/<feature>/
@@ -67,7 +67,7 @@ feature/<nhóm>/<feature>/
 └── adapter/              # ListAdapter + DiffUtil (nếu có danh sách)
 ```
 
-### iOS (`promotionUI`)
+### iOS (`promotionSDK`)
 
 ```
 <Feature>/

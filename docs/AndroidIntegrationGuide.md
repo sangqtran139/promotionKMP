@@ -12,10 +12,10 @@
 
 - Thêm **một** dòng dependency Maven `com.ttcn.promotion:promotionSDK` — Gradle tự kéo `promotionLogic`,
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
-- Mọi thứ host chạm đều nằm ở package `com.ttcn.promotionsdk.ui.entry.*` (`PromotionSDK`, `PromotionSDKApi`,
-  `PromotionSDKTheme`, `PromotionSDKCallback`…).
-- Cấu hình một lần bằng `PromotionSDK.initialize(context, options)`, bơm đơn hàng bằng `updateContext(...)`,
-  nhận sự kiện qua `PromotionSDKCallback`.
+- Mọi thứ host chạm đều nằm ở package `com.ttcn.promotionsdk.entry.*` (`PRMSDK`, `PRMSDKApi`,
+  `PRMSDKTheme`, `PRMSDKCallback`…).
+- Cấu hình một lần bằng `PRMSDK.initialize(context, options)`, bơm đơn hàng bằng `updateContext(...)`,
+  nhận sự kiện qua `PRMSDKCallback`.
 
 ---
 
@@ -25,11 +25,11 @@ SDK phát hành dạng **Android library (AAR)** qua Maven. Lõi Kotlin (`:promo
 `implementation(projects.promotionLogic)` bên trong SDK → trong Gradle Module Metadata nó nằm ở scope
 **runtime**, không phải compile. Hệ quả: host **kéo được** `promotionLogic` để chạy nhưng **không thấy**
 `com.ttcn.promotionsdk.core.*` trên compile classpath. Type của lõi không lọt ra API public — cùng ranh
-giới mà [`PromotionSDKApi`](#8-headless-api-tự-dựng-ui--promotionsdkapi) cố tình map DTO thay vì trả thẳng model lõi.
+giới mà [`PRMSDKApi`](#8-headless-api-tự-dựng-ui--promotionsdkapi) cố tình map DTO thay vì trả thẳng model lõi.
 
 Hệ quả cho host:
 
-- ✅ Host chỉ thấy các type `com.ttcn.promotionsdk.ui.entry.*` — không chạm được model nội bộ của lõi.
+- ✅ Host chỉ thấy các type `com.ttcn.promotionsdk.entry.*` — không chạm được model nội bộ của lõi.
 - ⚠️ Ktor, coroutines, AppCompat, Glide, Gson **có** trên compile classpath của host (SDK dùng
   `implementation` các lib này, và metadata Maven đưa chúng xuống runtime + compile transitively). Đây là
   điểm khác iOS (nơi mọi thứ giấu tuyệt đối trong một dynamic framework).
@@ -44,7 +44,7 @@ Hệ quả cho host:
 | Mục | Giá trị |
 |---|---|
 | Artifact | Maven: `com.ttcn.promotion:promotionSDK:1.0.0` (AAR + POM/`.module`) |
-| Package public | `com.ttcn.promotionsdk.ui.entry.*` |
+| Package public | `com.ttcn.promotionsdk.entry.*` |
 | minSdk | **24** |
 | Namespace SDK | `com.ttcn.promotionsdk` (dùng chung `R` / databinding) |
 | UI | XML View + View/DataBinding (**không** Compose) — trả `Fragment` / custom `View` |
@@ -77,47 +77,47 @@ Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppComp
 ### 3.2. Kiểm tra nhanh
 
 ```kotlin
-import com.ttcn.promotionsdk.ui.entry.PromotionSDK
+import com.ttcn.promotionsdk.entry.PRMSDK
 
-Log.d("PRM", PromotionSDK.isInitialized().toString()) // false — resolve OK là được
+Log.d("PRM", PRMSDK.isInitialized().toString()) // false — resolve OK là được
 ```
 
 ---
 
 ## 4. Vòng đời SDK
 
-`PromotionSDK` là **singleton `object`** — mọi điểm vào là static. SDK giữ **một** phiên sống tại một thời điểm.
+`PRMSDK` là **singleton `object`** — mọi điểm vào là static. SDK giữ **một** phiên sống tại một thời điểm.
 Điểm lệch với iOS (N1): Android cần `context`.
 
 ```kotlin
-import com.ttcn.promotionsdk.ui.entry.*
+import com.ttcn.promotionsdk.entry.*
 
 // Sau khi login thành công:
-PromotionSDK.initialize(
+PRMSDK.initialize(
     context = applicationContext,
-    options = PromotionSDKOptions(
-        session = PromotionSessionConfig(
+    options = PRMSDKOptions(
+        session = PRMSessionConfig(
             customerId = user.id,
             accessToken = auth.accessToken,
             baseUrl = "http://125.235.38.229:8080",
             language = "vi-VN",                      // mặc định "vi-VN"
-            environment = PromotionEnvironment.PROD, // PROD | STAGING, mặc định PROD
+            environment = PRMEnvironment.PROD, // PROD | STAGING, mặc định PROD
         ),
         availableServices = listOf(                  // cho bottom sheet "Chọn dịch vụ" (có thể để rỗng)
-            PromotionAvailableService(serviceCode = "TOPUP", serviceName = "Nạp tiền", iconUrl = iconUrl),
+            PRMAvailableService(serviceCode = "TOPUP", serviceName = "Nạp tiền", iconUrl = iconUrl),
         ),
         theme = null,                                // null = SDK tự khôi phục theme đã lưu (xem §10)
-        callback = myCallback,                       // object implement PromotionSDKCallback (xem §7)
+        callback = myCallback,                       // object implement PRMSDKCallback (xem §7)
     ),
 )
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo | `PromotionSDK.initialize(context, options)` |
-| Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
-| Giải phóng (logout) | `PromotionSDK.release()` |
-| Lấy callback đã set | `PromotionSDK.getCallback(): PromotionSDKCallback?` |
+| Khởi tạo | `PRMSDK.initialize(context, options)` |
+| Kiểm tra đã init | `PRMSDK.isInitialized(): Boolean` |
+| Giải phóng (logout) | `PRMSDK.release()` |
+| Lấy callback đã set | `PRMSDK.getCallback(): PRMSDKCallback?` |
 
 **Refresh access token:** token bị "chụp" lúc init. Muốn đổi token = **gọi lại** `initialize(context, options)`
 với `session` mới (SDK tự dựng lại đồ thị DI). `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
@@ -129,18 +129,18 @@ với `session` mới (SDK tự dựng lại đồ thị DI). `release()` khi ch
 Giữ **một** phiên từ lúc login, tới màn có voucher mới bơm đơn hàng — **không** re-init:
 
 ```kotlin
-PromotionSDK.updateContext(
+PRMSDK.updateContext(
     orderId = order.id,
     orderValue = "500000",   // chuỗi số nguyên VNĐ
     serviceCode = "TOPUP",
     metaData = null,
     // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
-    orderItems = listOf(PromotionOrderItem(skuId = "SKU1", quantity = 1, unitPrice = "500000")),
+    orderItems = listOf(PRMOrderItem(skuId = "SKU1", quantity = 1, unitPrice = "500000")),
 )
 ```
 
 SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần gọi trước khi mở màn / gọi API. Đọc ngược lại qua
-`PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
+`PRMSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PRMSDK.session`.
 
 > ⚠️ `updateContext` / `api` / `openMyPromotion` / `openPromotionDetail` gọi trước `initialize` sẽ ném
 > **`IllegalStateException`** — luôn init trước.
@@ -156,20 +156,20 @@ Android dùng **Fragment** cho màn, và **custom View** cho widget checkout (kh
 
 ```kotlin
 // "Ưu đãi của tôi" — containerViewId null → add lên android.R.id.content; khác null → replace trong container đó
-PromotionSDK.openMyPromotion(activity, containerViewId = R.id.promotion_container)
+PRMSDK.openMyPromotion(activity, containerViewId = R.id.promotion_container)
 
 // Chi tiết một ưu đãi (đã biết voucherId, vd từ push notification / deeplink)
-PromotionSDK.openPromotionDetail(voucherId = "V123", activity = activity, containerViewId = null)
+PRMSDK.openPromotionDetail(voucherId = "V123", activity = activity, containerViewId = null)
 ```
 
 `activity` phải là `FragmentActivity` (AppCompatActivity là con của nó).
 
-### 6.2. Widget checkout — `PRMEndowView` + `PromotionIntegrateManager`
+### 6.2. Widget checkout — `PRMEndowView` + `PRMIntegrateManager`
 
-Đặt `PRMEndowView` vào layout XML, rồi tạo `PromotionIntegrateManager` để lo createRedemption/revalidate:
+Đặt `PRMEndowView` vào layout XML, rồi tạo `PRMIntegrateManager` để lo createRedemption/revalidate:
 
 ```xml
-<com.ttcn.promotionsdk.ui.feature.promotion.endowview.PRMEndowView
+<com.ttcn.promotionsdk.promotionsdkui.feature.promotion.endowview.PRMEndowView
     android:id="@+id/endowView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
@@ -177,7 +177,7 @@ PromotionSDK.openPromotionDetail(voucherId = "V123", activity = activity, contai
 
 ```kotlin
 // Trong Fragment.setupUI — nhớ updateContext(orderId, orderValue) trước khi màn dựng widget
-val promotionManager = PromotionIntegrateManager.create(binding.endowView)
+val promotionManager = PRMIntegrateManager.create(binding.endowView)
 
 btnConfirmPayment.setOnClickListener {
     promotionManager.confirmRedemption(
@@ -200,16 +200,16 @@ màn, rồi báo host qua `onAvailabilityChanged(false)`. Host **không** cần 
 
 ---
 
-## 7. Nhận sự kiện — `PromotionSDKCallback`
+## 7. Nhận sự kiện — `PRMSDKCallback`
 
 Là `interface` với mọi method có default rỗng → chỉ override cái cần.
 
 ```kotlin
-val myCallback = object : PromotionSDKCallback {
+val myCallback = object : PRMSDKCallback {
     override fun onVoucherApplied(voucherId: String) { /* user áp voucher thành công */ }
     override fun onVoucherCleared() { /* user bỏ chọn voucher */ }
     override fun onVoucherCountChanged(count: Int) { /* widget load xong, biết số voucher khả dụng */ }
-    override fun onServiceSelected(selection: PromotionServiceSelection) { /* điều hướng tới dịch vụ đã chọn */ }
+    override fun onServiceSelected(selection: PRMServiceSelection) { /* điều hướng tới dịch vụ đã chọn */ }
     override fun onAvailabilityChanged(enabled: Boolean) { /* enabled == false → ẩn điểm vào ưu đãi */ }
     override fun onClosed() { /* màn SDK đóng (user back / release) */ }
 }
@@ -229,16 +229,16 @@ val myCallback = object : PromotionSDKCallback {
 
 ---
 
-## 8. Headless API (tự dựng UI) — `PromotionSDK.api`
+## 8. Headless API (tự dựng UI) — `PRMSDK.api`
 
-Không dùng UI có sẵn thì gọi `PromotionSDK.api` (kiểu `PromotionSDKApi`). Các hàm là **`suspend`** (khác iOS
-dùng closure — N1), trả `PromotionApiResult<T>` (sealed: `Success` / `Failure`). **Phải `initialize` trước.**
+Không dùng UI có sẵn thì gọi `PRMSDK.api` (kiểu `PRMSDKApi`). Các hàm là **`suspend`** (khác iOS
+dùng closure — N1), trả `PRMApiResult<T>` (sealed: `Success` / `Failure`). **Phải `initialize` trước.**
 
 ```kotlin
 lifecycleScope.launch {
-    when (val r = PromotionSDK.api.getVouchers(keyword = "grab", page = 0)) {
-        is PromotionApiResult.Success -> render(r.data.vouchers) // PromotionVoucherPage
-        is PromotionApiResult.Failure -> showError(r.error)      // PromotionSDKError
+    when (val r = PRMSDK.api.getVouchers(keyword = "grab", page = 0)) {
+        is PRMApiResult.Success -> render(r.data.vouchers) // PRMVoucherPage
+        is PRMApiResult.Failure -> showError(r.error)      // PromotionSDKError
     }
 }
 ```
@@ -259,7 +259,7 @@ Năm hàm (song ánh iOS):
 
 ## 9. Xử lý lỗi — `PromotionSDKError`
 
-API **không ném lỗi nghiệp vụ**; mọi thất bại về `PromotionApiResult.Failure(error)`. `PromotionSDKError`
+API **không ném lỗi nghiệp vụ**; mọi thất bại về `PRMApiResult.Failure(error)`. `PromotionSDKError`
 là `sealed class`:
 
 ```kotlin
@@ -284,19 +284,19 @@ Mỗi case có sẵn `message` tiếng Việt để hiển thị. `NetworkFailur
 ## 10. Theming
 
 ```kotlin
-PromotionSDK.configure(
-    PromotionSDKTheme(
-        buttonToken = ButtonToken(/* ... */),
+PRMSDK.configure(
+    PRMSDKTheme(
+        buttonToken = PRMButtonToken(/* ... */),
         // 6 token: buttonToken, searchBarToken, listItemToken, tabChipToken, tabUnderlineToken, discountBadgeToken
     )
 )
 ```
 
 - `configure(theme)` áp **và lưu lại** → sống qua các lần mở app. Truyền `null` = xoá, về mặc định SDK.
-- Truyền `theme` trong `PromotionSDKOptions` lúc init cũng được; để `null` = SDK tự khôi phục theme đã lưu.
+- Truyền `theme` trong `PRMSDKOptions` lúc init cũng được; để `null` = SDK tự khôi phục theme đã lưu.
 - Nhóm token để `null` = giữ mặc định SDK cho nhóm đó.
 - Nên cấu hình **một lần** lúc khởi tạo — view đã render chỉ đổi khi được dựng lại (rebind / đẩy màn mới).
-- Đọc theme đang áp: `PromotionSDK.currentTheme(): PromotionSDKTheme?`.
+- Đọc theme đang áp: `PRMSDK.currentTheme(): PRMSDKTheme?`.
 
 ---
 
@@ -306,22 +306,22 @@ PromotionSDK.configure(
 |---|---|
 | Gọi `api` / `updateContext` / mở màn trước `initialize` | Luôn `initialize` sau login trước tiên |
 | Đổi token bằng cách sửa field | Gọi lại `initialize(context, options)` với session mới |
-| Import `com.ttcn.promotionsdk.core.*` | Chỉ dùng `com.ttcn.promotionsdk.ui.entry.*` |
+| Import `com.ttcn.promotionsdk.core.*` | Chỉ dùng `com.ttcn.promotionsdk.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
-| Quên `PromotionIntegrateManager.clear()` trong `onDestroyView` | Luôn `clear()` để huỷ coroutine scope |
+| Quên `PRMIntegrateManager.clear()` trong `onDestroyView` | Luôn `clear()` để huỷ coroutine scope |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled)` |
-| Rải `PromotionSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
+| Rải `PRMSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
 
 ---
 
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(context, options)
-vào màn có voucher       → PromotionSDK.updateContext(orderId, orderValue, ...)
-mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView + PromotionIntegrateManager
-refresh access token     → PromotionSDK.initialize(context, options) lại (session mới)
-logout                   → PromotionSDK.release()
+login thành công        → PRMSDK.initialize(context, options)
+vào màn có voucher       → PRMSDK.updateContext(orderId, orderValue, ...)
+mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView + PRMIntegrateManager
+refresh access token     → PRMSDK.initialize(context, options) lại (session mới)
+logout                   → PRMSDK.release()
 ```
 
 ---
@@ -330,10 +330,10 @@ logout                   → PromotionSDK.release()
 
 | Điểm | Android | iOS |
 |---|---|---|
-| Phân phối | AAR qua Maven | dynamic `PromotionSDKUI.xcframework` |
+| Phân phối | AAR qua Maven | dynamic `PRMSDK.xcframework` |
 | `initialize` | cần `context` | không cần |
-| Headless async | `suspend` + `PromotionApiResult` (sealed) | closure + `Result` |
-| Widget checkout | `PRMEndowView` (View trong layout) + `PromotionIntegrateManager` | `createEndowView(from:)` factory |
+| Headless async | `suspend` + `PRMApiResult` (sealed) | closure + `Result` |
+| Widget checkout | `PRMEndowView` (View trong layout) + `PRMIntegrateManager` | `createEndowView(from:)` factory |
 | Mở màn | `Fragment` + `containerViewId?` | push/present `UIViewController` |
 | Ẩn deps | `core.*` giấu; **nhưng** Ktor/coroutines lọt classpath host | giấu tuyệt đối trong 1 framework |
 | Enum môi trường | `PROD` / `STAGING` | `.prod` / `.staging` |

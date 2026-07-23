@@ -107,8 +107,8 @@ private class InMemoryStorage : KeyValueStorage {
 
 `:promotionLogic` không có UI nên không có test UI ở đây.
 
-- **Android** (`promotionUI`): ViewModel test bằng JUnit + `kotlinx-coroutines-test`, fake `PromotionUseCases`.
+- **Android** (`promotionSDK`): ViewModel test bằng JUnit + `kotlinx-coroutines-test`, fake `PromotionUseCases`.
   Instrumentation test cho Fragment nếu cần.
-- **iOS** (`promotionUI`): XCTest cho ViewModel, dùng `RxTest`/`RxBlocking` cho stream.
+- **iOS** (`promotionSDK`): XCTest cho ViewModel, dùng `RxTest`/`RxBlocking` cho stream.
 
 Khi hai module UI được tạo, bổ sung mục này (AI_AGENT_RULES điều 8).

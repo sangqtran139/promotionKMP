@@ -26,8 +26,8 @@ MyApplication13/
 
 | Module | Nội dung | Nguồn |
 |---|---|---|
-| `:promotionUI` (Android) | Fragment, XML, adapter, theme, MVI | `ttcn-promotion-android-sdk/vds-promotion/ui/` |
-| `promotionUI` (iOS) | ViewController, XIB, MVVM/Router, RxSwift | `ttcn-promotion-ios-sdk/VDSPromotion` + `Packages/PRMPromotionUI` |
+| `:promotionSDK` (Android) | Fragment, XML, adapter, theme, MVI | `ttcn-promotion-android-sdk/vds-promotion/ui/` |
+| `promotionSDK` (iOS) | ViewController, XIB, MVVM/Router, RxSwift | `ttcn-promotion-ios-sdk/VDSPromotion` + `Packages/PRMPromotionUI` |
 
 ---
 
@@ -93,8 +93,8 @@ promotionLogic/src/
 | Repository mới | interface ở `core/domain/repository/`, impl ở `core/data/repository/`, đăng ký ở `RepositoryModule` |
 | Cần API riêng nền tảng | `expect` ở `commonMain`, `actual` ở `androidMain` **và** `iosMain` |
 | Test | `commonTest/` — chạy trên cả hai nền tảng |
-| Màn hình Android mới | `:promotionUI` — `feature/<tên>/` với Fragment + ViewModel + Contract |
-| Màn hình iOS mới | `promotionUI` — bộ Builder / Router / ViewModel / ViewController |
+| Màn hình Android mới | `:promotionSDK` — `feature/<tên>/` với Fragment + ViewModel + Contract |
+| Màn hình iOS mới | `promotionSDK` — bộ Builder / Router / ViewModel / ViewController |
 
 ---
 
@@ -102,7 +102,7 @@ promotionLogic/src/
 
 - **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
 - **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
-- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
+- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PRMSDK`, `PRMSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
 - Module DI kết thúc bằng `Module`. Bản Ktor của ApiService bắt đầu bằng `Ktor`.
 - Feature contract Android: `XxxUiState` / `XxxAction` / `XxxEffect`, gộp trong `XxxContract.kt`.

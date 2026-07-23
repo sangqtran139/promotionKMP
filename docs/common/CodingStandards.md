@@ -42,10 +42,37 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
 ### Tiền tố
 
 - **Lõi `:promotionLogic`**: *không* prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
-- **UI Android**: base class và custom view public dùng **`PRM`** — `PRMBaseFragment`, `PRMEndowView`.
-- **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android — `PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`. Riêng design-system dùng chung `PRMDesignKit` dùng **`PRM`** — `PRMButton`, `PRMButtonThemeToken`.
+- **Mọi type `public` của UI SDK (cả Android lẫn iOS) dùng tiền tố `PRM`** — `PRMSDK`, `PRMSDKOptions`,
+  `PRMSessionConfig`, `PRMBaseFragment`, `PRMEndowView`, `PRMButtonToken`.
+- **Quy tắc đặt tên:** thêm `PRM` vào đầu, và **gộp chữ `Promotion` đứng đầu** để không sinh ra
+  `PRMPromotion…`:
+
+  | Cũ | Mới |
+  |---|---|
+  | `PromotionSDK` | `PRMSDK` |
+  | `PromotionSDKOptions` | `PRMSDKOptions` |
+  | `PromotionSessionConfig` | `PRMSessionConfig` |
+  | `PromotionAvailableService` | `PRMAvailableService` |
+  | `AppliedDiscount` | `PRMAppliedDiscount` |
+  | `ButtonToken` | `PRMButtonToken` |
+
+  Chữ `Promotion` **ở giữa** thì giữ: `ChoosePromotionFragment` → `PRMChoosePromotionFragment`.
+- **Bắt buộc trùng chữ Android ↔ iOS.** Cùng một khái niệm phải cùng tên type ở hai bên (điều 10
+  [AI_AGENT_RULES](../AI_AGENT_RULES.md)). Đổi tên một bên = đổi cả hai trong cùng thay đổi.
+- **Type `internal`/`private` không cần prefix** — chúng không lọt ra host (`MyPromotionViewController`,
+  `PromotionSDKImpl`, `PromotionUIStrings`, các ViewModel).
+- **Lõi `:promotionLogic` vẫn KHÔNG prefix** — `PromotionUseCases`, `PromotionSDKConfig`, `EligibleOffer`.
+  Lõi không nằm trên compile classpath của host nên không có nguy cơ trùng tên.
 
 Mục đích của prefix là tránh trùng tên khi nhúng vào host app.
+
+> ⚠️ Khi đổi tên hàng loạt: dùng `perl -pi -e 's/\bTên\b/TênMới/g'`, **không** dùng `sed` của macOS —
+> BSD sed không hỗ trợ word-boundary `\b`, thiếu nó thì `PromotionSDKConfig` (type của **lõi**, không
+> được đổi) sẽ bị cắt nhầm thành `PRMSDKConfig`.
+>
+> ⚠️ Trên iOS, **module** vẫn tên `PromotionSDK` còn **class entry** tên `PRMSDK`. Đừng để chúng trùng
+> tên: nếu class trùng tên module, `.swiftinterface` sinh ra `PromotionSDK.PRMVoucher` sẽ bị Swift hiểu
+> là type lồng trong class → `error: 'PRMVoucher' is not a member type of class 'PromotionSDK.PromotionSDK'`.
 
 ---
 

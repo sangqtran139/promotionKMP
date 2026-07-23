@@ -49,7 +49,7 @@ Trước khi viết màn hình Compose Multiplatform đầu tiên:
   thu `Effect` qua `LaunchedEffect`.
 - ViewModel dùng `androidx.lifecycle.ViewModel` bản multiplatform
   (`lifecycle-viewmodel-compose` đã có trong version catalog).
-- Theme Compose phải map từ token của `PromotionSDKTheme` để giữ khả năng
+- Theme Compose phải map từ token của `PRMSDKTheme` để giữ khả năng
   tùy biến brand của host. Xem [Theming.md](./Theming.md).
 - Ảnh dùng Coil 3 (multiplatform) thay cho Glide.
 - Dùng interop (`AndroidView` / `ComposeView`, `UIKitView`) khi cần sống chung với màn hình native.
