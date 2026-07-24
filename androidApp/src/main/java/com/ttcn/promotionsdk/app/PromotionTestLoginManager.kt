@@ -3,8 +3,11 @@ package com.ttcn.promotionsdk.app
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
+import okio.Buffer
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -52,6 +55,7 @@ class PromotionTestLoginManager {
             level = HttpLoggingInterceptor.Level.BODY
         }
         val client = OkHttpClient.Builder()
+            .addInterceptor(CurlLoggingInterceptor())
             .addInterceptor(logging)
             .build()
         Retrofit.Builder()
@@ -109,5 +113,38 @@ class PromotionTestLoginManager {
         }
         Log.d(TAG, "accessToken (from step 2): $token")
         token
+    }
+}
+
+/**
+ * In mỗi request login ra **lệnh cURL** copy-paste được — dán thẳng vào terminal/Postman khi đối chiếu
+ * với BE. Đối ứng plugin `PromotionCurlLogging` bên trong SDK (login là API của host, không đi qua
+ * HttpClient của SDK nên cần interceptor riêng ở đây).
+ */
+private class CurlLoggingInterceptor : Interceptor {
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val sb = StringBuilder("curl -X ").append(request.method)
+
+        request.headers.forEach { (name, value) ->
+            sb.append(" \\\n  -H '").append(name).append(": ").append(value).append('\'')
+        }
+
+        request.body?.let { body ->
+            // Content-Type nằm trên RequestBody (do converter đặt), không ở headers builder.
+            body.contentType()?.let { sb.append(" \\\n  -H 'Content-Type: ").append(it).append('\'') }
+            val buffer = Buffer()
+            body.writeTo(buffer)
+            val charset = body.contentType()?.charset() ?: Charsets.UTF_8
+            val payload = buffer.readString(charset)
+            if (payload.isNotEmpty()) {
+                // Escape nháy đơn cho shell: ' -> '\''
+                sb.append(" \\\n  -d '").append(payload.replace("'", "'\\''")).append('\'')
+            }
+        }
+
+        sb.append(" \\\n  '").append(request.url).append('\'')
+        Log.d(TAG, "cURL:\n$sb")
+        return chain.proceed(request)
     }
 }

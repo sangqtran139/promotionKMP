@@ -164,7 +164,7 @@ final class TokenLoadingViewController: UIViewController {
             orderId: "ORD-DEMO-001",
             orderValue: "500000",
             // TEST: để nil (khớp Android demo) — kiểm tra detail có load + nút "Sử dụng ngay" hiện không.
-            serviceCode: nil,
+            serviceCode: "TKBAOVIET",
             metaData: nil
         )
     }
