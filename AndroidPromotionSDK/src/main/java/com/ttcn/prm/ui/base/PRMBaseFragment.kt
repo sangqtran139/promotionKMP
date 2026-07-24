@@ -122,12 +122,25 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
             .commit()
     }
 
+    /**
+     * Back của các màn SDK.
+     *
+     * Ngưỡng phải là `> 0`, **không phải `> 1`**: khi host mở màn SDK **đầu tiên** từ màn của họ
+     * (`openMyPromotion` / `openPromotionDetail` — cả hai `addToBackStack`), back stack của Activity
+     * chỉ có **1** entry, vì màn của host thường không nằm trên back stack. Với `> 1` thì lần back
+     * đầu rơi vào nhánh `else` và **đóng luôn Activity của host** thay vì quay về màn host.
+     *
+     * Hết entry để pop (host tự nhúng fragment, không qua back stack) thì **không** `finish()` —
+     * SDK không có quyền đóng Activity của host; đẩy sự kiện về `onBackPressedDispatcher` để host
+     * quyết định (không màn nào của SDK đăng ký `OnBackPressedCallback` nên không có đệ quy).
+     */
     open fun onBackFragment() {
-        val manager = requireActivity().supportFragmentManager
-        if (manager.backStackEntryCount > 1) {
+        val activity = requireActivity()
+        val manager = activity.supportFragmentManager
+        if (manager.backStackEntryCount > 0) {
             manager.popBackStack()
         } else {
-            requireActivity().finish()
+            activity.onBackPressedDispatcher.onBackPressed()
         }
     }
 

@@ -21,6 +21,9 @@ enum PromotionUIStrings {
     /// Hai tab màn chi tiết — đối ứng `prm_tab_detail_info` / `prm_tab_usage_guide` bên Android.
     static let tabDetailInfo = "Thông tin chi tiết"
     static let tabUsageGuide = "Hướng dẫn sử dụng"
+    /// Empty-view màn "Ưu đãi của tôi" — đối ứng `prm_deal_hot` / `prm_hot_deal_description` bên Android.
+    static let emptyPromotionsTitle = "Ngàn deal HOT chờ bạn"
+    static let emptyPromotionsDescription = "Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!"
 
     /// "HSD: 20/05/2026"
     static func expiryDate(_ value: String) -> String { "HSD: \(value)" }

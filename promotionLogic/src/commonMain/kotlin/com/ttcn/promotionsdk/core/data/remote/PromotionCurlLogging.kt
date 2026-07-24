@@ -25,7 +25,8 @@ internal val PromotionCurlLogging = createClientPlugin("PromotionCurlLogging") {
     }
 }
 
-private fun buildCurlCommand(request: HttpRequestBuilder, body: Any?): String {
+/** `internal` (không private) để `commonTest` kiểm trực tiếp từng nhánh dựng lệnh cURL. */
+internal fun buildCurlCommand(request: HttpRequestBuilder, body: Any?): String {
     val sb = StringBuilder("[PromotionSDK] cURL:\ncurl -X ").append(request.method.value)
 
     request.headers.entries().forEach { (name, values) ->

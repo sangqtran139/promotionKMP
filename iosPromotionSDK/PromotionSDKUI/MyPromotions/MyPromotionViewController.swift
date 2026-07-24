@@ -49,8 +49,8 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     private lazy var emptyView: PromotionSearchNoResultView = {
         let view = PromotionSearchNoResultView()
         view.thumbnailImage = UIImage.sdk("prm_ic_search_no_result")
-        view.title = "Ngàn deal HOT chờ bạn"
-        view.descriptionString = "Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!"
+        view.title = PromotionUIStrings.emptyPromotionsTitle
+        view.descriptionString = PromotionUIStrings.emptyPromotionsDescription
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true
         return view

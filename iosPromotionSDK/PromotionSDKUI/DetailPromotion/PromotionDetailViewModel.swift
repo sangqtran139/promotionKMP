@@ -19,12 +19,12 @@ import Foundation
 
 final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
 
-    /// Nội dung hiển thị theo tab cùng cờ cho biết text có phải HTML không.
+    /// Nội dung 1 tab, đã bọc thành **trang HTML hoàn chỉnh** bằng `wrapPromotionHtml` dùng chung với
+    /// Android — VC chỉ việc nạp thẳng vào `WKWebView`. Rỗng = trang trống.
     struct ContentDisplay {
-        let text: String
-        let isHTML: Bool
+        let html: String
 
-        static let empty = ContentDisplay(text: "", isHTML: false)
+        static let empty = ContentDisplay(html: "")
     }
 
     /// Nội dung cả 2 tab, render đồng thời vào 2 trang vuốt được.
@@ -196,9 +196,10 @@ private extension PromotionDetailState {
 
     // ─── Display builders (rendering — native format card/ngày/HTML) ─────────────
 
-    /// Nội dung 1 tab: rỗng → để trống (không text mặc định); có → render HTML.
+    /// Bọc HTML bằng hàm DÙNG CHUNG ở promotionLogic (Android nạp đúng chuỗi này vào WebView) —
+    /// gồm cả chuẩn hoá `width` cố định theo `pt` để nội dung CMS không tràn ngang.
     static func contentDisplay(_ raw: String) -> PromotionDetailViewModel.ContentDisplay {
-        raw.isEmpty ? .empty : .init(text: raw, isHTML: true)
+        .init(html: PromotionHtmlContentKt.wrapPromotionHtml(content: raw))
     }
 
     /// Tiền tố "HSD:" — **khớp Android** (`prm_expiry_short_format`) và khớp luôn màn danh sách iOS

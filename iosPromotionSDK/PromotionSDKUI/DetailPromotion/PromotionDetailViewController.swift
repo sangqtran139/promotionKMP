@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WebKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMDesignKit
@@ -25,8 +26,11 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         scroll.translatesAutoresizingMaskIntoConstraints = false
         return scroll
     }()
-    private let detailTextView = UITextView()
-    private let guideTextView = UITextView()
+    /// Hai tab render bằng **WKWebView** (không phải UITextView) để khớp Android — cùng nạp chuỗi
+    /// HTML do `wrapPromotionHtml` (promotionLogic) sinh ra. NSAttributedString cũ render bảng/list
+    /// khác trình duyệt nên hai nền tảng lệch.
+    private let detailWebView = PromotionDetailViewController.makeContentWebView()
+    private let guideWebView = PromotionDetailViewController.makeContentWebView()
 
     /// Shimmer phủ toàn màn lúc gọi API chi tiết.
     private lazy var shimmerView: PromotionDetailShimmerView = {
@@ -77,8 +81,8 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentScrollView.addSubview(stack)
 
-        let detailPage = makeContentPage(textView: detailTextView)
-        let guidePage = makeContentPage(textView: guideTextView)
+        let detailPage = makeContentPage(webView: detailWebView)
+        let guidePage = makeContentPage(webView: guideWebView)
         stack.addArrangedSubview(detailPage)
         stack.addArrangedSubview(guidePage)
 
@@ -104,8 +108,8 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         ])
     }
 
-    /// 1 trang nội dung: card trắng bo góc + viền + đổ bóng (đồng bộ VoucherCardView), bọc textview cuộn.
-    private func makeContentPage(textView: UITextView) -> UIView {
+    /// 1 trang nội dung: card trắng bo góc + viền + đổ bóng (đồng bộ VoucherCardView), bọc webview cuộn.
+    private func makeContentPage(webView: WKWebView) -> UIView {
         let page = UIView()
         page.translatesAutoresizingMaskIntoConstraints = false
 
@@ -122,8 +126,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         card.translatesAutoresizingMaskIntoConstraints = false
         page.addSubview(card)
 
-        configContentTextView(textView)
-        card.addSubview(textView)
+        card.addSubview(webView)
 
         NSLayoutConstraint.activate([
             // Card canh lề 20 trong mỗi trang → trùng lề VoucherCardView phía trên.
@@ -132,23 +135,25 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
             card.leadingAnchor.constraint(equalTo: page.leadingAnchor, constant: 20),
             card.trailingAnchor.constraint(equalTo: page.trailingAnchor, constant: -20),
 
-            textView.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
-            textView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
-            textView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
-            textView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
+            webView.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
+            webView.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -16),
+            webView.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            webView.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
         ])
         return page
     }
 
-    private func configContentTextView(_ textView: UITextView) {
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        textView.isEditable = false
-        textView.isScrollEnabled = true
-        textView.backgroundColor = .clear
-        textView.textContainerInset = .zero
-        textView.textContainer.lineFragmentPadding = 0
-        textView.font = Typography.fontRegular14
-        textView.textColor = Colors.tokenDark100
+    /// WebView 1 tab: nền trong suốt (card trắng phía sau lo nền), cuộn dọc trong card, **không**
+    /// bounce/cuộn ngang để không tranh cử chỉ với pager vuốt ngang ở ngoài.
+    private static func makeContentWebView() -> WKWebView {
+        let webView = WKWebView()
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.backgroundColor = .clear
+        webView.isOpaque = false
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.bounces = false
+        webView.scrollView.showsHorizontalScrollIndicator = false
+        return webView
     }
 
     private func configShimmer() {
@@ -178,8 +183,8 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         configVoucherCardView(voucherCardViewModel: state.card)
         bannerImageView.setImage(urlString: state.banner)
 
-        applyContent(state.tabContents.detail, to: detailTextView)
-        applyContent(state.tabContents.guide, to: guideTextView)
+        applyContent(state.tabContents.detail, to: detailWebView)
+        applyContent(state.tabContents.guide, to: guideWebView)
 
         applyButton.setTitle(state.applyTitle, for: .normal)
         applyButton.isEnabled = state.isApplyEnabled
@@ -221,18 +226,10 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         }
     }
 
-    /// Gán nội dung 1 tab: HTML → attributed; ngược lại → text thường (rỗng = để trống).
-    private func applyContent(_ display: PromotionDetailViewModel.ContentDisplay, to textView: UITextView) {
-        if display.isHTML,
-           let attributed = display.text.htmlToAttributedString(
-                font: Typography.fontRegular14,
-                color: Colors.tokenDark100
-           ) {
-            textView.attributedText = attributed
-        } else {
-            textView.attributedText = nil
-            textView.text = display.text
-        }
+    /// Nạp trang HTML đã bọc sẵn (dùng chung với Android) vào WebView. Rỗng → trang trắng.
+    /// `baseURL: nil` — khớp `loadDataWithBaseURL(null, …)` bên Android.
+    private func applyContent(_ display: PromotionDetailViewModel.ContentDisplay, to webView: WKWebView) {
+        webView.loadHTMLString(display.html, baseURL: nil)
     }
 
     //MARK: - Action

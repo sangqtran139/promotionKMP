@@ -6,9 +6,9 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.ttcn.prm.core.utils.PRMSimpleSpanBuilder
 import com.ttcn.prm.databinding.FragmentContentDetailEndowPrmBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.presentation.promotiondetail.wrapPromotionHtml
 
 class PrmContentDetailEndowFragment :
     PRMBaseFragment<FragmentContentDetailEndowPrmBinding>() {
@@ -23,9 +23,10 @@ class PrmContentDetailEndowFragment :
     override fun setupUI() {
         val htmlContent = arguments?.getString(ARG_CONTENT).orEmpty()
         initWebView()
+        // Bọc HTML bằng hàm DÙNG CHUNG ở promotionLogic (iOS nạp đúng chuỗi này vào WKWebView).
         binding.wvContent.loadDataWithBaseURL(
             null,
-            buildHtmlContent(htmlContent),
+            wrapPromotionHtml(htmlContent),
             MIME_TYPE_HTML,
             ENCODING_UTF8,
             null,
@@ -46,32 +47,6 @@ class PrmContentDetailEndowFragment :
                 request: WebResourceRequest,
             ): Boolean = true
         }
-    }
-
-    private fun buildHtmlContent(content: String): String {
-        val simpleSpanBuilder = PRMSimpleSpanBuilder()
-
-        simpleSpanBuilder.append(
-            """
-            <HTML>
-            <HEAD>
-                <LINK href="detail_endow.css" type="text/css" rel="stylesheet"/>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </HEAD>
-            <body>
-            """.trimIndent(),
-        )
-
-        simpleSpanBuilder.append(content)
-        simpleSpanBuilder.append("</body></HTML>")
-
-        return simpleSpanBuilder.build()
-            .toString()
-            .replace("style=\"width:(| )\\w{1,}pt;\"".toRegex(), " ")
-            .replace("width=\"\\w{1,}\"".toRegex(), " ")
-            .replace("width:\\w{1,}pt".toRegex(), "word-wrap: break-word")
-            .replace("width: \\w{1,}pt".toRegex(), "word-wrap: break-word")
     }
 
     companion object {
