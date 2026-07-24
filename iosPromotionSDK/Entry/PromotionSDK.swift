@@ -227,7 +227,7 @@ public final class PromotionSDK {
     // MARK: - Feature flag
     //
     // SDK **không** phơi API hỏi cờ ra ngoài. Host không cần biết cờ nào đang bật: mọi điểm vào đều tự
-    // gác (`openMyPromotion`, `openPromotionDetail`, widget), và khi bị chặn thì SDK hiện popup
+    // gác (`openMyPromotion`, `openPromotionDetail`, widget), và khi bị chặn thì SDK hiện toast
     // PRM_MOB_021 rồi báo host qua `onAvailabilityChanged(enabled:)`.
     //
     // Logic quyết định nằm ở `PromotionFeatureGate` trong `promotionLogic`, dùng chung với Android.
@@ -236,13 +236,13 @@ public final class PromotionSDK {
 
     /// Show the "My Promotions" list screen.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
-    /// Cờ `VOUCHER_LIST` TẮT → hiện popup lỗi PRM_MOB_021 trên `viewController` + báo host
+    /// Cờ `VOUCHER_LIST` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
     public static func openMyPromotion(from viewController: UIViewController) {
         guard let impl = requireImpl("openMyPromotion(from:)") else { return }
         impl.canOpenVoucherList { enabled in
             guard enabled else {
-                impl.showFeatureDisabledDialog(on: viewController)
+                impl.showFeatureDisabledToast(on: viewController)
                 callback?.onAvailabilityChanged(enabled: false)
                 return
             }
@@ -267,7 +267,7 @@ public final class PromotionSDK {
     /// Mở màn **chi tiết ưu đãi** theo `voucherId`.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
     /// Màn tự gọi API lấy chi tiết đầy đủ; trong lúc chờ hiện shimmer.
-    /// Cờ `VOUCHER_DETAIL` TẮT → hiện popup lỗi PRM_MOB_021 trên `viewController` + báo host
+    /// Cờ `VOUCHER_DETAIL` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
     public static func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
         guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }

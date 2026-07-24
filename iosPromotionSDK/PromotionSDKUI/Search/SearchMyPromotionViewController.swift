@@ -174,9 +174,9 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
 
     private func handle(_ effect: SearchMyPromotionViewModel.Effect) {
         switch effect {
-        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android: Fragment map code → chuỗi).
+        // Lỗi nghiệp vụ → toast (đồng nhất Android: Fragment map code → chuỗi rồi showToast).
         case .showError(let code):
-            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let voucherId, let services):
             showServiceSelector(voucherId: voucherId, services: services)
         }

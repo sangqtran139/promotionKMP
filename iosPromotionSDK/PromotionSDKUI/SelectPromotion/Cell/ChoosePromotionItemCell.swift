@@ -40,25 +40,22 @@ final class ChoosePromotionItemCell: UITableViewCell {
     //MARK: - BindData
     func bindData(_ viewModel: MyPromotionCellViewModel) {
         self.viewModel = viewModel
-        var dateString: String? = nil
-        var dateColor: UIColor? = nil
-        
-        if let date = viewModel.date {
-            if PRMPromotionDate.isExpiringSoon(date, thresholdDays: 3) {
-                let interval = date.timeIntervalSince(Date())
-                let days = max(1, Int(ceil(interval / 86400)))
-                dateString = "HSD: Còn \(days) ngày"
-                dateColor = Colors.warningOrangeColor
-            } else {
-                dateString = "HSD: \(PRMPromotionDate.display(date))"
-            }
+        var dateString: String?
+        // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
+        // dùng chung Android (`ChooseOffer.expiringInDays`). Cell chỉ format; KHÔNG tự suy ngưỡng
+        // (trước đây hardcode 3 ngày nên lệch Android). Màu giữ mặc định, khớp Android.
+        if let days = viewModel.expiringInDays {
+            dateString = PromotionUIStrings.remainingDays(days)
+        } else if let date = viewModel.date {
+            dateString = PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
         }
-        
+
         let cardModel = PromotionCardModel(
             logoURLString: viewModel.imageURL,
             dateString: dateString,
-            dateColor: dateColor,
+            dateColor: nil,
             title: viewModel.title,
+            highlightKeyword: viewModel.highlightKeyword,
             descriptionText: viewModel.description,
             buttonTitle: viewModel.buttonTitle,
             stateText: viewModel.stateText,
@@ -83,7 +80,10 @@ final class ChoosePromotionItemCell: UITableViewCell {
 //MARK: - Extension
 extension ChoosePromotionItemCell: PromotionCardViewDelegate {
     func promotionCardViewDidTap(_ view: PRMPromotionUI.PromotionCardView) {
-        self.delegate?.selectPromotionItemCellDidTap(self, id: self.viewModel?.id ?? "")
+        // Ở màn này tap card = CHỌN ưu đãi (không phải xem chi tiết) → ưu đãi không đủ điều kiện thì
+        // bỏ qua, y như checkbox. Đối ứng Android `ChoosePromotionMainAdapter` (`if (!canUse) return`).
+        guard let viewModel = self.viewModel, !viewModel.isDisabled else { return }
+        self.delegate?.selectPromotionItemCellDidTap(self, id: viewModel.id)
     }
     
     func promotionCardViewDidTapButton(_ view: PRMPromotionUI.PromotionCardView) {

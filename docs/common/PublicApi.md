@@ -132,8 +132,8 @@ tiện tay `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget
 ## 2. Feature flag — SDK **không** phơi ra
 
 Host không cần biết cờ nào đang bật. Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
-(`openMyPromotion`, mở chi tiết, widget) và báo lại khi bị chặn: Toast + `PRM_MOB_021` (Android),
-popup + `onAvailabilityChanged(enabled:)` (iOS). Xem [HeadlessAPI.md §4](./HeadlessAPI.md).
+(`openMyPromotion`, mở chi tiết, widget) và báo lại khi bị chặn: toast `PRM_MOB_021` ở **cả hai nền
+tảng**, kèm `onAvailabilityChanged(enabled:)` bên iOS. Xem [HeadlessAPI.md §4](./HeadlessAPI.md).
 
 ---
 

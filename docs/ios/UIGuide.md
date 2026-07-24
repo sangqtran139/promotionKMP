@@ -248,7 +248,7 @@ guard PromotionFeatureGate.shared.canOpenVoucherDetail() else { showDialog(); re
 
 | Việc | Gọi ở đâu |
 |---|---|
-| Mở màn "Chi tiết ưu đãi" | `BaseRouter.canOpenVoucherDetail()` — gate + popup PRM_MOB_021 |
+| Mở màn "Chi tiết ưu đãi" | `BaseRouter.canOpenVoucherDetail()` — gate + toast PRM_MOB_021 |
 | Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion` → `impl.canOpenVoucherList` |
 | Hiện widget checkout | `PromotionSDKImpl.applyFlag()` |
 | 5 hàm headless | Đã gác sẵn bên trong `PromotionUseCases` của lõi — Swift **không** gác lại |

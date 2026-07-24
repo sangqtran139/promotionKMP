@@ -11,7 +11,7 @@ import UIKit
 final class SearchMyPromotionRouter: PRMBaseRouter<SearchMyPromotionViewController> {
     
     func routeToDetail(promotion: VoucherItem) {
-        // Cờ VOUCHER_DETAIL TẮT → hiện popup PRM_MOB_021, không mở màn chi tiết.
+        // Cờ VOUCHER_DETAIL TẮT → hiện toast PRM_MOB_021, không mở màn chi tiết.
         guard canOpenVoucherDetail() else { return }
         // customerId/token màn chi tiết tự đọc từ PromotionRequestContextProvider (đối xứng Android).
         let vc = PromotionDetailBuilder.build(

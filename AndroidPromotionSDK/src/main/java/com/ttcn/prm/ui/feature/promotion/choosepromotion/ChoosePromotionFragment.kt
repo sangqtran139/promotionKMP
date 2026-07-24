@@ -150,13 +150,20 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
     private fun rebuildList(state: ChoosePromotionUiState) {
         val items = mutableListOf<ChoosePromotionListItem>()
+        // Từ khoá đang tìm → tô đỏ đoạn khớp trên item (đối ứng `highlightKeyword` bên iOS).
+        val highlightKeyword = state.keyword.trim()
 
         if (state.vouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
             val visible = if (state.myExpanded) state.vouchers else state.vouchers.take(COLLAPSED_MY_COUNT)
             visible.forEach { voucher ->
                 val isSelected = voucher.voucherId in state.selectedIds
-                items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
+                items.add(
+                    ChoosePromotionListItem.VoucherItem(
+                        data = voucher.copy(isSelected = isSelected),
+                        highlightKeyword = highlightKeyword,
+                    )
+                )
             }
             // Nút "Xem thêm/Thu gọn": trạng thái tính bằng rule dùng chung ở store (state.mySeeMore).
             if (state.mySeeMore != ChooseSeeMoreState.HIDDEN) {
@@ -172,7 +179,12 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
             state.otherVouchers.forEach { voucher ->
                 val isSelected = voucher.voucherId in state.selectedIds
-                items.add(ChoosePromotionListItem.VoucherItem(voucher.copy(isSelected = isSelected)))
+                items.add(
+                    ChoosePromotionListItem.VoucherItem(
+                        data = voucher.copy(isSelected = isSelected),
+                        highlightKeyword = highlightKeyword,
+                    )
+                )
             }
         }
 

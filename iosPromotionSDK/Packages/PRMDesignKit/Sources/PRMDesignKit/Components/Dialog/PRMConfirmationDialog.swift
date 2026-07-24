@@ -3,8 +3,11 @@
 //  PRMDesignKit
 //
 //  Confirmation Dialog dùng chung (mobile) — dạng Lỗi: header "Thông báo" + nội dung + 1 nút "Đóng".
-//  Dùng cho lỗi nghiệp vụ (thay toast) theo PRM_KBNV_MOB_000_Danh mục dùng chung #6.
 //  UIKit thuần.
+//
+//  ⚠️ HIỆN KHÔNG DÙNG ở luồng lỗi của Promotion SDK: từ 2026-07-24 mọi lỗi nghiệp vụ (kể cả
+//  PRM_MOB_021 khi cờ tính năng TẮT) hiện bằng `PRMToast` để **đồng nhất với Android** (`Toast`).
+//  Giữ lại như component của design kit; đừng đưa lại vào luồng lỗi nếu không sửa cả hai nền tảng.
 //
 
 import UIKit

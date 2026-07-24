@@ -284,9 +284,9 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
 
     private func handle(_ effect: MyPromotionViewModel.Effect) {
         switch effect {
-        // Lỗi nghiệp vụ → Confirmation Dialog (header "Thông báo" + nút "Đóng"), theo MOB_000 #6.
+        // Lỗi nghiệp vụ → toast (đồng nhất Android `showToast`).
         case .showError(let code):
-            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let voucherId, let services):
             showServiceSelector(voucherId: voucherId, services: services)
         }

@@ -33,6 +33,8 @@ enum PromotionUIStrings {
     static func discount(_ value: String) -> String { "Giảm \(value)đ" }
     /// "Hạn sử dụng 20/05/2026"
     static func expiryDateLong(_ value: String) -> String { "Hạn sử dụng \(value)" }
+    /// "Đã chọn 2 voucher" — đối ứng `prm_selected_voucher_count` bên Android.
+    static func selectedVoucherCount(_ count: Int) -> String { "Đã chọn \(count) voucher" }
 
     /// Map mã lỗi (raw từ store) → chuỗi hiển thị — **dùng chung mọi màn**, KHỚP wording Android
     /// (`R.string.prm_*`). Mã là chữ THƯỜNG khớp `ErrorCodes` của lõi (trước đây iOS so `"MISSING_CUSTOMER_ID"`

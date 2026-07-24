@@ -299,21 +299,22 @@ final class PromotionSDKImpl: NSObject {
         DispatchQueue.main.async { completion(enabled) }
     }
 
-    /// Popup lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
-    func showFeatureDisabledDialog(on viewController: UIViewController) {
+    /// Báo lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
+    /// Toast, đồng nhất Android (`PRMBaseFragment.openPromotionDetail` → `showToast`).
+    func showFeatureDisabledToast(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
             ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-        PRMConfirmationDialog.showError(message, in: viewController.view)
+        PRMToast.show(message, in: viewController.view)
     }
 
     /// Mở màn chi tiết ưu đãi theo `voucherId`. Màn tự fetch chi tiết đầy đủ; trong lúc chờ hiện shimmer.
-    /// Gate bởi cờ `VOUCHER_DETAIL` (đã gate ngầm bởi master): TẮT → popup lỗi PRM_MOB_021 + báo host.
+    /// Gate bởi cờ `VOUCHER_DETAIL` (đã gate ngầm bởi master): TẮT → toast lỗi PRM_MOB_021 + báo host.
     /// Có navigationController → push, ngược lại → present modal.
     func openPromotionDetail(voucherId: String, on viewController: UIViewController, navigator: UINavigationController?) {
         canOpenVoucherDetail { [weak self] enabled in
             guard let self else { return }
             guard enabled else {
-                self.showFeatureDisabledDialog(on: viewController)
+                self.showFeatureDisabledToast(on: viewController)
                 self.onAvailabilityUpdate?(false)
                 return
             }
@@ -483,9 +484,11 @@ final class PromotionSDKImpl: NSObject {
             // Bấm "Áp dụng" -> validate qua EndowStore; widget cập nhật qua `render` (observe).
             // Lỗi -> KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công/không-đủ-điều-kiện -> đóng màn.
             self.endowVM.validateAndApply(promotions) { [weak vc] state in
-                if state.errorCode != nil {
+                if let errorCode = state.errorCode {
+                    // Map mã lỗi → chuỗi hiển thị (dùng chung mọi màn) — đối ứng Android
+                    // `mapPromotionError(errorCode)`; trước đây iOS nuốt mã, luôn hiện một câu chung.
                     if let vc = vc {
-                        PRMConfirmationDialog.showError("Không thể áp dụng ưu đãi lúc này. Vui lòng thử lại.", in: vc.view)
+                        PRMToast.show(PromotionUIStrings.errorMessage(errorCode), in: vc.view)
                     }
                     return
                 }

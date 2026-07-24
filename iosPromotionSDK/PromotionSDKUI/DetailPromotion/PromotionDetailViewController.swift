@@ -203,9 +203,9 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
 
     private func handle(_ effect: PromotionDetailViewModel.Effect) {
         switch effect {
-        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android/MyPromotion).
+        // Lỗi nghiệp vụ → toast (đồng nhất Android/MyPromotion).
         case .showError(let code):
-            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let items):
             showServiceSelector(items)
         }

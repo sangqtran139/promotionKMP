@@ -189,7 +189,7 @@ let widget2 = PromotionSDK.createEndowView(
 )
 ```
 
-**Feature flag tự gác:** nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` tự hiện popup lỗi
+**Feature flag tự gác:** nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` tự hiện toast lỗi
 `PRM_MOB_021` trên `viewController` rồi báo host qua `onAvailabilityChanged(enabled: false)`. Host **không**
 cần hỏi cờ — chỉ cần lắng nghe callback để ẩn điểm vào (xem §8).
 

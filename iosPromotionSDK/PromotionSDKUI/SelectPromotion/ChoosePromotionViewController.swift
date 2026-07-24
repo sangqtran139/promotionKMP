@@ -135,6 +135,15 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         sections = state.sections
         promotionsTableView.reloadData()
 
+        // Thanh "Đã chọn N voucher" — trạng thái do VM/store quyết định (đối ứng Android
+        // `updateApplyButtonState`); trước đây iOS ẩn cứng nên bật multi-select là lệch.
+        // Số tiền giảm để trống: Android cũng không set `txtReducedPrice`.
+        totalVoucherView.isHidden = !state.showsSelectedCount
+        if state.showsSelectedCount {
+            voucherLabel.text = PromotionUIStrings.selectedVoucherCount(state.selectedCount)
+            totalLabel.text = ""
+        }
+
         shimmerView.isHidden = !state.isLoading
         if state.isLoading {
             shimmerView.startAnimating()
@@ -145,9 +154,9 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 
     private func handle(_ effect: ChoosePromotionViewModel.Effect) {
         switch effect {
-        // Lỗi nghiệp vụ → Confirmation Dialog (đồng nhất Android — trước đây Choose iOS nuốt lỗi).
+        // Lỗi nghiệp vụ → toast (đồng nhất Android `showToast(mapPromotionError(code))`).
         case .showError(let code):
-            PRMConfirmationDialog.showError(PromotionUIStrings.errorMessage(code), in: view)
+            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
         // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate) — đối ứng
         // `ChoosePromotionFragment` xử lý effect `ApplySelectedOffers` bên Android.
         case .applySelectedOffers(let offers):

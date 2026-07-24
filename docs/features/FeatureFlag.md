@@ -12,8 +12,9 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
   `PromotionFeatureGate.shared.canOpenVoucherDetail()`.
 - **Tên tính năng:** chỉ có ở `PromotionFeatureFlag` (hằng chuỗi Kotlin). Enum Swift
   `PromotionSDKFeature` đã bị xoá; không có enum thay thế ở bất kỳ ngôn ngữ nào.
-- **Phần riêng mỗi nền tảng:** chỉ còn cách *hiển thị* thông báo khi bị chặn —
-  `PRMBaseFragment.openPromotionDetail()` (Toast) và `BaseRouter.canOpenVoucherDetail()` (popup).
+- **Phần riêng mỗi nền tảng:** chỉ còn *chỗ gọi* hiển thị thông báo khi bị chặn —
+  `PRMBaseFragment.openPromotionDetail()` và `BaseRouter.canOpenVoucherDetail()`; **cả hai đều toast**
+  (`Toast` / `PRMToast`).
 
 > **SDK không phơi API hỏi cờ ra host.** App đối tác không cần biết cờ nào đang bật: mọi điểm vào đều
 > tự gác, và khi bị chặn thì SDK hiện thông báo PRM_MOB_021 (iOS còn báo qua

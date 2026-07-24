@@ -37,6 +37,10 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
     struct UiState {
         var sections: [PromotionSection] = []
         var isLoading = false
+        /// Thanh "Đã chọn N voucher" — chỉ hiện ở chế độ multi-select và đang có item được chọn.
+        /// Đối ứng `ChoosePromotionFragment.updateApplyButtonState` bên Android.
+        var showsSelectedCount = false
+        var selectedCount = 0
     }
 
     /// Đối ứng `ChoosePromotionAction` bên Android — chỉ những gì màn thật sự phát.
@@ -177,7 +181,9 @@ private extension ChoosePromotionState {
     func toUiState() -> ChoosePromotionViewModel.UiState {
         ChoosePromotionViewModel.UiState(
             sections: buildSections(),
-            isLoading: isLoading
+            isLoading: isLoading,
+            showsSelectedCount: isMultiSelection && !selectedIds.isEmpty,
+            selectedCount: selectedIds.count
         )
     }
 

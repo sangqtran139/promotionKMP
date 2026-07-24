@@ -3,23 +3,29 @@ package com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.prm.databinding.ItemChoosePromotionBinding
 import com.ttcn.prm.databinding.ItemTitleMyEndowBinding
 import com.ttcn.prm.databinding.PrmItemSeeMoreBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.theme.applier.PromotionListItemApplier
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
+import com.ttcn.prm.ui.utils.extension.toHighlightedSpannable
 import com.ttcn.prm.ui.utils.extension.toVoucherDisplayDate
 
 internal sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
-    data class VoucherItem(val data: MyVoucherListItem) : ChoosePromotionListItem()
+
+    /** [highlightKeyword]: tô đỏ đoạn khớp từ khoá đang tìm — đối ứng `highlightKeyword` bên iOS. */
+    data class VoucherItem(
+        val data: MyVoucherListItem,
+        val highlightKeyword: String = "",
+    ) : ChoosePromotionListItem()
 
     /**
      * Footer của section "Ưu đãi của tôi".
@@ -78,7 +84,7 @@ internal class ChoosePromotionMainAdapter(
                 (holder as HeaderViewHolder).bind(item.title)
 
             is ChoosePromotionListItem.VoucherItem ->
-                (holder as VoucherViewHolder).bind(item.data, onVoucherClick, onDetailClick)
+                (holder as VoucherViewHolder).bind(item, onVoucherClick, onDetailClick)
 
             is ChoosePromotionListItem.SeeMoreMyVoucher ->
                 (holder as FooterViewHolder).bind(
@@ -119,38 +125,60 @@ internal class ChoosePromotionMainAdapter(
     class VoucherViewHolder(private val binding: ItemChoosePromotionBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(
-            voucher: MyVoucherListItem,
+            item: ChoosePromotionListItem.VoucherItem,
             onVoucherClick: (MyVoucherListItem) -> Unit,
             onDetailClick: (MyVoucherListItem) -> Unit,
         ) {
             binding.apply {
                 val ctx = root.context
-                val isExpired = voucher.status == VoucherStatus.EXPIRED
-                val isNotEnoughApply = voucher.status == VoucherStatus.REVOKED
+                val voucher = item.data
+                // Quyết định "còn dùng được" lấy THẲNG từ store (`ChooseOffer.isUsable` → isEnabled) —
+                // không tự suy lại từ status ở đây (giữ 2 nền tảng đồng nhất rule; xem MyPromotionAdapter).
+                val canUse = voucher.isEnabled
 
-                txtVoucherName.text = voucher.merchantName
-                tvContent.text = voucher.title
-                // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống, không dùng date demo).
+                val highlightColor = ContextCompat.getColor(ctx, R.color.color_EE0033)
+                txtVoucherName.text = voucher.merchantName.toHighlightedSpannable(
+                    keyword = item.highlightKeyword,
+                    highlightColor = highlightColor,
+                )
+                tvContent.text = voucher.title.toHighlightedSpannable(
+                    keyword = item.highlightKeyword,
+                    highlightColor = highlightColor,
+                )
+                // Dòng ngày: store quyết định "sắp hết hạn" (expiringInDays, theo expireWarningDate của
+                // server) → "HSD: Còn X ngày"; ngược lại HSD thường. API không trả HSD → ẩn hẳn dòng.
                 val displayDate = voucher.expirationDate.toVoucherDisplayDate()
-                tvEndDate.isVisible = displayDate.isNotBlank()
-                if (displayDate.isNotBlank()) {
-                    tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                val expiringInDays = voucher.expiringInDays
+                when {
+                    expiringInDays != null -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
+                    }
+                    displayDate.isNotBlank() -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                    }
+                    else -> tvEndDate.isVisible = false
                 }
 
                 cbUseVoucher.isChecked = voucher.isSelected
                 cbUseVoucher.isClickable = false
                 cbUseVoucher.isFocusable = false
 
-                ctlTop.alpha = if (isExpired) 0.6f else 1f
-                ctlNotEnoughApplyVoucher.isVisible = isNotEnoughApply
-                imgCircleNotEnoughApplyVoucher.isVisible = isNotEnoughApply
-                txtExpired.isVisible = isExpired
-                lnDetail.isVisible = !isExpired
-                cbUseVoucher.visibility =
-                    if (isExpired || isNotEnoughApply) View.INVISIBLE else View.VISIBLE
+                // Không đủ điều kiện → làm mờ card + dải cảnh báo + nhãn lý do, ẩn "Chi tiết" và checkbox.
+                // Đối ứng iOS: `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText`
+                // (lý do lấy từ `unmatchedRules`, dự phòng "Không đủ điều kiện").
+                ctlTop.alpha = if (canUse) 1f else 0.6f
+                ctlNotEnoughApplyVoucher.isVisible = !canUse
+                imgCircleNotEnoughApplyVoucher.isVisible = !canUse
+                txtExpired.isVisible = !canUse
+                txtExpired.text = voucher.displayStatusLabel
+                    .ifBlank { ctx.getString(R.string.prm_status_ineligible) }
+                lnDetail.isVisible = canUse
+                cbUseVoucher.visibility = if (canUse) View.VISIBLE else View.INVISIBLE
 
                 root.setOnClickListener {
-                    if (isExpired || isNotEnoughApply) return@setOnClickListener
+                    if (!canUse) return@setOnClickListener
                     onVoucherClick(voucher)
                 }
                 lnDetail.setOnClickListener { onDetailClick(voucher) }

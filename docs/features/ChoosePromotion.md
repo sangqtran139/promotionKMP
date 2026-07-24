@@ -81,14 +81,35 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
 
 ---
 
-## 3. Tái sử dụng
+## 3. Hiển thị 1 item (parity Android ↔ iOS)
+
+Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — native chỉ format, **không tự suy lại**:
+
+| Quyết định | Nguồn | Android | iOS |
+|---|---|---|---|
+| Còn dùng được | `ChooseOffer.isUsable` → `MyVoucherListItem.isEnabled` | mờ card + dải "Chưa đủ điều kiện áp dụng" + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText` |
+| Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
+| Sắp hết hạn | `ChooseOffer.expiringInDays` (theo `expireWarningDate` của server) | "HSD: Còn X ngày", dự phòng "HSD: dd/MM/yyyy" | như trên |
+| Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
+
+- **Không dùng `status` để suy trạng thái ở màn này**: `EligibleOffer.toMyVoucherListItem()` chỉ sinh
+  `AVAILABLE` / `INELIGIBLE`, nên mọi nhánh theo `EXPIRED`/`REVOKED` sẽ **không bao giờ chạy**.
+- **Ưu đãi không dùng được thì không chọn được** ở cả hai bên: Android chặn ở `root.setOnClickListener`,
+  iOS chặn ở `ChoosePromotionItemCell.promotionCardViewDidTap` (tap thân card ở màn này = *chọn*, không
+  phải xem chi tiết) — checkbox đã bị `PromotionCardView` chặn sẵn.
+- Thanh "Đã chọn N voucher" chỉ hiện khi `isMultiSelection` **và** có item đang chọn — Android
+  `updateApplyButtonState`, iOS `UiState.showsSelectedCount`. Không bên nào hiện số tiền giảm.
+- Bấm "Áp dụng" khi **không chọn gì** → không làm gì (không đóng màn, không gỡ ưu đãi đang áp).
+  Muốn gỡ thì bấm vào widget `PRMEndowView` (`clearApplied`).
+
+## 4. Tái sử dụng
 
 - Dùng lại `MyVoucherListItem`, `TabItem` từ feature **My Promotion** (không định nghĩa lại model voucher).
 - `PreloadVouchers` là tối ưu quan trọng: dữ liệu được nạp ở `PRMEndowView` rồi truyền sang để **tránh double API call**.
 
 ---
 
-## 4. Lưu ý khi sửa
+## 5. Lưu ý khi sửa
 
 - Hai danh sách (mine/other) có phân trang độc lập — giữ tách biệt `page` và `otherPage`.
 - Mọi thay đổi cấu trúc request stackable discount → đồng bộ với `core/data/dto/stackablediscount/` và `NetworkingGuide.md`.

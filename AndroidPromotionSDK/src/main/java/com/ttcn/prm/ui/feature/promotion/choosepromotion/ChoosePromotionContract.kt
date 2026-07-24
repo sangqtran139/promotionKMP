@@ -42,8 +42,8 @@ internal sealed interface ChoosePromotionAction {
      * Truyền data đã load sẵn từ PRMEndowView để tránh double API call.
      * Nếu cả hai list đều rỗng → ViewModel sẽ tự gọi API.
      *
-     * Mang [EligibleOffer] chứ không phải model UI: ô tìm kiếm lọc trên `campaignName` của
-     * bản gốc, và `findEligible` không nhận `keyword` để lọc phía server.
+     * Mang [EligibleOffer] chứ không phải model UI để giữ nguồn sự thật ở domain (store map sang
+     * model UI khi publish state).
      */
     data class PreloadVouchers(
         val myOffers: List<EligibleOffer>,
@@ -53,15 +53,15 @@ internal sealed interface ChoosePromotionAction {
     data object Refresh : ChoosePromotionAction
 
     /**
-     * Người dùng gõ một ký tự. Debounce rồi lọc — cùng khuôn với `SearchMyPromotionAction.QueryChanged`.
-     * Khác ở chỗ màn này lọc **trong bộ nhớ**: `findEligible` không nhận `keyword`.
+     * Người dùng gõ một ký tự. Store debounce 400ms rồi **reload server-side** kèm `keyword`
+     * (v1.6 §7.3) — cùng khuôn với `SearchMyPromotionAction.QueryChanged`.
      */
     data class QueryChanged(val keyword: String) : ChoosePromotionAction
 
-    /** Bấm Enter / nút tìm: lọc ngay, bỏ qua debounce. */
+    /** Bấm Enter / nút tìm: chạy ngay, bỏ qua debounce. */
     data object Search : ChoosePromotionAction
 
-    /** Xoá trắng ô tìm kiếm → hiện lại toàn bộ danh sách đã tải. */
+    /** Xoá trắng ô tìm kiếm → reload danh sách đầy đủ (không gửi `keyword`). */
     data object ClearKeyword : ChoosePromotionAction
 
     data object LoadMoreMyVouchers : ChoosePromotionAction
@@ -86,7 +86,8 @@ internal sealed interface ChoosePromotionEffect {
 
     /**
      * Bấm "Áp dụng" → trả **offers đang chọn** cho widget (`PRMEndowView`); việc validate + quyết định
-     * áp/không-đủ-điều-kiện do `EndowStore` lo (dùng chung iOS). Rỗng = bỏ áp.
+     * áp/không-đủ-điều-kiện do `EndowStore` lo (dùng chung iOS). Rỗng = **không làm gì** (không đóng
+     * màn, không gỡ ưu đãi đang áp) — khớp iOS; muốn gỡ thì bấm widget `PRMEndowView`.
      */
     data class ApplySelectedOffers(
         val offers: List<EligibleOffer>,

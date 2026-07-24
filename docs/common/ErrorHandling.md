@@ -120,7 +120,8 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
   (đối ứng `uiEffect` bên Android). VC map `code` → chuỗi bằng `PromotionUIStrings.errorMessage`
-  rồi hiện `PRMConfirmationDialog`; state không giữ lại lỗi.
+  rồi hiện **`PRMToast`**; state không giữ lại lỗi. (Toast là idiom **dùng chung 2 nền tảng** —
+  `PRMConfirmationDialog` không còn được dùng ở luồng lỗi nào.)
 - ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
 
 ### Cả hai
