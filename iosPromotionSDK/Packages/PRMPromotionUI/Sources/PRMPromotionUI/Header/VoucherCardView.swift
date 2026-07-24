@@ -28,8 +28,13 @@ public final class VoucherCardView: PRMBaseView {
         didSet { self.titleLabel.text = title }
     }
     
+    /// API không trả HSD → **ẩn hẳn** dòng ngày thay vì để label rỗng chiếm chỗ.
+    /// Đối ứng `binding.tvExpired.isVisible = displayDate.isNotBlank()` bên Android.
     public var expiryText: String? {
-        didSet { self.expiryLabel.text = expiryText }
+        didSet {
+            self.expiryLabel.text = expiryText
+            self.expiryLabel.isHidden = (expiryText ?? "").isEmpty
+        }
     }
 
     // MARK: - Private Properties

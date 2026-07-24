@@ -60,7 +60,10 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
 
     private func configUnderlinedSegmentControlView() {
         self.underlinedSegmentControlView.delegate = self
-        self.underlinedSegmentControlView.setItems(titles: ["Thông tin chi tiết", "Hướng dẫn sử dụng"])
+        // Chuỗi lấy từ PromotionUIStrings (nơi tập trung, parity strings.xml) — không hardcode tại chỗ.
+        self.underlinedSegmentControlView.setItems(
+            titles: [PromotionUIStrings.tabDetailInfo, PromotionUIStrings.tabUsageGuide]
+        )
     }
 
     /// Dựng pager: 2 trang, mỗi trang là 1 card (giống VoucherCardView) bọc textview cuộn được.

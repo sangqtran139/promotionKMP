@@ -132,10 +132,16 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     }
 
     // ─── State → View ─────────────────────────────────────────────────────────
-    /// Chỉ hiển thị khi API detail trả về; chưa có thì giữ `UiState.initial` (shimmer che).
+    /// Chỉ hiển thị khi API detail trả về. Không có detail → về **khung rỗng** (shimmer che lúc đang
+    /// tải; hết tải thì card/tab trống, nút ẩn) — đối ứng `PromotionDetailFragment.bindEmptyContent()`
+    /// bên Android. Trước đây chỉ cập nhật `isLoading` nên nếu lần load sau trả `detail == nil`
+    /// (API lỗi / voucher biến mất) màn **vẫn giữ nội dung voucher cũ**, lệch với Android.
     private func render(_ state: PromotionDetailState) {
         guard let detail = state.detail else {
-            uiState.isLoading = state.isLoading
+            applicableProducts = []
+            var empty = UiState.initial
+            empty.isLoading = state.isLoading
+            uiState = empty
             return
         }
         applicableProducts = detail.applicableProducts
@@ -195,7 +201,10 @@ private extension PromotionDetailState {
         raw.isEmpty ? .empty : .init(text: raw, isHTML: true)
     }
 
+    /// Tiền tố "HSD:" — **khớp Android** (`prm_expiry_short_format`) và khớp luôn màn danh sách iOS
+    /// (`MyPromotionCell` dùng `expiryDate`). Trước đây màn này dùng `expiryDateLong` ("Hạn sử dụng …")
+    /// nên là chỗ DUY NHẤT lệch chữ. Không parse được ngày → chuỗi rỗng, card tự ẩn dòng.
     static func dateString(_ raw: String?) -> String {
-        PRMPromotionDate.parse(raw).map { PromotionUIStrings.expiryDateLong(PRMPromotionDate.display($0)) } ?? ""
+        PRMPromotionDate.parse(raw).map { PromotionUIStrings.expiryDate(PRMPromotionDate.display($0)) } ?? ""
     }
 }
