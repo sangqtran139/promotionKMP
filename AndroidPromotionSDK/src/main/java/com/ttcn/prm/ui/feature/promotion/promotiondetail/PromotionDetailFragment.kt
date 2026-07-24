@@ -2,6 +2,7 @@ package com.ttcn.prm.ui.feature.promotion.promotiondetail
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
 import androidx.core.view.isVisible
@@ -125,7 +126,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         if (displayDate.isNotBlank()) {
             binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)
         }
-        binding.tvUse.isVisible = state.actionVisible
+        binding.tvUse.visibility = if (state.actionVisible) View.VISIBLE else View.INVISIBLE
         binding.tvUse.isEnabled = state.actionEnabled
         // Nút "Sử dụng ngay" hiện cho MỌI trạng thái usable (actionEnabled do store quyết định) —
         // khớp iOS/store, không khoá riêng ACTIVE (AVAILABLE/USABLE/AVAILABLE_TO_CLAIM cũng usable).
@@ -173,7 +174,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         binding.txtVoucherName.text = ""
         binding.tvContent.text = ""
         binding.tvExpired.text = ""
-        binding.tvUse.isVisible = false
+        binding.tvUse.visibility = View.INVISIBLE
 
         bindDetailTabsIfNeeded(
             voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),

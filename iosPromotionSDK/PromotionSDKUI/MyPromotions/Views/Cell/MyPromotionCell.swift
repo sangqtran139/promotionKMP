@@ -112,7 +112,9 @@ struct MyPromotionCellViewModel {
         self.init(
             id: voucher.voucherId,
             title: voucher.merchantName ?? "",
-            description: voucher.title ?? "",
+            // `title` rỗng → rơi về `description` (đối ứng Android `title.ifBlank { description }`).
+            // Trước đây iOS không fallback nên voucher thiếu title hiện dòng mô tả trống.
+            description: (voucher.title?.isEmpty == false ? voucher.title : voucher.description_) ?? "",
             imageURL: voucher.logo,
             date: PRMPromotionDate.parse(voucher.expirationDate),
             buttonTitle: derivedButtonTitle,
@@ -218,12 +220,13 @@ final class MyPromotionCell: UITableViewCell {
     func bindData(_ viewModel: MyPromotionCellViewModel) {
         self.viewModel = viewModel
         var dateString: String?
-        var dateColor: UIColor?
         // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
         // dùng chung Android. Cell chỉ format; KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày).
+        //
+        // Màu: giữ MẶC ĐỊNH kể cả khi sắp hết hạn — khớp Android (`MyPromotionAdapter` chỉ đổi chữ
+        // thành "HSD: Còn X ngày", không đổi màu). Trước đây iOS tô cam nên hai bên lệch.
         if let days = viewModel.expiringInDays {
             dateString = PromotionUIStrings.remainingDays(days)
-            dateColor = Colors.warningOrangeColor
         } else if let date = viewModel.date {
             dateString = PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
         }
@@ -231,7 +234,7 @@ final class MyPromotionCell: UITableViewCell {
         let cardModel = PromotionCardModel(
             logoURLString: viewModel.imageURL,
             dateString: dateString,
-            dateColor: dateColor,
+            dateColor: nil,
             title: viewModel.title,
             highlightKeyword: viewModel.highlightKeyword,
             descriptionText: viewModel.description,

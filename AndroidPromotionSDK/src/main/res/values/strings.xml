@@ -22,6 +22,12 @@
     <string name="prm_use_voucher">Sử dụng</string>
     <string name="prm_change_voucher">Chọn lại</string>
     <string name="prm_is_used">Đã dùng hết</string>
+    <!-- Nhãn trạng thái dự phòng khi server không trả displayStatusLabel — theo ĐÚNG trạng thái,
+         khớp PromotionUIStrings bên iOS (used/expired/ineligible). Trước đây mọi trạng thái đều
+         rơi về prm_is_used nên voucher HẾT HẠN cũng hiện "Đã dùng hết". -->
+    <string name="prm_status_used">Đã sử dụng</string>
+    <string name="prm_status_expired">Hết hạn</string>
+    <string name="prm_status_ineligible">Không đủ điều kiện</string>
     <string name="prm_no_result">Không tìm thấy kết quả phù hợp</string>
     <string name="prm_discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
     <string name="prm_search_result">Kết quả tìm kiếm</string>

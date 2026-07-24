@@ -8,7 +8,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
+import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDisplayState
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
 import com.ttcn.prm.databinding.ItemLoadingNotifyPrmBinding
 import com.ttcn.prm.databinding.ItemTitleMyEndowBinding
 import com.ttcn.prm.databinding.PrmItemPromotionBinding
@@ -138,10 +140,24 @@ internal class MyPromotionAdapter(
 
                 ctlTop.alpha = if (canUse) 1f else 0.6f
                 txtExpired.isVisible = !canUse
+                // Nhãn trạng thái: ưu tiên server; không có thì dự phòng theo ĐÚNG trạng thái
+                // (đối ứng iOS `MyPromotionCellViewModel`). Trước đây mọi trạng thái đều rơi về
+                // "Đã dùng hết" nên voucher HẾT HẠN cũng hiện sai nghĩa.
                 txtExpired.text = voucher.displayStatusLabel.ifBlank {
-                    ctx.getString(R.string.prm_is_used)
+                    ctx.getString(
+                        when (voucher.status.displayState()) {
+                            VoucherDisplayState.USED -> R.string.prm_status_used
+                            VoucherDisplayState.EXPIRED -> R.string.prm_status_expired
+                            else -> R.string.prm_status_ineligible
+                        }
+                    )
                 }
                 lnDetail.isVisible = canUse
+                // NHÃN NÚT lấy từ server (vd AVAILABLE_TO_CLAIM → "Nhận"), dự phòng "Sử dụng" —
+                // đối ứng iOS và đối ứng luôn màn Chi tiết (cũng dùng displayStatusLabel).
+                if (canUse) {
+                    tvUse.text = voucher.displayStatusLabel.ifBlank { ctx.getString(R.string.prm_use) }
+                }
                 txtExpired.isEnabled = !lnDetail.isVisible
                 txtExpired.isClickable = !lnDetail.isVisible
 
