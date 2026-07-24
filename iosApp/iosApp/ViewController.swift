@@ -82,7 +82,7 @@ class ViewController: UIViewController {
         stackView.addArrangedSubview(makeButton("🎟  Mở thẳng chi tiết ưu đãi", action: #selector(openPromotionDetailTapped), color: .systemTeal))
         stackView.addArrangedSubview(makeButton("🛒  Mở màn thanh toán", action: #selector(openCheckoutTapped), color: .systemGreen))
         stackView.addArrangedSubview(makeSeparator())
-        stackView.addArrangedSubview(makeButton("▶  API Playground (Request / Response)", action: #selector(openPlaygroundTapped), color: .systemIndigo))
+        stackView.addArrangedSubview(makeButton("▶  Headless API Demo", action: #selector(openHeadlessDemoTapped), color: .systemIndigo))
         stackView.addArrangedSubview(makeButton("🎨  Theme Playground (đổi màu từng item)", action: #selector(openThemePlaygroundTapped), color: .systemPurple))
     }
 
@@ -131,11 +131,11 @@ class ViewController: UIViewController {
             CheckoutViewController(orderId: demoOrderId, orderValue: demoOrderValue), animated: true)
     }
 
-    // MARK: - Playground (công cụ demo — gọi thẳng API tĩnh PromotionSDK, gác bằng isReady)
+    // MARK: - Công cụ demo (gọi thẳng API tĩnh PromotionSDK, gác bằng isInitialized)
 
-    @objc private func openPlaygroundTapped() {
+    @objc private func openHeadlessDemoTapped() {
         guard PromotionSDK.isInitialized() else { return }
-        navigationController?.pushViewController(APIPlaygroundViewController(), animated: true)
+        navigationController?.pushViewController(DemoHeadlessViewController(), animated: true)
     }
 
     @objc private func openThemePlaygroundTapped() {

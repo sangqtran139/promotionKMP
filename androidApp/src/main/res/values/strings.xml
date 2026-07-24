@@ -8,8 +8,9 @@
 
     <string name="demo_headless_title">Headless API Demo</string>
     <string name="demo_btn_search_vouchers">1. Search Vouchers</string>
-    <string name="demo_btn_get_detail">2. Get Voucher Detail</string>
-    <string name="demo_btn_validate">3. Validate Discounts</string>
-    <string name="demo_btn_create_redemption">4. Create Redemption</string>
+    <string name="demo_btn_find_eligible">2. Find Eligible</string>
+    <string name="demo_btn_get_detail">3. Get Voucher Detail</string>
+    <string name="demo_btn_validate">4. Validate Discounts</string>
+    <string name="demo_btn_create_redemption">5. Create Redemption</string>
     <string name="demo_btn_clear_log">Clear log</string>
 </resources>

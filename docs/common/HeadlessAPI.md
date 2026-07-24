@@ -269,3 +269,27 @@ Lõi này là **hợp** của hai SDK gốc — cả hai bên đều không mấ
 4. Đăng ký use case trong `UseCaseModule`, phơi ra qua `PromotionUseCases`.
 5. Viết test `commonTest` bằng `MockEngine` — chạy trên **cả** Android lẫn iOS.
 6. Cập nhật file này + `NetworkingGuide.md` (AI_AGENT_RULES điều 8).
+7. Bổ sung bước tương ứng vào **cả hai** màn demo headless (xem §7) — thêm một bên là làm lệch demo.
+
+---
+
+## 7. Màn demo headless (app demo, không thuộc SDK)
+
+Hai app demo có một màn gọi lần lượt 5 API để đối tác xem luồng thật. Hai màn **soi gương nhau**:
+cùng tên màn ("Headless API Demo"), cùng 5 nút theo đúng thứ tự, cùng chuỗi log ký tự.
+
+| | Android | iOS |
+|---|---|---|
+| Màn | `androidApp/.../headless/DemoHeadlessFragment` | `iosApp/iosApp/DemoHeadlessViewController.swift` |
+| Logic | `DemoHeadlessViewModel` | (nằm trong chính view controller) |
+| Layout | `res/layout/fragment_headless_demo.xml` | dựng bằng code |
+
+Quy ước dùng chung — giữ nguyên khi sửa:
+
+- 5 bước: `getVouchers` → `findEligible` → `getVoucherDetail` → `validateDiscounts` → `createRedemption`.
+- `orderId` / `orderValue` **đọc từ** `PromotionSDK.currentOrderId` / `currentOrderValue`, không hardcode.
+- `voucherId` lấy động từ bước 1; chưa có thì log `⚠️ Chưa có voucherId, hãy Search trước`.
+- `createRedemption` chỉ dùng voucher đã validate hợp lệ ở bước 4.
+- Lỗi in theo `❌ <tên API>: [<type>] <message> (serverCode=…)`, `type` là tên nhánh
+  `PromotionSDKError` viết lowerCamelCase.
+- Mở màn thì in trước khối `── SDK context ──` (customerId / language / orderId / orderValue / serviceCode).
