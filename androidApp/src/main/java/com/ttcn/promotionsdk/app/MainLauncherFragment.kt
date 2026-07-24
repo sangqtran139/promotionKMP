@@ -7,6 +7,8 @@ import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.entry.api.PromotionApiResult
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import kotlinx.coroutines.launch
 
@@ -42,12 +44,11 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         }
 
         binding.btnOpenMyPromotion.setOnClickListener {
-            Log.d(TAG, "Opening MyPromotion via PromotionManager")
-            PromotionManager.openMyPromotions(requireActivity(), R.id.layoutRoot)
+            // Gọi thẳng SDK — không wrapper.
+            PromotionSDK.openMyPromotion(requireActivity(), R.id.layoutRoot)
         }
 
         binding.btnOpenPromotionDetail.setOnClickListener {
-            Log.d(TAG, "Opening PromotionDetail via PromotionManager")
             openPromotionDetailDirect()
         }
     }
@@ -61,11 +62,13 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
      */
     private fun openPromotionDetailDirect() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val voucherId = PromotionManager.fetchVouchers(null, null, null, 0)
-                .getOrNull()?.mine?.firstOrNull()?.id ?: FALLBACK_VOUCHER_ID
-
+            // Headless `api` trả DTO công khai — dùng thẳng, không cần lớp map.
+            val voucherId = when (val r = PromotionSDK.api.getVouchers(page = 0)) {
+                is PromotionApiResult.Success -> r.data.vouchers.firstOrNull()?.id ?: FALLBACK_VOUCHER_ID
+                is PromotionApiResult.Failure -> FALLBACK_VOUCHER_ID
+            }
             Log.d(TAG, "openPromotionDetail(voucherId=$voucherId)")
-            PromotionManager.openPromotionDetail(voucherId, requireActivity(), R.id.layoutRoot)
+            PromotionSDK.openPromotionDetail(voucherId, requireActivity(), R.id.layoutRoot)
         }
     }
 

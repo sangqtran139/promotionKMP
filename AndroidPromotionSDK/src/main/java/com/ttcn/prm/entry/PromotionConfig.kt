@@ -38,6 +38,16 @@ enum class PromotionEnvironment { PROD, STAGING }
 
 internal fun PromotionSDKOptions.toCoreConfig(
     contextProvider: PromotionRequestContextProvider?,
+): PromotionSDKConfig = buildCoreConfig(session, availableServices, contextProvider)
+
+/** Dùng lại khi [PromotionSDK.updateToken] dựng lại config mà không có [PromotionSDKOptions]. */
+internal fun PromotionMutableContext.toCoreConfig(): PromotionSDKConfig =
+    buildCoreConfig(session, availableServices, this)
+
+private fun buildCoreConfig(
+    session: PromotionSessionConfig,
+    availableServices: List<PromotionAvailableService>,
+    contextProvider: PromotionRequestContextProvider?,
 ): PromotionSDKConfig = PromotionSDKConfig(
     baseUrl = session.baseUrl,
     requestContextProvider = contextProvider,
@@ -56,11 +66,13 @@ internal fun PromotionSDKOptions.toCoreConfig(
 )
 
 /**
- * Giữ toàn bộ context mà SDK cần — tĩnh (session) + động (đơn hàng/dịch vụ).
+ * Giữ toàn bộ context mà SDK cần — tĩnh (session + danh mục dịch vụ) + động (đơn hàng/dịch vụ).
  * [PromotionSDK.updateContext] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.initialize].
+ * [availableServices] giữ ở đây để [PromotionSDK.updateToken] dựng lại config không cần host truyền lại.
  */
 internal class PromotionMutableContext(
     val session: PromotionSessionConfig,
+    val availableServices: List<PromotionAvailableService> = emptyList(),
 ) : PromotionRequestContextProvider {
 
     @JvmField @Volatile var orderId: String? = null

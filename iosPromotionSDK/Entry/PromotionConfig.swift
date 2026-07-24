@@ -79,22 +79,8 @@ extension PromotionSDKOptions {
     /// từ lõi qua `PromotionContainer.requireConfig()`. Khác Android (N1): `isDebug` truyền vào (iOS
     /// không có `ApplicationInfo.FLAG_DEBUGGABLE`).
     func toCoreConfig(context: PromotionMutableContext, isDebug: Bool) -> PromotionSDKConfig {
-        PromotionSDKConfig(
-            // Không fallback: host luôn truyền `baseUrl` (đối ứng Android — trước đây iOS rơi về
-            // một IP staging hardcode, lệch hành vi và không được lọt vào bản phát hành).
-            baseUrl: session.baseUrl,
-            requestContextProvider: context,
-            environment: session.environment.toCore(),
-            availableServices: availableServices.map {
-                AvailableService(
-                    serviceCode: $0.serviceCode,
-                    serviceName: $0.serviceName,
-                    serviceType: $0.serviceType,
-                    iconUrl: $0.iconUrl
-                )
-            },
-            isDebug: isDebug
-        )
+        // `context` giờ đã mang `availableServices` → uỷ thẳng cho `context.toCoreConfig`, một nguồn.
+        context.toCoreConfig(isDebug: isDebug)
     }
 }
 
@@ -106,6 +92,9 @@ extension PromotionSDKOptions {
 final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
 
     let session: PromotionSessionConfig
+    /// Danh mục dịch vụ host cấu hình — giữ ở đây để `PromotionSDK.updateToken` dựng lại config
+    /// không cần host truyền lại (đối ứng `PromotionMutableContext.availableServices` bên Android).
+    let availableServices: [PromotionAvailableService]
 
     var orderId: String?
     var orderValue: String?
@@ -114,9 +103,25 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     /// Order items (SKU) của đơn hiện tại — lõi đọc qua `getOrderItems()` cho `findEligible`.
     var orderItems: [PromotionOrderItem] = []
 
-    init(session: PromotionSessionConfig) {
+    init(session: PromotionSessionConfig, availableServices: [PromotionAvailableService] = []) {
         self.session = session
+        self.availableServices = availableServices
         super.init()
+    }
+
+    /// Dựng core config từ chính context này (dùng khi `updateToken` không có `PromotionSDKOptions`).
+    /// Đối ứng `PromotionMutableContext.toCoreConfig()` bên Android.
+    func toCoreConfig(isDebug: Bool) -> PromotionSDKConfig {
+        PromotionSDKConfig(
+            baseUrl: session.baseUrl,
+            requestContextProvider: self,
+            environment: session.environment.toCore(),
+            availableServices: availableServices.map {
+                AvailableService(serviceCode: $0.serviceCode, serviceName: $0.serviceName,
+                                 serviceType: $0.serviceType, iconUrl: $0.iconUrl)
+            },
+            isDebug: isDebug
+        )
     }
 
     func getCustomerId() -> String? { session.customerId }

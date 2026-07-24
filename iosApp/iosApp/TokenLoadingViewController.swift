@@ -11,22 +11,24 @@
 //
 
 import UIKit
+import PRM
 
 final class TokenLoadingViewController: UIViewController {
 
     // MARK: - Demo data (giả lập host cung cấp) — đối ứng `initSdk`/`updateDemoContext` bên Android
 
-    /// Danh mục dịch vụ HOST cung cấp (map sang bottom sheet "Chọn dịch vụ").
-    /// 3 mã đầu trùng applicableProducts voucher ACTIVE → sẽ hiện; 2 mã cuối bị lọc bỏ (minh hoạ mapping).
-    private let demoServices: [AvailableService] = [
-        AvailableService(code: "P-FOOD-001", name: "Combo gà rán",        type: "FOOD",    iconUrl: "https://picsum.photos/seed/food1/96"),
-        AvailableService(code: "P-FOOD-002", name: "Mì Ý sốt bò",         type: "FOOD",    iconUrl: "https://picsum.photos/seed/food2/96"),
-        AvailableService(code: "P-ALC-001",  name: "Bia lon 330ml",       type: "ALCOHOL", iconUrl: "https://picsum.photos/seed/beer/96"),
-        AvailableService(code: "P-TELCO-001", name: "Nạp tiền điện thoại", type: "TELCO",   iconUrl: "https://picsum.photos/seed/telco/96"),
-        AvailableService(code: "P-BILL-001",  name: "Thanh toán hoá đơn",  type: "BILL",    iconUrl: "https://picsum.photos/seed/bill/96")
-    ]
+    /// Base URL Promotion BFF — host cấu hình.
+    private static let baseUrl = "http://125.235.38.229:8080"
 
-    private var promotions: PromotionServing { PromotionManager.shared }
+    /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ").
+    /// 3 mã đầu trùng applicableProducts voucher ACTIVE → sẽ hiện; 2 mã cuối bị lọc bỏ (minh hoạ mapping).
+    private let demoServices: [PromotionAvailableService] = [
+        PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Combo gà rán",        serviceType: "FOOD",    iconUrl: "https://picsum.photos/seed/food1/96"),
+        PromotionAvailableService(serviceCode: "P-FOOD-002", serviceName: "Mì Ý sốt bò",         serviceType: "FOOD",    iconUrl: "https://picsum.photos/seed/food2/96"),
+        PromotionAvailableService(serviceCode: "P-ALC-001",  serviceName: "Bia lon 330ml",       serviceType: "ALCOHOL", iconUrl: "https://picsum.photos/seed/beer/96"),
+        PromotionAvailableService(serviceCode: "P-TELCO-001", serviceName: "Nạp tiền điện thoại", serviceType: "TELCO",   iconUrl: "https://picsum.photos/seed/telco/96"),
+        PromotionAvailableService(serviceCode: "P-BILL-001",  serviceName: "Thanh toán hoá đơn",  serviceType: "BILL",    iconUrl: "https://picsum.photos/seed/bill/96")
+    ]
 
     // MARK: - UI
 
@@ -136,13 +138,20 @@ final class TokenLoadingViewController: UIViewController {
         }
     }
 
-    /// Đi qua wrapper `PromotionManager` (anti-corruption) — không gọi `PromotionSDK` trực tiếp.
+    /// Gọi THẲNG PromotionSDK — không qua wrapper. Overload phẳng: chỉ customerId + token + baseUrl,
+    /// phần còn lại (availableServices/callback) là tuỳ chọn.
     private func initSdk(customerId: String, token: String) {
-        promotions.start(customerId: customerId, token: token, availableServices: demoServices)
+        PromotionSDK.initialize(
+            customerId: customerId,
+            accessToken: token,
+            baseUrl: Self.baseUrl,
+            availableServices: demoServices,
+            callback: DemoPromotionCallback.shared,
+        )
     }
 
     private func updateDemoContext() {
-        promotions.updateContext(
+        PromotionSDK.updateContext(
             orderId: "ORD-DEMO-001",
             orderValue: "500000",
             // TEST: để nil (khớp Android demo) — kiểm tra detail có load + nút "Sử dụng ngay" hiện không.

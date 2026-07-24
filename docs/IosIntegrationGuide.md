@@ -2,7 +2,7 @@
 
 > Hướng dẫn **tích hợp** dành cho đội app host (bên tiêu thụ SDK). Không phải tài liệu phát triển nội
 > bộ SDK — cái đó xem [`IosUIGuide.md`](./IosUIGuide.md). Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./PublicApi.md).
-> Mẫu wrapper khuyến nghị ở host: [`InitParity.md`](./InitParity.md) §6 + `iosApp/iosApp/PromotionManager.swift`.
+> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./InitParity.md) §6).
 
 ---
 
@@ -12,7 +12,7 @@
   không SPM, không cài Kotlin/RxSwift.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
-- Cấu hình một lần bằng `PromotionSDK.initialize(options:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
+- Cấu hình một lần bằng `PromotionSDK.initialize(customerId:accessToken:baseUrl:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
   sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -79,34 +79,41 @@ print(PromotionSDK.isInitialized()) // false — link OK là được
 ```swift
 import PRM
 
-// Sau khi login thành công:
+// Cách tối giản — đủ cho phần lớn host, chỉ 3 tham số bắt buộc:
 PromotionSDK.initialize(
-    options: PromotionSDKOptions(
-        session: PromotionSessionConfig(
-            customerId: user.id,
-            accessToken: auth.accessToken,
-            baseUrl: "http://125.235.38.229:8080/",
-            language: "vi-VN",          // mặc định "vi-VN"
-            environment: .prod          // .prod | .staging, mặc định .prod
-        ),
-        availableServices: [            // cho bottom sheet "Chọn dịch vụ" (có thể để rỗng)
-            PromotionAvailableService(serviceCode: "TOPUP", serviceName: "Nạp tiền", iconUrl: iconUrl)
-        ],
-        theme: nil,                     // nil = SDK tự khôi phục theme đã lưu (xem §9)
-        callback: myCallback            // đối tượng conform PromotionSDKCallback (xem §7)
-    )
+    customerId: user.id,
+    accessToken: auth.accessToken,
+    baseUrl: "http://125.235.38.229:8080/",
+    // tuỳ chọn:
+    environment: .prod,                             // mặc định .prod
+    availableServices: [                            // cho bottom sheet "Chọn dịch vụ"
+        PromotionAvailableService(serviceCode: "TOPUP", serviceName: "Nạp tiền", iconUrl: iconUrl)
+    ],
+    callback: myCallback                            // conform PromotionSDKCallback (xem §7)
 )
+```
+
+Cần cấu hình sâu hơn (theme, …) thì dùng overload nhận `PromotionSDKOptions`:
+
+```swift
+PromotionSDK.initialize(options: PromotionSDKOptions(
+    session: PromotionSessionConfig(customerId: user.id, accessToken: auth.accessToken, baseUrl: baseUrl, environment: .prod),
+    availableServices: services, theme: myTheme, callback: myCallback
+))
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo | `PromotionSDK.initialize(options:)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(customerId:accessToken:baseUrl:)` |
+| Khởi tạo (đầy đủ) | `PromotionSDK.initialize(options:)` |
+| **Đổi token** (refresh) | `PromotionSDK.updateToken(newToken)` |
 | Kiểm tra đã init | `PromotionSDK.isInitialized() -> Bool` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback() -> PromotionSDKCallback?` |
 
-**Refresh access token:** token bị "chụp" lúc init. Muốn đổi token = **gọi lại** `initialize(options:)` với
-`session` mới (SDK tự dựng lại đồ thị nội bộ). `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
+**Refresh access token:** gọi `PromotionSDK.updateToken(newToken)` — SDK tự dựng lại session mới,
+**giữ nguyên** context đơn hàng đang ghi, danh mục dịch vụ, callback và theme. Host **không** cần biết
+"refresh = init lại". `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
 
 ---
 
@@ -188,8 +195,8 @@ final class MyPromotionCallback: PromotionSDKCallback {
 | `onAvailabilityChanged(enabled:)` | Feature flag báo bật/tắt SDK |
 | `onClosed()` | Màn SDK bị đóng |
 
-> Callback của SDK là kênh **1-1**. Muốn nhiều nơi trong app cùng nghe → dùng wrapper fan-out
-> (`PromotionManager` mẫu ở `iosApp/`, xem [`InitParity.md`](./InitParity.md) §6).
+> Callback của SDK là kênh **1-1** (một object nhận sự kiện, truyền qua `initialize(callback: ...)`).
+> Muốn nhiều nơi cùng nghe → host tự bọc một object fan-out nhỏ (tuỳ chọn; demo có `DemoPromotionCallback` ~30 dòng).
 
 ---
 
@@ -270,16 +277,16 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 | Đặt xcframework "Do Not Embed" | **Embed & Sign** (framework có resource bundle) |
 | `import PromotionLogic` / `PRMKotlinBridge` | Chỉ `import PRM` |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled:)` |
-| Rải `PromotionSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
+| Tưởng phải tự viết wrapper `PromotionManager` | Gọi thẳng `PromotionSDK` — SDK đã tự lo token/context/callback |
 
 ---
 
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(options:)
+login thành công        → PromotionSDK.initialize(customerId:accessToken:baseUrl:)
 vào màn có voucher       → PromotionSDK.updateContext(orderId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
-refresh access token     → PromotionSDK.initialize(options:) lại (session mới)
+refresh access token     → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
 ```

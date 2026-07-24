@@ -27,7 +27,8 @@ final class PromotionSDKImpl: NSObject {
 
     /// Nguồn context duy nhất: session tĩnh + order/dịch vụ động. `updateContext` ghi vào đây,
     /// lõi Kotlin đọc lại ở **mỗi** request. Thay cho `HostRequestContextProvider` + các field rời cũ.
-    let context: PromotionMutableContext
+    /// `var` để `updateToken` thay context (session mới) mà vẫn giữ order/dịch vụ đang ghi.
+    private(set) var context: PromotionMutableContext
 
     var customerId: String { context.session.customerId }
     var token: String? { context.session.accessToken }
@@ -60,7 +61,7 @@ final class PromotionSDKImpl: NSObject {
     private var lastNotifiedApplied = false
 
     init(options: PromotionSDKOptions) {
-        self.context = PromotionMutableContext(session: options.session)
+        self.context = PromotionMutableContext(session: options.session, availableServices: options.availableServices)
         // Khởi tạo lõi Kotlin qua map public→core (đối ứng `options.toCoreConfig` bên Android).
         // `isDebug`: bản DEBUG in toàn bộ request/response của Ktor ra console để đối chiếu schema thật
         // của server với DTO; bản Release tắt hẳn (không log token) — xem `isDebugBuild`.
@@ -231,6 +232,29 @@ final class PromotionSDKImpl: NSObject {
         context.serviceCode = serviceCode
         context.metaData = metaData
         context.orderItems = orderItems
+    }
+
+    /// Đổi access token: dựng lại đồ thị DI với session mới, **giữ** context động + danh mục dịch vụ.
+    /// Đối ứng `PromotionSDK.updateToken` bên Android (tạo `PromotionMutableContext` mới, re-init container).
+    func updateToken(_ accessToken: String) {
+        let old = context.session
+        let newSession = PromotionSessionConfig(
+            customerId: old.customerId, accessToken: accessToken, baseUrl: old.baseUrl,
+            language: old.language, environment: old.environment,
+        )
+        let newContext = PromotionMutableContext(session: newSession, availableServices: context.availableServices)
+        // Bơm lại context động đang giữ (đơn hàng/dịch vụ) sang context mới.
+        newContext.orderId = context.orderId
+        newContext.orderValue = context.orderValue
+        newContext.serviceCode = context.serviceCode
+        newContext.metaData = context.metaData
+        newContext.orderItems = context.orderItems
+        context = newContext
+
+        PromotionContainer.shared.clear()
+        PromotionContainer.shared.initialize(config: newContext.toCoreConfig(isDebug: PromotionSDKImpl.isDebugBuild))
+        Task { try? await PromotionFeatureGate.shared.refresh() }
+        // callback + theme giữ nguyên — không đụng.
     }
 
     /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PromotionSDK.release()` bên Android:

@@ -64,6 +64,41 @@ public final class PromotionSDK {
         wireCallbacks(impl)
     }
 
+    /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ customerId + token + baseUrl.
+    /// `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
+    /// nhận `PromotionSDKOptions`. Đối ứng overload phẳng `initialize(...)` bên Android.
+    public static func initialize(
+        customerId: String,
+        accessToken: String,
+        baseUrl: String,
+        environment: PromotionEnvironment = .prod,
+        language: String = "vi-VN",
+        availableServices: [PromotionAvailableService] = [],
+        theme: PromotionSDKTheme? = nil,
+        callback: PromotionSDKCallback? = nil
+    ) {
+        initialize(options: PromotionSDKOptions(
+            session: PromotionSessionConfig(
+                customerId: customerId, accessToken: accessToken, baseUrl: baseUrl,
+                language: language, environment: environment,
+            ),
+            availableServices: availableServices,
+            theme: theme,
+            callback: callback,
+        ))
+    }
+
+    /// Cập nhật access token khi host refresh — **không** cần host tự dựng lại toàn bộ options.
+    ///
+    /// Token bị "chụp" lúc `initialize`, nên đổi token = dựng lại đồ thị DI với session mới. Hàm này
+    /// làm đúng việc đó nhưng **giữ nguyên** mọi thứ còn lại: customerId/baseUrl/environment/ngôn ngữ,
+    /// danh mục dịch vụ, callback, theme, và context động (đơn hàng/dịch vụ đang ghi). Đối ứng
+    /// `PromotionSDK.updateToken(_:)` bên Android.
+    public static func updateToken(_ accessToken: String) {
+        guard let impl = requireImpl("updateToken(_:)") else { return }
+        impl.updateToken(accessToken)
+    }
+
     /// Giải phóng SDK. Đối ứng `PromotionSDK.release()` bên Android. Gọi khi chưa init là vô hại.
     /// **Không** xoá theme đã lưu — nó sống qua release/init.
     public static func release() {

@@ -3,7 +3,7 @@
 //  PromotionSDKDemo
 //
 //  CHỈ dùng cho app demo: gọi API đăng nhập ViettelMoney để lấy `accessToken` thật rồi truyền
-//  vào SDK (`PromotionManager.start(customerId:token:...)`). Ngoài đời việc này do app HOST làm;
+//  vào SDK (`PromotionSDK.initialize(customerId:accessToken:...)`). Ngoài đời việc này do app HOST làm;
 //  đây chỉ là giả lập để test SDK với token/BFF thật.
 //
 //  Luồng 2 bước (BE yêu cầu):

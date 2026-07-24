@@ -3,7 +3,7 @@
 > Hướng dẫn **tích hợp** dành cho đội app host (bên tiêu thụ SDK). Không phải tài liệu phát triển nội
 > bộ SDK — cái đó xem [`AndroidGuide.md`](./AndroidGuide.md) / [`AndroidUIGuide.md`](./AndroidUIGuide.md).
 > Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./PublicApi.md). Phân phối Maven: [`Distribution.md`](./Distribution.md).
-> Mẫu wrapper khuyến nghị ở host: [`InitParity.md`](./InitParity.md) §6 + `androidApp/.../PromotionManager.kt`.
+> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./InitParity.md) §6).
 > Bản iOS đối xứng: [`IosIntegrationGuide.md`](./IosIntegrationGuide.md).
 
 ---
@@ -14,7 +14,7 @@
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.*` (`PromotionSDK`, `PromotionSDKApi`,
   `PromotionSDKTheme`, `PromotionSDKCallback`…).
-- Cấu hình một lần bằng `PromotionSDK.initialize(context, options)`, bơm đơn hàng bằng `updateContext(...)`,
+- Cấu hình một lần bằng `PromotionSDK.initialize(context, customerId, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -89,38 +89,47 @@ Log.d("PRM", PromotionSDK.isInitialized().toString()) // false — resolve OK l�
 `PromotionSDK` là **singleton `object`** — mọi điểm vào là static. SDK giữ **một** phiên sống tại một thời điểm.
 Điểm lệch với iOS (N1): Android cần `context`.
 
+**Cách tối giản** — đủ cho phần lớn host, chỉ 3 tham số bắt buộc:
+
 ```kotlin
 import com.ttcn.prm.entry.*
 
 // Sau khi login thành công:
 PromotionSDK.initialize(
     context = applicationContext,
-    options = PromotionSDKOptions(
-        session = PromotionSessionConfig(
-            customerId = user.id,
-            accessToken = auth.accessToken,
-            baseUrl = "http://125.235.38.229:8080",
-            language = "vi-VN",                      // mặc định "vi-VN"
-            environment = PromotionEnvironment.PROD, // PROD | STAGING, mặc định PROD
-        ),
-        availableServices = listOf(                  // cho bottom sheet "Chọn dịch vụ" (có thể để rỗng)
-            PromotionAvailableService(serviceCode = "TOPUP", serviceName = "Nạp tiền", iconUrl = iconUrl),
-        ),
-        theme = null,                                // null = SDK tự khôi phục theme đã lưu (xem §10)
-        callback = myCallback,                       // object implement PromotionSDKCallback (xem §7)
+    customerId = user.id,
+    accessToken = auth.accessToken,
+    baseUrl = "http://125.235.38.229:8080",
+    // các tham số dưới đây là TUỲ CHỌN:
+    environment = PromotionEnvironment.PROD,          // mặc định PROD
+    availableServices = listOf(                        // cho bottom sheet "Chọn dịch vụ"
+        PromotionAvailableService("TOPUP", "Nạp tiền", iconUrl = iconUrl),
     ),
+    callback = myCallback,                             // implement PromotionSDKCallback (xem §7)
 )
+```
+
+Cần cấu hình sâu hơn (theme, ...) thì dùng overload nhận `PromotionSDKOptions`:
+
+```kotlin
+PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
+    session = PromotionSessionConfig(user.id, auth.accessToken, baseUrl, environment = PromotionEnvironment.PROD),
+    availableServices = services, theme = myTheme, callback = myCallback,
+))
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo | `PromotionSDK.initialize(context, options)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(context, customerId, accessToken, baseUrl)` |
+| Khởi tạo (đầy đủ) | `PromotionSDK.initialize(context, options)` |
+| **Đổi token** (refresh) | `PromotionSDK.updateToken(newToken)` |
 | Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback(): PromotionSDKCallback?` |
 
-**Refresh access token:** token bị "chụp" lúc init. Muốn đổi token = **gọi lại** `initialize(context, options)`
-với `session` mới (SDK tự dựng lại đồ thị DI). `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
+**Refresh access token:** gọi `PromotionSDK.updateToken(newToken)` — SDK tự dựng lại session mới,
+**giữ nguyên** context đơn hàng đang ghi, danh mục dịch vụ, callback và theme. Host **không** cần biết
+"refresh = init lại". `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
 
 ---
 
@@ -224,8 +233,8 @@ val myCallback = object : PromotionSDKCallback {
 | `onAvailabilityChanged(enabled)` | Feature flag báo bật/tắt SDK |
 | `onClosed()` | Màn SDK bị đóng |
 
-> Callback của SDK là kênh **1-1**. Muốn nhiều nơi trong app cùng nghe → dùng wrapper fan-out
-> (`PromotionManager` mẫu ở `androidApp/`, xem [`InitParity.md`](./InitParity.md) §6).
+> Callback của SDK là kênh **1-1** (một object nhận sự kiện, truyền qua `initialize(callback = ...)`).
+> Muốn nhiều nơi cùng nghe → host tự bọc một object fan-out nhỏ (tuỳ chọn; demo có `DemoPromotionCallback` ~30 dòng).
 
 ---
 
@@ -305,22 +314,22 @@ PromotionSDK.configure(
 | ❌ Sai | ✅ Đúng |
 |---|---|
 | Gọi `api` / `updateContext` / mở màn trước `initialize` | Luôn `initialize` sau login trước tiên |
-| Đổi token bằng cách sửa field | Gọi lại `initialize(context, options)` với session mới |
+| Đổi token bằng cách init lại thủ công | `PromotionSDK.updateToken(newToken)` — SDK tự lo |
 | Import `com.ttcn.promotionsdk.core.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
 | Quên `PromotionIntegrateManager.clear()` trong `onDestroyView` | Luôn `clear()` để huỷ coroutine scope |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled)` |
-| Rải `PromotionSDK.*` khắp app | Gom qua 1 wrapper (`PromotionManager`, [`InitParity.md`](./InitParity.md) §6) |
+| Tưởng phải tự viết wrapper `PromotionManager` | Gọi thẳng `PromotionSDK` — SDK đã tự lo token/context/callback |
 
 ---
 
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(context, options)
+login thành công        → PromotionSDK.initialize(context, customerId, accessToken, baseUrl)
 vào màn có voucher       → PromotionSDK.updateContext(orderId, orderValue, ...)
 mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView + PromotionIntegrateManager
-refresh access token     → PromotionSDK.initialize(context, options) lại (session mới)
+refresh access token     → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
 ```
 

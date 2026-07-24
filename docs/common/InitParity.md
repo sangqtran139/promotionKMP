@@ -10,7 +10,7 @@
    ngữ cho phép*.
 2. Điểm **không thể** trùng do ràng buộc ngôn ngữ/nền tảng → liệt kê ở [§4 Ngoại lệ N1](#4-ngoại-lệ-n1--buộc-lệch)
    kèm lý do. Không được phát sinh ngoại lệ mới nếu không ghi vào đây.
-3. Host **không** import SDK trực tiếp — chỉ đi qua wrapper `PromotionServing` ([§6](#6-wrapper-host--hợp-đồng-chung)).
+3. Host gọi **thẳng** `PromotionSDK` — không cần wrapper (đã bỏ khuyến nghị `PromotionServing`, xem [§6](#6-tích-hợp-trực-tiếp--host-không-cần-wrapper)).
 4. Ký hiệu: ✅ đã khớp · 🔧 phải nắn · ⚠️ cần bạn xác nhận · N1 ngoại lệ nền tảng.
 
 ---
@@ -19,7 +19,9 @@
 
 | Khái niệm | Canonical (đích) | Android hiện tại | iOS hiện tại | TT |
 |---|---|---|---|---|
-| Khởi tạo | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
+| Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
+| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, customerId, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(customerId:accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 3 tham số bắt buộc; uỷ thẳng cho overload options |
+| Đổi token | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ dựng lại DI với session mới, **giữ** context động + services + callback + theme. Thay cho "host tự init lại" |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
 | Trạng thái | `isInitialized()` | ✅ | ✅ | ✅ |
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |
@@ -133,37 +135,41 @@ với `voucherId` đó (trả `PromotionValidationResult` — cùng dữ liệu,
 
 ---
 
-## 6. Wrapper host — hợp đồng chung (`PromotionServing`)
+## 6. Tích hợp trực tiếp — host **không** cần wrapper
 
-Mỗi nền tảng **một file duy nhất** chạm SDK. Chữ ký đối xứng 1-1 (điều chỉnh theo kiểu nền tảng ở host param).
+**Bỏ khuyến nghị `PromotionManager`/`PromotionServing` (2026-07-24).** Trước đây spec bắt mỗi host tự
+viết một wrapper anti-corruption (~340 dòng Android / ~420 dòng iOS) để nuốt các ràng buộc của SDK.
+Nay các ràng buộc đó đã đưa **vào chính SDK**, nên host gọi thẳng `PromotionSDK` — tích hợp tối thiểu:
 
 ```text
-interface/protocol PromotionServing:
-    // Vòng đời
-    start(customerId, token, availableServices)     // → PromotionSDK.initialize(options)
-    updateToken(token)                               // → initialize lại session mới
-    updateContext(orderId, orderValue, serviceCode, metaData)
-    stop()                                           // → PromotionSDK.release()
+// Sau khi login:
+PromotionSDK.initialize(context, customerId, accessToken, baseUrl)   // overload phẳng, 4 tham số
 
-    // UI
-    openMyPromotions(from host)
-    openPromotionDetail(voucherId, from host)
-    makeCheckoutWidget(from host, order) -> View     // che PRMEndowView / createEndowView
+// Refresh token — KHÔNG cần tự init lại, SDK giữ nguyên context/services/theme/callback:
+PromotionSDK.updateToken(newToken)
 
-    // Headless (bọc đủ 5 hàm của PromotionSDKApi)
-    fetchVouchers(...) ; findEligibleOffers(...) ; fetchVoucherDetail(...) ; validate(...) ; createRedemption(...)
+// Vào màn có voucher:
+PromotionSDK.updateContext(orderId, orderValue)
 
-    // Sự kiện (fan-out từ callback 1-1 của SDK → nhiều listener của app)
-    onVoucherApplied ; onVoucherCleared ; onVoucherCountChanged
-    onServiceSelected ; onAvailabilityChanged ; onClosed
+// Mở UI có sẵn:
+PromotionSDK.openMyPromotion(activity[, containerViewId])   // Android
+PromotionSDK.openMyPromotion(from: viewController)           // iOS
 
-class PromotionManager : PromotionServing   // singleton, CHỖ DUY NHẤT import SDK
-    - map model APP ⇄ model SDK (anti-corruption)
-    - nuốt các ràng buộc: token chụp lúc init, updateContext trước khi mở màn có voucher
+// Logout:
+PromotionSDK.release()
 ```
 
-- iOS: đã có mẫu `iosApp/.../PromotionManager.swift` → tinh chỉnh tên cho khớp bảng này.
-- Android: **tạo mới** `androidApp/.../PromotionManager.kt` gương y hệt (hiện chưa có).
+Vì sao không còn cần wrapper:
+- **`initialize` phẳng** — 3 tham số bắt buộc, không phải lồng 3 constructor.
+- **`updateToken`** — SDK tự dựng lại session mới, host không phải biết "refresh = init lại".
+- **Callback** là interface/protocol có default method → host chỉ implement sự kiện mình cần, truyền
+  thẳng qua `initialize(callback:)`. Không cần fan-out.
+- **Headless** trả DTO công khai (`PromotionApiResult`/`PromotionVoucher`…) — không rò type lõi, host
+  dùng trực tiếp không cần lớp map.
+
+Host **vẫn có thể** tự bọc một lớp mỏng nếu muốn anti-corruption trong kiến trúc của họ — đó là lựa
+chọn của host, **không** phải yêu cầu của SDK. Demo (`androidApp`/`iosApp`) gọi thẳng `PromotionSDK`
+làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
 
 ---
 

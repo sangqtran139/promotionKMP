@@ -7,6 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.ttcn.prm.entry.PromotionAvailableService
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.entry.PromotionSDKCallback
+import com.ttcn.prm.entry.PromotionServiceSelection
 import com.ttcn.promotionsdk.app.databinding.FragmentTokenLoadingBinding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -56,28 +60,39 @@ class PromotionTokenLoadingFragment : Fragment() {
         }
     }
 
-    // Đi qua wrapper PromotionManager (anti-corruption) — không gọi PromotionSDK trực tiếp.
+    // Gọi THẲNG PromotionSDK — không qua wrapper. Overload phẳng: chỉ customerId + token + baseUrl,
+    // phần còn lại (availableServices/callback) là tuỳ chọn.
     private fun initSdk(token: String) {
-        PromotionManager.start(
-            requireContext(),
+        PromotionSDK.initialize(
+            context = requireContext(),
             customerId = "CUST-001",
-            token = token,
+            accessToken = token,
+            baseUrl = DEMO_BASE_URL,
             availableServices = listOf(
-                AvailableService("P-FOOD-001", "Mua đồ ăn 1", "SKU-FOOD-001", "https://cdn.promix.test/products/food-001.png"),
-                AvailableService("P-FOOD-002", "Mua đồ ăn 1", "SKU-FOOD-002", "https://cdn.promix.test/products/food-002.png"),
-                AvailableService("P-ALC-001", "Mua rượu", "SKU-ALCOHOL-001", "https://cdn.promix.test/products/alcohol-001.png"),
+                PromotionAvailableService("P-FOOD-001", "Mua đồ ăn 1", "SKU-FOOD-001", "https://cdn.promix.test/products/food-001.png"),
+                PromotionAvailableService("P-FOOD-002", "Mua đồ ăn 1", "SKU-FOOD-002", "https://cdn.promix.test/products/food-002.png"),
+                PromotionAvailableService("P-ALC-001", "Mua rượu", "SKU-ALCOHOL-001", "https://cdn.promix.test/products/alcohol-001.png"),
             ),
+            callback = demoCallback,
         )
     }
 
     private fun updateDemoContext() {
-        PromotionManager.updateContext(
+        PromotionSDK.updateContext(
             orderId = "ORD-DEMO-001",
             orderValue = "500000",
             // TEST: để null (khớp iOS demo) — kiểm tra detail có load + nút "Sử dụng ngay" hiện không.
             serviceCode = null,
             metaData = null,
         )
+    }
+
+    /** Host chỉ implement sự kiện mình cần — các method khác có default rỗng. */
+    private val demoCallback = object : PromotionSDKCallback {
+        override fun onServiceSelected(selection: PromotionServiceSelection) {
+            Log.d(TAG, "onServiceSelected: ${selection.serviceName} (voucher ${selection.voucherId})")
+        }
+        override fun onVoucherApplied(voucherId: String) { Log.d(TAG, "onVoucherApplied: $voucherId") }
     }
 
     private fun navigateToLauncher() {
@@ -95,5 +110,6 @@ class PromotionTokenLoadingFragment : Fragment() {
 
     private companion object {
         const val TAG = "TokenLoading"
+        const val DEMO_BASE_URL = "http://125.235.38.229:8080"
     }
 }

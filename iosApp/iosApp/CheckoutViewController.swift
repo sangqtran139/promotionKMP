@@ -5,17 +5,17 @@
 //  Màn "Thanh toán" của host: nhúng widget chọn ưu đãi (custom view của SDK) + nút
 //  "Thanh toán" gọi API redemption với voucher user đã áp trên widget.
 //
-//  Luồng: user áp voucher trên widget → manager phát `onVoucherApplied` → màn này lưu lại
-//  voucherId → bấm "Thanh toán" → `createRedemption`. Chỉ nói chuyện qua PromotionManager
-//  (không đụng type SDK trực tiếp — giữ anti-corruption như PromotionManager.swift).
+//  Luồng: user áp voucher trên widget → SDK phát `onVoucherApplied` → màn này lưu lại
+//  voucherId → bấm "Thanh toán" → `PromotionSDK.api.createRedemption`. Gọi THẲNG SDK, không wrapper.
 //
 
 import UIKit
+import PRM
 
 final class CheckoutViewController: UIViewController {
 
-    private let order: OrderContext
-    private var promotions: PromotionServing { PromotionManager.shared }
+    private let orderId: String
+    private let orderValue: String
 
     /// Voucher user đã áp trên widget (nil = chưa áp / đã huỷ). Nút "Thanh toán" redeem cái này.
     private var appliedVoucherId: String?
@@ -31,8 +31,9 @@ final class CheckoutViewController: UIViewController {
         return btn
     }()
 
-    init(order: OrderContext) {
-        self.order = order
+    init(orderId: String, orderValue: String) {
+        self.orderId = orderId
+        self.orderValue = orderValue
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -48,11 +49,12 @@ final class CheckoutViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Màn này sở hữu sự kiện áp/huỷ voucher trong lúc hiển thị (delegate SDK là 1-1).
-        promotions.onVoucherApplied = { [weak self] voucherId in
+        // Màn này sở hữu sự kiện áp/huỷ voucher trong lúc hiển thị (callback SDK là 1-1).
+        let events = DemoPromotionCallback.shared
+        events.onApplied = { [weak self] voucherId in
             self?.appliedVoucherId = voucherId
         }
-        promotions.onVoucherCleared = { [weak self] in
+        events.onCleared = { [weak self] in
             self?.appliedVoucherId = nil
         }
     }
@@ -61,7 +63,7 @@ final class CheckoutViewController: UIViewController {
 
     private func setupLayout() {
         // Widget chọn ưu đãi (custom view SDK) — truyền order tại đây, không re-init SDK.
-        let widget = promotions.makeCheckoutWidget(from: self, order: order)
+        let widget = PromotionSDK.createEndowView(from: self, orderId: orderId, orderValue: orderValue)
         widget.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(widget)
         view.addSubview(payButton)
@@ -86,11 +88,12 @@ final class CheckoutViewController: UIViewController {
             return
         }
         payButton.isEnabled = false
-        promotions.createRedemption(order: order, voucherId: voucherId) { [weak self] result in
+        // Headless `api` trả DTO công khai — gọi thẳng.
+        PromotionSDK.api.createRedemption(orderId: orderId, orderValue: orderValue, voucherIds: [voucherId]) { [weak self] result in
             self?.payButton.isEnabled = true
             switch result {
-            case .success(let sessionId):
-                self?.showAlert("Thanh toán thành công", "Đã tạo phiên redemption.\nsessionId: \(sessionId)")
+            case .success(let redemption):
+                self?.showAlert("Thanh toán thành công", "Đã tạo phiên redemption.\nsessionId: \(redemption.sessionId)")
             case .failure(let error):
                 self?.showAlert("Thanh toán lỗi", error.localizedDescription)
             }

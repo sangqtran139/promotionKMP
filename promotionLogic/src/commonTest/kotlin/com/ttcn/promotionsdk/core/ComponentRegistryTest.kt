@@ -94,4 +94,21 @@ class ComponentRegistryTest {
         r.single { Foo("moi") }
         assertEquals("moi", r.resolve(Foo::class).tag)
     }
+
+    @Test
+    fun reRegisterAfterResolve_keepsStaleCachedInstance_untilCleared() {
+        // Bất biến mà `PromotionSDK.updateToken` DỰA VÀO: re-register single sau khi đã resolve
+        // KHÔNG thay instance đã cache — phải `clear()` trước. Đây chính là lý do updateToken gọi
+        // `PromotionContainer.clear()` trước khi re-init (nếu không, HttpClient token cũ vẫn sống).
+        val r = ComponentRegistry()
+        r.single { Foo("cu") }
+        assertEquals("cu", r.resolve(Foo::class).tag)   // dựng + cache
+
+        r.single { Foo("moi") }                          // override provider…
+        assertEquals("cu", r.resolve(Foo::class).tag)   // …nhưng instance cache vẫn CŨ
+
+        r.clear()
+        r.single { Foo("moi") }
+        assertEquals("moi", r.resolve(Foo::class).tag)   // sau clear mới lấy được instance mới
+    }
 }

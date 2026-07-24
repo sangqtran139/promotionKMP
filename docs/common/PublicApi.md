@@ -30,7 +30,14 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 
 ```kotlin
 object PromotionSDK {
+    // Khởi tạo tối giản (đủ cho phần lớn host — chỉ 3 tham số bắt buộc):
+    fun initialize(context: Context, customerId: String, accessToken: String, baseUrl: String,
+                   environment: PromotionEnvironment = PROD, language: String = "vi-VN",
+                   availableServices: List<PromotionAvailableService> = emptyList(),
+                   theme: PromotionSDKTheme? = null, callback: PromotionSDKCallback? = null)
+    // Khởi tạo đầy đủ:
     fun initialize(context: Context, options: PromotionSDKOptions)
+    fun updateToken(accessToken: String)           // refresh token — SDK giữ context/services/theme/callback
     fun release()
     fun isInitialized(): Boolean
     fun getCallback(): PromotionSDKCallback?

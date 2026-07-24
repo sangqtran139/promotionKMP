@@ -2,28 +2,26 @@
 //  ViewController.swift
 //  PromotionSDKDemo
 //
-//  Demo tích hợp PromotionSDK SDK QUA wrapper `PromotionManager` (pattern anti-corruption):
-//  luồng chính (widget / danh sách / redemption / sự kiện) chỉ gọi PromotionManager, KHÔNG
-//  chạm SDK trực tiếp. Chỉ 2 công cụ Playground bên dưới mới gọi thẳng API tĩnh `PromotionSDK`.
+//  Demo tích hợp PromotionSDK — gọi THẲNG `PromotionSDK` (không wrapper). Sự kiện đi qua
+//  `DemoPromotionCallback` (tiện ích demo ~30 dòng cho nhiều màn nghe, không bắt buộc với host).
 //
 
 import UIKit
-import PRM   // chỉ còn cần cho 2 màn Playground (gọi API tĩnh). Luồng chính không dùng type SDK.
+import PRM
 
 class ViewController: UIViewController {
 
     // MARK: - Demo data (giả lập host cung cấp)
     //
-    // Login + `PromotionManager.start(...)` nằm ở `TokenLoadingViewController` (cổng khởi động) —
+    // Login + `PromotionSDK.initialize(...)` nằm ở `TokenLoadingViewController` (cổng khởi động) —
     // màn này chỉ hiện SAU KHI SDK đã initialize, nên không cần gác `isReady` ở từng nút.
 
     /// Đơn hàng ở màn thanh toán — truyền vào widget để validate voucher khi "Áp dụng".
-    private let demoOrder = OrderContext(id: "ORDER-001", value: "500000")
+    private let demoOrderId = "ORDER-001"
+    private let demoOrderValue = "500000"
     /// Id dự phòng cho nút "Mở thẳng chi tiết": khách chưa có voucher, hoặc API lỗi, vẫn vào được màn
     /// chi tiết để xem layout. Màn tự fetch theo id này rồi hiện shimmer → lỗi. Chỉ dùng ở demo.
     private let fallbackVoucherId = "VOUCHER-DEMO-001"
-
-    private var promotions: PromotionServing { PromotionManager.shared }
 
     // MARK: - UI
 
@@ -52,19 +50,21 @@ class ViewController: UIViewController {
     }
 
     private func wirePromotionEvents() {
-        promotions.onVoucherCountChanged = { count in
+        // Sự kiện SDK là 1-1: gán closure lên callback dùng chung (màn hiện chiếm quyền nghe).
+        let events = DemoPromotionCallback.shared
+        events.onCountChanged = { count in
             print("[Demo] Voucher khả dụng: \(count)")
         }
-        promotions.onVoucherCleared = {
+        events.onCleared = {
             print("[Demo] Voucher đã bị huỷ")
         }
         // Redemption đã chuyển sang màn Thanh toán (nút "Thanh toán") — màn ngoài không tự redeem nữa.
-        promotions.onVoucherApplied = { voucherId in
+        events.onApplied = { voucherId in
             print("[Demo] Voucher đã áp: \(voucherId)")
         }
         // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
-        promotions.onServiceSelected = { [weak self] sel in
-            self?.showAlert("Đã chọn dịch vụ", "\(sel.name) (\(sel.code))\nvoucher: \(sel.voucherId)")
+        events.onService = { [weak self] sel in
+            self?.showAlert("Đã chọn dịch vụ", "\(sel.serviceName) (\(sel.serviceCode))\nvoucher: \(sel.voucherId)")
         }
     }
 
@@ -105,10 +105,10 @@ class ViewController: UIViewController {
         return v
     }
 
-    // MARK: - Actions (luồng chính — qua manager)
+    // MARK: - Actions (gọi thẳng PromotionSDK — không wrapper)
 
     @objc private func showMyPromotionsTapped() {
-        promotions.openMyPromotions(from: self)
+        PromotionSDK.openMyPromotion(from: self)
     }
 
     /// Mở thẳng màn chi tiết, KHÔNG qua danh sách — mô phỏng host bấm vào push notification/deeplink.
@@ -118,26 +118,28 @@ class ViewController: UIViewController {
     /// nút này là xem được màn chi tiết, không phải kiểm tra API. Ngoài đời host đã có sẵn id
     /// (trong payload notification) nên không cần bước fetch này.
     @objc private func openPromotionDetailTapped() {
-        promotions.fetchVouchers(keyword: nil, serviceCode: nil, tab: nil, page: 0) { [weak self] result in
+        // Headless `api` trả DTO công khai — dùng thẳng, không cần lớp map.
+        PromotionSDK.api.getVouchers(page: 0) { [weak self] result in
             guard let self else { return }
-            let voucherId = (try? result.get())?.mine.first?.id ?? self.fallbackVoucherId
-            self.promotions.openPromotionDetail(voucherId: voucherId, from: self)
+            let voucherId = (try? result.get())?.vouchers.first?.id ?? self.fallbackVoucherId
+            PromotionSDK.openPromotionDetail(voucherId: voucherId, from: self)
         }
     }
 
     @objc private func openCheckoutTapped() {
-        navigationController?.pushViewController(CheckoutViewController(order: demoOrder), animated: true)
+        navigationController?.pushViewController(
+            CheckoutViewController(orderId: demoOrderId, orderValue: demoOrderValue), animated: true)
     }
 
     // MARK: - Playground (công cụ demo — gọi thẳng API tĩnh PromotionSDK, gác bằng isReady)
 
     @objc private func openPlaygroundTapped() {
-        guard PromotionManager.shared.isReady else { return }
+        guard PromotionSDK.isInitialized() else { return }
         navigationController?.pushViewController(APIPlaygroundViewController(), animated: true)
     }
 
     @objc private func openThemePlaygroundTapped() {
-        guard PromotionManager.shared.isReady else { return }
+        guard PromotionSDK.isInitialized() else { return }
         navigationController?.pushViewController(ThemePreviewViewController(), animated: true)
     }
 
