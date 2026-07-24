@@ -43,7 +43,7 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── ViewModel — khởi tạo lazy để scope sẵn sàng khi onAttachedToWindow ──
 
-    private var viewModel: PRMEndowViewModel? = null
+    private var viewModel: EndowViewModel? = null
 
     // ─── Internal UI state ────────────────────────────────────────────────────
 
@@ -97,7 +97,7 @@ class PRMEndowView @JvmOverloads constructor(
         viewScope = scope
 
         // ViewModel tạo lúc scope đã sẵn sàng — scope gắn với View lifecycle
-        val vm = PRMEndowViewModel.create(scope)
+        val vm = EndowViewModel.create(scope)
         viewModel = vm
 
         findViewTreeLifecycleOwner()?.lifecycle?.addObserver(object : DefaultLifecycleObserver {
@@ -127,7 +127,7 @@ class PRMEndowView @JvmOverloads constructor(
     }
 
     /** Cờ TẮT → ẩn widget và không gọi API. Cờ BẬT → hiện và nạp ưu đãi (chỉ nạp một lần). */
-    private fun applyFeatureFlag(enabled: Boolean, vm: PRMEndowViewModel) {
+    private fun applyFeatureFlag(enabled: Boolean, vm: EndowViewModel) {
         isVisible = enabled
         if (enabled) vm.loadInitial()
     }

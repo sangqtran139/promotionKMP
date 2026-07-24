@@ -9,8 +9,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.prm.entry.PromotionAvailableService
 import com.ttcn.prm.entry.PromotionSDK
-import com.ttcn.prm.entry.PromotionSDKCallback
-import com.ttcn.prm.entry.PromotionServiceSelection
 import com.ttcn.promotionsdk.app.databinding.FragmentTokenLoadingBinding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -42,7 +40,7 @@ class PromotionTokenLoadingFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val token = PromotionTestLoginManager().loginAndGetAccessToken()
+                val token = LoginService().login()
                 Log.d(TAG, "accessToken: $token")
 
                 initSdk(token)
@@ -77,7 +75,7 @@ class PromotionTokenLoadingFragment : Fragment() {
                 accessToken = token,
                 baseUrl = DEMO_BASE_URL,
                 availableServices = demoServices,
-                callback = demoCallback,
+                callback = DemoPromotionCallback,
             )
         }
     }
@@ -96,14 +94,6 @@ class PromotionTokenLoadingFragment : Fragment() {
             serviceCode = "TKBAOVIET",
             metaData = null,
         )
-    }
-
-    /** Host chỉ implement sự kiện mình cần — các method khác có default rỗng. */
-    private val demoCallback = object : PromotionSDKCallback {
-        override fun onServiceSelected(selection: PromotionServiceSelection) {
-            Log.d(TAG, "onServiceSelected: ${selection.serviceName} (voucher ${selection.voucherId})")
-        }
-        override fun onVoucherApplied(voucherId: String) { Log.d(TAG, "onVoucherApplied: $voucherId") }
     }
 
     private fun navigateToLauncher() {

@@ -53,6 +53,26 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Re-wire mỗi lần màn hiện lại (vd pop từ màn Thanh toán) — sự kiện SDK là 1-1,
+        // màn Thanh toán có thể đã chiếm onVoucherApplied/onVoucherCleared. Đối ứng
+        // `ViewController.viewWillAppear` bên iOS.
+        wirePromotionEvents()
+    }
+
+    /** Gán closure lên callback dùng chung — đối ứng `ViewController.wirePromotionEvents` bên iOS. */
+    private fun wirePromotionEvents() {
+        DemoPromotionCallback.onCountChanged = { count -> Log.d(TAG, "Voucher khả dụng: $count") }
+        DemoPromotionCallback.onCleared = { Log.d(TAG, "Voucher đã bị huỷ") }
+        // Redemption đã chuyển sang màn Thanh toán (nút "Thanh toán") — màn ngoài không tự redeem nữa.
+        DemoPromotionCallback.onApplied = { voucherId -> Log.d(TAG, "Voucher đã áp: $voucherId") }
+        // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
+        DemoPromotionCallback.onService = { sel ->
+            Log.d(TAG, "Đã chọn dịch vụ: ${sel.serviceName} (${sel.serviceCode}) voucher: ${sel.voucherId}")
+        }
+    }
+
     /**
      * Mở thẳng màn chi tiết, KHÔNG qua danh sách — mô phỏng host bấm push notification / deeplink.
      *

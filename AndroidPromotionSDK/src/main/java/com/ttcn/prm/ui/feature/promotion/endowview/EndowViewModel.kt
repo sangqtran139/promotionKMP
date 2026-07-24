@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
  *
  * Tạo qua [create] để DI tự resolve; [scope] gắn với vòng đời View.
  */
-internal class PRMEndowViewModel(
+internal class EndowViewModel(
     private val store: EndowStore,
     private val scope: CoroutineScope,
 ) {
@@ -89,8 +89,8 @@ internal class PRMEndowViewModel(
 
     companion object {
         /** Tạo instance; use case tự lấy repository từ đồ thị đã init. [scope] gắn với [PRMEndowView]. */
-        fun create(scope: CoroutineScope): PRMEndowViewModel =
-            PRMEndowViewModel(
+        fun create(scope: CoroutineScope): EndowViewModel =
+            EndowViewModel(
                 store = EndowStore(
                     findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
                     validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),

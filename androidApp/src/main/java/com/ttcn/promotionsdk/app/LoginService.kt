@@ -14,9 +14,14 @@ import retrofit2.http.Body
 import retrofit2.http.Headers
 import retrofit2.http.POST
 
-private const val TAG = "PromotionTestLogin"
+private const val TAG = "LoginService"
 
-class PromotionTestLoginManager {
+/**
+ * Login demo (test-only) để lấy accessToken truyền vào SDK. Đối ứng `LoginService` bên iOS — cùng tên
+ * class + entry `login()`. Cơ chế bất đồng bộ khác nhau theo ngôn ngữ (suspend ở đây vs completion
+ * handler bên iOS) là đặc thù nền tảng, chấp nhận.
+ */
+class LoginService {
 
     private data class LoginRequest(
         val msisdn: String = "84983725525",
@@ -72,7 +77,7 @@ class PromotionTestLoginManager {
      * Bước 2: gọi lại với requestId vừa nhận → nhận accessToken.
      * @throws Exception nếu server trả về lỗi.
      */
-    suspend fun loginAndGetAccessToken(): String = withContext(Dispatchers.IO) {
+    suspend fun login(): String = withContext(Dispatchers.IO) {
         // ── Bước 1 ──────────────────────────────────────────────
         val step1Body = LoginRequest()
         Log.d(TAG, "Step 1 request: $step1Body")

@@ -4,8 +4,8 @@
 //
 //  Chế độ headless: đối tác tự dựng UI, chỉ gọi `PromotionSDK.api`.
 //
-//  Soi gương `DemoHeadlessFragment` + `DemoHeadlessViewModel` bên Android: cùng 5 bước, cùng thứ tự,
-//  cùng chuỗi log. Sửa một bên thì sửa cả hai.
+//  Soi gương `DemoHeadlessFragment` bên Android: view mỏng, forward tap sang `DemoHeadlessViewModel`,
+//  chỉ giữ `appendLog` / `clearLog` để render. Logic 5 bước nằm ở VM. Sửa một bên thì sửa cả hai.
 //
 
 import UIKit
@@ -13,17 +13,8 @@ import PRM
 
 final class DemoHeadlessViewController: UIViewController {
 
-    // MARK: - Đọc lại giá trị đã set qua PromotionSDK.updateContext()
-
-    private var orderId: String { PromotionSDK.currentOrderId ?? "" }
-    private var orderValue: String { PromotionSDK.currentOrderValue ?? "" }
-
-    // MARK: - State
-
+    private let viewModel = DemoHeadlessViewModel()
     private var logLines: [String] = []
-    /// Giữ voucherId lấy từ search để các bước sau dùng
-    private var firstVoucherId: String?
-    private var validatedVoucherIds: [String] = []
 
     // MARK: - UI
 
@@ -71,7 +62,8 @@ final class DemoHeadlessViewController: UIViewController {
         title = "Headless API Demo"
         view.backgroundColor = .systemBackground
         setupLayout()
-        logSdkContext()
+        bindViewModel()
+        viewModel.logSdkContext()
     }
 
     private func setupLayout() {
@@ -97,172 +89,30 @@ final class DemoHeadlessViewController: UIViewController {
         ])
     }
 
-    private func logSdkContext() {
-        let session = PromotionSDK.session
-        emit("── SDK context ──────────────────────")
-        emit("   customerId  : \(session?.customerId ?? "(null)")")
-        emit("   language    : \(session?.language ?? "(null)")")
-        emit("   orderId     : \(PromotionSDK.currentOrderId ?? "(null)")")
-        emit("   orderValue  : \(PromotionSDK.currentOrderValue ?? "(null)")")
-        emit("   serviceCode : \(PromotionSDK.currentServiceCode ?? "(null)")")
-        emit("─────────────────────────────────────")
+    /// Đối ứng `DemoHeadlessFragment.observeData`: quan sát `onLoading` / `onLog` từ VM.
+    private func bindViewModel() {
+        viewModel.onLoading = { [weak self] loading in self?.setLoading(loading) }
+        viewModel.onLog = { [weak self] line in self?.appendLog(line) }
     }
 
-    // MARK: - Step 1: Search vouchers
+    // MARK: - Actions (forward sang VM — đối ứng setOnClickListener bên Android)
 
-    @objc private func searchVouchersTapped() {
-        setLoading(true)
-        PromotionSDK.api.getVouchers(page: 0, size: Self.pageSize) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let page):
-                let vouchers = page.vouchers
-                self.firstVoucherId = vouchers.first?.id
-                self.emit("✅ getVouchers")
-                self.emit("   vouchers: \(vouchers.count) items (lastPage=\(page.isLastPage))")
-                vouchers.prefix(Self.maxLogItems).forEach { self.emit("   - [\($0.id)] \($0.title)") }
-                if vouchers.count > Self.maxLogItems {
-                    self.emit("   ... +\(vouchers.count - Self.maxLogItems) more")
-                }
-            case .failure(let error):
-                self.emit(self.formatError("getVouchers", error))
-            }
-            self.setLoading(false)
-        }
+    @objc private func searchVouchersTapped() { viewModel.searchVouchers() }
+    @objc private func findEligibleTapped() { viewModel.findEligible() }
+    @objc private func getVoucherDetailTapped() { viewModel.getVoucherDetail() }
+    @objc private func validateDiscountsTapped() { viewModel.validateDiscounts() }
+    @objc private func createRedemptionTapped() { viewModel.createRedemption() }
+    @objc private func clearLogTapped() { clearLog() }
+
+    // MARK: - Log (đối ứng `appendLog` / `clearLog` bên Android)
+
+    private func appendLog(_ line: String) {
+        logLines.append(line)
+        logTextView.text = logLines.joined(separator: "\n")
+        scrollLogToBottom()
     }
 
-    // MARK: - Step 2: Find eligible
-
-    @objc private func findEligibleTapped() {
-        setLoading(true)
-        PromotionSDK.api.findEligible(
-            orderId: orderId,
-            orderValue: orderValue,
-            items: demoOrderItems(),
-            myPage: 0,
-            mySize: Self.pageSize,
-            otherPage: 0,
-            otherSize: Self.pageSize
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let data):
-                self.emit("✅ findEligible")
-                self.emit("   myOffers   : \(data.myOffers.count) items (lastPage=\(data.myIsLastPage))")
-                data.myOffers.prefix(Self.maxLogItems).forEach {
-                    self.emit("   - [\($0.id)] \($0.name) usable=\($0.usable)")
-                }
-                self.emit("   otherOffers: \(data.otherOffers.count) items (lastPage=\(data.otherIsLastPage))")
-                data.otherOffers.prefix(Self.maxLogItems).forEach {
-                    self.emit("   - [\($0.id)] \($0.name) usable=\($0.usable)")
-                }
-            case .failure(let error):
-                self.emit(self.formatError("findEligible", error))
-            }
-            self.setLoading(false)
-        }
-    }
-
-    // MARK: - Step 3: Get voucher detail
-
-    @objc private func getVoucherDetailTapped() {
-        guard let voucherId = requireVoucherId() else { return }
-        setLoading(true)
-        PromotionSDK.api.getVoucherDetail(voucherId: voucherId) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let detail):
-                self.emit("✅ getVoucherDetail [\(detail.id)]")
-                self.emit("   title      : \(detail.title)")
-                self.emit("   merchant   : \(detail.merchantName)")
-                self.emit("   expires    : \(detail.expireDate ?? "(null)")")
-                self.emit("   status     : \(detail.status)")
-            case .failure(let error):
-                self.emit(self.formatError("getVoucherDetail", error))
-            }
-            self.setLoading(false)
-        }
-    }
-
-    // MARK: - Step 4: Validate discounts
-
-    @objc private func validateDiscountsTapped() {
-        guard let voucherId = requireVoucherId() else { return }
-        setLoading(true)
-        PromotionSDK.api.validateDiscounts(
-            orderId: orderId,
-            orderValue: orderValue,
-            voucherIds: [voucherId]
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let data):
-                self.validatedVoucherIds = data.items.filter { $0.isValid }.map { $0.objectId }
-                self.emit("✅ validateDiscounts")
-                self.emit("   overallValid       : \(data.overallValid)")
-                self.emit("   totalDiscountAmount: \(data.totalDiscountAmount)")
-                self.emit("   finalAmount        : \(data.finalAmount)")
-                data.items.forEach {
-                    self.emit("   [\($0.objectId)] valid=\($0.isValid) discount=\($0.discountAmount)")
-                }
-            case .failure(let error):
-                self.emit(self.formatError("validateDiscounts", error))
-            }
-            self.setLoading(false)
-        }
-    }
-
-    // MARK: - Step 5: Create redemption
-
-    @objc private func createRedemptionTapped() {
-        guard !validatedVoucherIds.isEmpty else {
-            emit("⚠️ Chưa validate, hãy Validate trước")
-            return
-        }
-        setLoading(true)
-        PromotionSDK.api.createRedemption(
-            orderId: orderId,
-            orderValue: orderValue,
-            voucherIds: validatedVoucherIds
-        ) { [weak self] result in
-            guard let self else { return }
-            switch result {
-            case .success(let data):
-                self.emit("✅ createRedemption")
-                self.emit("   sessionId    : \(data.sessionId)")
-                self.emit("   totalDiscount: \(data.totalDiscount)")
-                self.emit("   finalAmount  : \(data.finalAmount)")
-                self.emit("   hasErrors    : \(!data.validationErrors.isEmpty)")
-                data.validationErrors.forEach { self.emit("   ⚠️ \($0.code): \($0.message)") }
-            case .failure(let error):
-                self.emit(self.formatError("createRedemption", error))
-            }
-            self.setLoading(false)
-        }
-    }
-
-    private func requireVoucherId() -> String? {
-        guard let firstVoucherId else {
-            emit("⚠️ Chưa có voucherId, hãy Search trước")
-            return nil
-        }
-        return firstVoucherId
-    }
-
-    /// Dòng đơn hàng giả lập — `findEligible` cần items để lấy campaign theo SKU (rỗng thì chỉ nhận
-    /// campaign cấp đơn). Context của SDK không đọc ngược ra `orderItems` được, nên demo tự dựng.
-    private func demoOrderItems() -> [PromotionOrderItem] {
-        [PromotionOrderItem(
-            skuId: Self.demoSkuId,
-            productId: Self.demoProductId,
-            quantity: 1,
-            unitPrice: orderValue
-        )]
-    }
-
-    // MARK: - Log
-
-    @objc private func clearLogTapped() {
+    private func clearLog() {
         logLines.removeAll()
         logTextView.text = ""
     }
@@ -274,34 +124,10 @@ final class DemoHeadlessViewController: UIViewController {
         }
     }
 
-    private func emit(_ msg: String) {
-        logLines.append(msg)
-        logTextView.text = logLines.joined(separator: "\n")
-        scrollLogToBottom()
-    }
-
     private func scrollLogToBottom() {
         let length = (logTextView.text as NSString).length
         guard length > 0 else { return }
         logTextView.scrollRangeToVisible(NSRange(location: length - 1, length: 1))
-    }
-
-    /// `❌ tên: [type] message (serverCode=…)` — cùng định dạng với bên Android.
-    private func formatError(_ name: String, _ error: PromotionSDKError) -> String {
-        let serverCode = error.serverCode.map { " (serverCode=\($0))" } ?? ""
-        let message = error.errorDescription ?? error.localizedDescription
-        return "❌ \(name): [\(errorType(error))] \(message)\(serverCode)"
-    }
-
-    private func errorType(_ error: PromotionSDKError) -> String {
-        switch error {
-        case .networkFailure:  return "networkFailure"
-        case .sessionExpired:  return "sessionExpired"
-        case .timeout:         return "timeout"
-        case .parseFailed:     return "parseFailed"
-        case .featureDisabled: return "featureDisabled"
-        case .unknown:         return "unknown"
-        }
     }
 
     // MARK: - Factory
@@ -317,9 +143,4 @@ final class DemoHeadlessViewController: UIViewController {
         btn.addTarget(self, action: action, for: .touchUpInside)
         return btn
     }
-
-    private static let pageSize = 10
-    private static let maxLogItems = 3
-    private static let demoSkuId = "SKU-01"
-    private static let demoProductId = "P-01"
 }

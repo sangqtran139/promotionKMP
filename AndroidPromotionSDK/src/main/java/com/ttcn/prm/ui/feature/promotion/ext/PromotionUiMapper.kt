@@ -119,7 +119,7 @@ internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem =
  * TODO(auto-apply): `findEligible` chưa trả `isAutoApplied` (không có ở `EligibleOfferDto` lẫn các
  * DTO lồng bên trong). Voucher tự-áp-dụng vì thế **không chạy** ở luồng checkout. Khi backend bổ
  * sung field, thêm vào `EligibleOfferDto` + [EligibleOffer], gán ở đây, rồi bật lại nhánh
- * auto-apply trong `PRMEndowViewModel`.
+ * auto-apply trong `EndowViewModel`.
  */
 internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherListItem(
     voucherId = id,
