@@ -106,14 +106,38 @@ PromotionSDK.initialize(options: PromotionSDKOptions(
 |---|---|
 | Khởi tạo (tối giản) | `PromotionSDK.initialize(customerId:accessToken:baseUrl:)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(options:)` |
-| **Đổi token** (refresh) | `PromotionSDK.updateToken(newToken)` |
+| **Login lại** (session mới) | `PromotionSDK.updateSession(customerId:accessToken:availableServices:)` |
+| Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
 | Kiểm tra đã init | `PromotionSDK.isInitialized() -> Bool` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback() -> PromotionSDKCallback?` |
 
-**Refresh access token:** gọi `PromotionSDK.updateToken(newToken)` — SDK tự dựng lại session mới,
-**giữ nguyên** context đơn hàng đang ghi, danh mục dịch vụ, callback và theme. Host **không** cần biết
-"refresh = init lại". `release()` khi chưa init là vô hại; **không** xoá theme đã lưu.
+**Host gọi `initialize` MỘT LẦN, mỗi login sau chỉ gọi `updateSession`.** SDK tách hai loại field:
+
+| Cố định (khoá ở lần init **đầu**) | Đặc trưng session (đổi mỗi login) |
+|---|---|
+| `baseUrl`, `environment`, `language`, `theme` | `customerId`, `accessToken`, `availableServices` |
+
+- **Login lần đầu (mở app):** `initialize(...)` với đầy đủ config → SDK **chốt** field cố định.
+- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(customerId:accessToken:availableServices:)`
+  — chỉ field động; SDK **giữ** field cố định đã khoá + callback. `availableServices` bỏ qua (`nil`) = giữ
+  danh mục hiện tại. Context đơn hàng reset về rỗng vì là phiên mới.
+
+  ```swift
+  if PromotionSDK.isInitialized() {
+      PromotionSDK.updateSession(customerId: user.id, accessToken: token, availableServices: services)
+  } else {
+      PromotionSDK.initialize(customerId: user.id, accessToken: token, baseUrl: baseUrl, availableServices: services, callback: cb)
+  }
+  ```
+
+- **Gọi lại `initialize(...)` cũng an toàn** (guard): SDK khoá field cố định, chỉ áp field động; host lỡ
+  truyền field cố định khác đi thì **bỏ qua** kèm cảnh báo log.
+- **Đổi field cố định thật** (vd chuyển environment): `release()` rồi `initialize(...)` lại.
+- **Refresh token giữa phiên (cùng customer, đang checkout):** `PromotionSDK.updateToken(newToken)` —
+  tuỳ chọn, nhẹ hơn; **giữ nguyên** cả context đơn hàng đang ghi.
+
+> `release()` khi chưa init là vô hại; không xoá theme đã lưu.
 
 ---
 
@@ -287,6 +311,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 login thành công        → PromotionSDK.initialize(customerId:accessToken:baseUrl:)
 vào màn có voucher       → PromotionSDK.updateContext(orderId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
-refresh access token     → PromotionSDK.updateToken(newToken)
+login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
+refresh token giữa phiên → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
 ```

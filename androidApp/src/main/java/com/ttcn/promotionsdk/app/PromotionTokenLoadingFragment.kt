@@ -60,22 +60,33 @@ class PromotionTokenLoadingFragment : Fragment() {
         }
     }
 
-    // Gọi THẲNG PromotionSDK — không qua wrapper. Overload phẳng: chỉ customerId + token + baseUrl,
-    // phần còn lại (availableServices/callback) là tuỳ chọn.
+    // Gọi THẲNG PromotionSDK — không qua wrapper.
+    // Lần đầu: initialize(...) đầy đủ (chốt field cố định baseUrl/environment/language/theme).
+    // Login lại (đã init rồi): chỉ updateSession(...) với field động — không lặp lại config cố định.
     private fun initSdk(token: String) {
-        PromotionSDK.initialize(
-            context = requireContext(),
-            customerId = "CUST-001",
-            accessToken = token,
-            baseUrl = DEMO_BASE_URL,
-            availableServices = listOf(
-                PromotionAvailableService("P-FOOD-001", "Mua đồ ăn 1", "SKU-FOOD-001", "https://cdn.promix.test/products/food-001.png"),
-                PromotionAvailableService("P-FOOD-002", "Mua đồ ăn 1", "SKU-FOOD-002", "https://cdn.promix.test/products/food-002.png"),
-                PromotionAvailableService("P-ALC-001", "Mua rượu", "SKU-ALCOHOL-001", "https://cdn.promix.test/products/alcohol-001.png"),
-            ),
-            callback = demoCallback,
-        )
+        if (PromotionSDK.isInitialized()) {
+            PromotionSDK.updateSession(
+                customerId = "CUST-001",
+                accessToken = token,
+                availableServices = demoServices,
+            )
+        } else {
+            PromotionSDK.initialize(
+                context = requireContext(),
+                customerId = "CUST-001",
+                accessToken = token,
+                baseUrl = DEMO_BASE_URL,
+                availableServices = demoServices,
+                callback = demoCallback,
+            )
+        }
     }
+
+    private val demoServices = listOf(
+        PromotionAvailableService("P-FOOD-001", "Mua đồ ăn 1", "SKU-FOOD-001", "https://cdn.promix.test/products/food-001.png"),
+        PromotionAvailableService("P-FOOD-002", "Mua đồ ăn 1", "SKU-FOOD-002", "https://cdn.promix.test/products/food-002.png"),
+        PromotionAvailableService("P-ALC-001", "Mua rượu", "SKU-ALCOHOL-001", "https://cdn.promix.test/products/alcohol-001.png"),
+    )
 
     private fun updateDemoContext() {
         PromotionSDK.updateContext(

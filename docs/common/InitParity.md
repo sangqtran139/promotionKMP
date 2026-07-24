@@ -21,7 +21,9 @@
 |---|---|---|---|---|
 | Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
 | Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, customerId, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(customerId:accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 3 tham số bắt buộc; uỷ thẳng cho overload options |
-| Đổi token | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ dựng lại DI với session mới, **giữ** context động + services + callback + theme. Thay cho "host tự init lại" |
+| Login lại (session mới) | **`updateSession`** | `fun updateSession(customerId, accessToken, availableServices? = null)` | `updateSession(customerId:accessToken:availableServices:)` | ✅ lối chính re-login: chỉ field động; **giữ** field cố định đã khoá. `availableServices` null = giữ danh mục hiện tại. Context động reset |
+| Login lại (fallback) | **`initialize`** (idempotent) | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ guard: SDK **khoá** field cố định (baseUrl/env/language/theme) ở lần init đầu; gọi lại chỉ áp field động, field cố định khác đi → cảnh báo log + bỏ qua |
+| Refresh token (giữa phiên) | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ tuỳ chọn — cùng customer + **giữ cả** context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout) |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
 | Trạng thái | `isInitialized()` | ✅ | ✅ | ✅ |
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |

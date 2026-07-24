@@ -138,16 +138,25 @@ final class TokenLoadingViewController: UIViewController {
         }
     }
 
-    /// Gọi THẲNG PromotionSDK — không qua wrapper. Overload phẳng: chỉ customerId + token + baseUrl,
-    /// phần còn lại (availableServices/callback) là tuỳ chọn.
+    /// Gọi THẲNG PromotionSDK — không qua wrapper.
+    /// Lần đầu: initialize(...) đầy đủ (chốt field cố định baseUrl/environment/language/theme).
+    /// Login lại (đã init rồi): chỉ updateSession(...) với field động — không lặp lại config cố định.
     private func initSdk(customerId: String, token: String) {
-        PromotionSDK.initialize(
-            customerId: customerId,
-            accessToken: token,
-            baseUrl: Self.baseUrl,
-            availableServices: demoServices,
-            callback: DemoPromotionCallback.shared,
-        )
+        if PromotionSDK.isInitialized() {
+            PromotionSDK.updateSession(
+                customerId: customerId,
+                accessToken: token,
+                availableServices: demoServices,
+            )
+        } else {
+            PromotionSDK.initialize(
+                customerId: customerId,
+                accessToken: token,
+                baseUrl: Self.baseUrl,
+                availableServices: demoServices,
+                callback: DemoPromotionCallback.shared,
+            )
+        }
     }
 
     private func updateDemoContext() {

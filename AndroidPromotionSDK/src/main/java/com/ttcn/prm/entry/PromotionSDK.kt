@@ -2,6 +2,7 @@ package com.ttcn.prm.entry
 
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import com.ttcn.prm.R
@@ -28,23 +29,30 @@ import kotlinx.coroutines.launch
  */
 object PromotionSDK {
 
+    private const val TAG = "PromotionSDK"
     private const val TAG_MY_PROMOTION = "prm_my_promotion"
     private const val TAG_PROMOTION_DETAIL = "prm_promotion_detail"
 
     private var callback: PromotionSDKCallback? = null
     private var mutableContext: PromotionMutableContext? = null
     private var sdkScope: CoroutineScope? = null
-    /** Application context giữ lại để [updateToken] dựng lại đồ thị DI mà không cần host truyền lại. */
+    /** Application context giữ lại để dựng lại đồ thị DI mà không cần host truyền lại. */
     private var appContext: Context? = null
+
+    /**
+     * Cấu hình **cố định**, chốt ở lần [initialize] **đầu tiên**. Các lần [initialize] sau (host init lại
+     * mỗi khi login) chỉ áp field **động** (customerId/accessToken/availableServices); nếu host lỡ truyền
+     * field cố định khác đi → SDK cảnh báo và **bỏ qua**. Muốn đổi thật thì [release] rồi init lại.
+     */
+    private data class FixedConfig(
+        val baseUrl: String,
+        val language: String,
+        val environment: PromotionEnvironment,
+    )
+    private var fixedConfig: FixedConfig? = null
 
     // ─── Init ────────────────────────────────────────────────────────────────
 
-    /**
-     * Khởi tạo SDK. Đối ứng `PromotionSDK.initialize(options:)` bên iOS (iOS không cần `context`).
-     *
-     * Gọi lại [initialize] = dựng lại đồ thị DI với session mới (vd refresh token → truyền session mới).
-     * Host truyền theme → ghi đè và lưu; không truyền → khôi phục theme đã lưu lần trước.
-     */
     /**
      * Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ customerId + token + baseUrl.
      * `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
@@ -72,11 +80,51 @@ object PromotionSDK {
         ),
     )
 
+    /**
+     * Khởi tạo SDK. Đối ứng `PromotionSDK.initialize(options:)` bên iOS (iOS không cần `context`).
+     *
+     * **Host chỉ cần gọi [initialize] — kể cả khi login lại.** Lần đầu chốt phần **cố định**
+     * (`baseUrl` / `environment` / `language` / `theme`). Các lần sau (đăng nhập user mới) chỉ cần
+     * truyền lại field **động** (`customerId` / `accessToken` / `availableServices`); SDK **bỏ qua** mọi
+     * thay đổi ở field cố định (có cảnh báo log). Muốn đổi cấu hình cố định thật → [release] rồi init lại.
+     */
     @JvmStatic
     fun initialize(context: Context, options: PromotionSDKOptions) {
+        val incoming = options.session
+        val locked = fixedConfig
+        if (isInitialized() && locked != null) {
+            // Login lại: field cố định đã khoá. Cảnh báo nếu host truyền khác, rồi giữ nguyên bản khoá.
+            if (locked.baseUrl != incoming.baseUrl ||
+                locked.environment != incoming.environment ||
+                locked.language != incoming.language
+            ) {
+                Log.w(
+                    TAG,
+                    "initialize() được gọi lại với field cố định khác (baseUrl/environment/language). " +
+                        "Các field này chốt ở lần initialize() đầu và bị bỏ qua. Gọi release() trước nếu muốn đổi.",
+                )
+            }
+            if (options.callback != null) callback = options.callback
+            // Chỉ áp field động; ép field cố định về bản đã khoá. Context đơn hàng reset (phiên mới).
+            applySession(
+                context,
+                incoming.copy(
+                    baseUrl = locked.baseUrl,
+                    language = locked.language,
+                    environment = locked.environment,
+                ),
+                options.availableServices,
+                keepOrderContext = false,
+            )
+            return
+        }
+
+        // Lần đầu (hoặc sau release): chốt field cố định + dựng đồ thị DI đầy đủ.
+        if (isInitialized()) release()
         appContext = context.applicationContext
         callback = options.callback
-        mutableContext = PromotionMutableContext(options.session, options.availableServices)
+        fixedConfig = FixedConfig(incoming.baseUrl, incoming.language, incoming.environment)
+        mutableContext = PromotionMutableContext(incoming, options.availableServices)
         PromotionContainer.initialize(context, options.toCoreConfig(mutableContext))
         // Host truyền theme → ghi đè và lưu. Không truyền → khôi phục theme đã lưu lần trước.
         // Nhờ vậy host cấu hình một lần; các lần mở app sau chỉ cần initialize(config), theme tự sống lại.
@@ -89,12 +137,40 @@ object PromotionSDK {
     }
 
     /**
-     * Cập nhật access token khi host refresh — **không** cần host tự dựng lại toàn bộ options.
+     * **Đăng nhập user mới** sau khi đã [initialize] một lần — chỉ truyền field **động**
+     * (`customerId` + `accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
+     * (baseUrl / environment / language / theme) + callback. Đây là lối chính cho host: gọi [initialize]
+     * **một lần** lúc mở app, mỗi lần login sau chỉ gọi [updateSession].
      *
-     * Token bị "chụp" lúc [initialize], nên đổi token = dựng lại đồ thị DI với session mới. Hàm này
-     * làm đúng việc đó nhưng **giữ nguyên** mọi thứ còn lại: customerId/baseUrl/environment/ngôn ngữ,
-     * danh mục dịch vụ, callback, theme, và context động (đơn hàng/dịch vụ đang ghi). Đối ứng
-     * `PromotionSDK.updateToken(_:)` bên iOS.
+     * @param availableServices Danh mục dịch vụ cho phiên mới; bỏ trống (`null`) = giữ danh mục hiện tại.
+     *
+     * Context đơn hàng/dịch vụ reset về rỗng vì đây là phiên mới. Đối ứng `updateSession(...)` bên iOS.
+     *
+     * @throws IllegalStateException nếu [initialize] chưa được gọi.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun updateSession(
+        customerId: String,
+        accessToken: String,
+        availableServices: List<PromotionAvailableService>? = null,
+    ) {
+        val ctx = checkNotNull(mutableContext) {
+            "PromotionSDK.initialize() must be called before updateSession()."
+        }
+        val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
+        applySession(
+            context,
+            ctx.session.copy(customerId = customerId, accessToken = accessToken),
+            availableServices ?: ctx.availableServices,
+            keepOrderContext = false,
+        )
+    }
+
+    /**
+     * Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn [updateSession]:
+     * **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout).
+     * Đối ứng `updateToken(_:)` bên iOS.
      *
      * @throws IllegalStateException nếu [initialize] chưa được gọi.
      */
@@ -104,20 +180,33 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before updateToken()."
         }
         val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
-        val prevSession = ctx.session
-        // Giữ lại context động để bơm lại sau khi dựng graph mới.
-        val orderId = ctx.orderId; val orderValue = ctx.orderValue
-        val serviceCode = ctx.serviceCode; val metaData = ctx.metaData; val orderItems = ctx.orderItems
+        applySession(context, ctx.session.copy(accessToken = accessToken), ctx.availableServices, keepOrderContext = true)
+    }
 
-        val newMutable = PromotionMutableContext(prevSession.copy(accessToken = accessToken))
-        newMutable.orderId = orderId; newMutable.orderValue = orderValue
-        newMutable.serviceCode = serviceCode; newMutable.metaData = metaData; newMutable.orderItems = orderItems
+    /**
+     * Dựng lại đồ thị DI với [newSession] + [availableServices]. [keepOrderContext] = true (refresh
+     * token giữa phiên) thì bơm lại order/dịch vụ đang ghi; false (login mới) thì để rỗng.
+     *
+     * **BẮT BUỘC clear trước:** SdkDi là singleton bền, re-init không clear thì HttpClient (token cũ)
+     * vẫn nằm trong cache singleton → token mới không có tác dụng. `clear()` đóng client cũ + reset
+     * registry; **không** đụng theme (PromotionThemeRegistry riêng, sống qua clear).
+     */
+    private fun applySession(
+        context: Context,
+        newSession: PromotionSessionConfig,
+        availableServices: List<PromotionAvailableService>,
+        keepOrderContext: Boolean,
+    ) {
+        val prev = mutableContext
+        val newMutable = PromotionMutableContext(newSession, availableServices)
+        if (keepOrderContext && prev != null) {
+            newMutable.orderId = prev.orderId; newMutable.orderValue = prev.orderValue
+            newMutable.serviceCode = prev.serviceCode; newMutable.metaData = prev.metaData
+            newMutable.orderItems = prev.orderItems
+        }
         mutableContext = newMutable
 
         sdkScope?.cancel()
-        // BẮT BUỘC clear trước: SdkDi là singleton bền, re-init không clear thì HttpClient (token cũ)
-        // vẫn nằm trong cache singleton → token mới không có tác dụng. `clear()` đóng client cũ +
-        // reset registry; **không** đụng theme (PromotionThemeRegistry riêng, sống qua clear).
         PromotionContainer.clear()
         PromotionContainer.initialize(context, newMutable.toCoreConfig())
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -139,6 +228,8 @@ object PromotionSDK {
         callback = null
         mutableContext = null
         appContext = null
+        // Mở khoá cấu hình cố định: initialize() kế tiếp được coi là "lần đầu" và chốt lại từ đầu.
+        fixedConfig = null
     }
 
     /** `true` sau [initialize] và trước [release]. Gọi [release] khi chưa init là vô hại. */

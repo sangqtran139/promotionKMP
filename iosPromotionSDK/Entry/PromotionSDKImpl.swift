@@ -234,21 +234,40 @@ final class PromotionSDKImpl: NSObject {
         context.orderItems = orderItems
     }
 
-    /// Đổi access token: dựng lại đồ thị DI với session mới, **giữ** context động + danh mục dịch vụ.
-    /// Đối ứng `PromotionSDK.updateToken` bên Android (tạo `PromotionMutableContext` mới, re-init container).
+    /// Đăng nhập user mới sau khi đã init một lần: đổi customerId + token (+ availableServices động),
+    /// giữ field cố định đã khoá. Context đơn hàng reset. Đối ứng `PromotionSDK.updateSession` bên Android.
+    func updateSession(customerId: String, accessToken: String, availableServices: [PromotionAvailableService]?) {
+        let old = context.session
+        let newSession = PromotionSessionConfig(
+            customerId: customerId, accessToken: accessToken, baseUrl: old.baseUrl,
+            language: old.language, environment: old.environment,
+        )
+        applySession(newSession, availableServices: availableServices ?? context.availableServices, keepOrderContext: false)
+    }
+
+    /// Refresh token giữa phiên (cùng customer, không đổi login) — giữ nguyên context đơn hàng đang
+    /// ghi (dùng khi token hết hạn giữa checkout). Đối ứng `PromotionSDK.updateToken` bên Android.
     func updateToken(_ accessToken: String) {
         let old = context.session
         let newSession = PromotionSessionConfig(
             customerId: old.customerId, accessToken: accessToken, baseUrl: old.baseUrl,
             language: old.language, environment: old.environment,
         )
-        let newContext = PromotionMutableContext(session: newSession, availableServices: context.availableServices)
-        // Bơm lại context động đang giữ (đơn hàng/dịch vụ) sang context mới.
-        newContext.orderId = context.orderId
-        newContext.orderValue = context.orderValue
-        newContext.serviceCode = context.serviceCode
-        newContext.metaData = context.metaData
-        newContext.orderItems = context.orderItems
+        applySession(newSession, availableServices: context.availableServices, keepOrderContext: true)
+    }
+
+    /// Dựng lại đồ thị DI với [newSession] + [availableServices]. `keepOrderContext=true` (refresh
+    /// token) thì bơm lại order/dịch vụ đang ghi; false (login mới) thì để rỗng.
+    /// **Clear trước là bắt buộc** (HttpClient token cũ nằm trong singleton lõi).
+    func applySession(_ newSession: PromotionSessionConfig, availableServices: [PromotionAvailableService], keepOrderContext: Bool) {
+        let newContext = PromotionMutableContext(session: newSession, availableServices: availableServices)
+        if keepOrderContext {
+            newContext.orderId = context.orderId
+            newContext.orderValue = context.orderValue
+            newContext.serviceCode = context.serviceCode
+            newContext.metaData = context.metaData
+            newContext.orderItems = context.orderItems
+        }
         context = newContext
 
         PromotionContainer.shared.clear()

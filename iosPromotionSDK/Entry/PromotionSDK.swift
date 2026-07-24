@@ -45,19 +45,57 @@ public final class PromotionSDK {
     /// `private var callback` bên Android).
     private static var callback: PromotionSDKCallback?
 
+    /// Cấu hình **cố định**, chốt ở lần `initialize` **đầu tiên** (baseUrl/environment/language). Các
+    /// lần `initialize` sau (host init lại mỗi khi login) chỉ áp field **động** (customerId/token/
+    /// availableServices); host lỡ truyền field cố định khác → SDK cảnh báo và **bỏ qua**. Muốn đổi
+    /// thật → `release()` rồi init lại. Đối ứng `fixedConfig` bên Android.
+    private struct FixedConfig {
+        let baseUrl: String
+        let language: String
+        let environment: PromotionEnvironment
+    }
+    private static var fixedConfig: FixedConfig?
+
     // MARK: - Init
 
     /// Khởi tạo SDK. Đối ứng `PromotionSDK.initialize(context, options)` bên Android.
     ///
-    /// Gọi lại `initialize` = dựng lại đồ thị DI với session mới (vd refresh token → truyền session
-    /// mới). Instance headless (`api`) dựng mới mỗi lần đọc nên luôn dùng đồ thị mới nhất.
+    /// **Host chỉ cần gọi `initialize` — kể cả khi login lại.** Lần đầu chốt phần **cố định**
+    /// (`baseUrl` / `environment` / `language` / `theme`). Các lần sau (đăng nhập user mới) chỉ cần
+    /// truyền lại field **động** (`customerId` / `accessToken` / `availableServices`); SDK **bỏ qua**
+    /// mọi thay đổi ở field cố định (có cảnh báo log). Muốn đổi cấu hình cố định thật → `release()` rồi
+    /// init lại.
     ///
     /// - Parameter options: session (customerId/token/baseUrl/language/environment), danh mục dịch vụ,
     ///   theme (bỏ trống = khôi phục theme đã lưu), và callback nhận sự kiện.
     public static func initialize(options: PromotionSDKOptions) {
+        let incoming = options.session
+        if isInitialized(), let locked = fixedConfig, let impl = impl {
+            // Login lại: field cố định đã khoá. Cảnh báo nếu host truyền khác, rồi giữ nguyên bản khoá.
+            if locked.baseUrl != incoming.baseUrl
+                || locked.environment != incoming.environment
+                || locked.language != incoming.language {
+                NSLog("[PromotionSDK] initialize() được gọi lại với field cố định khác (baseUrl/environment/language). Các field này chốt ở lần initialize() đầu và bị bỏ qua. Gọi release() trước nếu muốn đổi.")
+            }
+            if let cb = options.callback { callback = cb }
+            // Chỉ áp field động; ép field cố định về bản đã khoá. Context đơn hàng reset (phiên mới).
+            impl.applySession(
+                PromotionSessionConfig(
+                    customerId: incoming.customerId, accessToken: incoming.accessToken,
+                    baseUrl: locked.baseUrl, language: locked.language, environment: locked.environment,
+                ),
+                availableServices: options.availableServices,
+                keepOrderContext: false
+            )
+            return
+        }
+
+        // Lần đầu (hoặc sau release): chốt field cố định + dựng đồ thị DI đầy đủ.
+        if isInitialized() { release() }
         let impl = PromotionSDKImpl(options: options)
         _impl = impl
         callback = options.callback
+        fixedConfig = FixedConfig(baseUrl: incoming.baseUrl, language: incoming.language, environment: incoming.environment)
         // Host truyền theme → áp + lưu. Không truyền → khôi phục theme đã lưu lần trước. Host cấu hình
         // một lần; lần sau chỉ cần initialize lại, theme tự sống lại. Đối ứng PromotionSDK.initialize bên Android.
         impl.restoreOrApplyTheme(options.theme)
@@ -88,12 +126,22 @@ public final class PromotionSDK {
         ))
     }
 
-    /// Cập nhật access token khi host refresh — **không** cần host tự dựng lại toàn bộ options.
+    /// **Đăng nhập user mới** sau khi đã `initialize` một lần — chỉ truyền field **động**
+    /// (`customerId` + `accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
+    /// (baseUrl / environment / language / theme) + callback. Lối chính cho host: `initialize` **một
+    /// lần** lúc mở app, mỗi lần login sau chỉ gọi `updateSession`. Context đơn hàng reset (phiên mới).
     ///
-    /// Token bị "chụp" lúc `initialize`, nên đổi token = dựng lại đồ thị DI với session mới. Hàm này
-    /// làm đúng việc đó nhưng **giữ nguyên** mọi thứ còn lại: customerId/baseUrl/environment/ngôn ngữ,
-    /// danh mục dịch vụ, callback, theme, và context động (đơn hàng/dịch vụ đang ghi). Đối ứng
-    /// `PromotionSDK.updateToken(_:)` bên Android.
+    /// - Parameter availableServices: danh mục dịch vụ cho phiên mới; `nil` = giữ danh mục hiện tại.
+    /// Đối ứng `updateSession(...)` bên Android.
+    public static func updateSession(customerId: String, accessToken: String,
+                                     availableServices: [PromotionAvailableService]? = nil) {
+        guard let impl = requireImpl("updateSession(customerId:accessToken:availableServices:)") else { return }
+        impl.updateSession(customerId: customerId, accessToken: accessToken, availableServices: availableServices)
+    }
+
+    /// Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn `updateSession`:
+    /// **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout). Đối ứng
+    /// `updateToken(_:)` bên Android.
     public static func updateToken(_ accessToken: String) {
         guard let impl = requireImpl("updateToken(_:)") else { return }
         impl.updateToken(accessToken)
@@ -105,6 +153,8 @@ public final class PromotionSDK {
         impl?.teardown()
         _impl = nil
         callback = nil
+        // Mở khoá cấu hình cố định: initialize() kế tiếp được coi là "lần đầu" và chốt lại từ đầu.
+        fixedConfig = nil
     }
 
     /// `true` sau `initialize` và trước `release`. Đối ứng `PromotionSDK.isInitialized()` bên Android.
