@@ -75,6 +75,9 @@ internal object PromotionHttpClient {
             level = if (isDebug) LogLevel.BODY else LogLevel.NONE
         }
 
+        // Chỉ bật khi debug: in thêm mỗi request dạng lệnh cURL copy-paste được (chứa cả Bearer token).
+        if (isDebug) install(PromotionCurlLogging)
+
         defaultRequest {
             url(baseUrl.ensureTrailingSlash())
 

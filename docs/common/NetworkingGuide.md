@@ -38,6 +38,9 @@ HttpClient {
 
     install(Logging) { level = if (isDebug) LogLevel.BODY else LogLevel.NONE }
 
+    // Chỉ khi isDebug: in thêm mỗi request dạng lệnh cURL copy-paste được (PromotionCurlLogging).
+    if (isDebug) install(PromotionCurlLogging)
+
     defaultRequest {
         url(baseUrl.ensureTrailingSlash())
         // Bearer token, X-Request-ID (UUID mới mỗi request), Accept-Language, Accept
@@ -181,7 +184,9 @@ có thể bỏ trống.
    rồi thêm hàm ở `PromotionRemoteDataSource` bọc trong `apiCall { }`.
 2. Không gọi `HttpClient` trực tiếp từ Repository/UseCase/UI.
 3. Không bắt `Exception` chung trong data source — bắt đúng loại và map sang exception domain.
-4. Không log token. `LogLevel.BODY` chỉ bật khi `isDebug`.
+4. Không log token. `LogLevel.BODY` **và** `PromotionCurlLogging` (in lệnh cURL) chỉ bật khi `isDebug` —
+   cả hai đều lộ `Authorization`, tuyệt đối không bật ở bản phát hành. Bật debug: Android build DEBUG;
+   iOS chạy với biến môi trường `PROMOTION_SDK_DEBUG=1`.
 5. Mọi endpoint mới phải có test `commonTest` dùng `MockEngine`, kiểm cả **payload gửi lên** lẫn
    **kết quả map xuống**. Xem [TestingGuide.md](./TestingGuide.md).
 6. Đổi endpoint/DTO/xử lý lỗi → cập nhật file này + [HeadlessAPI.md](./HeadlessAPI.md).
