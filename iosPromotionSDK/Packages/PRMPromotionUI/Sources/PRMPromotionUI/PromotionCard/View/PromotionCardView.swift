@@ -102,11 +102,14 @@ public class PromotionCardView: PRMTapableView {
         return label
     }()
     
-    /// Khối "Sử dụng + icon" / badge trạng thái: hugging cao nhất → stack không nở nó ra
-    /// (phần dư luôn dồn cho `spacerView`), bề rộng bám đúng nội dung.
+    /// Khối "Sử dụng + icon" / badge trạng thái: **luôn hiển thị đủ, ưu tiên cao nhất**.
+    /// - hugging `.required` → stack không nở nó ra (phần dư luôn dồn cho `spacerView`).
+    /// - compression resistance `.required` → **không bao giờ bị bóp**, nên HSD dài mấy thì chữ
+    ///   "Sử dụng"/mũi tên vẫn nguyên; phần rộng còn lại mới nhường cho HSD (HSD tự chạy chữ/cắt).
     private let actionContainerView: UIView = {
         let view = UIView()
         view.setContentHuggingPriority(.required, for: .horizontal)
+        view.setContentCompressionResistancePriority(.required, for: .horizontal)
         return view
     }()
     

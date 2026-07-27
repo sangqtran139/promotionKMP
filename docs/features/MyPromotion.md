@@ -72,7 +72,7 @@ Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở d
 - Click voucher → phát `Effect.OpenVoucherDetail`, không tự điều hướng trong ViewModel.
 - Tab active xác định qua `SearchCustomerVouchersResult.resolveActiveTab(requestedTab)` — rule **dùng chung Android & iOS** (`selectedTab` → `defaultTab` → tab client yêu cầu → tab đầu theo `order`); UI chỉ đọc, không hardcode "all".
 - **Hàng HSD trong card (iOS)** — `PromotionCardView.footerStackView` = `[dateLabel, spacerView, actionContainerView]`:
-  khối "Sử dụng + icon"/badge trạng thái **ghim cứng** bên phải (hugging `.required`, resistance 750),
+  khối "Sử dụng + icon"/badge trạng thái **ghim cứng** bên phải (hugging + resistance `.required`),
   HSD dùng `PRMMarqueeLabel` với resistance `.defaultLow` nên bị bóp trước và **tự chạy chữ** khi tràn;
   khe giữa hai bên tối thiểu **5px** (`spacerView` width ≥ 5, stack `spacing = 0`).
   ⚠️ **Lệch Android có chủ đích:** `tvEndDate` (`prm_item_promotion.xml`) chỉ xuống dòng, chưa marquee.
