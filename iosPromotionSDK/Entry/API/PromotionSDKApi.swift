@@ -36,10 +36,8 @@ public final class PromotionSDKApi {
 
     // MARK: - Private
 
-    /// customerId đọc thẳng từ `PromotionRequestContextProvider` của lõi ở **mỗi** request — đối xứng
-    /// Android (`PromotionContainer.requestContextProvider.getCustomerId()`). Token host cấp qua provider
-    /// ở tầng network, không truyền từng request.
-    private var customerId: String { PromotionContainer.shared.requestContextProvider.getCustomerId() ?? "" }
+    /// Định danh khách không truyền từng request — BFF lấy từ JWT `sub`. Token host cấp qua
+    /// `PromotionRequestContextProvider` của lõi ở tầng network.
     private let useCases: PromotionUseCases
 
     init(useCases: PromotionUseCases = PromotionUseCases()) {

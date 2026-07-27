@@ -12,7 +12,7 @@
   không SPM, không cài Kotlin/RxSwift.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
-- Cấu hình một lần bằng `PromotionSDK.initialize(customerId:accessToken:baseUrl:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
+- Cấu hình một lần bằng `PromotionSDK.initialize(accessToken:baseUrl:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
   sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -79,9 +79,8 @@ print(PromotionSDK.isInitialized()) // false — link OK là được
 ```swift
 import PRM
 
-// Cách tối giản — đủ cho phần lớn host, chỉ 3 tham số bắt buộc:
+// Cách tối giản — đủ cho phần lớn host, chỉ 2 tham số bắt buộc:
 PromotionSDK.initialize(
-    customerId: user.id,
     accessToken: auth.accessToken,
     baseUrl: "http://125.235.38.229:8080/",
     // tuỳ chọn:
@@ -97,16 +96,16 @@ Cần cấu hình sâu hơn (theme, …) thì dùng overload nhận `PromotionSD
 
 ```swift
 PromotionSDK.initialize(options: PromotionSDKOptions(
-    session: PromotionSessionConfig(customerId: user.id, accessToken: auth.accessToken, baseUrl: baseUrl, environment: .prod),
+    session: PromotionSessionConfig(accessToken: auth.accessToken, baseUrl: baseUrl, environment: .prod),
     availableServices: services, theme: myTheme, callback: myCallback
 ))
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo (tối giản) | `PromotionSDK.initialize(customerId:accessToken:baseUrl:)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(accessToken:baseUrl:)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(options:)` |
-| **Login lại** (session mới) | `PromotionSDK.updateSession(customerId:accessToken:availableServices:)` |
+| **Login lại** (session mới) | `PromotionSDK.updateSession(accessToken:availableServices:)` |
 | Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
 | Kiểm tra đã init | `PromotionSDK.isInitialized() -> Bool` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
@@ -116,18 +115,18 @@ PromotionSDK.initialize(options: PromotionSDKOptions(
 
 | Cố định (khoá ở lần init **đầu**) | Đặc trưng session (đổi mỗi login) |
 |---|---|
-| `baseUrl`, `environment`, `language`, `theme` | `customerId`, `accessToken`, `availableServices` |
+| `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
 
 - **Login lần đầu (mở app):** `initialize(...)` với đầy đủ config → SDK **chốt** field cố định.
-- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(customerId:accessToken:availableServices:)`
+- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(accessToken:availableServices:)`
   — chỉ field động; SDK **giữ** field cố định đã khoá + callback. `availableServices` bỏ qua (`nil`) = giữ
   danh mục hiện tại. Context đơn hàng reset về rỗng vì là phiên mới.
 
   ```swift
   if PromotionSDK.isInitialized() {
-      PromotionSDK.updateSession(customerId: user.id, accessToken: token, availableServices: services)
+      PromotionSDK.updateSession(accessToken: token, availableServices: services)
   } else {
-      PromotionSDK.initialize(customerId: user.id, accessToken: token, baseUrl: baseUrl, availableServices: services, callback: cb)
+      PromotionSDK.initialize(accessToken: token, baseUrl: baseUrl, availableServices: services, callback: cb)
   }
   ```
 
@@ -308,7 +307,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(customerId:accessToken:baseUrl:)
+login thành công        → PromotionSDK.initialize(accessToken:baseUrl:)
 vào màn có voucher       → PromotionSDK.updateContext(orderId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)

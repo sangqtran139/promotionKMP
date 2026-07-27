@@ -20,8 +20,8 @@
 | Khái niệm | Canonical (đích) | Android hiện tại | iOS hiện tại | TT |
 |---|---|---|---|---|
 | Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
-| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, customerId, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(customerId:accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 3 tham số bắt buộc; uỷ thẳng cho overload options |
-| Login lại (session mới) | **`updateSession`** | `fun updateSession(customerId, accessToken, availableServices? = null)` | `updateSession(customerId:accessToken:availableServices:)` | ✅ lối chính re-login: chỉ field động; **giữ** field cố định đã khoá. `availableServices` null = giữ danh mục hiện tại. Context động reset |
+| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
+| Login lại (session mới) | **`updateSession`** | `fun updateSession(accessToken, availableServices? = null)` | `updateSession(accessToken:availableServices:)` | ✅ lối chính re-login: chỉ field động; **giữ** field cố định đã khoá. `availableServices` null = giữ danh mục hiện tại. Context động reset |
 | Login lại (fallback) | **`initialize`** (idempotent) | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ guard: SDK **khoá** field cố định (baseUrl/env/language/theme) ở lần init đầu; gọi lại chỉ áp field động, field cố định khác đi → cảnh báo log + bỏ qua |
 | Refresh token (giữa phiên) | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ tuỳ chọn — cùng customer + **giữ cả** context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout) |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
@@ -47,10 +47,10 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | Type | Field / thứ tự (canonical) | Android | iOS | TT |
 |---|---|---|---|---|
 | `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
-| `PromotionSessionConfig` | `customerId, accessToken, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`** |
+| `PromotionSessionConfig` | `accessToken, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`** |
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
 | `PromotionAvailableService` | `serviceCode, serviceName, serviceType = "", iconUrl = ""` | ✅ | ✅ | ✅ |
-| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 8 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
+| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
 | `PromotionOrderItem` | `skuId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
 > **Enum case (đã chốt):** giữ convention mỗi bên (`PROD`↔`prod`) — N1 *duy nhất được miễn* vì ánh
@@ -145,7 +145,7 @@ Nay các ràng buộc đó đã đưa **vào chính SDK**, nên host gọi thẳ
 
 ```text
 // Sau khi login:
-PromotionSDK.initialize(context, customerId, accessToken, baseUrl)   // overload phẳng, 4 tham số
+PromotionSDK.initialize(context, accessToken, baseUrl)   // overload phẳng, 3 tham số
 
 // Refresh token — KHÔNG cần tự init lại, SDK giữ nguyên context/services/theme/callback:
 PromotionSDK.updateToken(newToken)

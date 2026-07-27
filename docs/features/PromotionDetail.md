@@ -77,7 +77,7 @@ Fragment: render thông tin + cấu hình nút theo state
 ## 4. API backend
 
 - **Endpoint:** `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}`
-- **Query params:** `customerId` (bắt buộc), `service` (tuỳ chọn — dịch vụ đang thanh toán).
+- **Query params:** `service` (tuỳ chọn — dịch vụ đang thanh toán). Định danh khách lấy từ JWT `sub`, **không** truyền lên.
 - **Response fields mới (v1.1):** `campaignId`, `campaignType`, `campaignStatus`, `applicableProducts[]` (gồm `productId`, `sku`, `name`, `image`, `type=INCLUDED|EXCLUDED`).
 
 ## 5. Lưu ý khi sửa

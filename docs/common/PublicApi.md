@@ -30,8 +30,8 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 
 ```kotlin
 object PromotionSDK {
-    // Khởi tạo tối giản (đủ cho phần lớn host — chỉ 3 tham số bắt buộc):
-    fun initialize(context: Context, customerId: String, accessToken: String, baseUrl: String,
+    // Khởi tạo tối giản (đủ cho phần lớn host — chỉ 2 tham số bắt buộc):
+    fun initialize(context: Context, accessToken: String, baseUrl: String,
                    environment: PromotionEnvironment = PROD, language: String = "vi-VN",
                    availableServices: List<PromotionAvailableService> = emptyList(),
                    theme: PromotionSDKTheme? = null, callback: PromotionSDKCallback? = null)
@@ -39,7 +39,7 @@ object PromotionSDK {
     fun initialize(context: Context, options: PromotionSDKOptions)
     // Login lại (lối chính): chỉ field động; giữ field cố định đã khoá (baseUrl/env/language/theme).
     // availableServices null = giữ danh mục hiện tại. Gọi lại initialize() cũng được (guard cùng cơ chế).
-    fun updateSession(customerId: String, accessToken: String,
+    fun updateSession(accessToken: String,
                       availableServices: List<PromotionAvailableService>? = null)
     fun updateToken(accessToken: String)                        // (tuỳ chọn) refresh token giữa phiên, giữ context đơn hàng
     fun release()
@@ -77,7 +77,6 @@ PromotionSDK.initialize(
     context,
     PromotionSDKOptions(
         session = PromotionSessionConfig(
-            customerId = "CUST-001",
             accessToken = token,
             baseUrl = "https://...",
             language = "vi-VN",
@@ -100,7 +99,6 @@ request) — không cần `initialize` lại. Refresh token = `initialize` lại
 PromotionSDK.initialize(
     options: PromotionSDKOptions(
         session: PromotionSessionConfig(
-            customerId: "CUST-001",
             accessToken: token,
             baseUrl: "https://...",
             language: "vi-VN",

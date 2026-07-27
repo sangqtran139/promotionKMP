@@ -30,7 +30,6 @@ final class PromotionSDKImpl: NSObject {
     /// `var` để `updateToken` thay context (session mới) mà vẫn giữ order/dịch vụ đang ghi.
     private(set) var context: PromotionMutableContext
 
-    var customerId: String { context.session.customerId }
     var token: String? { context.session.accessToken }
 
     // Định tuyến qua context để `updateContext` (host cập nhật khi mở widget thanh toán) và luồng
@@ -210,7 +209,7 @@ final class PromotionSDKImpl: NSObject {
         )
     }
 
-    /// Facade headless: đọc customerId/token thẳng từ `PromotionRequestContextProvider` của lõi
+    /// Facade headless: đọc token thẳng từ `PromotionRequestContextProvider` của lõi
     /// (đối xứng Android), gọi thẳng `PromotionUseCases`; không cần truyền context vào đây.
     func makeApi() -> PromotionSDKApi {
         PromotionSDKApi()
@@ -234,12 +233,12 @@ final class PromotionSDKImpl: NSObject {
         context.orderItems = orderItems
     }
 
-    /// Đăng nhập user mới sau khi đã init một lần: đổi customerId + token (+ availableServices động),
+    /// Đăng nhập user mới sau khi đã init một lần: đổi token (+ availableServices động),
     /// giữ field cố định đã khoá. Context đơn hàng reset. Đối ứng `PromotionSDK.updateSession` bên Android.
-    func updateSession(customerId: String, accessToken: String, availableServices: [PromotionAvailableService]?) {
+    func updateSession(accessToken: String, availableServices: [PromotionAvailableService]?) {
         let old = context.session
         let newSession = PromotionSessionConfig(
-            customerId: customerId, accessToken: accessToken, baseUrl: old.baseUrl,
+            accessToken: accessToken, baseUrl: old.baseUrl,
             language: old.language, environment: old.environment,
         )
         applySession(newSession, availableServices: availableServices ?? context.availableServices, keepOrderContext: false)
@@ -250,7 +249,7 @@ final class PromotionSDKImpl: NSObject {
     func updateToken(_ accessToken: String) {
         let old = context.session
         let newSession = PromotionSessionConfig(
-            customerId: old.customerId, accessToken: accessToken, baseUrl: old.baseUrl,
+            accessToken: accessToken, baseUrl: old.baseUrl,
             language: old.language, environment: old.environment,
         )
         applySession(newSession, availableServices: context.availableServices, keepOrderContext: true)

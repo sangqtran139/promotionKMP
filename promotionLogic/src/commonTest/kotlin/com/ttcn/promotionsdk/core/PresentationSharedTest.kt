@@ -126,7 +126,6 @@ class PresentationSharedTest {
     fun contextProvider_defaultsAreNullAndEmpty() {
         // Host chỉ override cái mình cần — phần còn lại phải an toàn, không ném.
         val p = object : PromotionRequestContextProvider {}
-        assertNull(p.getCustomerId())
         assertNull(p.getAccessToken())
         assertNull(p.getLanguage())
         assertNull(p.getOrderId())

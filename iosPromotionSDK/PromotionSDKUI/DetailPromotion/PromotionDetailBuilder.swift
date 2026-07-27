@@ -12,7 +12,7 @@ final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController
     
     struct DataModel {
         /// Promotion cơ bản (từ list) để hiện card NGAY; màn tự fetch detail đầy đủ theo voucherId.
-        /// customerId/token/service KHÔNG ở đây — ViewModel đọc từ PromotionRequestContextProvider
+        /// token/service KHÔNG ở đây — ViewModel đọc từ PromotionRequestContextProvider
         /// của lõi (đối xứng Android).
         let promotion: PRMPromotionCardSeed
 

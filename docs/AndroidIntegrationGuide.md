@@ -14,7 +14,7 @@
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.*` (`PromotionSDK`, `PromotionSDKApi`,
   `PromotionSDKTheme`, `PromotionSDKCallback`…).
-- Cấu hình một lần bằng `PromotionSDK.initialize(context, customerId, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,
+- Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -97,7 +97,6 @@ import com.ttcn.prm.entry.*
 // Sau khi login thành công:
 PromotionSDK.initialize(
     context = applicationContext,
-    customerId = user.id,
     accessToken = auth.accessToken,
     baseUrl = "http://125.235.38.229:8080",
     // các tham số dưới đây là TUỲ CHỌN:
@@ -120,9 +119,9 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 
 | Việc | API |
 |---|---|
-| Khởi tạo (tối giản) | `PromotionSDK.initialize(context, customerId, accessToken, baseUrl)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(context, accessToken, baseUrl)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(context, options)` |
-| **Login lại** (session mới) | `PromotionSDK.updateSession(customerId, accessToken, availableServices?)` |
+| **Login lại** (session mới) | `PromotionSDK.updateSession(accessToken, availableServices?)` |
 | Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
 | Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
@@ -132,18 +131,18 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 
 | Cố định (khoá ở lần init **đầu**) | Đặc trưng session (đổi mỗi login) |
 |---|---|
-| `baseUrl`, `environment`, `language`, `theme` | `customerId`, `accessToken`, `availableServices` |
+| `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
 
 - **Login lần đầu (mở app):** `initialize(...)` với đầy đủ config → SDK **chốt** field cố định.
-- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(customerId, accessToken, availableServices)`
+- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(accessToken, availableServices)`
   — chỉ field động; SDK **giữ** field cố định đã khoá + callback. `availableServices` bỏ trống = giữ danh
   mục hiện tại. Context đơn hàng reset về rỗng vì là phiên mới.
 
   ```kotlin
   if (PromotionSDK.isInitialized()) {
-      PromotionSDK.updateSession(customerId = user.id, accessToken = token, availableServices = services)
+      PromotionSDK.updateSession(accessToken = token, availableServices = services)
   } else {
-      PromotionSDK.initialize(applicationContext, user.id, token, baseUrl, availableServices = services, callback = cb)
+      PromotionSDK.initialize(applicationContext, token, baseUrl, availableServices = services, callback = cb)
   }
   ```
 
@@ -350,7 +349,7 @@ PromotionSDK.configure(
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(context, customerId, accessToken, baseUrl)
+login thành công        → PromotionSDK.initialize(context, accessToken, baseUrl)
 vào màn có voucher       → PromotionSDK.updateContext(orderId, orderValue, ...)
 mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView + PromotionIntegrateManager
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)

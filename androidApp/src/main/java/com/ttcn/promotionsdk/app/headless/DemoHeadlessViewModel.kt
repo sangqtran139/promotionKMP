@@ -44,7 +44,6 @@ class DemoHeadlessViewModel : ViewModel() {
         viewModelScope.launch {
             val s = PromotionSDK.session
             emit("── SDK context ──────────────────────")
-            emit("   customerId  : ${s?.customerId ?: "(null)"}")
             emit("   language    : ${s?.language ?: "(null)"}")
             emit("   orderId     : ${PromotionSDK.currentOrderId ?: "(null)"}")
             emit("   orderValue  : ${PromotionSDK.currentOrderValue ?: "(null)"}")

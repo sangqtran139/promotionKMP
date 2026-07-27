@@ -23,7 +23,6 @@ object FeatureFlagModule {
             FeatureFlagRepositoryImpl(
                 remoteDataSource = get(),
                 localDataSource = get(),
-                contextProvider = get(),
             )
         }
 

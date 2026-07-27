@@ -88,7 +88,6 @@ class MyApplication : Application() {
             options = PromotionSDKOptions(
                 config = PromotionSDKConfig(
                     baseUrl       = "https://api.example.com",
-                    customerId    = session.customerId,
                     accessToken   = session.accessToken,
                     serviceCode   = "vay",              // mã dịch vụ của đối tác
                     orderId       = currentOrder.id,
@@ -192,7 +191,6 @@ val useCases = PromotionSDK.useCases
 
 val result = useCases.searchVouchers(
     SearchCustomerVouchersRequest(
-        customerId      = "CUS_001",
         serviceCode     = "vay",
         keyword         = null,         // null = lấy tất cả
         tab             = null,
@@ -214,7 +212,6 @@ result?.myVouchers?.content?.forEach { voucher ->
 ```kotlin
 val detail = useCases.getVoucherDetail(
     voucherId  = "VCH_123",
-    customerId = "CUS_001",
     service    = "vay",
 )
 
@@ -227,7 +224,6 @@ println(detail?.guideline)
 ```kotlin
 val validation = useCases.validateDiscounts(
     ValidateDiscountsRequest(
-        customerId  = "CUS_001",
         orderId     = "ORD_456",
         orderValue  = "500000",
         items = listOf(
@@ -252,7 +248,6 @@ validation?.let {
 ```kotlin
 val redemption = useCases.createRedemption(
     CreateRedemptionRequest(
-        customerId = "CUS_001",
         orderId    = "ORD_456",
         orderValue = "500000",
         items = listOf(
@@ -289,7 +284,6 @@ viewModelScope.launch {
     // 2. User chọn voucher → validate
     val validation = useCases.validateDiscounts(
         ValidateDiscountsRequest(
-            customerId = customerId,
             orderId    = orderId,
             orderValue = orderValue,
             items      = selectedVouchers.map { DiscountItemRequest(it.voucherId) }
@@ -321,7 +315,7 @@ viewModelScope.launch {
 | Method | Mô tả |
 |--------|-------|
 | `searchVouchers(request)` | Tìm kiếm voucher, hỗ trợ phân trang |
-| `getVoucherDetail(voucherId, customerId, service?)` | Chi tiết một voucher |
+| `getVoucherDetail(voucherId, service?)` | Chi tiết một voucher |
 | `validateDiscounts(request)` | Validate danh sách voucher với đơn hàng |
 | `createRedemption(request)` | Tạo session xác nhận redemption |
 
@@ -337,7 +331,6 @@ viewModelScope.launch {
 
 ```kotlin
 SearchCustomerVouchersRequest(
-    customerId: String,
     serviceCode: String?,
     keyword: String?,
     tab: String?,
@@ -349,7 +342,6 @@ SearchCustomerVouchersRequest(
 )
 
 ValidateDiscountsRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,       // số tiền dạng String, VD: "500000"
     items: List<DiscountItemRequest>,
@@ -361,7 +353,6 @@ DiscountItemRequest(
 )
 
 CreateRedemptionRequest(
-    customerId: String,
     orderId: String,
     orderValue: String,
     items: List<RedemptionItemRequest>,
@@ -442,7 +433,7 @@ when (val result = useCases.validateDiscounts(request)) {
 
 | Code | Ý nghĩa |
 |------|---------|
-| `missing_customer_id` | Chưa cung cấp customerId |
+| `missing_customer_id` | Server không xác định được khách hàng từ JWT (token thiếu `sub` / hết hạn) |
 | `INSUFFICIENT_BUDGET` | Voucher hết ngân sách, cần validate lại |
 | `no_result` | Không tìm thấy kết quả |
 | `network_error` | Mất mạng / không kết nối được (nên gợi ý kiểm tra kết nối) |

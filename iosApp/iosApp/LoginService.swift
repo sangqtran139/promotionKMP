@@ -3,7 +3,7 @@
 //  PromotionSDKDemo
 //
 //  CHỈ dùng cho app demo: gọi API đăng nhập ViettelMoney để lấy `accessToken` thật rồi truyền
-//  vào SDK (`PromotionSDK.initialize(customerId:accessToken:...)`). Ngoài đời việc này do app HOST làm;
+//  vào SDK (`PromotionSDK.initialize(accessToken:...)`). Ngoài đời việc này do app HOST làm;
 //  đây chỉ là giả lập để test SDK với token/BFF thật.
 //
 //  Luồng 2 bước (BE yêu cầu):
@@ -26,7 +26,7 @@ enum LoginError: Error {
 /// Kết quả đăng nhập cần cho SDK.
 struct LoginResult {
     let accessToken: String
-    let username: String   // msisdn — dùng làm customerId truyền vào SDK
+    let username: String   // msisdn — chỉ để hiển thị ở demo, SDK không cần
 }
 
 final class LoginService {

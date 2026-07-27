@@ -12,7 +12,6 @@ import com.ttcn.prm.entry.api.PromotionOrderItem
  * Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng [PromotionSDK.updateContext].
  */
 data class PromotionSessionConfig(
-    val customerId: String,
     val accessToken: String,
     val baseUrl: String,
     val language: String = "vi-VN",
@@ -83,7 +82,6 @@ internal class PromotionMutableContext(
     /** Dòng sản phẩm (SKU) của đơn hiện tại — lõi đọc qua [getOrderItems] cho `findEligible`. */
     @JvmField @Volatile var orderItems: List<PromotionOrderItem> = emptyList()
 
-    override fun getCustomerId() = session.customerId
     override fun getAccessToken() = session.accessToken
     override fun getLanguage() = session.language
     override fun getOrderId() = orderId

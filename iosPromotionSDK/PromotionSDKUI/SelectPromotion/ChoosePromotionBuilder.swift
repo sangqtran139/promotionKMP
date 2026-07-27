@@ -12,7 +12,7 @@ import UIKit
 final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController, ChoosePromotionViewModel, ChoosePromotionRouter, ChoosePromotionBuilder.DataModel> {
     
     struct DataModel {
-        // customerId/token/orderId/orderValue KHÔNG còn ở đây — ViewModel đọc thẳng từ
+        // token/orderId/orderValue KHÔNG còn ở đây — ViewModel đọc thẳng từ
         // PromotionRequestContextProvider của lõi (đối xứng Android). Chỉ giữ data riêng của màn.
         /// Dòng đơn hàng cho Find Eligible Campaigns — không có trong provider nên vẫn truyền qua đây.
         let orderItems: [EligibleOrderItem]

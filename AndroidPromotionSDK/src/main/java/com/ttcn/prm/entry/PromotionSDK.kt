@@ -41,7 +41,7 @@ object PromotionSDK {
 
     /**
      * Cấu hình **cố định**, chốt ở lần [initialize] **đầu tiên**. Các lần [initialize] sau (host init lại
-     * mỗi khi login) chỉ áp field **động** (customerId/accessToken/availableServices); nếu host lỡ truyền
+     * mỗi khi login) chỉ áp field **động** (accessToken/availableServices); nếu host lỡ truyền
      * field cố định khác đi → SDK cảnh báo và **bỏ qua**. Muốn đổi thật thì [release] rồi init lại.
      */
     private data class FixedConfig(
@@ -54,7 +54,7 @@ object PromotionSDK {
     // ─── Init ────────────────────────────────────────────────────────────────
 
     /**
-     * Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ customerId + token + baseUrl.
+     * Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ token + baseUrl.
      * `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
      * [initialize] nhận [PromotionSDKOptions]. Đối ứng `PromotionSDK.initialize(...)` phẳng bên iOS.
      */
@@ -62,7 +62,6 @@ object PromotionSDK {
     @JvmOverloads
     fun initialize(
         context: Context,
-        customerId: String,
         accessToken: String,
         baseUrl: String,
         environment: PromotionEnvironment = PromotionEnvironment.PROD,
@@ -73,7 +72,7 @@ object PromotionSDK {
     ) = initialize(
         context,
         PromotionSDKOptions(
-            session = PromotionSessionConfig(customerId, accessToken, baseUrl, language, environment),
+            session = PromotionSessionConfig(accessToken, baseUrl, language, environment),
             availableServices = availableServices,
             theme = theme,
             callback = callback,
@@ -85,7 +84,7 @@ object PromotionSDK {
      *
      * **Host chỉ cần gọi [initialize] — kể cả khi login lại.** Lần đầu chốt phần **cố định**
      * (`baseUrl` / `environment` / `language` / `theme`). Các lần sau (đăng nhập user mới) chỉ cần
-     * truyền lại field **động** (`customerId` / `accessToken` / `availableServices`); SDK **bỏ qua** mọi
+     * truyền lại field **động** (`accessToken` / `availableServices`); SDK **bỏ qua** mọi
      * thay đổi ở field cố định (có cảnh báo log). Muốn đổi cấu hình cố định thật → [release] rồi init lại.
      */
     @JvmStatic
@@ -138,7 +137,7 @@ object PromotionSDK {
 
     /**
      * **Đăng nhập user mới** sau khi đã [initialize] một lần — chỉ truyền field **động**
-     * (`customerId` + `accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
+     * (`accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
      * (baseUrl / environment / language / theme) + callback. Đây là lối chính cho host: gọi [initialize]
      * **một lần** lúc mở app, mỗi lần login sau chỉ gọi [updateSession].
      *
@@ -151,7 +150,6 @@ object PromotionSDK {
     @JvmStatic
     @JvmOverloads
     fun updateSession(
-        customerId: String,
         accessToken: String,
         availableServices: List<PromotionAvailableService>? = null,
     ) {
@@ -161,7 +159,7 @@ object PromotionSDK {
         val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
         applySession(
             context,
-            ctx.session.copy(customerId = customerId, accessToken = accessToken),
+            ctx.session.copy(accessToken = accessToken),
             availableServices ?: ctx.availableServices,
             keepOrderContext = false,
         )

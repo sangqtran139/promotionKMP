@@ -11,10 +11,15 @@ internal data class FeatureFlagItemResponse(
     @SerialName("enabled") val enabled: Boolean,
 )
 
+/**
+ * Body gọi feature flag. **Không còn `userId` / `sessionId`** — SDK không nhận định danh khách từ
+ * host nữa (đã bỏ `customerId`); server tự lấy từ JWT `sub` như mọi API promotion khác. Cả hai
+ * trường trước đây luôn được gửi rỗng nên không mang thông tin gì.
+ *
+ * `encodeDefaults = true` ở [PromotionHttpClient] nên body luôn là `{"properties":{}}`, không phải `{}`.
+ */
 @Serializable
 internal data class FeatureFlagRequest(
-    @SerialName("sessionId") val sessionId: String,
-    @SerialName("userId") val userId: String,
     @SerialName("properties") val properties: Map<String, String> = emptyMap(),
 )
 

@@ -120,13 +120,12 @@ final class TokenLoadingViewController: UIViewController {
             guard let self else { return }
             switch result {
             case .success(let login):
-                // customerId = msisdn (số điện thoại) — ngoài đời host truyền vào.
-                self.initSdk(customerId: login.username, token: login.accessToken)
+                self.initSdk(token: login.accessToken)
                 self.updateDemoContext()
 
                 self.statusLabel.text = "Lấy token thành công"
                 self.setLoading(false)
-                self.showTokenAlert(customerId: login.username, token: login.accessToken) { [weak self] in
+                self.showTokenAlert(msisdn: login.username, token: login.accessToken) { [weak self] in
                     self?.navigateToLauncher()
                 }
             case .failure(let error):
@@ -141,16 +140,14 @@ final class TokenLoadingViewController: UIViewController {
     /// Gọi THẲNG PromotionSDK — không qua wrapper.
     /// Lần đầu: initialize(...) đầy đủ (chốt field cố định baseUrl/environment/language/theme).
     /// Login lại (đã init rồi): chỉ updateSession(...) với field động — không lặp lại config cố định.
-    private func initSdk(customerId: String, token: String) {
+    private func initSdk(token: String) {
         if PromotionSDK.isInitialized() {
             PromotionSDK.updateSession(
-                customerId: customerId,
                 accessToken: token,
                 availableServices: demoServices,
             )
         } else {
             PromotionSDK.initialize(
-                customerId: customerId,
                 accessToken: token,
                 baseUrl: Self.baseUrl,
                 availableServices: demoServices,
@@ -169,11 +166,11 @@ final class TokenLoadingViewController: UIViewController {
         )
     }
 
-    /// Popup xác nhận login THẬT đã call: hiện customerId + token (preview) + nút Copy full token.
+    /// Popup xác nhận login THẬT đã call: hiện msisdn + token (preview) + nút Copy full token.
     /// Tắt popup mới sang màn chính — SDK lúc này chắc chắn đã `initialize`.
-    private func showTokenAlert(customerId: String, token: String, onDismiss: @escaping () -> Void) {
+    private func showTokenAlert(msisdn: String, token: String, onDismiss: @escaping () -> Void) {
         let preview = token.count > 60 ? "\(token.prefix(40))…\(token.suffix(12))" : token
-        let message = "customerId (msisdn): \(customerId)\n\n"
+        let message = "msisdn: \(msisdn)\n\n"
             + "accessToken (\(token.count) ký tự):\n\(preview)\n\n"
             + "→ đã truyền vào SDK làm Bearer token."
         let alert = UIAlertController(title: "Login OK — token đã lấy", message: message, preferredStyle: .alert)

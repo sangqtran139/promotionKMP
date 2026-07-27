@@ -60,7 +60,7 @@ Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở d
 ## 4. API backend
 
 - **Endpoint:** `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers`
-- **Request params:** `customerId`, `keyword`, `serviceCode`, `tab`, `page` (0-based), `size`
+- **Request params:** `keyword`, `serviceCode`, `tab`, `page` (0-based), `size`. Định danh khách lấy từ JWT `sub`, **không** truyền lên.
 - **Response:** Spring Page phẳng — `content[]` + `number`, `size`, `last`, `totalElements`; kèm `tabs[]` động (mỗi tab có `code`, `label`, `count`, `order`, `default`).
 - **Không còn:** `myVouchers`/`otherVouchers`/`sectionCode` (đã bỏ từ v1.3).
 - Search keyword: free search, không giới hạn độ dài tối thiểu; rỗng/whitespace = không filter.

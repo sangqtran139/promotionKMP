@@ -57,7 +57,7 @@ final class SearchMyPromotionViewModel: PRMBaseViewModel<SearchMyPromotionRouter
     private let store: SearchMyPromotionStore
     private var storeCancellable: PromotionCancellable?
 
-    /// Không nhận `DataModel`: màn Tìm kiếm không có tham số đầu vào nào — customerId/token đọc từ
+    /// Không nhận `DataModel`: màn Tìm kiếm không có tham số đầu vào nào — token đọc từ
     /// `PromotionRequestContextProvider` của lõi, keyword do user gõ. `SearchMyPromotionBuilder.DataModel`
     /// là struct rỗng, chỉ tồn tại để khớp generic `Dependency` của `PRMBaseBuilder`.
     init(router: SearchMyPromotionRouter,

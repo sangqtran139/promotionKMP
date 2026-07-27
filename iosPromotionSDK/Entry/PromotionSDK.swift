@@ -46,7 +46,7 @@ public final class PromotionSDK {
     private static var callback: PromotionSDKCallback?
 
     /// Cấu hình **cố định**, chốt ở lần `initialize` **đầu tiên** (baseUrl/environment/language). Các
-    /// lần `initialize` sau (host init lại mỗi khi login) chỉ áp field **động** (customerId/token/
+    /// lần `initialize` sau (host init lại mỗi khi login) chỉ áp field **động** (token/
     /// availableServices); host lỡ truyền field cố định khác → SDK cảnh báo và **bỏ qua**. Muốn đổi
     /// thật → `release()` rồi init lại. Đối ứng `fixedConfig` bên Android.
     private struct FixedConfig {
@@ -62,11 +62,11 @@ public final class PromotionSDK {
     ///
     /// **Host chỉ cần gọi `initialize` — kể cả khi login lại.** Lần đầu chốt phần **cố định**
     /// (`baseUrl` / `environment` / `language` / `theme`). Các lần sau (đăng nhập user mới) chỉ cần
-    /// truyền lại field **động** (`customerId` / `accessToken` / `availableServices`); SDK **bỏ qua**
+    /// truyền lại field **động** (`accessToken` / `availableServices`); SDK **bỏ qua**
     /// mọi thay đổi ở field cố định (có cảnh báo log). Muốn đổi cấu hình cố định thật → `release()` rồi
     /// init lại.
     ///
-    /// - Parameter options: session (customerId/token/baseUrl/language/environment), danh mục dịch vụ,
+    /// - Parameter options: session (token/baseUrl/language/environment), danh mục dịch vụ,
     ///   theme (bỏ trống = khôi phục theme đã lưu), và callback nhận sự kiện.
     public static func initialize(options: PromotionSDKOptions) {
         let incoming = options.session
@@ -81,7 +81,7 @@ public final class PromotionSDK {
             // Chỉ áp field động; ép field cố định về bản đã khoá. Context đơn hàng reset (phiên mới).
             impl.applySession(
                 PromotionSessionConfig(
-                    customerId: incoming.customerId, accessToken: incoming.accessToken,
+                    accessToken: incoming.accessToken,
                     baseUrl: locked.baseUrl, language: locked.language, environment: locked.environment,
                 ),
                 availableServices: options.availableServices,
@@ -102,11 +102,10 @@ public final class PromotionSDK {
         wireCallbacks(impl)
     }
 
-    /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ customerId + token + baseUrl.
+    /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ token + baseUrl.
     /// `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
     /// nhận `PromotionSDKOptions`. Đối ứng overload phẳng `initialize(...)` bên Android.
     public static func initialize(
-        customerId: String,
         accessToken: String,
         baseUrl: String,
         environment: PromotionEnvironment = .prod,
@@ -117,7 +116,7 @@ public final class PromotionSDK {
     ) {
         initialize(options: PromotionSDKOptions(
             session: PromotionSessionConfig(
-                customerId: customerId, accessToken: accessToken, baseUrl: baseUrl,
+                accessToken: accessToken, baseUrl: baseUrl,
                 language: language, environment: environment,
             ),
             availableServices: availableServices,
@@ -127,16 +126,16 @@ public final class PromotionSDK {
     }
 
     /// **Đăng nhập user mới** sau khi đã `initialize` một lần — chỉ truyền field **động**
-    /// (`customerId` + `accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
+    /// (`accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
     /// (baseUrl / environment / language / theme) + callback. Lối chính cho host: `initialize` **một
     /// lần** lúc mở app, mỗi lần login sau chỉ gọi `updateSession`. Context đơn hàng reset (phiên mới).
     ///
     /// - Parameter availableServices: danh mục dịch vụ cho phiên mới; `nil` = giữ danh mục hiện tại.
     /// Đối ứng `updateSession(...)` bên Android.
-    public static func updateSession(customerId: String, accessToken: String,
+    public static func updateSession(accessToken: String,
                                      availableServices: [PromotionAvailableService]? = nil) {
-        guard let impl = requireImpl("updateSession(customerId:accessToken:availableServices:)") else { return }
-        impl.updateSession(customerId: customerId, accessToken: accessToken, availableServices: availableServices)
+        guard let impl = requireImpl("updateSession(accessToken:availableServices:)") else { return }
+        impl.updateSession(accessToken: accessToken, availableServices: availableServices)
     }
 
     /// Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn `updateSession`:

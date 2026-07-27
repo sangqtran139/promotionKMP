@@ -64,14 +64,12 @@ class PromotionTokenLoadingFragment : Fragment() {
     private fun initSdk(token: String) {
         if (PromotionSDK.isInitialized()) {
             PromotionSDK.updateSession(
-                customerId = "CUST-001",
                 accessToken = token,
                 availableServices = demoServices,
             )
         } else {
             PromotionSDK.initialize(
                 context = requireContext(),
-                customerId = "CUST-001",
                 accessToken = token,
                 baseUrl = DEMO_BASE_URL,
                 availableServices = demoServices,

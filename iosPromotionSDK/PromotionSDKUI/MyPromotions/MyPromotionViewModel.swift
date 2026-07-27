@@ -60,7 +60,7 @@ final class MyPromotionViewModel: PRMBaseViewModel<MyPromotionRouter> {
     private let store: MyPromotionStore
     private var storeCancellable: PromotionCancellable?
 
-    /// Không nhận `DataModel`: màn này không có tham số đầu vào — customerId/token đọc từ
+    /// Không nhận `DataModel`: màn này không có tham số đầu vào — token đọc từ
     /// `PromotionRequestContextProvider` của lõi. `MyPromotionBuilder.DataModel` là struct rỗng,
     /// chỉ tồn tại để khớp generic `Dependency` của `PRMBaseBuilder`.
     init(router: MyPromotionRouter,

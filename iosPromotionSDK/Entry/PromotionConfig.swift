@@ -16,20 +16,17 @@ import Foundation
 /// Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc `PromotionSDK.initialize`.
 /// Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng `PromotionSDK.updateContext`.
 public struct PromotionSessionConfig {
-    public let customerId: String
     public let accessToken: String
     public let baseUrl: String
     public let language: String
     public let environment: PromotionEnvironment
 
     public init(
-        customerId: String,
         accessToken: String,
         baseUrl: String,
         language: String = "vi-VN",
         environment: PromotionEnvironment = .prod
     ) {
-        self.customerId = customerId
         self.accessToken = accessToken
         self.baseUrl = baseUrl
         self.language = language
@@ -123,8 +120,6 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
             isDebug: isDebug
         )
     }
-
-    func getCustomerId() -> String? { session.customerId }
 
     /// Lõi tự thêm tiền tố `Bearer ` nếu chuỗi chưa có.
     func getAccessToken() -> String? { session.accessToken }

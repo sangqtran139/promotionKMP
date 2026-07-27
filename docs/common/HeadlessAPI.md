@@ -34,11 +34,10 @@ data class PromotionSDKConfig(
 )
 ```
 
-`PromotionRequestContextProvider` là cách host cấp token / customerId / ngôn ngữ cho SDK:
+`PromotionRequestContextProvider` là cách host cấp token / ngôn ngữ cho SDK:
 
 ```kotlin
 interface PromotionRequestContextProvider {
-    fun getCustomerId(): String? = null
     fun getService(): String? = null
     fun getAccessToken(): String? = null
     fun getLanguage(): String? = null      // mặc định "vi-VN"
@@ -107,7 +106,7 @@ suspend fun searchVouchers(
 ): PromotionResult<SearchCustomerVouchersResult>
 ```
 
-`SearchCustomerVouchersRequest(customerId, keyword?, serviceCode?, tab?, page?, size?)`.
+`SearchCustomerVouchersRequest(keyword?, serviceCode?, tab?, page?, size?)`.
 Trả `SearchCustomerVouchersResult { tabs, content, defaultTab, selectedTab, last, totalElements, … }`.
 Kèm `resolveActiveTab(requestedTab?)` — quy tắc chọn tab active **dùng chung 2 nền tảng**
 (`selectedTab` → `defaultTab` → tab client yêu cầu → tab đầu theo `order`); UI chỉ đọc, không tự resolve.
@@ -117,7 +116,6 @@ Kèm `resolveActiveTab(requestedTab?)` — quy tắc chọn tab active **dùng c
 ```kotlin
 suspend fun getVoucherDetail(
     voucherId: String,
-    customerId: String,
     service: String? = null,
 ): PromotionResult<VoucherDetail>
 ```
@@ -133,7 +131,6 @@ suspend fun findEligible(
 ```kotlin
 val result = PromotionUseCases().findEligible(
     FindEligibleCampaignsRequest(
-        customerId = "C-1",
         orderId = "ORDER-123",
         orderValue = "500000",
         items = listOf(EligibleOrderItem(skuId = "SKU-01", quantity = 1, unitPrice = "500000")),
@@ -292,4 +289,4 @@ Quy ước dùng chung — giữ nguyên khi sửa:
 - `createRedemption` chỉ dùng voucher đã validate hợp lệ ở bước 4.
 - Lỗi in theo `❌ <tên API>: [<type>] <message> (serverCode=…)`, `type` là tên nhánh
   `PromotionSDKError` viết lowerCamelCase.
-- Mở màn thì in trước khối `── SDK context ──` (customerId / language / orderId / orderValue / serviceCode).
+- Mở màn thì in trước khối `── SDK context ──` (language / orderId / orderValue / serviceCode).

@@ -13,7 +13,7 @@ final class SearchMyPromotionRouter: PRMBaseRouter<SearchMyPromotionViewControll
     func routeToDetail(promotion: VoucherItem) {
         // Cờ VOUCHER_DETAIL TẮT → hiện toast PRM_MOB_021, không mở màn chi tiết.
         guard canOpenVoucherDetail() else { return }
-        // customerId/token màn chi tiết tự đọc từ PromotionRequestContextProvider (đối xứng Android).
+        // token màn chi tiết tự đọc từ PromotionRequestContextProvider (đối xứng Android).
         let vc = PromotionDetailBuilder.build(
             with: .init(promotion: PRMPromotionCardSeed(voucher: promotion)),
             navigator: navigator

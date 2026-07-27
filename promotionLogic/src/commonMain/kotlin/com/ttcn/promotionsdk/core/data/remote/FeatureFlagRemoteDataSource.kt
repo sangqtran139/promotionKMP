@@ -15,10 +15,10 @@ import kotlinx.io.IOException
 internal class FeatureFlagRemoteDataSource(
     private val apiService: FeatureFlagApiService,
 ) {
-    suspend fun getFeatureFlags(sessionId: String, userId: String): List<FeatureFlagItemResponse>? =
+    suspend fun getFeatureFlags(): List<FeatureFlagItemResponse>? =
         apiCall {
             apiService.getFeatureFlags(
-                FeatureFlagRequest(sessionId = sessionId, userId = userId),
+                FeatureFlagRequest(),
             ).requireData()
         }
 

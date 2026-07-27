@@ -19,7 +19,7 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private class StubContextProvider : PromotionRequestContextProvider {
-    override fun getCustomerId(): String = "c-1"
+    override fun getService(): String = "SVC-1"
 }
 
 class PromotionContainerTest {
@@ -76,7 +76,7 @@ class PromotionContainerTest {
     fun requestContextProvider_fallsBackToEmptyWhenNotConfigured() {
         PromotionContainer.initialize(PromotionSDKConfig(baseUrl ="https://api.example.com"))
 
-        assertEquals(null, PromotionContainer.requestContextProvider.getCustomerId())
+        assertEquals(null, PromotionContainer.requestContextProvider.getService())
     }
 
     @Test
@@ -88,7 +88,7 @@ class PromotionContainerTest {
             )
         )
 
-        assertEquals("c-1", PromotionContainer.requestContextProvider.getCustomerId())
+        assertEquals("SVC-1", PromotionContainer.requestContextProvider.getService())
     }
 
     @Test

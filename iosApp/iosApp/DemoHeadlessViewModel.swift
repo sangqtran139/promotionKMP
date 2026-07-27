@@ -37,7 +37,6 @@ final class DemoHeadlessViewModel {
     func logSdkContext() {
         let session = PromotionSDK.session
         emit("── SDK context ──────────────────────")
-        emit("   customerId  : \(session?.customerId ?? "(null)")")
         emit("   language    : \(session?.language ?? "(null)")")
         emit("   orderId     : \(PromotionSDK.currentOrderId ?? "(null)")")
         emit("   orderValue  : \(PromotionSDK.currentOrderValue ?? "(null)")")

@@ -57,7 +57,7 @@ object PromotionContainer {
         "PromotionSDKConfig is unavailable. Call PromotionContainer.initialize() first."
     }
 
-    /** Nguồn token / customerId / ngôn ngữ do host cấp. Thuộc cấu hình, nên nằm ở đây. */
+    /** Nguồn token / ngôn ngữ / context đơn hàng do host cấp. Thuộc cấu hình, nên nằm ở đây. */
     val requestContextProvider: PromotionRequestContextProvider
         get() = get()
 

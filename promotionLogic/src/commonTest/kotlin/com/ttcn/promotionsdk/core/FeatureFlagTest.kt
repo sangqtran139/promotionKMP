@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.core
 
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.core.config.EmptyPromotionRequestContextProvider
 import com.ttcn.promotionsdk.core.data.local.FeatureFlagLocalDataSource
 import com.ttcn.promotionsdk.core.data.local.PromotionPreferences
 import com.ttcn.promotionsdk.core.data.remote.KtorFeatureFlagApiService
@@ -40,10 +40,6 @@ private class InMemoryStorage : PromotionPreferences {
     override fun clear() = map.clear()
 }
 
-private class CustomerProvider(private val id: String? = "c-1") : PromotionRequestContextProvider {
-    override fun getCustomerId(): String? = id
-}
-
 private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
 private fun featureFlags(
@@ -52,13 +48,12 @@ private fun featureFlags(
 ): PromotionFeatureFlagUseCases {
     val client = HttpClient(MockEngine(handler)) {
         with(PromotionHttpClient) {
-            configure("https://api.example.com", CustomerProvider(), isDebug = false)
+            configure("https://api.example.com", EmptyPromotionRequestContextProvider(), isDebug = false)
         }
     }
     val repo = FeatureFlagRepositoryImpl(
         remoteDataSource = FeatureFlagRemoteDataSource(KtorFeatureFlagApiService(client)),
         localDataSource = FeatureFlagLocalDataSource(storage),
-        contextProvider = CustomerProvider(),
     )
     return PromotionFeatureFlagUseCases(
         FetchFeatureFlagsUseCase(repo),

@@ -84,10 +84,9 @@ Kotlin/Native không có cơ chế đó, nên `KtorPromotionApiService` được
 
 ```kotlin
 override suspend fun searchCustomerVouchers(
-    customerId: String, keyword: String?, /* … */
+    keyword: String?, /* … */
 ): ApiResponseTemplate<SearchCustomerVouchersResponse> =
     client.get("$BASE_PATH/customer-vouchers") {
-        parameter("customerId", customerId)
         parameter("keyword", keyword)          // null → tự bỏ qua, giống @Query
     }.body()
 ```
