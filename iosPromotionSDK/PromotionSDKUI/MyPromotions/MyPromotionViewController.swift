@@ -111,9 +111,11 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     private func configEmptyView() {
         self.view.addSubview(emptyView)
         NSLayoutConstraint.activate([
-            // Căn giữa THEO VIEW (không theo table — table lệch xuống dưới header+tabs). Khớp màn Tìm kiếm.
-            emptyView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            emptyView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
+            // Căn giữa trong VÙNG LIST (dưới header+tabs) chứ không theo cả màn hình — self.view center
+            // nằm cao hơn tâm table (header+tabs chiếm phần trên) nên empty view bị đội lên khỏi vùng
+            // trắng. Khớp Android `ctlNoResult` (ràng buộc trong vùng nội dung dưới hàng tab).
+            emptyView.centerXAnchor.constraint(equalTo: promotionsTableview.centerXAnchor),
+            emptyView.centerYAnchor.constraint(equalTo: promotionsTableview.centerYAnchor),
             emptyView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 24),
             emptyView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -24)
         ])

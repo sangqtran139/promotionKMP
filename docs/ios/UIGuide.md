@@ -204,7 +204,7 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 | Module | Tầng | Trách nhiệm |
 |--------|------|-------------|
 | `PRMFoundation` | Foundation | Extension (gồm `UITextField.textPublisher` cho Combine), Logger, `SDKBundle`/`PRMAsset` |
-| `PRMDesignKit` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`PRMButton`, `Shimmer`, `PRMRefreshTableView`…) |
+| `PRMDesignKit` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`PRMButton`, `Shimmer`, `PRMRefreshTableView`, `PRMMarqueeLabel`…) |
 | `PRMPromotionUI` | Feature UI | View nghiệp vụ: `PromotionCardView`, `CouponViews`, `PRMEndowView` |
 | `PRMKotlinBridge` | Keo | `boxed(_:)` (`Int?`→`KotlinInt?`) + `toPromotionError(_:)` (bóc exception Kotlin). **Không nghiệp vụ.** |
 | `PromotionSDKUI` | Facade | Public API + màn hình (MVVM), phụ thuộc mọi module qua `@_implementationOnly` |

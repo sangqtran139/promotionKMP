@@ -91,6 +91,11 @@ public class PRMAnchorMaker {
         view.heightAnchor.constraint(greaterThanOrEqualToConstant: constant).isActive = true
         return self
     }
+
+    @discardableResult public func width(greaterThanOrEqualTo constant: CGFloat) -> PRMAnchorMaker {
+        view.widthAnchor.constraint(greaterThanOrEqualToConstant: constant).isActive = true
+        return self
+    }
     
     @discardableResult public func size(_ size: CGSize) -> PRMAnchorMaker {
         view.widthAnchor.constraint(equalToConstant: size.width).isActive = true

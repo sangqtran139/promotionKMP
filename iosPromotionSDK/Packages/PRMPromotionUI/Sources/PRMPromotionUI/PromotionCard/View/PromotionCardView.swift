@@ -44,10 +44,17 @@ public class PromotionCardView: PRMTapableView {
         return imageView
     }()
     
-    private let dateLabel: UILabel = {
-        let label = UILabel()
+    /// HSD: 1 dòng, dài quá thì TỰ CHẠY CHỮ (marquee) chứ không cắt ba chấm.
+    /// - hugging cao hơn `spacerView` → phần dư dồn cho spacer, nút "Sử dụng" luôn sát mép phải.
+    /// - compression resistance THẤP → máy nhỏ thì HSD bị bóp trước, khối "Sử dụng + icon"
+    ///   và badge trạng thái không bao giờ co (trước đây cả hai cùng 750 → hoà, Auto Layout
+    ///   tự chọn bên nào bóp nên hay mất chữ "Sử dụng"/mũi tên).
+    private let dateLabel: PRMMarqueeLabel = {
+        let label = PRMMarqueeLabel()
         label.font = Typography.fontRegular12
         label.textColor = Colors.tokenDark60
+        label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         return label
     }()
     
@@ -95,18 +102,26 @@ public class PromotionCardView: PRMTapableView {
         return label
     }()
     
-    private let actionContainerView = UIView()
+    /// Khối "Sử dụng + icon" / badge trạng thái: hugging cao nhất → stack không nở nó ra
+    /// (phần dư luôn dồn cho `spacerView`), bề rộng bám đúng nội dung.
+    private let actionContainerView: UIView = {
+        let view = UIView()
+        view.setContentHuggingPriority(.required, for: .horizontal)
+        return view
+    }()
     
+    /// Khe giữa HSD và khối "Sử dụng"/badge: TỐI THIỂU 5px (xem `setupConstraints`), dư thì nở ra.
     private let spacerView: UIView = {
         let view = UIView()
         view.setContentHuggingPriority(.defaultLow, for: .horizontal)
         return view
     }()
-    
+
+    /// `spacing = 0` — khe duy nhất là `spacerView` (min 5px), tránh cộng dồn 8 + 8 = 16px như trước.
     private let footerStackView: UIStackView = {
         let stack = UIStackView()
         stack.axis = .horizontal
-        stack.spacing = 8
+        stack.spacing = 0
         stack.alignment = .center
         return stack
     }()
@@ -222,6 +237,11 @@ public class PromotionCardView: PRMTapableView {
                 .height(greaterThanOrEqualTo: 24)
         }
         
+        // Khe HSD ↔ "Sử dụng"/badge: tối thiểu 5px; hugging thấp nên khi HSD ngắn thì spacer nở ra.
+        spacerView.makeAnchor { make in
+            make.width(greaterThanOrEqualTo: 5)
+        }
+
         actionButton.makeAnchor { make in
             make.edges(to: actionContainerView)
         }
