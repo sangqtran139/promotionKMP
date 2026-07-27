@@ -26,6 +26,23 @@ Bước 1 do `iosPromotionSDK/scripts/build-xcframework.sh` lo (nó tự gọi G
 `iosPromotionSDK/Frameworks/` **trước khi** archive Swift — dùng header cũ thì lỗi hiện ra tận
 `SwiftCompile` với "cannot find … in scope", rất khó lần).
 
+### Đánh version (đối xứng Android `SDK_VERSION`)
+
+Truyền `SDK_VERSION` cho script (mặc định `1.0.0`, cùng mặc định với property `SDK_VERSION` bên
+`AndroidPromotionSDK/build.gradle.kts`):
+
+```bash
+SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh
+```
+
+Nó nhồi vào `MARKETING_VERSION` khi `xcodebuild archive` → thành `CFBundleShortVersionString` trong
+`Info.plist` của `PRM.framework` (host đọc lại lúc runtime qua `Bundle`). Không truyền thì lấy mặc
+định trong pbxproj (`MARKETING_VERSION = 1.0.0`).
+
+Mỗi lần build, script tự đóng gói `build/PRM.xcframework.zip` (**tên cố định**, không kèm version —
+mang đi tích hợp ngay; version đã nằm trong Info.plist). Khác Android đặt version vào tên file
+(`AndroidPromotionSDK-<version>.aar`): iOS tích hợp theo tên framework cố định nên giữ tên zip ổn định.
+
 > **Scheme `iosApp` phải là shared scheme** (`xcshareddata/xcschemes`, đã commit). Để trong
 > `xcuserdata` thì chỉ máy của người tạo mới thấy — máy khác clone về, `xcodebuild -scheme iosApp`
 > không tìm ra. Và `-derivedDataPath` bắt buộc đi kèm `-scheme`, không dùng được với `-target`.

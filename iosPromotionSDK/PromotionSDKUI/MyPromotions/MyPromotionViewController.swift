@@ -48,7 +48,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     // Empty view khi list rỗng (đã tải xong) — khớp Android ctlNoResult (ảnh + tiêu đề + mô tả).
     private lazy var emptyView: PromotionSearchNoResultView = {
         let view = PromotionSearchNoResultView()
-        view.thumbnailImage = UIImage.sdk("prm_ic_search_no_result")
+        view.thumbnailImage = UIImage.sdk("prm_il_chua_co_uu_dai_new_vers")
         view.title = PromotionUIStrings.emptyPromotionsTitle
         view.descriptionString = PromotionUIStrings.emptyPromotionsDescription
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -110,28 +110,19 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
 
     private func configEmptyView() {
         self.view.addSubview(emptyView)
-
-        // Căn giữa trong VÙNG LIST (dưới header+tabs), NHƯNG chặn không cho tụt quá sâu trên màn cao:
-        // - centerY == table.centerY (priority thấp) → màn THẤP (SE) center tự nhiên vẫn cao, giữ nguyên.
-        // - centerY <= table.top + [cap] (required) → màn CAO (iPhone 8) bị kéo lên, không tụt xuống đáy.
-        // `emptyViewMaxCenterFromTop` là số duy nhất cần chỉnh nếu muốn nhích lên/xuống.
-        let centerInList = emptyView.centerYAnchor.constraint(equalTo: promotionsTableview.centerYAnchor)
-        centerInList.priority = .defaultHigh
+        // Căn giữa THEO VIEW (không theo table — table lệch xuống dưới header+tabs). Khớp màn Tìm kiếm.
+        // Nhưng hạ ưu tiên để màn NHỎ, ràng buộc "không đè chips" bên dưới thắng.
+        let centerY = emptyView.centerYAnchor.constraint(equalTo: self.view.centerYAnchor)
+        centerY.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            emptyView.centerXAnchor.constraint(equalTo: promotionsTableview.centerXAnchor),
-            centerInList,
-            emptyView.centerYAnchor.constraint(
-                lessThanOrEqualTo: promotionsTableview.topAnchor,
-                constant: Self.emptyViewMaxCenterFromTop
-            ),
+            emptyView.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
+            centerY,
+            // Màn nhỏ: chặn đỉnh empty view không trồi lên trên đỉnh list (list nằm dưới chips) → không đè thanh chip.
+            emptyView.topAnchor.constraint(greaterThanOrEqualTo: promotionsTableview.topAnchor, constant: 8),
             emptyView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 24),
             emptyView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -24)
         ])
     }
-
-    /// Tâm empty view cách đỉnh vùng list tối đa bao nhiêu (pt) — chặn tụt quá sâu trên màn cao.
-    /// Xấp xỉ tâm tự nhiên trên iPhone SE (màn thấp) để màn đó không bị ảnh hưởng.
-    private static let emptyViewMaxCenterFromTop: CGFloat = 220
 
     private func configShimmer() {
         self.view.addSubview(shimmerOverlay)

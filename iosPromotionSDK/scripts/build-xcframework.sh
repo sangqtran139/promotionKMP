@@ -4,8 +4,10 @@
 #
 # Usage:
 #   ./scripts/build-xcframework.sh [output_dir]
+#   SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh [output_dir]
 #
-# Output: <output_dir>/PRM.xcframework  (default output_dir = ./build)
+# Output: <output_dir>/PRM.xcframework      (default output_dir = ./build)
+#         <output_dir>/PRM.xcframework.zip  (gói phát hành — tên cố định, mang đi tích hợp luôn)
 #
 # Trước khi chạy, phải có Frameworks/PromotionLogic.xcframework — sinh từ Gradle:
 #   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
@@ -19,6 +21,12 @@ SCHEME="PRM"
 FRAMEWORK="PRM.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
 BUILD_DIR="${1:-$ROOT/build}"
 OUT="$BUILD_DIR/PRM.xcframework"
+
+# Version của SDK — đối xứng property `SDK_VERSION` bên Android (AndroidPromotionSDK/build.gradle.kts),
+# cùng mặc định "1.0.0". Truyền qua biến môi trường: `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh`.
+# Được nhồi vào `MARKETING_VERSION` (→ CFBundleShortVersionString trong Info.plist của PRM.framework,
+# host đọc lại lúc runtime) và dùng để đặt tên gói zip phát hành.
+SDK_VERSION="${SDK_VERSION:-1.0.0}"
 
 KOTLIN_XCF="$ROOT/Frameworks/PromotionLogic.xcframework"
 # Luôn dựng lại và đồng bộ, KHÔNG chỉ khi thiếu.
@@ -50,6 +58,7 @@ archive() {
     -clonedSourcePackagesDirPath "$ROOT/.spm" \
     SKIP_INSTALL=NO \
     CODE_SIGNING_ALLOWED=NO \
+    MARKETING_VERSION="$SDK_VERSION" \
     -verbose
 }
 
@@ -81,6 +90,14 @@ cp -R "$BUILD_DIR/dev.xcarchive/dSYMs/$FRAMEWORK.dSYM" "$BUILD_DIR/"
 echo "▶︎ Xoá *.abi.json (chỉ dùng cho công cụ so ABI, host không cần)"
 find "$OUT" -name "*.abi.json" -delete
 
+# Gói phát hành: TÊN CỐ ĐỊNH `PRM.xcframework.zip` (không kèm version) để mang đi tích hợp ngay —
+# version nằm trong Info.plist của framework (MARKETING_VERSION ở trên), không cần lộ ra tên file.
+# `ditto` giữ đúng symlink của framework (zip thường làm hỏng), là cách chuẩn để nén xcframework.
+ZIP="$BUILD_DIR/PRM.xcframework.zip"
+echo "▶︎ Đóng gói $ZIP"
+rm -f "$ZIP"
+ditto -c -k --sequesterRsrc --keepParent "$OUT" "$ZIP"
+
 # Xcode dịch sẵn `.swiftinterface` của framework thành module nhị phân rồi cache ở
 # `SwiftExplicitPrecompiledModules/` (explicit module build). Cache đó **không** tự hết hạn khi
 # xcframework được dựng lại: đổi một chữ ký public xong, app host vẫn compile theo chữ ký cũ và
@@ -101,7 +118,8 @@ if [ -d "$DERIVED_DATA" ]; then
 fi
 
 echo ""
-echo "✅ Xong: $OUT"
+echo "✅ Xong: $OUT  (version $SDK_VERSION)"
+echo "📦 Gói phát hành: $ZIP"
 echo ""
 echo "🔎 dSYM: $BUILD_DIR/$FRAMEWORK.dSYM"
 echo "   Binary đã strip local symbol — GIỮ dSYM này lại theo từng bản phát hành, không có nó thì"

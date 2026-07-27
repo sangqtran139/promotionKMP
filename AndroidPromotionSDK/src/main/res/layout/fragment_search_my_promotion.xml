@@ -82,7 +82,7 @@
                 android:id="@+id/imgNoData"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/prm_il_chua_co_uu_dai_new_vers"
+                android:src="@drawable/prm_il_chua_co_giao_dich_mau"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />

@@ -59,7 +59,7 @@ class PromotionDetailStore(
             runCatching {
                 getCustomerVoucherDetailUseCase(
                     voucherId = voucherId,
-                    service = PromotionContainer.requestContextProvider.getService(),
+                    service = null,
                 )
             }.onSuccess { detail ->
                 val status = VoucherStatus.from(detail?.status)
