@@ -110,16 +110,28 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
 
     private func configEmptyView() {
         self.view.addSubview(emptyView)
+
+        // Căn giữa trong VÙNG LIST (dưới header+tabs), NHƯNG chặn không cho tụt quá sâu trên màn cao:
+        // - centerY == table.centerY (priority thấp) → màn THẤP (SE) center tự nhiên vẫn cao, giữ nguyên.
+        // - centerY <= table.top + [cap] (required) → màn CAO (iPhone 8) bị kéo lên, không tụt xuống đáy.
+        // `emptyViewMaxCenterFromTop` là số duy nhất cần chỉnh nếu muốn nhích lên/xuống.
+        let centerInList = emptyView.centerYAnchor.constraint(equalTo: promotionsTableview.centerYAnchor)
+        centerInList.priority = .defaultHigh
         NSLayoutConstraint.activate([
-            // Căn giữa trong VÙNG LIST (dưới header+tabs) chứ không theo cả màn hình — self.view center
-            // nằm cao hơn tâm table (header+tabs chiếm phần trên) nên empty view bị đội lên khỏi vùng
-            // trắng. Khớp Android `ctlNoResult` (ràng buộc trong vùng nội dung dưới hàng tab).
             emptyView.centerXAnchor.constraint(equalTo: promotionsTableview.centerXAnchor),
-            emptyView.centerYAnchor.constraint(equalTo: promotionsTableview.centerYAnchor),
+            centerInList,
+            emptyView.centerYAnchor.constraint(
+                lessThanOrEqualTo: promotionsTableview.topAnchor,
+                constant: Self.emptyViewMaxCenterFromTop
+            ),
             emptyView.leadingAnchor.constraint(equalTo: self.view.leadingAnchor, constant: 24),
             emptyView.trailingAnchor.constraint(equalTo: self.view.trailingAnchor, constant: -24)
         ])
     }
+
+    /// Tâm empty view cách đỉnh vùng list tối đa bao nhiêu (pt) — chặn tụt quá sâu trên màn cao.
+    /// Xấp xỉ tâm tự nhiên trên iPhone SE (màn thấp) để màn đó không bị ảnh hưởng.
+    private static let emptyViewMaxCenterFromTop: CGFloat = 220
 
     private func configShimmer() {
         self.view.addSubview(shimmerOverlay)
@@ -288,7 +300,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         switch effect {
         // Lỗi nghiệp vụ → toast (đồng nhất Android `showToast`).
         case .showError(let code):
-            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
+            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let voucherId, let services):
             showServiceSelector(voucherId: voucherId, services: services)
         }

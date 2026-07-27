@@ -74,6 +74,9 @@ final public class PRMEndowView: UIView {
 
     // MARK: - Config
     private func config() {
+        // Widget nhúng trong host: ép light cho riêng subtree của widget (SDK không có màu dark).
+        // Không đụng host — chỉ view này và view con.
+        self.overrideUserInterfaceStyle = .light
         self.backgroundColor = .clear
         self.configTitleLabel()
         self.configCouponsStackView()

@@ -93,7 +93,7 @@ class MyPromotionBranchTest {
     }
 
     @Test
-    fun selectTab_secondVisitServesCacheThenRefreshes() = runTest {
+    fun selectTab_secondVisitServesFreshCache_withoutCallingApi() = runTest {
         val repo = FakeRepo { _, tab, _ -> result(listOf(voucher("v-$tab")), tabs = emptyList()) }
         val s = myStore(repo, testScheduler)
         s.dispatch(MyPromotionIntent.SelectTab("t1"))
@@ -101,12 +101,14 @@ class MyPromotionBranchTest {
         s.dispatch(MyPromotionIntent.SelectTab("t2"))
         testScheduler.advanceUntilIdle()
 
-        // Quay lại t1: có cache → hiện ngay (isRefreshingTab) rồi vẫn gọi lại API.
+        // Quay lại t1: cache còn tươi (< TTL) → dùng thẳng, KHÔNG gọi lại API.
+        // (Trước đây tab qua tab lại là mỗi lần một request — chính chỗ phí cần bỏ.)
         val before = repo.calls
         s.dispatch(MyPromotionIntent.SelectTab("t1"))
         testScheduler.advanceUntilIdle()
-        assertTrue(repo.calls > before)
+        assertEquals(before, repo.calls)
         assertEquals("t1", s.currentState().selectedTabCode)
+        assertFalse(s.currentState().isRefreshingTab)
     }
 
     @Test

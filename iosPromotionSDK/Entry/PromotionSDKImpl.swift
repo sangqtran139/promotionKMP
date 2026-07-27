@@ -303,7 +303,7 @@ final class PromotionSDKImpl: NSObject {
     func showFeatureDisabledToast(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
             ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-        PRMToast.show(message, in: viewController.view)
+        PromotionToast.show(message, in: viewController.view)
     }
 
     /// Mở màn chi tiết ưu đãi theo `voucherId`. Màn tự fetch chi tiết đầy đủ; trong lúc chờ hiện shimmer.
@@ -487,7 +487,7 @@ final class PromotionSDKImpl: NSObject {
                     // Map mã lỗi → chuỗi hiển thị (dùng chung mọi màn) — đối ứng Android
                     // `mapPromotionError(errorCode)`; trước đây iOS nuốt mã, luôn hiện một câu chung.
                     if let vc = vc {
-                        PRMToast.show(PromotionUIStrings.errorMessage(errorCode), in: vc.view)
+                        PromotionToast.show(PromotionUIStrings.errorMessage(errorCode), in: vc.view)
                     }
                     return
                 }

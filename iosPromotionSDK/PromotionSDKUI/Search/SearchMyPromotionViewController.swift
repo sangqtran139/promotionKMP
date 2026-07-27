@@ -176,7 +176,7 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         switch effect {
         // Lỗi nghiệp vụ → toast (đồng nhất Android: Fragment map code → chuỗi rồi showToast).
         case .showError(let code):
-            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
+            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let voucherId, let services):
             showServiceSelector(voucherId: voucherId, services: services)
         }

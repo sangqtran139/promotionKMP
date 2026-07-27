@@ -2,6 +2,7 @@ package com.ttcn.prm.ui.feature.promotion.endowview
 
 import android.content.Context
 import android.util.AttributeSet
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -36,8 +37,12 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Binding & Adapter ────────────────────────────────────────────────────
 
+    // Ép LIGHT cho widget: inflate dưới theme Light (R.style.PRMForceLight) để text/màu ngầm định
+    // không lấy màu tối từ theme host DayNight. Cùng cơ chế với PRMBaseFragment. Không đụng host.
     private val binding: PrmViewEndowBinding =
-        PrmViewEndowBinding.inflate(LayoutInflater.from(context), this, true)
+        PrmViewEndowBinding.inflate(
+            LayoutInflater.from(ContextThemeWrapper(context, R.style.PRMForceLight)), this, true,
+        )
 
     private val applyPromotionAdapter = ApplyPromotionAdapter()
 

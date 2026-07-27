@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      API 29+ (Android 10): thêm forceDarkAllowed=false để chặn cả OS force-dark (khi host là app
+      light-only bị OS tự đảo màu). Vẫn kế thừa theme Light đầy đủ như bản default (xử lý host DayNight).
+      Bản values/ không có attribute này vì API 24–28 chưa có force-dark.
+    -->
+    <style name="PRMForceLight" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

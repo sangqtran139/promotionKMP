@@ -31,6 +31,8 @@ abstract class PRMBaseActivity<VB : ViewBinding> : AppCompatActivity() {
     open fun observeData() {}
 
     protected fun showToast(message: CharSequence?) {
+        // Toast bị gom sau [PromotionToastGate] — mặc định TẮT (lỗi vẫn được bắt, chỉ không hiện).
+        if (!PromotionToastGate.isEnabled) return
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 

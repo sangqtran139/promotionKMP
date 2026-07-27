@@ -120,9 +120,21 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
   (đối ứng `uiEffect` bên Android). VC map `code` → chuỗi bằng `PromotionUIStrings.errorMessage`
-  rồi hiện **`PRMToast`**; state không giữ lại lỗi. (Toast là idiom **dùng chung 2 nền tảng** —
-  `PRMConfirmationDialog` không còn được dùng ở luồng lỗi nào.)
+  rồi gọi **`PromotionToast.show(...)`**; state không giữ lại lỗi. (Toast là idiom **dùng chung 2 nền
+  tảng** — `PRMConfirmationDialog` không còn được dùng ở luồng lỗi nào.)
 - ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
+
+### Cổng bật/tắt toast (cả hai nền tảng)
+
+Toàn bộ hiển thị toast **gom sau một cờ**, mặc định **TẮT** — SDK vẫn **bắt lỗi như cũ** (effect
+`ShowError` vẫn phát, ViewModel vẫn `ConsumeError`), chỉ **không hiển thị** gì. Đổi cờ `true` để bật lại.
+
+| Nền tảng | Cờ | Điểm gác |
+|---|---|---|
+| Android | `PromotionToastGate.isEnabled` (`ui/base/`) | trong `PRMBaseFragment.showToast` / `PRMBaseActivity.showToast` |
+| iOS | `PromotionToast.isEnabled` (`PromotionSDKUI/Base/`) | trong `PromotionToast.show(_:in:)` — mọi call site đi qua đây |
+
+Đổi một bên thì đổi bên kia (giữ đối xứng).
 
 ### Cả hai
 

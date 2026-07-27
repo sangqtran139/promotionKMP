@@ -141,4 +141,118 @@ class MyPromotionStoreTest {
         assertEquals("all", store.state.value.selectedTabCode)
         assertTrue(store.state.value.vouchers.isNotEmpty())
     }
+
+    // ─── Prefetch tab + cache TTL ─────────────────────────────────────────────
+
+    private val twoTabs = listOf(
+        VoucherTabItem("all", "Tất cả", order = 0),
+        VoucherTabItem("used", "Đã dùng", order = 1),
+    )
+
+    @Test
+    fun loadInitial_prefetchesOtherTabs_soSwitchingCostsNoRequest() = runTest {
+        val repo = FakeRepo { tab, _ ->
+            page(listOf(voucher("$tab-1")), number = 0, last = true, tabs = twoTabs, selectedTab = "all")
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, repo.calls)   // 1 tab đang mở + 1 prefetch tab còn lại
+
+        store.dispatch(MyPromotionIntent.SelectTab("used"))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, repo.calls)   // cache còn tươi → KHÔNG gọi thêm request nào
+        assertEquals("used", store.state.value.selectedTabCode)
+        assertTrue(store.state.value.vouchers.isNotEmpty())
+        assertFalse(store.state.value.isRefreshingTab)
+    }
+
+    @Test
+    fun prefetchFails_tabStillLoadsOnTap_andShowsNoError() = runTest {
+        var prefetchDown = true
+        val repo = FakeRepo { tab, _ ->
+            if (tab == "used" && prefetchDown) throw RuntimeException("prefetch down")
+            page(listOf(voucher("$tab-1")), number = 0, last = true, tabs = twoTabs, selectedTab = "all")
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        testScheduler.advanceUntilIdle()
+        // Prefetch hỏng phải im lặng: tab user chưa bấm vào, không được bắn lỗi.
+        assertEquals(null, store.state.value.errorCode)
+
+        prefetchDown = false
+        store.dispatch(MyPromotionIntent.SelectTab("used"))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("used", store.state.value.selectedTabCode)
+        assertTrue(store.state.value.vouchers.isNotEmpty())   // không cache → load bình thường
+    }
+
+    @Test
+    fun refresh_marksEveryTabStale_soOtherTabsAreRefetched() = runTest {
+        val repo = FakeRepo { tab, _ ->
+            page(listOf(voucher("$tab-1")), number = 0, last = true, tabs = twoTabs, selectedTab = "all")
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        testScheduler.advanceUntilIdle()
+
+        // Kéo làm mới = làm mới CẢ MÀN: tab đang mở + prefetch lại tab kia (cache bị ép ôi).
+        store.dispatch(MyPromotionIntent.Refresh)
+        testScheduler.advanceUntilIdle()
+        assertEquals(4, repo.calls)
+
+        // Tab kia vừa được nạp lại → lại tươi → bấm sang không tốn request.
+        store.dispatch(MyPromotionIntent.SelectTab("used"))
+        testScheduler.advanceUntilIdle()
+        assertEquals(4, repo.calls)
+    }
+
+    @Test
+    fun selectTab_apiFails_clearsList_insteadOfKeepingPreviousTab() = runTest {
+        val tabs = listOf(VoucherTabItem("all", "Tất cả", order = 0), VoucherTabItem("used", "Đã dùng", order = 1))
+        val repo = FakeRepo { tab, _ ->
+            if (tab == "used") throw RuntimeException("network down")
+            page(listOf(voucher("all-1")), number = 0, last = true, tabs = tabs, selectedTab = "all")
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        assertTrue(store.state.value.vouchers.isNotEmpty())   // tab "all" có dữ liệu
+
+        // Đổi sang tab chưa có cache, API hỏng.
+        store.dispatch(MyPromotionIntent.SelectTab("used"))
+
+        val s = store.state.value
+        assertEquals("used", s.selectedTabCode)
+        assertTrue(s.vouchers.isEmpty())    // KHÔNG mang nguyên list tab "all" sang
+        assertTrue(s.isEmpty)               // phải hiện empty state
+        assertFalse(s.isLoading)
+        assertTrue(s.errorCode != null)     // vẫn báo lỗi (native hiện toast)
+    }
+
+    @Test
+    fun refreshTab_apiFails_keepsCachedListOfSameTab() = runTest {
+        var failNow = false
+        val repo = FakeRepo { _, _ ->
+            if (failNow) throw RuntimeException("network down")
+            page(listOf(voucher("all-1")), number = 0, last = true,
+                tabs = listOf(VoucherTabItem("all", "Tất cả", order = 0)), selectedTab = "all")
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        failNow = true
+        store.dispatch(MyPromotionIntent.Refresh)
+
+        // Cùng tab + đã có cache → giữ dữ liệu cũ, chỉ báo lỗi. Khác hẳn ca đổi tab ở trên.
+        val s = store.state.value
+        assertTrue(s.vouchers.isNotEmpty())
+        assertFalse(s.isEmpty)
+        assertTrue(s.errorCode != null)
+    }
 }

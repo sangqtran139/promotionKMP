@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!--
+      Theme ÉP LIGHT cho các màn SDK. Áp qua ContextThemeWrapper ở PRMBaseFragment.onGetLayoutInflater
+      (+ ServiceSelectorBottomSheet) — KHÔNG đụng theme app host.
+
+      Vì sao là theme Light ĐẦY ĐỦ (không chỉ forceDarkAllowed): host có thể dùng Theme.Material3.DayNight
+      (như app demo). Ở dark mode, view SDK KHÔNG set màu tường minh sẽ lấy màu chữ/nền TỐI từ theme host
+      → lệch UI. Inflate dưới theme Light này để màu ngầm định resolve ra sáng. Parent Material3 để widget
+      Material (FAB/CardView/BottomSheet) không crash (material 1.13 có sẵn Theme.Material3.*).
+
+      minSdk 24: attribute `android:forceDarkAllowed` (chặn OS force-dark, chỉ có API 29+) nằm ở
+      res/values-v29/styles.xml. Bản default này bỏ qua nó nhưng vẫn là theme Light đầy đủ.
+    -->
+    <style name="PRMForceLight" parent="Theme.Material3.Light.NoActionBar" />
+
     <style name="prm_specific_rounded_corner">
         <item name="cornerSizeTopLeft">@dimen/view_size_16</item>
         <item name="cornerSizeTopRight">@dimen/view_size_16</item>

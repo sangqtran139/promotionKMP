@@ -1,6 +1,7 @@
 package com.ttcn.prm.ui.base
 
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,6 +29,20 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
         }
 
     abstract fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?): VB
+
+    /**
+     * Ép LIGHT cho mọi màn SDK: bọc inflater trong [ContextThemeWrapper] mang theme Light đầy đủ
+     * [R.style.PRMForceLight]. Cần thiết vì host có thể dùng theme DayNight (vd Theme.Material3.DayNight);
+     * ở dark mode, view SDK không set màu tường minh sẽ lấy màu chữ/nền TỐI từ theme host → lệch UI.
+     * Inflate dưới theme Light này để màu ngầm định resolve ra sáng (bản v29 chặn thêm OS force-dark).
+     * **Không đụng theme app host** — chỉ view inflate từ inflater này. Đối ứng
+     * `overrideUserInterfaceStyle = .light` bên iOS.
+     */
+    override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
+        val base = super.onGetLayoutInflater(savedInstanceState)
+        val themed = ContextThemeWrapper(requireContext(), R.style.PRMForceLight)
+        return base.cloneInContext(themed)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,6 +75,8 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     }
 
     protected fun showToast(message: CharSequence?) {
+        // Toast bị gom sau [PromotionToastGate] — mặc định TẮT (lỗi vẫn được bắt, chỉ không hiện).
+        if (!PromotionToastGate.isEnabled) return
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 

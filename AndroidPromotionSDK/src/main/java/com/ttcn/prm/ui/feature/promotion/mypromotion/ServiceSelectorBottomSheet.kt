@@ -1,6 +1,7 @@
 package com.ttcn.prm.ui.feature.promotion.mypromotion
 
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,6 +26,13 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
     }
 
     override fun getTheme(): Int = R.style.PRMBaseBottomSheetDialog
+
+    /** Ép LIGHT (force-dark=false) như [com.ttcn.prm.ui.base.PRMBaseFragment] — bottom sheet không qua base. */
+    override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
+        val base = super.onGetLayoutInflater(savedInstanceState)
+        val themed = ContextThemeWrapper(requireContext(), R.style.PRMForceLight)
+        return base.cloneInContext(themed)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,

@@ -25,6 +25,11 @@ class PRMBaseViewController<VM>: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         _ = PRMBundleSetup.once
+        // SDK CHỈ hỗ trợ light mode: ép màn SDK về light bất kể hệ thống đang dark — màu SDK không có
+        // biến thể dark nên dark mode làm lệch UI. Ép trên CHÍNH VC (cascade xuống toàn subtree + VC
+        // con + toast/dialog gắn vào `view`); KHÔNG đụng `navigationController` vì đó có thể là nav
+        // của host (SDK push lên nav host) → sẽ rò light sang màn host.
+        overrideUserInterfaceStyle = .light
         self.navigationController?.navigationBar.isHidden = true
         setupUI()
         bindViewModel()

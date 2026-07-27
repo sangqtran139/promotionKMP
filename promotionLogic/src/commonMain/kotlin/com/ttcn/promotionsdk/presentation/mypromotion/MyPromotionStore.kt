@@ -8,6 +8,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
 import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.core.util.currentEpochMillis
 import com.ttcn.promotionsdk.core.util.daysUntil
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
@@ -75,14 +76,28 @@ class MyPromotionStore(
         scope.cancel()
     }
 
-    /** Cache list theo tab (RAM, sống cùng store): quay lại tab đã xem hiện ngay rồi refresh ngầm. */
+    /**
+     * Cache list theo tab (RAM, sống cùng store).
+     *
+     * Còn tươi (< [TAB_CACHE_TTL_MS]) → đổi tab dùng thẳng, **không gọi API**. Ôi → vẫn hiện ngay
+     * rồi refresh ngầm. Cache được lấp sẵn bởi [prefetchOtherTabs] ngay sau lần load đầu.
+     */
     private data class TabCache(
         val vouchers: List<MyPromotionVoucher>,
         val page: Int,
         val isLastPage: Boolean,
+        /** Mốc ghi cache (epoch millis). `0` = ép ôi (sau khi kéo làm mới). */
+        val fetchedAt: Long,
     )
 
+    private fun TabCache.isFresh(now: Long = currentEpochMillis()): Boolean =
+        now - fetchedAt < TAB_CACHE_TTL_MS
+
     private val tabCaches = mutableMapOf<String, TabCache>()
+
+    /** Tab đang prefetch dở — chống bắn trùng khi user bấm qua lại lúc request chưa về. */
+    private val prefetchingTabs = mutableSetOf<String>()
+
     private var latestTabRequestId = 0L
 
     fun dispatch(intent: MyPromotionIntent) {
@@ -93,13 +108,19 @@ class MyPromotionStore(
                 }
             }
 
-            MyPromotionIntent.Refresh -> loadVouchers(
-                tabCode = _state.value.selectedTabCode,
-                reset = true,
-                keyword = _state.value.keyword,
-                showFullLoading = false,
-                isPullRefresh = true,
-            )
+            // Kéo làm mới = làm mới CẢ MÀN, không riêng tab đang đứng: đánh dấu ôi mọi cache để tab
+            // khác cũng được nạp lại. Đánh dấu ôi (không xoá) nên bấm sang tab đó vẫn hiện ngay dữ
+            // liệu cũ rồi tự cập nhật, thay vì màn trắng + spinner.
+            MyPromotionIntent.Refresh -> {
+                markAllCachesStale()
+                loadVouchers(
+                    tabCode = _state.value.selectedTabCode,
+                    reset = true,
+                    keyword = _state.value.keyword,
+                    showFullLoading = false,
+                    isPullRefresh = true,
+                )
+            }
 
             is MyPromotionIntent.SelectTab -> onTabSelected(intent.tabCode)
 
@@ -124,6 +145,7 @@ class MyPromotionStore(
     private fun onTabSelected(tabCode: String) {
         val cache = tabCaches[tabCode]
         if (cache != null) {
+            val isFresh = cache.isFresh()
             _state.update {
                 it.copy(
                     selectedTabCode = tabCode,
@@ -133,10 +155,13 @@ class MyPromotionStore(
                     isEmpty = cache.vouchers.isEmpty(),
                     isLoading = false,
                     isRefreshing = false,
-                    isRefreshingTab = true,
+                    isRefreshingTab = !isFresh,
                     isLoadingMore = false,
                 )
             }
+            // Cache còn tươi → DÙNG LUÔN, không gọi API. Đây là điểm chính: tab qua tab lại trong
+            // vòng TTL không tốn request nào (cache đã được prefetch lấp sẵn từ lần load đầu).
+            if (isFresh) return
             loadVouchers(tabCode, reset = true, keyword = _state.value.keyword, isRefreshTab = true)
             return
         }
@@ -225,7 +250,9 @@ class MyPromotionStore(
 
                 val cacheTabCode = requestTabCode ?: selected
                 if (!cacheTabCode.isNullOrBlank()) {
-                    tabCaches[cacheTabCode] = TabCache(merged.toList(), resolvedPage, resolvedIsLastPage)
+                    tabCaches[cacheTabCode] = TabCache(
+                        merged.toList(), resolvedPage, resolvedIsLastPage, currentEpochMillis(),
+                    )
                 }
 
                 _state.update {
@@ -244,6 +271,17 @@ class MyPromotionStore(
                         hasLoadedInitial = true,
                     )
                 }
+
+                // Đây là lúc SỚM NHẤT biết được danh sách tab (server trả động trong `tabs[]`) →
+                // lấp cache cho các tab còn lại để user bấm sang là có sẵn.
+                if (reset) {
+                    prefetchOtherTabs(
+                        tabs = tabs,
+                        activeTabCode = selected,
+                        keyword = keyword,
+                        size = response?.size ?: current.size,
+                    )
+                }
             }.onFailure { throwable ->
                 if (!shouldApplyResponse(requestId, requestTabCode, reset)) return@onFailure
 
@@ -256,10 +294,17 @@ class MyPromotionStore(
                             isLoadingMore = false, hasLoadedInitial = true, errorCode = errorCode,
                         )
 
+                        // Không có cache cho tab vừa yêu cầu → danh sách đang hiển thị KHÔNG phải của
+                        // tab này: `onTabSelected` cố tình giữ tạm list tab cũ trong lúc load cho đỡ
+                        // nháy (`keepCurrentListWhileLoading`). Gọi hỏng thì phải xoá, nếu không user
+                        // thấy nguyên list của tab bên cạnh nằm dưới tab vừa bấm.
                         reset -> it.copy(
                             isLoading = false, isRefreshing = false, isRefreshingTab = false,
                             isLoadingMore = false,
-                            isEmpty = it.vouchers.isEmpty(),
+                            vouchers = emptyList(),
+                            page = 0,
+                            isLastPage = true,
+                            isEmpty = true,
                             hasLoadedInitial = true, errorCode = errorCode,
                         )
 
@@ -270,6 +315,70 @@ class MyPromotionStore(
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Nạp trước trang đầu của **các tab chưa xem** rồi cất vào [tabCaches] — để đổi tab là dùng
+     * ngay, không phải chờ mạng.
+     *
+     * **KHÔNG đi qua [loadVouchers]** một cách có chủ đích: hàm đó lọc response qua
+     * [shouldApplyResponse], mà điều kiện "tab đã đổi" sẽ vứt sạch response của tab đang không được
+     * chọn — đúng định nghĩa của prefetch. Đường riêng này vì thế:
+     *  - không đụng `latestTabRequestId`, không set cờ loading nào → vô hình với UI;
+     *  - **chỉ ghi [tabCaches]**, tuyệt đối không chạm `_state.vouchers`;
+     *  - lỗi thì **nuốt im** (không ghi cache, không `errorCode`): bắn toast cho tab user chưa bấm
+     *    vào là vô lý; tab đó lúc bấm sẽ load bình thường như chưa có gì.
+     */
+    private fun prefetchOtherTabs(
+        tabs: List<MyPromotionTab>,
+        activeTabCode: String?,
+        keyword: String,
+        size: Int,
+    ) {
+        // Đang tìm kiếm thì kết quả gắn với keyword ở tab "all" — prefetch tab khác vô nghĩa.
+        if (keyword.isNotBlank()) return
+
+        val now = currentEpochMillis()
+        for (tab in tabs) {
+            val code = tab.code
+            if (code.isBlank() || code == activeTabCode) continue
+            if (tabCaches[code]?.isFresh(now) == true) continue
+            if (!prefetchingTabs.add(code)) continue     // request cho tab này đang bay
+            launchPrefetch(code, size)
+        }
+    }
+
+    private fun launchPrefetch(tabCode: String, size: Int) {
+        scope.launch {
+            runCatching {
+                searchCustomerVouchersUseCase(
+                    SearchCustomerVouchersRequest(
+                        keyword = null,
+                        serviceCode = null,
+                        tab = tabCode,
+                        page = 0,
+                        size = size,
+                    )
+                )
+            }.onSuccess { response ->
+                val vouchers = response?.content.orEmpty()
+                    .map { it.toMyPromotionVoucher(response?.expireWarningDate) }
+                tabCaches[tabCode] = TabCache(
+                    vouchers = vouchers,
+                    page = response?.number ?: 0,
+                    isLastPage = response?.last ?: true,
+                    fetchedAt = currentEpochMillis(),
+                )
+            }
+            prefetchingTabs -= tabCode
+        }
+    }
+
+    /** Ép mọi cache thành ôi (giữ dữ liệu để hiện ngay, nhưng lần bấm tới sẽ nạp lại). */
+    private fun markAllCachesStale() {
+        for (code in tabCaches.keys.toList()) {
+            tabCaches[code]?.let { tabCaches[code] = it.copy(fetchedAt = 0L) }
         }
     }
 
@@ -286,6 +395,12 @@ class MyPromotionStore(
 
     private companion object {
         private const val TAB_ALL = "all"
+
+        /**
+         * Cache tab còn "tươi" trong bao lâu. Đủ dài để tab qua tab lại không tốn request, đủ ngắn
+         * để voucher vừa dùng ở luồng khác không hiện sai quá lâu.
+         */
+        private const val TAB_CACHE_TTL_MS = 60_000L
     }
 }
 

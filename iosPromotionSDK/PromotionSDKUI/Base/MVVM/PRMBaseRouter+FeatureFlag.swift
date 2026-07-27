@@ -27,7 +27,7 @@ extension PRMBaseRouter {
         if let container = viewController?.view ?? navigator?.topViewController?.view {
             let message = PromotionSDKError.featureDisabled.errorDescription
                 ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-            PRMToast.show(message, in: container)
+            PromotionToast.show(message, in: container)
         }
         return false
     }

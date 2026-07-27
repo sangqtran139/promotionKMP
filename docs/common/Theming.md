@@ -7,6 +7,18 @@ SDK không ép host dùng style cứng — host truyền các token màu, SDK t�
 **Hai nền tảng song ánh.** Cùng sáu token, cùng tên type, cùng tên field, cùng một định dạng JSON.
 Sửa một bên thì sửa cả hai.
 
+> **SDK chỉ chạy LIGHT mode.** Màu SDK không có biến thể dark → dark mode làm lệch UI, nên mọi màn
+> SDK bị **ép light** bất kể hệ thống, **không đụng app host**:
+> - **iOS:** `overrideUserInterfaceStyle = .light` ở `PRMBaseViewController` (+ `navigationController`)
+>   và widget `PRMEndowView`.
+> - **Android:** theme Light đầy đủ `R.style.PRMForceLight` (parent `Theme.Material3.Light.NoActionBar`)
+>   áp qua `onGetLayoutInflater` ở `PRMBaseFragment` + `ServiceSelectorBottomSheet`. Phải là theme Light
+>   **đầy đủ** chứ không chỉ `forceDarkAllowed`: host có thể dùng `Theme.Material3.DayNight` (như app demo)
+>   → ở dark mode, view SDK không set màu tường minh sẽ lấy màu chữ/nền tối từ theme host (đây **không**
+>   phải OS force-dark). Parent Material3 để widget Material (FAB/CardView/BottomSheet) không crash.
+>   **minSdk 24:** attribute `android:forceDarkAllowed` (chặn thêm OS force-dark với host light-only) chỉ
+>   có API 29+ nên đặt ở `res/values-v29/styles.xml`; bản `res/values/styles.xml` vẫn là theme Light đầy đủ.
+
 | Android `ui/theme/` | iOS `PromotionSDKUI/Theme/` |
 |---|---|
 | `PromotionSDKTheme.kt` + `token/*.kt` | `PromotionSDKTheme.swift` |

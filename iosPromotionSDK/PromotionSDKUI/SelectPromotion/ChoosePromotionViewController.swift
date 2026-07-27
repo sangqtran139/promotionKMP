@@ -156,7 +156,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         switch effect {
         // Lỗi nghiệp vụ → toast (đồng nhất Android `showToast(mapPromotionError(code))`).
         case .showError(let code):
-            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
+            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
         // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate) — đối ứng
         // `ChoosePromotionFragment` xử lý effect `ApplySelectedOffers` bên Android.
         case .applySelectedOffers(let offers):

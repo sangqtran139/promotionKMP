@@ -78,19 +78,27 @@ public class PromotionCardView: PRMTapableView {
         return label
     }()
     
+    /// Nút "Sử dụng + icon": **luôn hiện đủ chữ**. Hugging + resistance `.required` → stack không
+    /// nở cũng không bóp, bề rộng bám đúng nội dung; phần rộng còn lại mới nhường cho HSD.
     private let actionButton: UIButton = {
         let button = UIButton(type: .custom)
         button.titleLabel?.font = Typography.fontMedium14
         button.setTitleColor(Colors.tokenViettelPayRed100, for: .normal)
         button.contentHorizontalAlignment = .right
+        button.titleLabel?.lineBreakMode = .byClipping
+        button.setContentHuggingPriority(.required, for: .horizontal)
+        button.setContentCompressionResistancePriority(.required, for: .horizontal)
         return button
     }()
-    
+
+    /// Badge trạng thái ("Đã dùng"/"Hết hạn"…) — cùng ràng buộc như [actionButton].
     private let stateContainerView: UIView = {
         let view = UIView()
         view.backgroundColor = Colors.tokenDark05
         view.layer.cornerRadius = 16
         view.clipsToBounds = true
+        view.setContentHuggingPriority(.required, for: .horizontal)
+        view.setContentCompressionResistancePriority(.required, for: .horizontal)
         return view
     }()
     
@@ -100,17 +108,6 @@ public class PromotionCardView: PRMTapableView {
         label.textColor = Colors.tokenDark60
         label.textAlignment = .center
         return label
-    }()
-    
-    /// Khối "Sử dụng + icon" / badge trạng thái: **luôn hiển thị đủ, ưu tiên cao nhất**.
-    /// - hugging `.required` → stack không nở nó ra (phần dư luôn dồn cho `spacerView`).
-    /// - compression resistance `.required` → **không bao giờ bị bóp**, nên HSD dài mấy thì chữ
-    ///   "Sử dụng"/mũi tên vẫn nguyên; phần rộng còn lại mới nhường cho HSD (HSD tự chạy chữ/cắt).
-    private let actionContainerView: UIView = {
-        let view = UIView()
-        view.setContentHuggingPriority(.required, for: .horizontal)
-        view.setContentCompressionResistancePriority(.required, for: .horizontal)
-        return view
     }()
     
     /// Khe giữa HSD và khối "Sử dụng"/badge: TỐI THIỂU 5px (xem `setupConstraints`), dư thì nở ra.
@@ -181,12 +178,15 @@ public class PromotionCardView: PRMTapableView {
         addSubview(descriptionLabel) // title (tên ưu đãi)
         
         addSubview(footerStackView)
+        // Nút và badge là hai arranged subview RIÊNG, không bọc chung container nữa: chúng loại trừ
+        // nhau, mà stack tự thu hồi chỗ của arranged subview bị `isHidden` — còn view thường thì
+        // constraint vẫn sống. Bọc chung khiến `button.width == stateLabel.width + 16` (required, qua
+        // container) luôn đúng kể cả khi badge đang ẩn + rỗng → nút bị ép còn 16px, chữ "Sử dụng" ra "…".
         footerStackView.addArrangedSubview(dateLabel)
         footerStackView.addArrangedSubview(spacerView)
-        footerStackView.addArrangedSubview(actionContainerView)
-        
-        actionContainerView.addSubview(actionButton)
-        actionContainerView.addSubview(stateContainerView)
+        footerStackView.addArrangedSubview(actionButton)
+        footerStackView.addArrangedSubview(stateContainerView)
+
         stateContainerView.addSubview(stateLabel)
         addSubview(checkboxButton)
         addSubview(blurOverlayView)
@@ -245,14 +245,7 @@ public class PromotionCardView: PRMTapableView {
             make.width(greaterThanOrEqualTo: 5)
         }
 
-        actionButton.makeAnchor { make in
-            make.edges(to: actionContainerView)
-        }
-        
-        stateContainerView.makeAnchor { make in
-            make.edges(to: actionContainerView)
-        }
-        
+        // Nút và badge tự co theo nội dung (không còn constraint ép bằng bề rộng container).
         stateLabel.makeAnchor { make in
             make.top(equalTo: stateContainerView.topAnchor, constant: 4)
             make.bottom(equalTo: stateContainerView.bottomAnchor, constant: -4)
@@ -336,8 +329,7 @@ public class PromotionCardView: PRMTapableView {
         stateLabel.textColor = themeToken?.usedBadgeTextColor ?? Colors.tokenDark60
         stateContainerView.backgroundColor = themeToken?.usedBadgeBackgroundColor ?? Colors.tokenDark05
         
-        actionContainerView.isHidden = actionButton.isHidden && stateContainerView.isHidden
-        footerStackView.isHidden = dateLabel.isHidden && actionContainerView.isHidden
+        footerStackView.isHidden = dateLabel.isHidden && actionButton.isHidden && stateContainerView.isHidden
         
         checkboxButton.isHidden = !model.showsCheckbox
         

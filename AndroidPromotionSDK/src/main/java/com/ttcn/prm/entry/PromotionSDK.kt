@@ -12,6 +12,7 @@ import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
 import com.ttcn.prm.entry.api.PromotionOrderItem
 import com.ttcn.prm.entry.api.PromotionSDKApi
+import com.ttcn.prm.ui.base.PromotionToastGate
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
@@ -359,7 +360,10 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before openMyPromotion()."
         }
         if (!PromotionFeatureGate.canOpenVoucherList()) {
-            Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            // Toast gom sau [PromotionToastGate] (mặc định TẮT); callback host vẫn báo như cũ.
+            if (PromotionToastGate.isEnabled) {
+                Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            }
             callback?.onAvailabilityChanged(false)
             return
         }
@@ -409,7 +413,10 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before openPromotionDetail()."
         }
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            // Toast gom sau [PromotionToastGate] (mặc định TẮT); callback host vẫn báo như cũ.
+            if (PromotionToastGate.isEnabled) {
+                Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
+            }
             callback?.onAvailabilityChanged(false)
             return
         }

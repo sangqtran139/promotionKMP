@@ -205,7 +205,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         switch effect {
         // Lỗi nghiệp vụ → toast (đồng nhất Android/MyPromotion).
         case .showError(let code):
-            PRMToast.show(PromotionUIStrings.errorMessage(code), in: view)
+            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
         case .showServiceSelector(let items):
             showServiceSelector(items)
         }
