@@ -15,6 +15,7 @@
 //
 
 import Foundation
+@_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMKotlinBridge
 
 final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
@@ -47,7 +48,7 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
 
         /// Trước khi có detail — trống hoàn toàn, shimmer che ở VC.
         static let initial = UiState(
-            card: VoucherCardViewModel(title: "", description: "", logoURL: nil, date: ""),
+            card: VoucherCardViewModel(title: "", description: "", logoURL: nil, date: "", dateColor: nil),
             banner: nil,
             tabContents: .empty,
             applyTitle: "",
@@ -67,6 +68,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     /// Sự kiện một-lần — đối ứng `PromotionDetailEffect` bên Android.
     enum Effect {
         case showError(String)
+        /// Mở "Chọn dịch vụ". Luật **1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control
+        /// #5) nằm trong `ServiceSelectorBottomSheet.present`, dùng chung cho cả 3 màn.
         case showServiceSelector([ServiceSelectorItem])
     }
 
@@ -107,6 +110,16 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
         store.clear()
     }
 
+    // ─── Entry point (TLNV MOB_002 control #5) ─────────────────────────────────
+    /// Mở từ luồng thanh toán → nút là "Áp dụng", bấm thì trả voucher về màn "Chọn ưu đãi".
+    var isCheckoutEntry: Bool { data.entry == .checkout }
+
+    /// Báo màn "Chọn ưu đãi" tick voucher này. VC tự `routeToParent()` sau đó (đối ứng Android:
+    /// `setFragmentResult` + `onBackFragment`).
+    func applyFromCheckout() {
+        data.onApplyFromCheckout?(voucherId)
+    }
+
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
     private func bindStore() {
         storeCancellable = observeStore(watch: { [store] in store.watchState(onEach: $0) }) { [weak self] state in
@@ -145,7 +158,11 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
             return
         }
         applicableProducts = detail.applicableProducts
-        uiState = state.toUiState(detail: detail)
+        // Nhãn nút theo nơi mở màn (TLNV MOB_002 control #5) — chuỗi SDK, không dùng nhãn server.
+        uiState = state.toUiState(
+            detail: detail,
+            applyTitle: isCheckoutEntry ? PromotionUIStrings.apply : PromotionUIStrings.useNow
+        )
     }
 
     // ─── Error ──────────────────────────────────────────────────────────────────
@@ -172,22 +189,26 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
 /// Nhận [detail] đã unwrap: khác Android (UiState bên đó mang thẳng `detail` nullable), iOS format
 /// sẵn card/HTML/ngày nên chỉ dựng được khi đã có detail — chưa có thì VM giữ `UiState.initial`.
 private extension PromotionDetailState {
-    func toUiState(detail: VoucherDetail) -> PromotionDetailViewModel.UiState {
+    func toUiState(detail: VoucherDetail, applyTitle: String) -> PromotionDetailViewModel.UiState {
         PromotionDetailViewModel.UiState(
             card: VoucherCardViewModel(
                 title: detail.merchantName ?? "",
                 description: detail.title ?? "",
                 logoURL: detail.logo,
-                date: Self.dateString(detail.expirationDate)
+                // Sắp hết hạn → "HSD còn X ngày" tô cam, y như màn danh sách (TLNV MOB_002 2.4).
+                date: expiringInDays.map { PromotionUIStrings.remainingDays(Int(truncating: $0)) }
+                    ?? Self.dateString(detail.expirationDate),
+                dateColor: expiringInDays == nil ? nil : Colors.tokenCarrotOrange100
             ),
             banner: detail.banner,
             tabContents: .init(
                 detail: Self.contentDisplay(detail.description_ ?? ""),
                 guide: Self.contentDisplay(detail.guideline ?? "")
             ),
-            // Nhãn lấy từ server (`displayStatusLabel` → `actionLabel`), không phụ thuộc
-            // enabled/disabled. `useNow` chỉ là dự phòng khi API không trả nhãn — giống Android.
-            applyTitle: actionLabel.isEmpty ? PromotionUIStrings.useNow : actionLabel,
+            // Nhãn **cố định chuỗi SDK**, KHÔNG dùng `actionLabel` (= `displayStatusLabel` của server).
+            // Server trả "Sử dụng" cho mọi voucher; màn này dùng chuỗi riêng theo nơi mở màn — VM
+            // truyền vào. Card ở màn danh sách thì vẫn theo nhãn server.
+            applyTitle: applyTitle,
             isApplyEnabled: actionEnabled,
             isApplyVisible: actionVisible,
             isLoading: isLoading
@@ -205,7 +226,12 @@ private extension PromotionDetailState {
     /// Tiền tố "HSD:" — **khớp Android** (`prm_expiry_short_format`) và khớp luôn màn danh sách iOS
     /// (`MyPromotionCell` dùng `expiryDate`). Trước đây màn này dùng `expiryDateLong` ("Hạn sử dụng …")
     /// nên là chỗ DUY NHẤT lệch chữ. Không parse được ngày → chuỗi rỗng, card tự ẩn dòng.
+    /// API không trả HSD (nil/rỗng) → "HSD: Không hết hạn"; có chuỗi mà parse hỏng → rỗng (ẩn dòng).
+    /// Đối ứng `PromotionDetailFragment.bindDetailContent` bên Android.
     static func dateString(_ raw: String?) -> String {
-        PRMPromotionDate.parse(raw).map { PromotionUIStrings.expiryDate(PRMPromotionDate.display($0)) } ?? ""
+        if let date = PRMPromotionDate.parse(raw) {
+            return PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
+        }
+        return PRMPromotionDate.isMissing(raw) ? PromotionUIStrings.expiryNever : ""
     }
 }

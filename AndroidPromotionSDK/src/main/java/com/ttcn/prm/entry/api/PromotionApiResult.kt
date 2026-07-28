@@ -46,7 +46,7 @@ sealed class PromotionSDKError : Exception() {
 
     /** Tính năng đang TẮT qua feature flag. Tương ứng mã nghiệp vụ `PRM_MOB_021`. */
     data object FeatureDisabled : PromotionSDKError() {
-        override val message: String = "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
+        override val message: String = "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
     }
 
     data class Unknown(val error: Throwable) : PromotionSDKError() {

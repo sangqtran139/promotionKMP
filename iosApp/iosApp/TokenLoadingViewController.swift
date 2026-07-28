@@ -20,14 +20,20 @@ final class TokenLoadingViewController: UIViewController {
     /// Base URL Promotion BFF — host cấu hình.
     private static let baseUrl = "http://125.235.38.229:8080"
 
-    /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ").
-    /// 3 mã đầu trùng applicableProducts voucher ACTIVE → sẽ hiện; 2 mã cuối bị lọc bỏ (minh hoạ mapping).
+    /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ") — đối ứng `demoServices` bên Android.
+    ///
+    /// `serviceCode` phải khớp **`applicableProducts.productId`** của voucher (`sku` KHÔNG được dùng
+    /// để so — xem `servicesForApplicableProducts`), nên ở đây là UUID chứ không phải mã "P-FOOD-001".
+    ///
+    /// Một `productId` gắn nhiều SKU (vd `…0011` = BH 2 chiều + gói doanh nghiệp, `…0003` = V120 + V90)
+    /// nhưng list bị `distinctBy { serviceCode }` → khai **một dòng mỗi productId**, tên gộp các SKU.
+    /// Khai theo từng SKU thì dòng thứ hai bị loại âm thầm.
     private let demoServices: [PromotionAvailableService] = [
-        PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Combo gà rán",        serviceType: "FOOD",    iconUrl: "https://picsum.photos/seed/food1/96"),
-        PromotionAvailableService(serviceCode: "P-FOOD-002", serviceName: "Mì Ý sốt bò",         serviceType: "FOOD",    iconUrl: "https://picsum.photos/seed/food2/96"),
-        PromotionAvailableService(serviceCode: "P-ALC-001",  serviceName: "Bia lon 330ml",       serviceType: "ALCOHOL", iconUrl: "https://picsum.photos/seed/beer/96"),
-        PromotionAvailableService(serviceCode: "P-TELCO-001", serviceName: "Nạp tiền điện thoại", serviceType: "TELCO",   iconUrl: "https://picsum.photos/seed/telco/96"),
-        PromotionAvailableService(serviceCode: "P-BILL-001",  serviceName: "Thanh toán hoá đơn",  serviceType: "BILL",    iconUrl: "https://picsum.photos/seed/bill/96")
+        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000002", serviceName: "Data Viettel MIMAX125 - không giới hạn", serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/mimax125/96"),
+        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000003", serviceName: "Gói cước V120 / V90",                    serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/goicuoc/96"),
+        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000010", serviceName: "BH xe máy Vespa 1 năm",                  serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/vespa/96"),
+        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000011", serviceName: "BH ô tô (2 chiều / doanh nghiệp)",       serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/bhoto/96"),
+        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000013", serviceName: "Combo đồ uống đóng chai",                serviceType: "BEVERAGE",  iconUrl: "https://picsum.photos/seed/douong/96")
     ]
 
     // MARK: - UI

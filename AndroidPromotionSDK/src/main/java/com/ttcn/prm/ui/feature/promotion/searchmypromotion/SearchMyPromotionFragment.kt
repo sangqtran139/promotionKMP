@@ -7,6 +7,7 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
+import com.ttcn.promotionsdk.presentation.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.prm.ui.di.promotionViewModelFactory
 import com.ttcn.prm.databinding.FragmentSearchMyPromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
@@ -50,6 +51,8 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
             onBackFragment()
         }
 
+        // Chặn nhập quá giới hạn (TLNV MOB_001 control 5.2 — maxlength 255).
+        binding.sfEndow.maxLength = PROMOTION_SEARCH_MAX_LENGTH
         binding.sfEndow.onTextChangeListener = { keyword ->
             viewModel.handleAction(SearchMyPromotionAction.QueryChanged(keyword))
         }
@@ -100,22 +103,18 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
 
     /** Giống hệt `MyPromotionFragment.showServiceSelector` — cùng bottom sheet, cùng sự kiện host. */
     private fun showServiceSelector(voucher: MyVoucherListItem, services: List<ServiceSelectorUiItem>) {
-        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
-        ServiceSelectorBottomSheet.newInstance(
-            services = services,
-            onServiceSelected = { service ->
-                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
-                PromotionSDK.getCallback()?.onServiceSelected(
-                    PromotionServiceSelection(
-                        voucherId = voucher.voucherId,
-                        serviceCode = service.serviceCode,
-                        serviceName = service.serviceName,
-                        iconUrl = service.iconUrl,
-                    )
+        ServiceSelectorBottomSheet.present(this, services) { service ->
+            // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
+            PromotionSDK.getCallback()?.onServiceSelected(
+                PromotionServiceSelection(
+                    voucherId = voucher.voucherId,
+                    serviceCode = service.serviceCode,
+                    serviceName = service.serviceName,
+                    iconUrl = service.iconUrl,
                 )
-                viewModel.handleAction(SearchMyPromotionAction.ServiceSelected(voucher, service))
-            },
-        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
+            )
+            viewModel.handleAction(SearchMyPromotionAction.ServiceSelected(voucher, service))
+        }
     }
 
     private fun renderState(state: SearchMyPromotionUiState) {

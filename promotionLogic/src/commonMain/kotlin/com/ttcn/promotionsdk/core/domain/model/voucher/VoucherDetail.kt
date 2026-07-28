@@ -16,6 +16,11 @@ data class VoucherDetail(
     val campaignType: String? = null,
     val campaignStatus: String? = null,
     val applicableProducts: List<ApplicableProduct> = emptyList(),
+    /**
+     * Ngưỡng cảnh báo sắp hết hạn (ngày) — BE **hiện chưa trả** ở API detail; null thì
+     * `PromotionDetailStore` dùng giá trị gần nhất từ API danh sách (xem `ExpiryWarning`).
+     */
+    val expireWarningDate: Int? = null,
     /** Danh sách mã (codex) đã cấp cho khách. */
     val codes: List<String> = emptyList(),
     /** Link hướng dẫn sử dụng (metadata.usageGuideUrl). */

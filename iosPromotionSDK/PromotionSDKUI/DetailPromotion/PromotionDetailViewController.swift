@@ -59,6 +59,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         self.voucherCardView.brandName = voucherCardViewModel.title
         self.voucherCardView.title = voucherCardViewModel.description
         self.voucherCardView.expiryText = voucherCardViewModel.date
+        self.voucherCardView.expiryColor = voucherCardViewModel.dateColor
         self.voucherCardView.setLogo(urlString: voucherCardViewModel.logoURL)
     }
 
@@ -214,16 +215,22 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     /// Giống `PromotionDetailFragment.showServiceSelector` bên Android — cùng bottom sheet, cùng
     /// sự kiện host, rồi vẫn để VM xử lý điều hướng nội bộ.
     private func showServiceSelector(_ items: [ServiceSelectorItem]) {
-        let voucherId = viewModel.voucherId
         ServiceSelectorBottomSheet.present(from: self, services: items) { [weak self] service in
-            PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
-                voucherId: voucherId,
-                serviceCode: service.serviceCode,
-                serviceName: service.serviceName,
-                iconUrl: service.iconUrl
-            ))
-            self?.viewModel.handleAction(.serviceSelected(service))
+            self?.onServiceSelected(service)
         }
+    }
+
+    /// Một dịch vụ đã được chọn — dù qua bottom sheet hay đi thẳng (chỉ có 1 dịch vụ khả dụng,
+    /// effect `.serviceChosen`). Báo host rồi vẫn để VM xử lý điều hướng nội bộ.
+    /// Đối ứng `PromotionDetailFragment.onServiceSelected` bên Android.
+    private func onServiceSelected(_ service: ServiceSelectorItem) {
+        PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
+            voucherId: viewModel.voucherId,
+            serviceCode: service.serviceCode,
+            serviceName: service.serviceName,
+            iconUrl: service.iconUrl
+        ))
+        viewModel.handleAction(.serviceSelected(service))
     }
 
     /// Nạp trang HTML đã bọc sẵn (dùng chung với Android) vào WebView. Rỗng → trang trắng.
@@ -238,7 +245,14 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     }
 
     @objc private func didTapApplyButton() {
-        // Bấm "Áp dụng" → mở bottom sheet chọn dịch vụ (parity Android tvUse → OpenServiceSelector).
+        // Hai hành vi tuỳ nơi mở màn — parity Android `PromotionDetailFragment.onActionClick`
+        // (TLNV MOB_002 control #5). Từ luồng thanh toán: KHÔNG chọn dịch vụ, chỉ trả voucherId về
+        // màn "Chọn ưu đãi" (tick sẵn) rồi đóng màn này.
+        if viewModel.isCheckoutEntry {
+            viewModel.applyFromCheckout()
+            viewModel.routeToParent()
+            return
+        }
         viewModel.handleAction(.openServiceSelector)
     }
 }

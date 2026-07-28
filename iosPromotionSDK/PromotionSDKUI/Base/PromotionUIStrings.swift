@@ -12,8 +12,13 @@ import Foundation
 enum PromotionUIStrings {
     static let useNow = "Sử dụng ngay"
     static let use = "Sử dụng"
+    /// Nút màn Chi tiết khi vào từ luồng thanh toán (TLNV MOB_002 control #5) — `prm_apply` bên Android.
+    static let apply = "Áp dụng"
+    /// TẠM THỜI: phản hồi sau khi chọn dịch vụ, trong lúc chưa có đích điều hướng thật.
+    /// Đối ứng `prm_service_selected` bên Android.
+    static func serviceSelected(_ name: String) -> String { "Đã chọn dịch vụ: \(name)" }
     static let used = "Đã sử dụng"
-    static let expired = "Hết hạn"
+    static let expired = "Đã hết hạn"
     static let ineligible = "Không đủ điều kiện"
     static let detail = "Chi tiết"
     static let myPromotions = "Ưu đãi của tôi"
@@ -27,8 +32,10 @@ enum PromotionUIStrings {
 
     /// "HSD: 20/05/2026"
     static func expiryDate(_ value: String) -> String { "HSD: \(value)" }
-    /// "HSD: Còn 3 ngày" — số ngày do store (promotionLogic) quyết định.
-    static func remainingDays(_ days: Int) -> String { "HSD: Còn \(days) ngày" }
+    /// API không trả HSD (nil/rỗng) = voucher không có hạn dùng — đối ứng `prm_expiry_never`.
+    static let expiryNever = "HSD: Không hết hạn"
+    /// "HSD còn 3 ngày" — số ngày do store (promotionLogic) quyết định.
+    static func remainingDays(_ days: Int) -> String { "HSD còn \(days) ngày" }
     /// "Giảm 100.000đ"
     static func discount(_ value: String) -> String { "Giảm \(value)đ" }
     /// "Hạn sử dụng 20/05/2026"

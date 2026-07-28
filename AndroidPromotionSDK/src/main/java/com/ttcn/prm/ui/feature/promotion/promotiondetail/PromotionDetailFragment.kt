@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
+import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import com.google.android.material.tabs.TabLayout
@@ -40,11 +42,15 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentDetailPromotionBinding.inflate(inflater, container, false)
 
+    /** Nơi mở màn này — quyết định nhãn nút + hành vi khi bấm. Xem [PromotionDetailEntry]. */
+    private val entry: PromotionDetailEntry
+        get() = arguments?.getString(KEY_ENTRY)
+            ?.let { runCatching { PromotionDetailEntry.valueOf(it) }.getOrNull() }
+            ?: PromotionDetailEntry.MY_PROMOTION
+
     override fun setupUI() {
         binding.imgBack.setOnClickListener { onBackFragment() }
-        binding.tvUse.setOnClickListener {
-            viewModel.handleAction(PromotionDetailAction.OpenServiceSelector)
-        }
+        binding.tvUse.setOnClickListener { onActionClick() }
         val voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty()
         if (voucherId.isBlank()) {
             showToast(getString(R.string.prm_no_result))
@@ -120,21 +126,42 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         )
         binding.txtVoucherName.text = detail.merchantName.orEmpty()
         binding.tvContent.text = detail.title.orEmpty()
-        // API không trả HSD → ẩn hẳn dòng ngày (không hiện "HSD:" trống).
-        val displayDate = detail.expirationDate.orEmpty().toVoucherDisplayDate()
-        binding.tvExpired.isVisible = displayDate.isNotBlank()
-        if (displayDate.isNotBlank()) {
-            binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)
+        // Dòng HSD — **cùng thứ tự ưu tiên với màn danh sách** (TLNV MOB_002 2.4 → MOB_001 #4):
+        // sắp hết hạn (cam) → HSD thường → "Không hết hạn" (API không trả) → ẩn (parse hỏng).
+        val rawExpiration = detail.expirationDate
+        val displayDate = rawExpiration.orEmpty().toVoucherDisplayDate()
+        val expiringInDays = state.expiringInDays
+        // Màu set ở mọi nhánh: cùng một view được bind lại mỗi lần state đổi, không reset thì dòng
+        // HSD thường vẫn dính cam từ lần render trước.
+        val dateColor = if (expiringInDays != null) R.color.tokenCarrotOrange100 else R.color.tokenDark60
+        binding.tvExpired.setTextColor(ContextCompat.getColor(requireContext(), dateColor))
+        when {
+            expiringInDays != null -> {
+                binding.tvExpired.isVisible = true
+                binding.tvExpired.text = getString(R.string.prm_expiry_remaining_days, expiringInDays)
+            }
+            displayDate.isNotBlank() -> {
+                binding.tvExpired.isVisible = true
+                binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)
+            }
+            rawExpiration.isNullOrBlank() -> {
+                binding.tvExpired.isVisible = true
+                binding.tvExpired.text = getString(R.string.prm_expiry_never)
+            }
+            else -> binding.tvExpired.isVisible = false
         }
         binding.tvUse.visibility = if (state.actionVisible) View.VISIBLE else View.INVISIBLE
         binding.tvUse.isEnabled = state.actionEnabled
         // Nút "Sử dụng ngay" hiện cho MỌI trạng thái usable (actionEnabled do store quyết định) —
         // khớp iOS/store, không khoá riêng ACTIVE (AVAILABLE/USABLE/AVAILABLE_TO_CLAIM cũng usable).
         //
-        // NHÃN: lấy từ server (`displayStatusLabel` → `state.actionLabel`), không phụ thuộc
-        // enabled/disabled. `prm_use_now` chỉ là dự phòng khi API không trả nhãn (hiện `disabledReason`
-        // chỉ có khi usable=false → voucher dùng được sẽ rơi vào nhánh dự phòng này).
-        binding.tvUse.text = state.actionLabel.ifBlank { getString(R.string.prm_use_now) }
+        // NHÃN: **cố định chuỗi SDK**, KHÔNG dùng `state.actionLabel` (= `displayStatusLabel` của
+        // server). Server đang trả "Sử dụng" cho mọi voucher, còn màn này muốn chuỗi riêng — đối ứng
+        // iOS `applyTitle`. Nhãn phụ thuộc nơi mở màn (TLNV MOB_002 control #5):
+        // từ "Ưu đãi của tôi" → "Sử dụng ngay"; từ luồng thanh toán → "Áp dụng".
+        binding.tvUse.text = getString(
+            if (entry == PromotionDetailEntry.CHECKOUT) R.string.prm_apply else R.string.prm_use_now
+        )
 
         bindDetailTabsIfNeeded(
             voucherId = detail.voucherId,
@@ -145,15 +172,26 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
     companion object {
         private const val KEY_VOUCHER_ID = "prm_promotion_detail_voucher_id"
+        private const val KEY_ENTRY = "prm_promotion_detail_entry"
+
+        /** Key `setFragmentResult` khi bấm "Áp dụng" — màn "Chọn ưu đãi" lắng nghe để tick voucher. */
+        const val RESULT_APPLY_VOUCHER = "prm_promotion_detail_apply_voucher"
+
+        /** Bundle key chứa voucherId trong [RESULT_APPLY_VOUCHER]. */
+        const val RESULT_KEY_VOUCHER_ID = KEY_VOUCHER_ID
 
         /**
-         * Navigation chỉ mang `voucherId` — màn tự fetch chi tiết, **không** nhận dữ liệu dựng sẵn từ
-         * màn danh sách. Trong lúc chờ hiện shimmer. Giống iOS.
+         * Navigation chỉ mang `voucherId` (+ nơi mở màn) — màn tự fetch chi tiết, **không** nhận dữ
+         * liệu dựng sẵn từ màn danh sách. Trong lúc chờ hiện shimmer. Giống iOS.
          */
-        fun newInstance(voucherId: String): PromotionDetailFragment {
+        internal fun newInstance(
+            voucherId: String,
+            entry: PromotionDetailEntry = PromotionDetailEntry.MY_PROMOTION,
+        ): PromotionDetailFragment {
             return PromotionDetailFragment().apply {
                 arguments = Bundle().apply {
                     putString(KEY_VOUCHER_ID, voucherId)
+                    putString(KEY_ENTRY, entry.name)
                 }
             }
         }
@@ -223,22 +261,43 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     }
 
     private fun showServiceSelector(services: List<ServiceSelectorUiItem>) {
-        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
-        ServiceSelectorBottomSheet.newInstance(
-            services = services,
-            onServiceSelected = { service ->
-                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
-                PromotionSDK.getCallback()?.onServiceSelected(
-                    PromotionServiceSelection(
-                        voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),
-                        serviceCode = service.serviceCode,
-                        serviceName = service.serviceName,
-                        iconUrl = service.iconUrl,
-                    )
-                )
-                viewModel.handleAction(PromotionDetailAction.ServiceSelected(service))
-            },
-        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
+        // `present` lo luôn: 1 dịch vụ → chọn thẳng không mở sheet, và toast xác nhận. Xem KDoc ở đó.
+        ServiceSelectorBottomSheet.present(this, services, ::onServiceSelected)
+    }
+
+    /**
+     * Bấm nút hành động — hai hành vi tuỳ nơi mở màn (TLNV MOB_002 control #5):
+     * - Từ "Ưu đãi của tôi": chọn dịch vụ để dùng ngay.
+     * - Từ luồng thanh toán: **không** chọn dịch vụ; trả voucherId về màn "Chọn ưu đãi" (tick sẵn
+     *   ô chọn) rồi đóng màn này.
+     */
+    private fun onActionClick() {
+        if (entry == PromotionDetailEntry.CHECKOUT) {
+            requireActivity().supportFragmentManager.setFragmentResult(
+                RESULT_APPLY_VOUCHER,
+                bundleOf(RESULT_KEY_VOUCHER_ID to arguments?.getString(KEY_VOUCHER_ID).orEmpty()),
+            )
+            onBackFragment()
+            return
+        }
+        viewModel.handleAction(PromotionDetailAction.OpenServiceSelector)
+    }
+
+    /**
+     * Một dịch vụ đã được chọn — dù qua bottom sheet hay đi thẳng (chỉ có 1 dịch vụ khả dụng,
+     * effect [PromotionDetailEffect.ServiceChosen]). Báo host (đối ứng iOS `onServiceSelected`)
+     * rồi vẫn để VM xử lý điều hướng nội bộ.
+     */
+    private fun onServiceSelected(service: ServiceSelectorUiItem) {
+        PromotionSDK.getCallback()?.onServiceSelected(
+            PromotionServiceSelection(
+                voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),
+                serviceCode = service.serviceCode,
+                serviceName = service.serviceName,
+                iconUrl = service.iconUrl,
+            )
+        )
+        viewModel.handleAction(PromotionDetailAction.ServiceSelected(service))
     }
 
 }

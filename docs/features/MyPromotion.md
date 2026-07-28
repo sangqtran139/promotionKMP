@@ -102,6 +102,27 @@ phí N-1; đổi lại đổi tab thành miễn phí.
 
   Sửa nhánh này nhớ chạy `MyPromotionStoreTest.selectTab_apiFails_clearsList_insteadOfKeepingPreviousTab`
   và `refreshTab_apiFails_keepsCachedListOfSameTab` — hai test khoá đúng cặp hành vi đối lập này.
+- **Badge trạng thái (`txtExpired` / `stateText`)** — ĐÃ DÙNG và HẾT HẠN **luôn dùng chuỗi của SDK**
+  ("Đã sử dụng" / "Đã hết hạn"), **không** lấy `displayStatusLabel`: field đó map thẳng
+  `metadata.disabledReason` của server, tức mã enum (`REDEEMED`, `EXPIRED`) chứ không phải chuỗi
+  hiển thị — ưu tiên nó thì badge lòi chữ tiếng Anh. Nhánh không đủ điều kiện mới giữ nhãn server
+  (đã là câu đọc được). Rule này áp cả 2 nền tảng: `MyPromotionAdapter` ↔ `MyPromotionCellViewModel`.
+- **Dòng HSD** — thứ tự ưu tiên, **giống hệt 2 nền tảng** (list, search, choose, detail):
+  1. `expiringInDays != null` → "HSD còn X ngày", màu cam `#F47527` (`tokenCarrotOrange100`);
+  2. parse được ngày → "HSD: dd/MM/yyyy", màu mặc định `tokenDark60`;
+  3. **API không trả HSD (null/rỗng)** → "HSD: Không hết hạn" (`prm_expiry_never` /
+     `PromotionUIStrings.expiryNever`);
+  4. có chuỗi ngày nhưng **parse hỏng** → ẩn hẳn dòng (không dám khẳng định vô hạn).
+
+  Phân biệt (3) và (4) là chủ đích: cả hai đều cho `date == nil`, nên iOS mang thêm cờ
+  `MyPromotionCellViewModel.neverExpires` (`PRMPromotionDate.isMissing`), Android kiểm
+  `expirationDate.isBlank()` trên chuỗi thô. Android phải set màu ở **mọi nhánh** vì ViewHolder tái sử dụng.
+
+  Rule này áp **cả màn Chi tiết** (TLNV MOB_002 2.4 refer MOB_001 #4). Ngưỡng cảnh báo chỉ có ở
+  response danh sách nên `ExpiryWarning` (promotionLogic) nhớ lại giá trị gần nhất cho store chi tiết
+  dùng; bỏ được nhánh nhớ này khi BE trả `expireWarningDate` ở API detail.
+- **Tab "(số lượng)"** — chỉ hiện khi **đã load xong** danh sách (TLNV MOB_001 control #3):
+  `submitTabs(..., showCount = !isLoading)` / `renderTabs(..., showCount: !state.isLoading)`.
 - **Hàng HSD trong card (iOS)** — `PromotionCardView.footerStackView` =
   `[dateLabel, spacerView, actionButton, stateContainerView]`: nút "Sử dụng + icon" và badge trạng
   thái **ghim cứng** bên phải (hugging + resistance `.required`), HSD dùng `PRMMarqueeLabel` với

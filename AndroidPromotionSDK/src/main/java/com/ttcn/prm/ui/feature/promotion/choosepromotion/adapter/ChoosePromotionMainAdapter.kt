@@ -146,17 +146,26 @@ internal class ChoosePromotionMainAdapter(
                     highlightColor = highlightColor,
                 )
                 // Dòng ngày: store quyết định "sắp hết hạn" (expiringInDays, theo expireWarningDate của
-                // server) → "HSD: Còn X ngày"; ngược lại HSD thường. API không trả HSD → ẩn hẳn dòng.
+                // server) → "HSD còn X ngày" tô cam; ngược lại HSD thường (màu mặc định). API không trả
+                // HSD (null/rỗng) → "HSD: Không hết hạn"; có HSD mà parse hỏng → ẩn hẳn dòng.
+                // Màu phải set mọi nhánh vì ViewHolder bị tái sử dụng.
                 val displayDate = voucher.expirationDate.toVoucherDisplayDate()
                 val expiringInDays = voucher.expiringInDays
                 when {
                     expiringInDays != null -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenCarrotOrange100))
                     }
                     displayDate.isNotBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                    }
+                    voucher.expirationDate.isBlank() -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_never)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
                     }
                     else -> tvEndDate.isVisible = false
                 }

@@ -37,6 +37,12 @@ enum PRMPromotionDate {
         "yyyy-MM-dd",
     ]
 
+    /// API **không trả** HSD (nil/rỗng) — nghĩa là voucher không có hạn dùng, khác hẳn "có chuỗi
+    /// nhưng [parse] hỏng". Đối ứng `expirationDate.isBlank()` bên Android.
+    static func isMissing(_ string: String?) -> Bool {
+        (string?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+    }
+
     static func parse(_ string: String?) -> Date? {
         guard let trimmed = string?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else { return nil }

@@ -35,7 +35,7 @@ public enum PromotionSDKError: Error, LocalizedError {
         case .sessionExpired:                 return "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
         case .timeout:                        return "Yêu cầu bị timeout, vui lòng thử lại."
         case .parseFailed:                    return "Có lỗi xảy ra với dữ liệu trả về."
-        case .featureDisabled:                return "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
+        case .featureDisabled:                return "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
         case .unknown(let error):             return error.localizedDescription
         }
     }

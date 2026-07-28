@@ -88,6 +88,13 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         // VM lọc offers đang chọn từ store, VC không tự đọc state.
         viewModel.handleAction(.validateAndApply)
     }
+
+    /// Màn Chi tiết (mở từ đây) bấm "Áp dụng" → tick voucher đó. Router gọi vào, VC chỉ forward.
+    /// Đối ứng Android `ChoosePromotionFragment.listenApplyFromDetail`.
+    func selectVoucherFromDetail(_ voucherId: String) {
+        guard !voucherId.isEmpty else { return }
+        viewModel.handleAction(.selectFromDetail(voucherId))
+    }
     
     private func configSearchTextField() {
         self.searchTextField.returnKeyType = .search
@@ -187,6 +194,12 @@ extension ChoosePromotionViewController: UITextFieldDelegate {
         viewModel.handleAction(.search)
         textField.resignFirstResponder()
         return true
+    }
+
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool {
+        PromotionSearchLimit.shouldChange(textField, range: range, replacement: string)
     }
 }
 

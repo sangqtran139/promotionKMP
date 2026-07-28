@@ -299,11 +299,12 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Báo lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
-    /// Toast, đồng nhất Android (`PRMBaseFragment.openPromotionDetail` → `showToast`).
+    /// Toast **LUÔN hiện**, không qua cổng `PromotionToast.isEnabled`; đồng nhất Android
+    /// (`PromotionToastGate.showFeatureDisabled`).
     func showFeatureDisabledToast(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
-            ?? "Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-        PromotionToast.show(message, in: viewController.view)
+            ?? "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
+        PromotionToast.showAlways(message, in: viewController.view)
     }
 
     /// Mở màn chi tiết ưu đãi theo `voucherId`. Màn tự fetch chi tiết đầy đủ; trong lúc chờ hiện shimmer.

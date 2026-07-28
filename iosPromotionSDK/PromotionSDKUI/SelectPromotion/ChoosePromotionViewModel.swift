@@ -49,6 +49,10 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
         case queryChanged(String)
         case search
         case toggleSelection(String)
+        /// Từ màn Chi tiết bấm "Áp dụng" → tick đúng voucher này (TLNV MOB_002 control #5).
+        /// Dùng `setPreSelected` chứ không phải toggle: kết quả phải là "voucher này được chọn",
+        /// không phụ thuộc trạng thái tick trước đó. Đối ứng Android `SetPreSelected`.
+        case selectFromDetail(String)
         case seeMoreMy
         case loadMoreOtherVouchers
         case openDetail(String)
@@ -130,6 +134,8 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
         case .toggleSelection(let id):
             // Rule single/multi do store quyết định — dùng chung Android.
             store.dispatch(intent: ChoosePromotionIntentToggleSelection(id: id))
+        case .selectFromDetail(let id):
+            store.dispatch(intent: ChoosePromotionIntentSetPreSelected(ids: [id]))
         case .seeMoreMy:
             // Store chạy state-machine "mở hết → tải trang kế → thu gọn".
             store.dispatch(intent: ChoosePromotionIntentSeeMoreMy.shared)

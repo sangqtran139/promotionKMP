@@ -234,6 +234,12 @@ extension SearchMyPromotionViewController: UITextFieldDelegate {
         textField.resignFirstResponder()
         return true
     }
+
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool {
+        PromotionSearchLimit.shouldChange(textField, range: range, replacement: string)
+    }
 }
 
 // MARK: - MyPromotionCellDelegate

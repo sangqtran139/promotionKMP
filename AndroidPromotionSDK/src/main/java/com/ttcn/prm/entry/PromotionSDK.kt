@@ -3,9 +3,7 @@ package com.ttcn.prm.entry
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
-import com.ttcn.prm.R
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
@@ -360,10 +358,8 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before openMyPromotion()."
         }
         if (!PromotionFeatureGate.canOpenVoucherList()) {
-            // Toast gom sau [PromotionToastGate] (mặc định TẮT); callback host vẫn báo như cũ.
-            if (PromotionToastGate.isEnabled) {
-                Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
-            }
+            // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
+            PromotionToastGate.showFeatureDisabled(activity)
             callback?.onAvailabilityChanged(false)
             return
         }
@@ -413,10 +409,8 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before openPromotionDetail()."
         }
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            // Toast gom sau [PromotionToastGate] (mặc định TẮT); callback host vẫn báo như cũ.
-            if (PromotionToastGate.isEnabled) {
-                Toast.makeText(activity, R.string.prm_feature_disabled, Toast.LENGTH_SHORT).show()
-            }
+            // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
+            PromotionToastGate.showFeatureDisabled(activity)
             callback?.onAvailabilityChanged(false)
             return
         }

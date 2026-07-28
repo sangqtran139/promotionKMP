@@ -216,7 +216,10 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     }
 
     /// Render tabs động: chỉ dựng lại view khi tập code đổi; còn lại cập nhật label/count + focus.
-    private func renderTabs(_ tabs: [MyPromotionTab], selectedCode: String) {
+    ///
+    /// - Parameter showCount: `false` khi **chưa load xong danh sách** → chỉ hiện tên tab, không hiện
+    ///   "(số lượng)" (TLNV MOB_001 control #3). Đối ứng Android `submitTabs(..., showCount)`.
+    private func renderTabs(_ tabs: [MyPromotionTab], selectedCode: String, showCount: Bool) {
         let codes = tabs.map { $0.code }
         if codes != currentTabCodes {
             tabStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -233,7 +236,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         for tab in tabs {
             let tabView = tabViewsByCode[tab.code]
             // MyPromotionTab.count là Int32 (store đã quyết định, non-null) — khỏi unwrap.
-            tabView?.titleText = "\(tab.label) (\(tab.count))"
+            tabView?.titleText = showCount ? "\(tab.label) (\(tab.count))" : tab.label
             tabView?.isFocusedState = (tab.code == selectedCode)
         }
     }
@@ -278,7 +281,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         promotionsTableview.isHasMorePage = state.canLoadMore
 
         // Render tabs động từ API (label + count) + focus theo tab đang chọn.
-        renderTabs(state.tabs, selectedCode: state.selectedTabCode)
+        renderTabs(state.tabs, selectedCode: state.selectedTabCode, showCount: !state.isLoading)
 
         promotionItems = state.promotions
         promotionsTableview.reloadData()

@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.di.promotionViewModelFactory
 import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.presentation.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.promotionsdk.presentation.choosepromotion.COLLAPSED_MY_COUNT
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
 import com.ttcn.prm.databinding.FragmentChoosePromotionBinding
@@ -17,6 +18,8 @@ import com.ttcn.prm.ui.di.PromotionViewModelFactory
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
 import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
+import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailEntry
+import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.utils.extension.VerticalSpaceItemDecoration
 
@@ -64,6 +67,23 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         setupRecyclerView()
         setupButtons()
         setupSearch()
+        listenApplyFromDetail()
+    }
+
+    /**
+     * Màn Chi tiết mở từ đây bấm "Áp dụng" → quay lại đây với voucher đó **đã tick** (TLNV MOB_002
+     * control #5). Dùng `SetPreSelected` chứ không phải `ToggleSelection`: kết quả phải là "đúng
+     * voucher này được chọn", không phụ thuộc trạng thái tick trước đó.
+     */
+    private fun listenApplyFromDetail() {
+        requireActivity().supportFragmentManager.setFragmentResultListener(
+            PromotionDetailFragment.RESULT_APPLY_VOUCHER,
+            viewLifecycleOwner,
+        ) { _, bundle ->
+            val voucherId = bundle.getString(PromotionDetailFragment.RESULT_KEY_VOUCHER_ID).orEmpty()
+            if (voucherId.isBlank()) return@setFragmentResultListener
+            viewModel.handleAction(ChoosePromotionAction.SetPreSelected(listOf(voucherId)))
+        }
     }
 
     override fun observeData() {
@@ -82,7 +102,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                     showToast(mapPromotionError(effect.errorCode))
 
                 is ChoosePromotionEffect.OpenVoucherDetail -> {
-                    openPromotionDetail(effect.voucherId)
+                    openPromotionDetail(effect.voucherId, PromotionDetailEntry.CHECKOUT)
                 }
 
                 // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate).
@@ -121,7 +141,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
             onVoucherClick = { viewModel.handleAction(ChoosePromotionAction.ToggleSelection(it.voucherId)) },
-            onDetailClick  = { openPromotionDetail(it.voucherId) },
+            onDetailClick  = { openPromotionDetail(it.voucherId, PromotionDetailEntry.CHECKOUT) },
             // Store chạy state-machine "mở hết → tải trang kế → thu gọn" (gộp cả expand & collapse).
             onSeeMoreMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },
             onCollapseMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },
@@ -217,6 +237,8 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     /** Cùng khuôn với `SearchMyPromotionFragment`: gõ mỗi ký tự → `QueryChanged` (ViewModel tự debounce). */
     private fun setupSearch() {
         binding.edtVoucher.apply {
+            // Chặn nhập quá giới hạn (TLNV MOB_004 control 2.1 — maxlength 255).
+            maxLength = PROMOTION_SEARCH_MAX_LENGTH
             onTextChangeListener = { keyword ->
                 if (keyword.isEmpty()) {
                     viewModel.handleAction(ChoosePromotionAction.ClearKeyword)

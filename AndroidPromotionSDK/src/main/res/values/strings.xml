@@ -6,6 +6,10 @@
     <string name="prm_no_applicable_service">Không có dịch vụ thoả mãn</string>
     <string name="prm_use_now">Sử dụng ngay</string>
     <string name="prm_use">Sử dụng</string>
+    <!-- Nút màn Chi tiết khi vào từ luồng thanh toán (TLNV MOB_002 control #5). -->
+    <string name="prm_apply">Áp dụng</string>
+    <!-- TẠM THỜI: phản hồi sau khi chọn dịch vụ, trong lúc chưa có đích điều hướng thật. -->
+    <string name="prm_service_selected">Đã chọn dịch vụ: %1$s</string>
     <string name="prm_deal_hot">Ngàn deal HOT chờ bạn</string>
     <string name="prm_hot_deal_description">Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!</string>
     <string name="prm_my_promotion">Ưu đãi của tôi</string>
@@ -26,18 +30,20 @@
          khớp PromotionUIStrings bên iOS (used/expired/ineligible). Trước đây mọi trạng thái đều
          rơi về prm_is_used nên voucher HẾT HẠN cũng hiện "Đã dùng hết". -->
     <string name="prm_status_used">Đã sử dụng</string>
-    <string name="prm_status_expired">Hết hạn</string>
+    <string name="prm_status_expired">Đã hết hạn</string>
     <string name="prm_status_ineligible">Không đủ điều kiện</string>
     <string name="prm_no_result">Không tìm thấy kết quả phù hợp</string>
     <string name="prm_discover_voucher">Khám phá thêm các đề xuất phù hợp với bạn nhé.</string>
     <string name="prm_search_result">Kết quả tìm kiếm</string>
-    <string name="prm_search_hint">Nhập tên ưu đãi, ngành hàng, ...</string>
+    <string name="prm_search_hint">Nhập tên/mã ưu đãi/tên thương hiệu/...</string>
     <string name="prm_search_no_result">Không tìm thấy kết quả phù hợp</string>
     <string name="prm_search_input_empty">Nhập từ khóa để tìm kiếm ưu đãi</string>
     <string name="prm_slide_to_verify">Trượt để xác thực</string>
     <string name="prm_discount_amount_format">Giảm giá %1$sđ</string>
     <string name="prm_expiry_short_format">HSD: %1$s</string>
-    <string name="prm_expiry_remaining_days">HSD: Còn %1$d ngày</string>
+    <string name="prm_expiry_remaining_days">HSD còn %1$d ngày</string>
+    <!-- API không trả HSD (null/rỗng) = voucher không có hạn dùng. -->
+    <string name="prm_expiry_never">HSD: Không hết hạn</string>
     <string name="prm_tab_all">Tất cả</string>
     <string name="prm_tab_expiring_soon">Sắp hết hạn</string>
     <string name="prm_vouchers_more_suffix">+%1$d</string>
@@ -46,7 +52,7 @@
     <string name="prm_missing_customer_id">Không tìm thấy thông tin khách hàng</string>
     <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
     <!-- PRM_MOB_021. Giữ nguyên câu chữ của iOS (PromotionSDKError.featureDisabled). -->
-    <string name="prm_feature_disabled">Tính năng hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>
+    <string name="prm_feature_disabled">Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>
     <string name="prm_my_endow">Ưu đãi của tôi</string>
     <string name="prm_endow_different">Ưu đãi khác</string>
     <string name="prm_see_more">Xem thêm</string>

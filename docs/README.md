@@ -102,6 +102,7 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 | [common/DependencyInjection.md](./common/DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
 | [common/StorageGuide.md](./common/StorageGuide.md) | `KeyValueStorage`, cache feature flag. Vì sao không có DB. |
 | [common/ErrorHandling.md](./common/ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |
+| [common/TlnvGap.md](./common/TlnvGap.md) | **Chỗ app còn lệch tài liệu nghiệp vụ** (`docs/tlnv/`) — đọc trước khi kết luận "bug". |
 | [common/TestingGuide.md](./common/TestingGuide.md) | Test `commonTest` chạy trên cả hai nền tảng, `MockEngine`. |
 | [common/CodingStandards.md](./common/CodingStandards.md) | Quy ước code Kotlin + Swift, prefix `PRM` / `VDS`. |
 | [common/Theming.md](./common/Theming.md) | Hệ thống theme/token, tùy biến brand cho host — cả hai nền tảng. |

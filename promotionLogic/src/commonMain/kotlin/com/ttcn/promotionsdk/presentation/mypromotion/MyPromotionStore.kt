@@ -10,6 +10,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
 import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.core.util.currentEpochMillis
 import com.ttcn.promotionsdk.core.util.daysUntil
+import com.ttcn.promotionsdk.presentation.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -479,6 +480,9 @@ data class MyPromotionVoucher(
 
 /** [expireWarningDate]: ngưỡng cảnh báo (ngày) từ server — quyết định badge "sắp hết hạn". */
 internal fun VoucherItem.toMyPromotionVoucher(expireWarningDate: Int?): MyPromotionVoucher {
+    // Ngưỡng chỉ có ở response danh sách; màn Chi tiết cũng cần (TLNV MOB_002 2.4) nên ghi nhớ lại.
+    // Idempotent, bỏ qua null — xem [ExpiryWarning].
+    ExpiryWarning.remember(expireWarningDate)
     val display = VoucherStatus.from(status).displayState()
     val enabled = display.isUsable
     // "Còn X ngày" chỉ khi còn dùng được và trong ngưỡng [0, expireWarningDate].

@@ -32,12 +32,17 @@ struct MyPromotionCellViewModel {
     /// `expireWarningDate` của server; `nil` = không sắp hết hạn. Cell chỉ format "Còn X ngày",
     /// KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày → lệch Android).
     let expiringInDays: Int?
+    /// API **không trả** HSD (nil/rỗng) = voucher không có hạn dùng → hiện "HSD: Không hết hạn".
+    /// Khác với `date == nil` do parse hỏng (chuỗi có giá trị nhưng sai format) — ca đó giấu dòng
+    /// ngày như cũ. Đối ứng Android `expirationDate.isBlank()`.
+    let neverExpires: Bool
 
     init(id: String,
          title: String,
          description: String,
          imageURL: String? = nil,
          date: Date? = nil,
+         neverExpires: Bool = false,
          buttonTitle: String? = nil,
          showsCheckbox: Bool = false,
          isChecked: Bool = false,
@@ -53,6 +58,7 @@ struct MyPromotionCellViewModel {
         self.description = description
         self.imageURL = imageURL
         self.date = date
+        self.neverExpires = neverExpires
         self.buttonTitle = buttonTitle
         self.showsCheckbox = showsCheckbox
         self.isChecked = isChecked
@@ -90,11 +96,15 @@ struct MyPromotionCellViewModel {
         // Luôn suy trạng thái theo status: voucher không dùng được phải hiện nhãn trạng thái
         // + disable, kể cả khi caller truyền buttonTitle ("Chi tiết").
         switch state {
+        // ĐÃ DÙNG / HẾT HẠN: LUÔN dùng chuỗi của SDK. `displayStatusLabel` là
+        // `metadata.disabledReason` thô của server — mã enum ("REDEEMED", "EXPIRED"), không phải
+        // chuỗi hiển thị; ưu tiên nó thì tag lòi chữ tiếng Anh ra UI. Khớp Android
+        // (`MyPromotionAdapter`), chỉ nhánh không đủ điều kiện mới giữ nhãn server.
         case .used:
-            derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.used
+            derivedStateText = stateText ?? PromotionUIStrings.used
             derivedButtonTitle = nil
         case .expired:
-            derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.expired
+            derivedStateText = stateText ?? PromotionUIStrings.expired
             derivedButtonTitle = nil
         case .ineligible:
             derivedStateText = stateText ?? voucher.displayStatusLabel ?? PromotionUIStrings.ineligible
@@ -117,6 +127,7 @@ struct MyPromotionCellViewModel {
             description: (voucher.title?.isEmpty == false ? voucher.title : voucher.description_) ?? "",
             imageURL: voucher.logo,
             date: PRMPromotionDate.parse(voucher.expirationDate),
+            neverExpires: PRMPromotionDate.isMissing(voucher.expirationDate),
             buttonTitle: derivedButtonTitle,
             showsCheckbox: showsCheckbox,
             isChecked: isChecked,
@@ -169,6 +180,7 @@ struct MyPromotionCellViewModel {
             // logoUrl (v1.6) — trước đây findEligible không trả nên card offer để trống logo.
             imageURL: offer.logoUrl,
             date: PRMPromotionDate.parse(offer.expireDate),
+            neverExpires: PRMPromotionDate.isMissing(offer.expireDate),
             buttonTitle: derivedButtonTitle,
             showsCheckbox: showsCheckbox,
             isChecked: isChecked,
@@ -220,21 +232,25 @@ final class MyPromotionCell: UITableViewCell {
     func bindData(_ viewModel: MyPromotionCellViewModel) {
         self.viewModel = viewModel
         var dateString: String?
+        var dateColor: UIColor?
         // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
         // dùng chung Android. Cell chỉ format; KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày).
         //
-        // Màu: giữ MẶC ĐỊNH kể cả khi sắp hết hạn — khớp Android (`MyPromotionAdapter` chỉ đổi chữ
-        // thành "HSD: Còn X ngày", không đổi màu). Trước đây iOS tô cam nên hai bên lệch.
+        // Màu: sắp hết hạn → cam `tokenCarrotOrange100`, khớp Android (`MyPromotionAdapter`);
+        // các trường hợp còn lại để nil → PromotionCardView dùng màu mặc định `tokenDark60`.
         if let days = viewModel.expiringInDays {
             dateString = PromotionUIStrings.remainingDays(days)
+            dateColor = Colors.tokenCarrotOrange100
         } else if let date = viewModel.date {
             dateString = PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
+        } else if viewModel.neverExpires {
+            dateString = PromotionUIStrings.expiryNever
         }
 
         let cardModel = PromotionCardModel(
             logoURLString: viewModel.imageURL,
             dateString: dateString,
-            dateColor: nil,
+            dateColor: dateColor,
             title: viewModel.title,
             highlightKeyword: viewModel.highlightKeyword,
             descriptionText: viewModel.description,

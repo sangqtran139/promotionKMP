@@ -25,7 +25,7 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 | `status` | `VoucherStatus` (UNKNOWN/…)|
 | `actionVisible` | Có hiện nút hành động không |
 | `actionEnabled` | Nút có cho bấm không |
-| `actionLabel` | Nhãn nút — **lấy nguyên từ server** (`VoucherDetail.displayStatusLabel`), store không tự dựng chuỗi |
+| `actionLabel` | Nhãn nút từ server (`VoucherDetail.displayStatusLabel`) — ⚠️ **native đang không đọc**, nút dùng chuỗi cứng "Sử dụng ngay" |
 
 ### Action — `PromotionDetailAction`
 - `LoadDetail(voucherId)` — tải chi tiết voucher.
@@ -54,16 +54,26 @@ Fragment: render thông tin + cấu hình nút theo state
 - Use case: `GetCustomerVoucherDetailUseCase`.
 - Hiện/ẩn + cho bấm (`actionVisible`, `actionEnabled`) suy ra từ `status` **ở store** (`displayState().isUsable`),
   không hardcode ở Fragment/VC.
-- **Nhãn nút (`actionLabel`) không hardcode**: store gán thẳng `VoucherDetail.displayStatusLabel` cho **mọi**
-  trạng thái (trước đây bị xoá trắng khi voucher usable, rồi native đè chuỗi cứng "Sử dụng ngay"/"useNow").
-  Native chỉ dùng nhãn mặc định (`R.string.prm_use_now` / `PromotionUIStrings.useNow`) khi server trả rỗng.
+- **Nhãn nút màn Chi tiết: chuỗi cứng "Sử dụng ngay"** (`R.string.prm_use_now` / `PromotionUIStrings.useNow`),
+  **không** đọc `actionLabel`. Store vẫn gán `actionLabel = VoucherDetail.displayStatusLabel` để bật lại
+  nhãn server không phải sửa store, nhưng **hai màn native đang bỏ qua** — BE trả "Sử dụng" cho mọi voucher,
+  còn màn này muốn "Sử dụng ngay". Card ở màn danh sách thì **vẫn theo nhãn server**.
 
-  > ⚠️ **Hạn chế phía API:** `displayStatusLabel` hiện map từ `metadata.disabledReason`
-  > ([`VoucherMapper.kt`](../../promotionLogic/src/commonMain/kotlin/com/ttcn/promotionsdk/core/data/dto/voucher/VoucherMapper.kt)),
-  > mà field này **chỉ có giá trị khi `usable="false"`**. Nút "Sử dụng" lại chỉ hiện khi voucher usable →
-  > trên thực tế vẫn luôn rơi vào nhãn dự phòng. Muốn nhãn nút do server quyết định thật sự thì BE phải trả
-  > thêm một field nhãn áp dụng cho cả voucher dùng được; khi có, chỉ cần map nó vào `displayStatusLabel`
-  > là bỏ được nhánh dự phòng, **không phải sửa UI**.
+  > **Nguồn nhãn (đã sửa 2026-07-28):** BE trả sẵn `voucher.displayStatusLabel` ("Sử dụng") **trong object
+  > `voucher`** ở cả API list lẫn detail. Trước đây `VoucherInfoDto` không khai field này nên
+  > `ignoreUnknownKeys` nuốt mất, và mapper lấy nhầm `metadata.disabledReason` làm nhãn — mà field đó là
+  > **mã enum** (`EXPIRED`/`REDEEMED`/`SERVICE_NOT_APPLICABLE`) và **chỉ có khi `usable="false"`**. Hệ quả:
+  > nhãn nút luôn rỗng (rơi về chuỗi cứng), còn badge của voucher không dùng được thì lòi chữ tiếng Anh.
+  >
+  > Nay: `displayStatusLabel = voucher.displayStatusLabel ?: metadata.disabledReason`
+  > (`VoucherMapper.displayLabelOrReason`). UI không phải sửa — vốn đã ưu tiên field này.
+  >
+  > **Ngoại lệ:** badge trạng thái ĐÃ DÙNG / HẾT HẠN vẫn dùng chuỗi của SDK ("Đã sử dụng" / "Đã hết hạn"),
+  > **không** lấy nhãn server — vì BE đang trả "Sử dụng" cho mọi voucher trong danh sách, tin nhãn đó thì
+  > voucher hết hạn cũng hiện "Sử dụng". Xem `MyPromotionAdapter` / `MyPromotionCellViewModel`.
+  >
+  > `voucher.status` ("ACTIVE") cũng đã khai trong DTO nhưng **chưa dùng**: trạng thái vẫn suy từ
+  > `metadata.usable`. Đổi nguồn là đụng rule fail-closed nên tách thành quyết định riêng.
 
 ---
 
@@ -79,6 +89,57 @@ Fragment: render thông tin + cấu hình nút theo state
 - **Endpoint:** `GET /promotion/promotion-vtm-bff/api/v1/vtm/customer-vouchers/{voucherId}`
 - **Query params:** `service` (tuỳ chọn — dịch vụ đang thanh toán). Định danh khách lấy từ JWT `sub`, **không** truyền lên.
 - **Response fields mới (v1.1):** `campaignId`, `campaignType`, `campaignStatus`, `applicableProducts[]` (gồm `productId`, `sku`, `name`, `image`, `type=INCLUDED|EXCLUDED`).
+
+> **`applicableProducts` — bug đã sửa.** Sau khi làm phẳng DTO ở v1.3, field này **không được khai**
+> trong `CustomerVoucherDetail` / `VoucherListItem`, mà Json bật `ignoreUnknownKeys = true` nên nó bị
+> nuốt **im lặng**: mapper trả `emptyList()` ⇒ `servicesForApplicableProducts` giao với tập rỗng ⇒
+> bottom sheet "Chọn dịch vụ" **luôn trống**, dù host khai đủ `availableServices`. Không có log, không
+> có lỗi parse — rất dễ đổ nhầm cho config phía host.
+>
+> Nay DTO khai ở **cả hai vị trí** (ngang hàng `metadata`, và lồng trong `voucher`), mapper lấy bên nào
+> có dữ liệu: `applicableProducts.ifEmpty { voucher.applicableProducts }`. Khi chốt được BE trả ở đâu
+> thì bỏ nhánh dự phòng. Test khoá: `VoucherMappingBranchTest.detail_applicableProducts_*`.
+>
+> Mapper **giữ nguyên `type = EXCLUDED`** — `servicesForApplicableProducts` hiện chỉ so `productId`,
+> chưa đọc `type`, nên SKU bị loại trừ vẫn hiện như dịch vụ hợp lệ. Cần lọc thì sửa ở tầng lọc.
+
+### Nút hành động + điều hướng (TLNV MOB_002 control #5)
+
+| Vào màn từ | Nhãn nút | Bấm thì |
+|---|---|---|
+| "Ưu đãi của tôi" / Tìm kiếm | "Sử dụng ngay" (`prm_use_now`) | Chọn dịch vụ (xem dưới) |
+| Luồng thanh toán ("Chọn ưu đãi" → Chi tiết) | "Áp dụng" (`prm_apply`) | Quay lại "Chọn ưu đãi", voucher **đã tick** |
+
+Nơi mở màn đi kèm navigation: Android `PromotionDetailEntry` (arg của `newInstance`) ↔ iOS
+`PromotionDetailBuilder.Entry` (field của `DataModel`). Đường về khi "Áp dụng": Android
+`setFragmentResult(RESULT_APPLY_VOUCHER)` → `ChoosePromotionFragment.listenApplyFromDetail`; iOS
+closure `onApplyFromCheckout` → `ChoosePromotionViewController.selectVoucherFromDetail`. Cả hai dùng
+`SetPreSelected` (không phải toggle) để kết quả luôn là "đúng voucher này được chọn".
+
+Khi bấm "Sử dụng ngay", số dịch vụ khả dụng quyết định hành vi:
+
+| Số dịch vụ | Hành vi |
+|---|---|
+| 1 | **Chọn thẳng, không mở sheet** — effect `ServiceChosen` / `.serviceChosen` |
+| 0 hoặc >1 | Mở bottom sheet (0 → sheet hiện "Không có dịch vụ thoả mãn") |
+
+Nút bị **ẩn** khi voucher REDEEMED / EXPIRED / REVOKED / SUSPENDED (`actionVisible` từ store).
+
+### Bottom sheet "Chọn dịch vụ" — chiều cao
+
+**Một hàng, vuốt ngang, thấy tối đa 3 dịch vụ** (TLNV MOB_002 item #6) — không phải lưới nhiều hàng.
+
+| | Android | iOS |
+|---|---|---|
+| Hướng | `LinearLayoutManager(HORIZONTAL)` | `flowLayout.scrollDirection = .horizontal` |
+| Bề rộng item | adapter chia `(width - padding) / 3` trong `doOnLayout` (item layout khai `match_parent` nên **bắt buộc** set bằng code) | `sizeForItemAt` chia `(bounds - inset) / 3` |
+| Chiều cao | 1 hàng; trần `behavior.maxHeight = 60% heightPixels` | 1 hàng; `min(raw, screen * 0.6)` |
+| Trạng thái mở | `skipCollapsed = true` + `STATE_EXPANDED` | luôn mở đúng chiều cao đã tính |
+
+> **Đừng bỏ `skipCollapsed`/`maxHeight` bên Android.** Mặc định `BottomSheetDialogFragment` mở ở
+> `STATE_COLLAPSED` với peek auto (~9/16 bề ngang, cỡ 230dp) → **từ 4 dịch vụ (2 hàng) là hàng dưới đã
+> khuất**; và không có trần thì content cao hơn màn hình sẽ tràn xuống dưới, kéo trong lưới chỉ làm
+> **đóng sheet** chứ không cuộn → item cuối không cách nào chạm tới.
 
 ## 5. Lưu ý khi sửa
 

@@ -37,6 +37,12 @@ public final class VoucherCardView: PRMBaseView {
         }
     }
 
+    /// Màu dòng HSD — cam khi voucher sắp hết hạn, nil = màu mặc định của label.
+    /// Đối ứng `binding.tvExpired.setTextColor(...)` bên Android.
+    public var expiryColor: UIColor? {
+        didSet { self.expiryLabel.textColor = expiryColor ?? Colors.tokenDark60 }
+    }
+
     // MARK: - Private Properties
     private var logoImageView: UIImageView!
     private var brandNameLabel: UILabel!

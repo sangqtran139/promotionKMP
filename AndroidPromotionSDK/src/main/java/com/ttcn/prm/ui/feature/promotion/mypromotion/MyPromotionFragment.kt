@@ -46,6 +46,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
     private var displayedTabCode: String? = null
     private var latestTabs: List<TabItem> = emptyList()
     private var latestSelectedTabCode: String? = null
+    private var latestShowTabCount: Boolean = false
     private var latestSubmittedItems: List<MyPromotionListItem> = emptyList()
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
@@ -98,12 +99,17 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
             binding.homeList.isVisible = state.vouchers.isNotEmpty() ||
                     homeListAdapter.currentList.isNotEmpty()
 
-            val shouldUpdateTabs =
-                latestTabs != state.tabs || latestSelectedTabCode != state.selectedTabCode
+            // Số lượng chỉ hiện khi danh sách đã load xong (TLNV MOB_001 control #3) → phải render
+            // lại tabs khi cờ loading đổi, không chỉ khi tabs/selected đổi.
+            val showTabCount = !state.isLoading
+            val shouldUpdateTabs = latestTabs != state.tabs ||
+                    latestSelectedTabCode != state.selectedTabCode ||
+                    latestShowTabCount != showTabCount
             if (shouldUpdateTabs) {
                 latestTabs = state.tabs
                 latestSelectedTabCode = state.selectedTabCode
-                tabAdapter.submitTabs(state.tabs, state.selectedTabCode)
+                latestShowTabCount = showTabCount
+                tabAdapter.submitTabs(state.tabs, state.selectedTabCode, showTabCount)
             }
 
             val adapterItems = buildPromotionListItems(
@@ -163,22 +169,19 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
     }
 
     private fun showServiceSelector(voucher: MyVoucherListItem, services: List<ServiceSelectorUiItem>) {
-        if (childFragmentManager.findFragmentByTag(ServiceSelectorBottomSheet.TAG) != null) return
-        ServiceSelectorBottomSheet.newInstance(
-            services = services,
-            onServiceSelected = { service ->
-                // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
-                PromotionSDK.getCallback()?.onServiceSelected(
-                    PromotionServiceSelection(
-                        voucherId = voucher.voucherId,
-                        serviceCode = service.serviceCode,
-                        serviceName = service.serviceName,
-                        iconUrl = service.iconUrl,
-                    )
+        // `present` lo luôn: 1 dịch vụ → chọn thẳng không mở sheet, và toast xác nhận. Xem KDoc ở đó.
+        ServiceSelectorBottomSheet.present(this, services) { service ->
+            // Báo host (đối ứng iOS onServiceSelected) rồi vẫn để VM xử lý điều hướng nội bộ.
+            PromotionSDK.getCallback()?.onServiceSelected(
+                PromotionServiceSelection(
+                    voucherId = voucher.voucherId,
+                    serviceCode = service.serviceCode,
+                    serviceName = service.serviceName,
+                    iconUrl = service.iconUrl,
                 )
-                viewModel.handleAction(MyPromotionAction.ServiceSelected(voucher, service))
-            },
-        ).show(childFragmentManager, ServiceSelectorBottomSheet.TAG)
+            )
+            viewModel.handleAction(MyPromotionAction.ServiceSelected(voucher, service))
+        }
     }
 
     private fun openSearchMyPromotion() {

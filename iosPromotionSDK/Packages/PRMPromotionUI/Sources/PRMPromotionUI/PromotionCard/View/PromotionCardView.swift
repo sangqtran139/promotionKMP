@@ -216,10 +216,16 @@ public class PromotionCardView: PRMTapableView {
         }
 
         // Merchant: 1 dòng, neo GIỮA theo checkbox (radio), kết thúc trước checkbox 8px.
+        //
+        // **Ghim chiều cao đúng 1 dòng** dù text rỗng: `brand.name` có thể null (API vẫn trả vậy),
+        // label rỗng thì intrinsic height = 0 → cả chuỗi neo bên dưới tụt lên và card thấp hơn các
+        // card khác. Android không dính vì card có chiều cao cứng (`ctlTop` = 82sdp) — xem
+        // `prm_item_promotion.xml`. Ghim 1 dòng ở đây là cách tương đương mà vẫn co theo font.
         titleLabel.makeAnchor { make in
             make.leading(equalTo: self.leadingAnchor, constant: 124)
                 .trailing(equalTo: checkboxButton.leadingAnchor, constant: -8)
                 .centerY(equalTo: checkboxButton.centerYAnchor)
+                .height(equalTo: titleLabel.font.lineHeight.rounded(.up))
         }
 
         // Title (tên ưu đãi): 2 dòng, dưới merchant 4px.
@@ -308,7 +314,12 @@ public class PromotionCardView: PRMTapableView {
         actionButton.isHidden = (model.buttonTitle?.isEmpty ?? true)
         
         if let title = model.buttonTitle, !title.isEmpty {
-            actionButton.setImage(UIImage.sdk("prm_ic_right_arrow_16", in: .module), for: .normal)
+            // `.alwaysTemplate` để mũi tên ăn theo `tintColor` — không thì icon giữ màu gốc của
+            // asset trong khi chữ đã đổi màu theo theme (lệch nhau).
+            actionButton.setImage(
+                UIImage.sdk("prm_ic_right_arrow_16", in: .module)?.withRenderingMode(.alwaysTemplate),
+                for: .normal
+            )
             actionButton.semanticContentAttribute = .forceRightToLeft
             actionButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 2, bottom: 0, right: -2)
             actionButton.contentEdgeInsets = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 2)
@@ -323,9 +334,10 @@ public class PromotionCardView: PRMTapableView {
         stateContainerView.isHidden = (model.stateText?.isEmpty ?? true)
 
         // Theme: link (nút action) + badge trạng thái "đã dùng" (null-safe).
-        if let link = themeToken?.linkTextColor {
-            actionButton.setTitleColor(link, for: .normal)
-        }
+        // Màu áp cho **cả chữ và icon**: `tintColor` điều khiển ảnh template ở trên.
+        let actionColor = themeToken?.linkTextColor ?? Colors.tokenViettelPayRed100
+        actionButton.setTitleColor(actionColor, for: .normal)
+        actionButton.tintColor = actionColor
         stateLabel.textColor = themeToken?.usedBadgeTextColor ?? Colors.tokenDark60
         stateContainerView.backgroundColor = themeToken?.usedBadgeBackgroundColor ?? Colors.tokenDark05
         

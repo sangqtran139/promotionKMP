@@ -123,34 +123,43 @@ internal class MyPromotionAdapter(
                         highlightColor = highlightColor,
                     )
                 // Dòng ngày: store quyết định "sắp hết hạn" (expiringInDays, theo expireWarningDate của
-                // server) → hiện "HSD: Còn X ngày"; ngược lại hiện HSD thường. API không trả HSD → ẩn hẳn.
+                // server) → hiện "HSD còn X ngày" tô cam; ngược lại hiện HSD thường (màu mặc định).
+                // API không trả HSD (null/rỗng) → "HSD: Không hết hạn"; có HSD mà parse hỏng → ẩn hẳn
+                // (không dám khẳng định vô hạn). Màu phải set mọi nhánh vì ViewHolder bị tái sử dụng.
                 val displayDate = voucher.expirationDate.toVoucherDisplayDate()
                 val expiringInDays = voucher.expiringInDays
                 when {
                     expiringInDays != null -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenCarrotOrange100))
                     }
                     displayDate.isNotBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                    }
+                    voucher.expirationDate.isBlank() -> {
+                        tvEndDate.isVisible = true
+                        tvEndDate.text = ctx.getString(R.string.prm_expiry_never)
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
                     }
                     else -> tvEndDate.isVisible = false
                 }
 
                 ctlTop.alpha = if (canUse) 1f else 0.6f
                 txtExpired.isVisible = !canUse
-                // Nhãn trạng thái: ưu tiên server; không có thì dự phòng theo ĐÚNG trạng thái
-                // (đối ứng iOS `MyPromotionCellViewModel`). Trước đây mọi trạng thái đều rơi về
-                // "Đã dùng hết" nên voucher HẾT HẠN cũng hiện sai nghĩa.
-                txtExpired.text = voucher.displayStatusLabel.ifBlank {
-                    ctx.getString(
-                        when (voucher.status.displayState()) {
-                            VoucherDisplayState.USED -> R.string.prm_status_used
-                            VoucherDisplayState.EXPIRED -> R.string.prm_status_expired
-                            else -> R.string.prm_status_ineligible
-                        }
-                    )
+                // Nhãn trạng thái (đối ứng iOS `MyPromotionCellViewModel`):
+                // - HẾT HẠN / ĐÃ DÙNG: LUÔN dùng chuỗi của SDK. `displayStatusLabel` là
+                //   `metadata.disabledReason` thô của server — mã enum ("EXPIRED", "REDEEMED"),
+                //   không phải chuỗi hiển thị, ưu tiên nó thì tag lòi chữ tiếng Anh ra UI.
+                // - Còn lại: giữ nhãn server (lý do không đủ điều kiện, đã là câu đọc được).
+                txtExpired.text = when (voucher.status.displayState()) {
+                    VoucherDisplayState.USED -> ctx.getString(R.string.prm_status_used)
+                    VoucherDisplayState.EXPIRED -> ctx.getString(R.string.prm_status_expired)
+                    else -> voucher.displayStatusLabel.ifBlank {
+                        ctx.getString(R.string.prm_status_ineligible)
+                    }
                 }
                 lnDetail.isVisible = canUse
                 // NHÃN NÚT lấy từ server (vd AVAILABLE_TO_CLAIM → "Nhận"), dự phòng "Sử dụng" —

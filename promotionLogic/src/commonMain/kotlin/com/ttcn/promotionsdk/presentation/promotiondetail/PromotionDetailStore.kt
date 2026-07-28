@@ -6,6 +6,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
 import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
+import com.ttcn.promotionsdk.presentation.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -72,6 +73,14 @@ class PromotionDetailStore(
                         status = status,
                         actionVisible = usable,
                         actionEnabled = usable,
+                        // "HSD còn X ngày" (tô cam) — TLNV MOB_002 2.4 refer MOB_001 #4: màn Chi tiết
+                        // dùng ĐÚNG rule của màn danh sách. Ngưỡng lấy từ response detail nếu BE trả,
+                        // không thì giá trị gần nhất từ API danh sách.
+                        expiringInDays = ExpiryWarning.daysIfExpiringSoon(
+                            expirationDate = detail?.expirationDate,
+                            usable = usable,
+                            threshold = detail?.expireWarningDate ?: ExpiryWarning.lastKnownDays,
+                        ),
                         // Nhãn nút LUÔN lấy từ server (`displayStatusLabel`), kể cả khi usable —
                         // không tự quyết định chuỗi ở đây. Rỗng thì native mới dùng nhãn mặc định.
                         actionLabel = detail?.displayStatusLabel.orEmpty(),
@@ -93,7 +102,19 @@ data class PromotionDetailState(
     val status: VoucherStatus = VoucherStatus.UNKNOWN,
     val actionVisible: Boolean = true,
     val actionEnabled: Boolean = false,
+    /**
+     * Nhãn nút do server trả (`VoucherDetail.displayStatusLabel`).
+     *
+     * ⚠️ **Hai màn chi tiết hiện KHÔNG đọc field này** — chốt dùng chuỗi cứng "Sử dụng ngay"
+     * (`prm_use_now` / `PromotionUIStrings.useNow`) vì BE trả "Sử dụng" cho mọi voucher. Giữ lại để
+     * bật lại nhãn server không phải sửa store; card ở màn danh sách thì vẫn theo nhãn server.
+     */
     val actionLabel: String = "",
+    /**
+     * Số ngày còn lại khi voucher **sắp hết hạn**; null = không áp dụng. Native format
+     * "HSD còn X ngày" + tô cam — **cùng rule màn danh sách** (`MyPromotionVoucher.expiringInDays`).
+     */
+    val expiringInDays: Int? = null,
     val errorCode: String? = null,
 )
 

@@ -136,6 +136,16 @@ Toàn bộ hiển thị toast **gom sau một cờ**, mặc định **TẮT** �
 
 Đổi một bên thì đổi bên kia (giữ đối xứng).
 
+**Ngoại lệ duy nhất — PRM_MOB_021 (tính năng bị cờ chặn): LUÔN hiện, không qua cổng.** Các toast lỗi
+khác còn state thay thế (empty / shimmer / list cũ) nên tắt đi vẫn hiểu được; còn ở đây user bấm mà
+màn không mở, im lặng thì thành "app đơ". Ngoại lệ này gom đúng **một hàm mỗi nền tảng**, đừng rải
+`PRMToast.show` / `Toast.makeText` trực tiếp ở call site:
+
+| Nền tảng | Hàm bỏ qua cổng | Call site |
+|---|---|---|
+| Android | `PromotionToastGate.showFeatureDisabled(context)` | `PRMBaseFragment.openPromotionDetail`, `PromotionSDK.openMyPromotion`, `PromotionSDK.openPromotionDetail` |
+| iOS | `PromotionToast.showAlways(_:in:)` | `PRMBaseRouter.canOpenVoucherDetail()`, `PromotionSDKImpl.showFeatureDisabledToast(on:)` |
+
 ### Cả hai
 
 Tra message theo `errorCode`, **không** hiển thị thẳng `message` từ server nếu đã có bản dịch cục bộ.

@@ -70,6 +70,9 @@ public enum Colors {
     public static let tokenGold05 = UIColor(hex: "#FFFCF5")
     public static let tokenGold02 = UIColor(hex: "#FFFEFB")
     
+    // Carrot Orange — đối ứng token `tokenCarrotOrange100` bên Android (colors.xml).
+    public static let tokenCarrotOrange100 = UIColor(hex: "#F47527")
+
     // Dark
     public static let tokenDark100 = UIColor(hex: "#222222")
     public static let tokenDark80 = UIColor(hex: "#4E4E4E")

@@ -22,7 +22,10 @@ struct ServiceSelectorItem: Equatable {
 final class ServiceSelectorBottomSheet: UIViewController {
 
     // MARK: - Config
-    private static let gridSpanCount = 3
+    /// Số dịch vụ nhìn thấy cùng lúc trên 1 hàng; dư ra thì vuốt ngang (TLNV MOB_002 item #6).
+    private static let visibleItemCount = 3
+    /// Icon 48 + spacing 4 + tên 1 dòng (~32). Danh sách luôn **1 hàng** nên đây cũng là chiều cao lưới.
+    private static let itemHeight: CGFloat = 48 + 4 + 32
     private static let maxHeightRatio: CGFloat = 0.6
 
     private let services: [ServiceSelectorItem]
@@ -31,14 +34,19 @@ final class ServiceSelectorBottomSheet: UIViewController {
     // MARK: - UI
     private let dimView = UIView()
     private let cardView = UIView()
+    /// **Một hàng, vuốt ngang** — TLNV MOB_002 item #6: "Danh sách hiển thị trên 1 dòng, màn hình
+    /// hiển thị tối đa 3 dịch vụ, cho phép vuốt sang trái/phải để xem thêm".
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.minimumLineSpacing = 16
+        layout.scrollDirection = .horizontal
+        layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
         return UICollectionView(frame: .zero, collectionViewLayout: layout)
     }()
     private let emptyLabel = UILabel()
     private var cardBottomConstraint: NSLayoutConstraint?
+    /// Bề rộng đã dùng để tính size item lần gần nhất — xem `viewDidLayoutSubviews`.
+    private var lastLaidOutWidth: CGFloat = 0
 
     // MARK: - Init
     init(services: [ServiceSelectorItem], onServiceSelected: @escaping (ServiceSelectorItem) -> Void) {
@@ -51,11 +59,30 @@ final class ServiceSelectorBottomSheet: UIViewController {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    /// Present bottom sheet từ `presenter`.
+    /// Lối vào DUY NHẤT của bottom sheet — mọi màn (Ưu đãi của tôi, Tìm kiếm, Chi tiết) gọi qua đây
+    /// để hai luật sau không phải lặp lại ở từng màn:
+    ///
+    /// 1. **Đúng 1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control #5). 0 dịch vụ vẫn
+    ///    mở (sheet hiện "Không có dịch vụ thoả mãn") để user biết vì sao không đi tiếp được.
+    /// 2. **Toast xác nhận** khi đã chọn — tạm thời, để hai nền tảng cùng phản hồi giống nhau trong
+    ///    lúc chưa có đích điều hướng thật.
+    ///
+    /// Đối ứng `ServiceSelectorBottomSheet.present(host:services:onServiceSelected:)` bên Android.
     static func present(from presenter: UIViewController,
                         services: [ServiceSelectorItem],
                         onServiceSelected: @escaping (ServiceSelectorItem) -> Void) {
-        let sheet = ServiceSelectorBottomSheet(services: services, onServiceSelected: onServiceSelected)
+        let notify: (ServiceSelectorItem) -> Void = { [weak presenter] service in
+            let name = service.serviceName.isEmpty ? service.serviceCode : service.serviceName
+            if let view = presenter?.view {
+                PromotionToast.showAlways(PromotionUIStrings.serviceSelected(name), in: view)
+            }
+            onServiceSelected(service)
+        }
+        if services.count == 1, let only = services.first {
+            notify(only)
+            return
+        }
+        let sheet = ServiceSelectorBottomSheet(services: services, onServiceSelected: notify)
         presenter.present(sheet, animated: false)
     }
 
@@ -68,6 +95,15 @@ final class ServiceSelectorBottomSheet: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         animateIn()
+    }
+
+    /// `sizeForItemAt` chia theo `collectionView.bounds.width`, mà lần hỏi đầu tiên bounds có thể
+    /// còn 0 → item ra bề rộng rác và list "không cuộn được". Bounds đổi thì tính lại đúng một lần.
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        guard lastLaidOutWidth != collectionView.bounds.width else { return }
+        lastLaidOutWidth = collectionView.bounds.width
+        collectionView.collectionViewLayout.invalidateLayout()
     }
 
     // MARK: - Setup
@@ -182,11 +218,10 @@ final class ServiceSelectorBottomSheet: UIViewController {
             return headerHeight + 24 + 24 + 40 + safeBottom
         }
 
-        let columns = CGFloat(Self.gridSpanCount)
-        let rows = ceil(CGFloat(services.count) / columns)
-        let itemHeight: CGFloat = 48 + 4 + 32   // icon + spacing + 2 dòng tên (~32)
-        let gridHeight = rows * itemHeight + max(0, rows - 1) * 16 + 16 + 24  // line spacing + contentInset top/bottom
-        let raw = headerHeight + gridHeight + safeBottom
+        // Luôn **1 hàng** (vuốt ngang) nên chiều cao không phụ thuộc số dịch vụ; trần 60% giữ lại
+        // phòng máy nhỏ / font lớn.
+        let listHeight = Self.itemHeight + 16 + 24   // + contentInset top/bottom
+        let raw = headerHeight + listHeight + safeBottom
         return min(raw, screenHeight * Self.maxHeightRatio)
     }
 
@@ -232,9 +267,10 @@ extension ServiceSelectorBottomSheet: UICollectionViewDataSource, UICollectionVi
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
+        // Chia đúng 3 phần bề ngang → item thứ 4 trở đi nằm ngoài màn, vuốt ngang mới tới.
         let insets = collectionView.contentInset.left + collectionView.contentInset.right
-        let width = (collectionView.bounds.width - insets) / CGFloat(Self.gridSpanCount)
-        return CGSize(width: max(width, 1), height: 84)
+        let width = (collectionView.bounds.width - insets) / CGFloat(Self.visibleItemCount)
+        return CGSize(width: max(width, 1), height: Self.itemHeight)
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {

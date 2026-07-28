@@ -41,19 +41,24 @@ final class ChoosePromotionItemCell: UITableViewCell {
     func bindData(_ viewModel: MyPromotionCellViewModel) {
         self.viewModel = viewModel
         var dateString: String?
+        var dateColor: UIColor?
         // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
         // dùng chung Android (`ChooseOffer.expiringInDays`). Cell chỉ format; KHÔNG tự suy ngưỡng
-        // (trước đây hardcode 3 ngày nên lệch Android). Màu giữ mặc định, khớp Android.
+        // (trước đây hardcode 3 ngày nên lệch Android). Sắp hết hạn → tô cam, khớp Android.
         if let days = viewModel.expiringInDays {
             dateString = PromotionUIStrings.remainingDays(days)
+            dateColor = Colors.tokenCarrotOrange100
         } else if let date = viewModel.date {
             dateString = PromotionUIStrings.expiryDate(PRMPromotionDate.display(date))
+        } else if viewModel.neverExpires {
+            // API không trả HSD → "HSD: Không hết hạn" (đối ứng Android). Parse hỏng → vẫn giấu dòng.
+            dateString = PromotionUIStrings.expiryNever
         }
 
         let cardModel = PromotionCardModel(
             logoURLString: viewModel.imageURL,
             dateString: dateString,
-            dateColor: nil,
+            dateColor: dateColor,
             title: viewModel.title,
             highlightKeyword: viewModel.highlightKeyword,
             descriptionText: viewModel.description,

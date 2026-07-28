@@ -8,6 +8,7 @@ import com.ttcn.promotionsdk.core.data.remote.PromotionHttpClient
 import com.ttcn.promotionsdk.core.data.remote.PromotionRemoteDataSource
 import com.ttcn.promotionsdk.core.data.repository.PromotionRepositoryImpl
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDisplayState
 import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
@@ -96,6 +97,68 @@ class VoucherMappingBranchTest {
         assertEquals(VoucherStatus.UNKNOWN, VoucherStatus.from(d?.status))
         assertFalse(VoucherStatus.from(d?.status).displayState().isUsable)
         assertEquals("LY_DO_LA", d?.displayStatusLabel)
+    }
+
+    // ─── displayStatusLabel — text nút / nhãn trạng thái ──────────────────────
+
+    @Test
+    fun displayStatusLabel_prefersServerLabelOverDisabledReason() = runTest {
+        val json = """
+            {"status":200,"data":{"voucher":{"id":"c1","status":"ACTIVE","displayStatusLabel":"Sử dụng"},
+             "metadata":{"usable":"true","disabledReason":null}}}
+        """.trimIndent()
+        val d = GetCustomerVoucherDetailUseCase(repo(json)).invoke("v", null)
+        assertEquals("Sử dụng", d?.displayStatusLabel)
+    }
+
+    @Test
+    fun displayStatusLabel_fallsBackToDisabledReasonWhenServerLabelMissing() = runTest {
+        val d = GetCustomerVoucherDetailUseCase(repo(detailJson("""{"usable":"false","disabledReason":"EXPIRED"}""")))
+            .invoke("v", null)
+        // Không có nhãn server → giữ mã lý do (native tự quyết hiện chuỗi nào).
+        assertEquals("EXPIRED", d?.displayStatusLabel)
+    }
+
+    // ─── applicableProducts — nguồn lọc bottom sheet "Chọn dịch vụ" ───────────
+    //
+    // Field này từng KHÔNG được khai trong DTO: `ignoreUnknownKeys` nuốt im lặng, mapper trả
+    // `emptyList()` → sheet luôn rỗng dù host khai đủ `availableServices`. Hai test dưới khoá lại.
+
+    @Test
+    fun detail_applicableProducts_parsedFromItemLevel() = runTest {
+        val json = """
+            {"status":200,"data":{"voucher":{"id":"c1"},
+             "applicableProducts":[
+               {"productId":"p-11","sku":"SKU-VM-BHOTO-2C","name":"BH 2 chiều","type":"INCLUDED","itemType":"SKU"},
+               {"sku":"SKU-KHONG-ID","name":"Thiếu productId","type":"INCLUDED"}
+             ]}}
+        """.trimIndent()
+        val d = GetCustomerVoucherDetailUseCase(repo(json)).invoke("v", null)
+        // Phần tử thiếu `productId` bị loại — đó là khoá khớp `availableServices.serviceCode`.
+        assertEquals(listOf("p-11"), d?.applicableProducts?.map { it.productId })
+        assertEquals("SKU-VM-BHOTO-2C", d?.applicableProducts?.first()?.sku)
+    }
+
+    @Test
+    fun detail_applicableProducts_fallsBackToVoucherLevel() = runTest {
+        val json = """
+            {"status":200,"data":{"voucher":{"id":"c1",
+              "applicableProducts":[{"productId":"p-13","name":"Combo đồ uống","type":"EXCLUDED"}]}}}
+        """.trimIndent()
+        val d = GetCustomerVoucherDetailUseCase(repo(json)).invoke("v", null)
+        assertEquals(listOf("p-13"), d?.applicableProducts?.map { it.productId })
+        // EXCLUDED vẫn giữ nguyên: cắt hay không là việc của tầng lọc, không phải mapper.
+        assertEquals("EXCLUDED", d?.applicableProducts?.first()?.type)
+    }
+
+    @Test
+    fun searchVouchers_applicableProductsParsed() = runTest {
+        val json = """
+            {"status":200,"data":{"content":[{"voucher":{"id":"v1"},
+              "applicableProducts":[{"productId":"p-3","sku":"SKU-VM-GC-V120","name":"V120","type":"INCLUDED"}]}]}}
+        """.trimIndent()
+        val r = SearchCustomerVouchersUseCase(repo(json)).invoke(SearchCustomerVouchersRequest())
+        assertEquals(listOf("p-3"), r?.content?.first()?.applicableProducts?.map { it.productId })
     }
 
     // ─── Danh sách voucher: tab default true/false ────────────────────────────

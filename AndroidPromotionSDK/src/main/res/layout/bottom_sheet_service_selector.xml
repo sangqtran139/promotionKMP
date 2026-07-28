@@ -35,7 +35,6 @@
         android:id="@+id/rvServices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false"
         android:paddingStart="@dimen/view_size_8"
         android:paddingTop="@dimen/view_size_16"
         android:paddingEnd="@dimen/view_size_8"

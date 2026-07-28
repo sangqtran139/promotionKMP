@@ -223,6 +223,7 @@ Mười type, thứ tự khai báo trong file đúng như bảng này:
 | `PromotionEligibleOffer` | `id` = `voucherId` nếu đã sở hữu, ngược lại `campaignId`; `usable = false` → hiển thị mờ |
 | `PromotionEligibleResult` | `myOffers`, `otherOffers`, `myIsLastPage`, `otherIsLastPage` |
 | `PromotionOrderItem` | `skuId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
+| `PromotionAvailableService` | `serviceCode`, `serviceName`, `serviceType`, `iconUrl`. ⚠️ `serviceCode` phải khớp **`applicableProducts.productId`** của voucher (không phải `sku`) thì dịch vụ mới hiện ở bottom sheet "Chọn dịch vụ"; danh sách bị lọc trùng theo `serviceCode` nên mỗi `productId` chỉ khai **một** dòng, kể cả khi nó gắn nhiều SKU |
 | `PromotionValidationResult` | `overallValid`, `totalDiscountAmount`, `finalAmount`, `items` |
 | `PromotionDiscountItem` | `objectId`, `discountAmount`, `isValid`, `eligibilityStatus` |
 | `PromotionRedemptionResult` | `sessionId`, `totalDiscount`, `finalAmount`, `validationErrors` |

@@ -7,6 +7,7 @@ import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleSection
 import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.core.util.daysUntil
+import com.ttcn.promotionsdk.presentation.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionTab
@@ -319,6 +320,8 @@ data class ChooseOffer(
 )
 
 internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
+    // Xem chú thích cùng nội dung ở `VoucherItem.toMyPromotionVoucher`.
+    ExpiryWarning.remember(expireWarningDate)
     val days = if (usable && expireWarningDate != null) {
         daysUntil(expireDate)?.takeIf { it in 0..expireWarningDate }
     } else null

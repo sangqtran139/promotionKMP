@@ -89,7 +89,7 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 |---|---|---|---|
 | Còn dùng được | `ChooseOffer.isUsable` → `MyVoucherListItem.isEnabled` | mờ card + dải "Chưa đủ điều kiện áp dụng" + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText` |
 | Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
-| Sắp hết hạn | `ChooseOffer.expiringInDays` (theo `expireWarningDate` của server) | "HSD: Còn X ngày", dự phòng "HSD: dd/MM/yyyy" | như trên |
+| Sắp hết hạn | `ChooseOffer.expiringInDays` (theo `expireWarningDate` của server) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
 
 - **Không dùng `status` để suy trạng thái ở màn này**: `EligibleOffer.toMyVoucherListItem()` chỉ sinh

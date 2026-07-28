@@ -36,6 +36,43 @@ data class VoucherInfoDto(
     /** Số ngày hiệu lực của mã (bản chuỗi của `expiredTimeNumber`). */
     @SerialName("expiredTime") val expiredTime: String? = null,
     @SerialName("unlimitedQty") val unlimitedQty: Boolean? = null,
+    /**
+     * Trạng thái thô do server trả (`ACTIVE`, …) — **hiện chưa dùng**: `status` của domain vẫn suy từ
+     * `metadata.usable`/`disabledReason` ([toStatusRaw]). Khai ở đây để thấy payload có gì; đổi nguồn
+     * suy trạng thái là đụng rule fail-closed nên phải quyết riêng.
+     */
+    @SerialName("status") val status: String? = null,
+    /**
+     * **Nhãn hiển thị do server quyết định** ("Sử dụng", …) — nguồn chính của text nút và nhãn trạng
+     * thái ở màn "Ưu đãi của tôi" / "Chi tiết ưu đãi". Khác hẳn `metadata.disabledReason` (mã enum,
+     * chỉ có khi `usable="false"`) mà mapper từng dùng nhầm làm nhãn.
+     */
+    @SerialName("displayStatusLabel") val displayStatusLabel: String? = null,
+    /**
+     * Dự phòng vị trí: một số response lồng `applicableProducts` **trong** object `voucher` thay vì
+     * để ngang hàng ([CustomerVoucherDetail] / [VoucherListItem]). Mapper lấy bên nào có dữ liệu.
+     */
+    @SerialName("applicableProducts") val applicableProducts: List<ApplicableProductDto> = emptyList(),
+)
+
+/**
+ * Sản phẩm/SKU mà voucher áp dụng (Detail §6.2 / Search §6.4).
+ *
+ * `productId` là **khoá khớp** với `PromotionAvailableService.serviceCode` do host khai — xem
+ * `servicesForApplicableProducts`. Nhiều SKU có thể chung một `productId`.
+ */
+@Serializable
+data class ApplicableProductDto(
+    @SerialName("productId") val productId: String? = null,
+    @SerialName("skuSourceId") val skuSourceId: String? = null,
+    @SerialName("productSourceId") val productSourceId: String? = null,
+    @SerialName("sku") val sku: String? = null,
+    @SerialName("name") val name: String? = null,
+    @SerialName("image") val image: String? = null,
+    /** `INCLUDED` (áp dụng) / `EXCLUDED` (loại trừ). */
+    @SerialName("type") val type: String? = null,
+    /** `SKU` / `PRODUCT`. */
+    @SerialName("itemType") val itemType: String? = null,
 )
 
 @Serializable

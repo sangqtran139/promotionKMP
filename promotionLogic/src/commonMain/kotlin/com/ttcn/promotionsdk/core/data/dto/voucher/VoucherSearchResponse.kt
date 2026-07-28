@@ -76,4 +76,6 @@ data class VoucherListItem(
     /** `1` = voucher thuộc sở hữu của chính khách. API này luôn `1`. */
     @SerialName("isYourself") val isYourself: Int? = null,
     @SerialName("metadata") val metadata: VoucherMetadataDto? = null,
+    /** Sản phẩm/SKU voucher áp dụng — nguồn của bottom sheet "Chọn dịch vụ". */
+    @SerialName("applicableProducts") val applicableProducts: List<ApplicableProductDto> = emptyList(),
 )

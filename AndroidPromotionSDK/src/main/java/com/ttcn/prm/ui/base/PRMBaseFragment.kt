@@ -15,6 +15,7 @@ import androidx.viewbinding.ViewBinding
 import com.ttcn.prm.R
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailEntry
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -92,17 +93,23 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
 
     /**
      * Mở màn "Chi tiết ưu đãi", gác bởi cờ `VOUCHER_DETAIL`.
-     * Cờ TẮT → thông báo PRM_MOB_021 và không điều hướng.
+     * Cờ TẮT → thông báo PRM_MOB_021 và không điều hướng. Toast này đi thẳng
+     * [PromotionToastGate.showFeatureDisabled] nên **luôn hiện**, kể cả khi cổng toast chung đang TẮT.
      *
      * Song sinh của `BaseRouter.canRouteToDetail()` bên iOS: gom về base để cả ba màn gọi
      * (Ưu đãi của tôi, Tìm kiếm, Chọn ưu đãi) không thể quên gác.
      */
-    protected fun openPromotionDetail(voucherId: String) {
+    // `internal` chứ không `protected`: [PromotionDetailEntry] là internal, Kotlin không cho hàm
+    // protected phơi kiểu internal. Mọi màn gọi hàm này đều nằm trong module SDK.
+    internal fun openPromotionDetail(
+        voucherId: String,
+        entry: PromotionDetailEntry = PromotionDetailEntry.MY_PROMOTION,
+    ) {
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            showToast(getString(R.string.prm_feature_disabled))
+            PromotionToastGate.showFeatureDisabled(requireContext())
             return
         }
-        addFragment(PromotionDetailFragment.newInstance(voucherId))
+        addFragment(PromotionDetailFragment.newInstance(voucherId, entry))
     }
 
     protected fun addFragment(
