@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 #
-# Build PRM.xcframework (device + simulator slices).
+# Build Promotion.xcframework (device + simulator slices).
+#
+# Tên "vỏ" xcframework là Promotion.xcframework, nhưng framework BÊN TRONG vẫn là PRM.framework
+# (PRODUCT_NAME=PRM) → host `import PRM`. Xcframework chỉ là gói chứa, tên khác framework là hợp lệ.
 #
 # Usage:
 #   ./scripts/build-xcframework.sh [output_dir]
 #   SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh [output_dir]
 #
-# Output: <output_dir>/PRM.xcframework      (default output_dir = ./build)
-#         <output_dir>/PRM.xcframework.zip  (gói phát hành — tên cố định, mang đi tích hợp luôn)
+# Output: <output_dir>/Promotion.xcframework      (default output_dir = ./build)
+#         <output_dir>/Promotion.xcframework.zip  (gói phát hành — tên cố định, mang đi tích hợp luôn)
 #
 # Trước khi chạy, phải có Frameworks/PromotionLogic.xcframework — sinh từ Gradle:
 #   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
@@ -20,7 +23,7 @@ PROJECT="$ROOT/PRM.xcodeproj"
 SCHEME="PRM"
 FRAMEWORK="PRM.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
 BUILD_DIR="${1:-$ROOT/build}"
-OUT="$BUILD_DIR/PRM.xcframework"
+OUT="$BUILD_DIR/Promotion.xcframework"
 
 # Version của SDK — đối xứng property `SDK_VERSION` bên Android (AndroidPromotionSDK/build.gradle.kts),
 # cùng mặc định "1.0.0". Truyền qua biến môi trường: `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh`.
@@ -45,7 +48,7 @@ mkdir -p "$BUILD_DIR"
 # `-debug-symbols` của create-xcframework CHỈ nhận đường dẫn tuyệt đối. Tham số $1 có thể là
 # đường dẫn tương đối, nên chuẩn hoá ngay ở đây thay vì nhớ ra lúc lệnh đã fail.
 BUILD_DIR="$(cd "$BUILD_DIR" && pwd)"
-OUT="$BUILD_DIR/PRM.xcframework"
+OUT="$BUILD_DIR/Promotion.xcframework"
 
 archive() {
   local destination="$1" archive_path="$2"
@@ -90,10 +93,10 @@ cp -R "$BUILD_DIR/dev.xcarchive/dSYMs/$FRAMEWORK.dSYM" "$BUILD_DIR/"
 echo "▶︎ Xoá *.abi.json (chỉ dùng cho công cụ so ABI, host không cần)"
 find "$OUT" -name "*.abi.json" -delete
 
-# Gói phát hành: TÊN CỐ ĐỊNH `PRM.xcframework.zip` (không kèm version) để mang đi tích hợp ngay —
+# Gói phát hành: TÊN CỐ ĐỊNH `Promotion.xcframework.zip` (không kèm version) để mang đi tích hợp ngay —
 # version nằm trong Info.plist của framework (MARKETING_VERSION ở trên), không cần lộ ra tên file.
 # `ditto` giữ đúng symlink của framework (zip thường làm hỏng), là cách chuẩn để nén xcframework.
-ZIP="$BUILD_DIR/PRM.xcframework.zip"
+ZIP="$BUILD_DIR/Promotion.xcframework.zip"
 echo "▶︎ Đóng gói $ZIP"
 rm -f "$ZIP"
 ditto -c -k --sequesterRsrc --keepParent "$OUT" "$ZIP"

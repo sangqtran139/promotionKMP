@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AA00000000000000000000F2 /* Promotion.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1 /* Promotion.xcframework */; };
+		AA00000000000000000000F3 /* Promotion.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1 /* Promotion.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		554C61F42FB437570091059A /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -13,6 +18,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				AA00000000000000000000F3 /* Promotion.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -21,6 +27,7 @@
 
 /* Begin PBXFileReference section */
 		55D4D5852F8C96950042667F /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA00000000000000000000F1 /* Promotion.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Promotion.xcframework; path = "../iosPromotionSDK/build/Promotion.xcframework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -49,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA00000000000000000000F2 /* Promotion.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,6 +66,7 @@
 		55B9CE9C2F8C979D00184BBF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AA00000000000000000000F1 /* Promotion.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -176,6 +185,10 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.3;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../iosPromotionSDK/build",
+				);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -209,6 +222,10 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.3;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/../iosPromotionSDK/build",
+				);
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

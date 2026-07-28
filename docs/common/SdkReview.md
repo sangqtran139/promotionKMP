@@ -20,7 +20,7 @@
 ngoài không, có ảnh hưởng lúc tích hợp host app không?
 
 **Kết luận: KHÔNG public.** Chúng là **dependency nội bộ**, được **ẩn** khỏi module interface và **link tĩnh**
-vào **một** framework `PRM.xcframework`. Host tích hợp chỉ cần thêm **1 xcframework** và
+vào **một** framework `Promotion.xcframework`. Host tích hợp chỉ cần thêm **1 xcframework** và
 `import PRM` — không thấy, không cần khai báo package con nào.
 
 **Dẫn chứng:**
@@ -112,7 +112,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ┌───────────────────────── Host app (Android / iOS) ─────────────────────────┐
 │  chỉ chạm: PromotionSDK(.initialize/open*/makeEndowView/api) + DTO public   │
 └─────────────────────────────────────────────────────────────────────────────┘
-   │ Android: Maven com.ttcn.promotion:promotionSDK      │ iOS: PRM.xcframework
+   │ Android: Maven com.ttcn.promotion:promotionSDK      │ iOS: Promotion.xcframework
    ▼                                                     ▼
 ┌──────────── AndroidPromotionSDK ───────────┐  ┌──────── iosPromotionSDK/PromotionSDKUI ────────┐
 │ entry PromotionSDK · Fragment/View         │  │ entry PromotionSDK · PromotionSDKImpl · VC     │
@@ -147,7 +147,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ### 4.4 Đóng gói
 - **Android:** 2 artifact Maven — `com.ttcn.promotion:promotionLogic` (KMP AAR) + `com.ttcn.promotion:promotionSDK`
   (UI). Host khai toạ độ `promotionSDK` (kéo theo `promotionLogic`).
-- **iOS:** 1 `PRM.xcframework` (link tĩnh `PromotionLogic.xcframework` + 4 package `PRM*`). Build:
+- **iOS:** 1 `Promotion.xcframework` (link tĩnh `PromotionLogic.xcframework` + 4 package `PRM*`). Build:
   `scripts/build-ios.sh` (gradle dựng `PromotionLogic.xcframework` → archive Swift → xcframework).
 
 ---
@@ -168,7 +168,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ```
 Host Android khai `implementation("com.ttcn.promotion:promotionSDK:<SDK_VERSION>")`.
 
-**Phát hành iOS:** dựng lại `PRM.xcframework` (`./scripts/build-ios.sh --skip-app`) rồi giao cho host
+**Phát hành iOS:** dựng lại `Promotion.xcframework` (`./scripts/build-ios.sh --skip-app`) rồi giao cho host
 (không qua Maven — xem [docs/ios/Distribution.md](../ios/Distribution.md)).
 
 **Câu hỏi phụ:**

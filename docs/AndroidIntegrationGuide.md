@@ -378,7 +378,7 @@ logout                   → PromotionSDK.release()
 
 | Điểm | Android | iOS |
 |---|---|---|
-| Phân phối | AAR qua Maven | dynamic `PRM.xcframework` |
+| Phân phối | AAR qua Maven | dynamic `Promotion.xcframework` |
 | `initialize` | cần `context` | không cần |
 | Headless async | `suspend` + `PromotionApiResult` (sealed) | closure + `Result` |
 | Widget checkout | `PRMEndowView` (View trong layout) + `PromotionIntegrateManager` | `createEndowView(from:)` factory |

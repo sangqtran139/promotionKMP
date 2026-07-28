@@ -212,7 +212,7 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 Đã **xoá** khỏi bản KMP: `PromotionLogic` (Swift), `Repository`, `CoreNetwork`, `CoreDatabase` —
 kéo theo Realm, Alamofire, SwiftyJSON, KeychainSwift. Và nay **cả RxSwift cũng đã bị gỡ**:
 tầng UI dùng Combine + async/await (thành phần của iOS 13+). → **Không còn dependency ngoài nào** —
-mọi thứ trong `PRM.xcframework` là code của SDK + hệ điều hành.
+mọi thứ trong `Promotion.xcframework` là code của SDK + hệ điều hành.
 
 Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dưới.
 
@@ -269,7 +269,7 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 
 > **Ràng buộc, đã kiểm chứng bằng compiler.** Kể cả khi muốn phơi ra, type Kotlin không thể xuất hiện
 > trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PRMKotlinBridge`.
-> App host chỉ có `PRM.xcframework`, không có module đó, nên build hỏng ngay:
+> App host chỉ có `Promotion.xcframework`, không có module đó, nên build hỏng ngay:
 >
 > ```
 > error: Unable to find module dependency: 'PRMKotlinBridge'

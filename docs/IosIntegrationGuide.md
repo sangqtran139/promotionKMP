@@ -8,7 +8,7 @@
 
 ## 0. TL;DR
 
-- Kéo **một** file `PRM.xcframework` vào project, đặt **Embed & Sign**. Xong. Không CocoaPods,
+- Kéo **một** file `Promotion.xcframework` vào project, đặt **Embed & Sign**. Xong. Không CocoaPods,
   không SPM, không cài Kotlin/RxSwift.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
@@ -19,7 +19,7 @@
 
 ## 1. SDK đóng gói thế nào (vì sao host "sạch")
 
-SDK ship dạng **một dynamic framework** đóng trong `PRM.xcframework` (binary là Mach-O
+SDK ship dạng **một dynamic framework** đóng trong `Promotion.xcframework` (binary là Mach-O
 `DYLIB`). Kotlin (`PromotionLogic`), RxSwift, và các module UI nội bộ (`PRMPromotionUI`, `PRMDesignKit`,
 `PRMKotlinBridge`, `PRMFoundation`) đều được **link tĩnh vào bên trong** framework động này và **giấu** sau
 `@_implementationOnly`. Bằng chứng: file `.swiftinterface` công khai của framework **chỉ** import
@@ -41,7 +41,7 @@ Hệ quả cho host:
 
 | Mục | Giá trị |
 |---|---|
-| Artifact | `PRM.xcframework` (một file duy nhất) |
+| Artifact | `Promotion.xcframework` (một file duy nhất) |
 | Module import | `import PRM` |
 | iOS tối thiểu | **iOS 13.0** |
 | Slice | `ios-arm64` (thiết bị) + `ios-arm64_x86_64-simulator` (simulator) |
@@ -50,7 +50,7 @@ Hệ quả cho host:
 | Version | `SDK_VERSION` (mặc định `1.0.0`) → stamp vào `MARKETING_VERSION` = `CFBundleShortVersionString` trong Info.plist của framework |
 
 > **Gói phát hành & version.** `iosPromotionSDK/scripts/build-xcframework.sh` xuất ra thư mục `build/`:
-> `PRM.xcframework` + `PRM.xcframework.zip` (tên **cố định**, mang đi tích hợp luôn). Đánh version bằng
+> `Promotion.xcframework` + `Promotion.xcframework.zip` (tên **cố định**, mang đi tích hợp luôn). Đánh version bằng
 > `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh` — version nằm trong Info.plist (host đọc lại lúc
 > runtime qua `Bundle`), không lộ ra tên file. Đối xứng property `SDK_VERSION` bên Android (ở đó version
 > nằm trong toạ độ Maven `com.ttcn.promotion:promotionSDK:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
@@ -61,9 +61,9 @@ Hệ quả cho host:
 
 ### 3.1. Kéo tay (Xcode)
 
-1. Kéo `PRM.xcframework` vào project navigator.
+1. Kéo `Promotion.xcframework` vào project navigator.
 2. Chọn target host → tab **General** → **Frameworks, Libraries, and Embedded Content**.
-3. Đặt `PRM.xcframework` = **Embed & Sign**.
+3. Đặt `Promotion.xcframework` = **Embed & Sign**.
    > Bắt buộc "Embed" vì đây là **dynamic framework**: dylib phải được copy vào `.app/Frameworks` thì mới
    > load được lúc runtime. Ngoài ra framework còn kèm resource bundle (`PRMDesignKit`, `PRMPromotionUI`,
    > `PRMFoundation`) và các `.nib`. Để "Do Not Embed" → crash `dyld: Library not loaded` khi mở app.

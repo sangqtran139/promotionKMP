@@ -1,6 +1,6 @@
 # Distribution (iOS) — XCFramework
 
-**Không đi qua Maven.** Host iOS nhận thẳng **một** `PRM.xcframework`; kênh phát hành là
+**Không đi qua Maven.** Host iOS nhận thẳng **một** `Promotion.xcframework`; kênh phát hành là
 xcframework rời (SPM/CocoaPods đóng gói quanh nó). Hai nền tảng có hai kênh phát hành khác nhau — bình
 thường, không phải thiếu sót.
 
@@ -10,7 +10,7 @@ Một lệnh, đối xứng với Android:
 
 ```bash
 ./scripts/build-ios.sh              # dựng XCFramework → build app demo (simulator)
-./scripts/build-ios.sh --skip-app   # chỉ dựng PRM.xcframework
+./scripts/build-ios.sh --skip-app   # chỉ dựng Promotion.xcframework
 ./scripts/build-ios.sh --run        # build xong cài + mở trên simulator
 ```
 
@@ -18,7 +18,7 @@ Chuỗi phụ thuộc mà script ép đúng thứ tự:
 
 ```
 :promotionLogic (Kotlin) ──gradle──▶ PromotionLogic.xcframework   (lõi, static)
-             └─ link tĩnh vào ─────▶ PRM.xcframework   (UI, Swift)
+             └─ link tĩnh vào ─────▶ Promotion.xcframework   (UI, Swift)
                                               └─ iosApp link + embed
 ```
 
@@ -39,7 +39,7 @@ Nó nhồi vào `MARKETING_VERSION` khi `xcodebuild archive` → thành `CFBundl
 `Info.plist` của `PRM.framework` (host đọc lại lúc runtime qua `Bundle`). Không truyền thì lấy mặc
 định trong pbxproj (`MARKETING_VERSION = 1.0.0`).
 
-Mỗi lần build, script tự đóng gói `build/PRM.xcframework.zip` (**tên cố định**, không kèm version —
+Mỗi lần build, script tự đóng gói `build/Promotion.xcframework.zip` (**tên cố định**, không kèm version —
 mang đi tích hợp ngay; version đã nằm trong Info.plist). Khác Android đặt version vào tên file
 (`AndroidPromotionSDK-<version>.aar`): iOS tích hợp theo tên framework cố định nên giữ tên zip ổn định.
 
@@ -62,7 +62,7 @@ chỉ trần — kể cả phần Kotlin.
 
 ```
 iosPromotionSDK/build/
-├── PRM.xcframework          ← giao cho host
+├── Promotion.xcframework          ← giao cho host
 └── PromotionSDKUI.framework.dSYM       ← GIỮ LẠI, đừng để rơi
 ```
 
@@ -79,7 +79,7 @@ Kiểm tra dSYM đúng với binary đang phát hành (hai UUID phải trùng):
 
 ```bash
 dwarfdump --uuid iosPromotionSDK/build/PromotionSDKUI.framework.dSYM/Contents/Resources/DWARF/PromotionSDKUI
-dwarfdump --uuid iosPromotionSDK/build/PRM.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
+dwarfdump --uuid iosPromotionSDK/build/Promotion.xcframework/ios-arm64/PromotionSDKUI.framework/PromotionSDKUI
 ```
 
 ## 2. Slice — host không phải khai gì
@@ -103,7 +103,7 @@ simulator là ăn lỗi link *"building for iOS Simulator, but linking in object
 
 ## 3. Đóng gói: host **không phải cài thêm gì** — cơ chế và ràng buộc
 
-Bất biến của SDK iOS: host kéo **đúng một** `PRM.xcframework`, `import PRM`,
+Bất biến của SDK iOS: host kéo **đúng một** `Promotion.xcframework`, `import PRM`,
 xong. Không khai RxSwift, không thêm SPM package, không chép resource bundle. Ba cơ chế giữ bất biến
 này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
