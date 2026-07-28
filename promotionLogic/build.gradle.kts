@@ -13,19 +13,16 @@ plugins {
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
 
-// Toạ độ Maven: `com.ttcn.promotion:promotion-logic:<SDK_VERSION>`.
+// Toạ độ Maven: `$SDK_GROUP:promotionLogic:<SDK_VERSION>` (cả hai từ gradle.properties).
 // KMP **tự sinh publication** cho mọi target khi có plugin maven-publish — không tạo tay
-// MavenPublication như bên :AndroidPromotionSDK. Xem docs/Distribution.md §3.3.
-group = "com.ttcn.promotion"
+// MavenPublication như bên :AndroidPromotionSDK. Xem docs/android/Distribution.md §3.3.
+group = sdkGroup
 version = sdkVersion
 
-publishing {
-    repositories {
-        // Bước 1: ~/.m2. Đổi sang Nexus/Artifactory khi luồng đã thông — Distribution.md §3.4.
-        mavenLocal()
-    }
-}
+// Repo đích (Artifactory) khai ở **build.gradle.kts gốc** cho cả hai module — Distribution.md §3.4.
+// `publishToMavenLocal` là task built-in, không cần khai `mavenLocal()` ở đây.
 
 // Chỉ phát hành **một** package Android: `com.ttcn.promotion:promotionLogic` = AAR của target
 // android. Không có module trung gian, và **không đổi tên** — artifactId giữ đúng tên module.

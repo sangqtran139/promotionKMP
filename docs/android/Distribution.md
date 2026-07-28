@@ -9,14 +9,16 @@ Tài liệu này: cách phát hành, cách host tích hợp, và — phần quan
 
 > Phát hành **iOS** (XCFramework) là kênh riêng — xem [../ios/Distribution.md](../ios/Distribution.md).
 
-**Trạng thái:** `:promotionLogic` và `:AndroidPromotionSDK` đã có `maven-publish`; `:androidApp` tiêu
-thụ SDK bằng toạ độ Maven từ `mavenLocal()`. Repo thật (Nexus/Artifactory) là bước còn lại — §3.4.
+**Trạng thái:** `:promotionLogic` và `:AndroidPromotionSDK` đã có `maven-publish`, publish được vào
+**cả hai** đích: `~/.m2` (vòng lặp dev) và **JFrog Artifactory** nội bộ (phát hành thật) — §3.4.
+`:androidApp` tiêu thụ SDK bằng toạ độ Maven, ưu tiên `~/.m2` rồi mới tới Artifactory.
 
 **Máy mới thì chạy một lệnh:**
 
 ```bash
 ./scripts/build-android.sh              # publish SDK vào ~/.m2 → build app demo
-./scripts/build-android.sh --skip-app   # chỉ publish SDK
+./scripts/build-android.sh --skip-app   # chỉ publish SDK vào ~/.m2
+./scripts/build-android.sh --remote     # publish LÊN Artifactory (phát hành)
 ./scripts/build-android.sh --help       # các tuỳ chọn: --clean, --install, --version
 ```
 
@@ -89,10 +91,22 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 
 | Module | groupId | artifactId | Đổi tên được? |
 |---|---|---|---|
-| `:promotionLogic` | `com.ttcn.promotion` | `promotionLogic` | **Không** — xem cảnh báo dưới |
-| `:AndroidPromotionSDK` | `com.ttcn.promotion` | `promotionSDK` | Được — host khai thẳng toạ độ này |
+| `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | **Không** — xem cảnh báo dưới |
+| `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotionSDK` | Được — host khai thẳng toạ độ này |
 
-`SDK_VERSION` đã có sẵn (property, mặc định `1.0.0`) — dùng lại làm `version`.
+Cả **groupId** và **version** đều là property trong `gradle.properties` — một nguồn cho bốn nơi đọc
+(hai module SDK, `settings.gradle.kts`, `:androidApp`):
+
+```properties
+SDK_GROUP=com.ttcn.promotion
+SDK_VERSION=1.0.0
+```
+
+Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=…`.
+
+> **Đổi `SDK_GROUP` là breaking.** Mọi host đang khai `com.ttcn.promotion:promotionSDK:x` sẽ nhận
+> `Could not find` — Gradle không có cơ chế "đổi tên có chuyển hướng" cho toạ độ Maven. Đổi thì phải
+> bump major, giữ bản group cũ trên Artifactory cho host chưa kịp chuyển, và báo đối tác.
 
 > **artifactId của lõi phải trùng tên module.** `:AndroidPromotionSDK` khai
 > `implementation(projects.promotionLogic)`, và Gradle ghi vào POM của nó toạ độ `group:<tên-module>`
@@ -113,8 +127,8 @@ plugins {
     id("maven-publish")
 }
 
-group = "com.ttcn.promotion"
-version = sdkVersion              // biến đã có trong file
+group = sdkGroup                  // SDK_GROUP, đọc từ gradle.properties
+version = sdkVersion              // SDK_VERSION
 
 android {
     publishing {
@@ -129,9 +143,8 @@ publishing {
             artifactId = "promotionSDK"        // đổi tên ở đây an toàn — §3.1
         }
     }
-    repositories {
-        mavenLocal()              // bước 1 — xem 3.4
-    }
+    // Không khai `repositories` ở đây: repo đích nằm ở build.gradle.kts gốc (§3.4), còn
+    // `publishToMavenLocal` là task built-in của maven-publish nên ~/.m2 không cần khai gì.
 }
 ```
 
@@ -147,7 +160,7 @@ plugins {
     `maven-publish`
 }
 
-group = "com.ttcn.promotion"
+group = sdkGroup
 version = sdkVersion
 
 afterEvaluate {
@@ -184,40 +197,95 @@ com/ttcn/promotion/
 > `afterEvaluate` không phải thừa: KMP đặt artifactId **sau** giai đoạn cấu hình, nên đụng vào
 > publication sớm hơn thì sửa hụt (đổi được bản android, bỏ sót iOS — không lỗi, không cảnh báo).
 
-### 3.4. Repo đích — đi hai bước
+### 3.4. Repo đích: `~/.m2` (dev) + JFrog Artifactory (phát hành)
 
-**Bước 1 — `mavenLocal()`** (`~/.m2/repository`). Không cần hạ tầng, không credentials:
+Hai đích, **không** loại trừ nhau — chọn theo việc đang làm:
 
-```bash
-./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
-```
+| Đích | Lệnh | Dùng khi |
+|---|---|---|
+| `~/.m2/repository` | `./scripts/build-android.sh` | Vòng lặp dev: sửa SDK → build app demo ngay |
+| Artifactory | `./scripts/build-android.sh --remote` | Phát hành cho host/đối tác |
 
-Đủ để chứng minh luồng chạy và để `androidApp` tiêu thụ như host thật.
-
-**Bước 2 — repo nội bộ** (Nexus/Artifactory/GitHub Packages) khi đã thông:
+`~/.m2` không cần khai gì trong script Gradle: `publishToMavenLocal` là task **built-in** của
+`maven-publish`. Repo Artifactory khai **một lần ở `build.gradle.kts` gốc** cho cả hai module —
+chúng publish vào cùng một nơi, tách ra hai chỗ chỉ tạo cơ hội lệch nhau:
 
 ```kotlin
-repositories {
-    maven {
-        url = uri(providers.gradleProperty("promotionRepoUrl").get())
-        credentials {
-            username = providers.gradleProperty("promotionRepoUser").get()
-            password = providers.gradleProperty("promotionRepoPassword").get()
+// build.gradle.kts (gốc)
+subprojects {
+    pluginManager.withPlugin("maven-publish") {
+        // Thiếu artifactoryUrl → không đăng ký repo. Máy dev chưa có credentials vẫn build được.
+        val baseUrl = artifactoryUrl.orNull?.trimEnd('/') ?: return@withPlugin
+        extensions.configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "artifactory"          // → task publish…ToArtifactoryRepository
+                    url = uri("$baseUrl/$artifactoryRepoKey")
+                    isAllowInsecureProtocol = baseUrl.startsWith("http://")
+                    credentials { username = …; password = … }
+                }
+            }
         }
     }
 }
 ```
 
-Credentials để ở `~/.gradle/gradle.properties` hoặc biến môi trường — **không** commit.
+**Cấu hình — để ở `~/.gradle/gradle.properties`, KHÔNG commit:**
+
+```properties
+artifactoryUrl=https://<host>/artifactory
+artifactoryUser=<user>
+artifactoryPassword=<identity token — đừng dùng mật khẩu đăng nhập>
+```
+
+Trên CI dùng biến môi trường thay thế: `ARTIFACTORY_URL` / `ARTIFACTORY_USER` /
+`ARTIFACTORY_PASSWORD` (property có độ ưu tiên cao hơn env).
+
+Bên Artifactory cần **hai** repo kiểu Maven (mặc định script trỏ tới tên chuẩn của JFrog, đổi được
+bằng `artifactoryReleasesRepo` / `artifactorySnapshotsRepo`):
+
+| Repo | Version rơi vào đây khi | Ghi chú |
+|---|---|---|
+| `libs-release-local` | `SDK_VERSION` **không** kết thúc bằng `-SNAPSHOT` | Bật **immutable/không cho ghi đè** — đẩy trùng version bị từ chối, đúng như mong muốn |
+| `libs-snapshot-local` | `SDK_VERSION` kết thúc bằng `-SNAPSHOT` | Cho ghi đè, dùng khi tích hợp thử với host |
+
+Việc chọn repo đọc thẳng `SDK_VERSION` chứ **không** dùng `project.version`: callback
+`pluginManager.withPlugin` chạy lúc module áp plugin, tức **trước** dòng `version = sdkVersion` trong
+script của module đó — lúc ấy `project.version` vẫn là `"unspecified"` và sẽ chọn nhầm repo release
+cho một bản snapshot.
+
+**Vài cái bẫy đã biết:**
+
+- **`http://`.** Gradle 7+ chặn repo http. Config trên tự bật `isAllowInsecureProtocol` **chỉ khi**
+  URL thật sự là http — Artifactory nội bộ hay rơi vào trường hợp này (như Bitbucket của team).
+- **URL kết thúc ở `/artifactory`**, không kèm tên repo — code tự nối `/<repo-key>`. Dán nhầm URL
+  đầy đủ từ UI của JFrog thì thành `…/artifactory/libs-release-local/libs-release-local`.
+- **401 mà credentials đúng**: Artifactory thường tắt basic auth bằng mật khẩu; phải dùng
+  **identity token** (User Profile → Generate Identity Token).
+- **SNAPSHOT bị cache 24 giờ** ở phía host. Ai tiêu thụ bản `-SNAPSHOT` phải thêm
+  `configurations.all { resolutionStrategy.cacheChangingModulesFor(0, "seconds") }`.
+- **Token nằm trong configuration cache.** Project bật `org.gradle.configuration-cache=true`, nên
+  giá trị credentials đọc lúc cấu hình được ghi vào `.gradle/configuration-cache/` trên máy. Thư mục
+  đó đã nằm trong `.gitignore` — nhưng đừng chép nguyên thư mục `.gradle` cho người khác, và trên
+  CI thì dùng token có hạn/thu hồi được.
 
 ### 3.5. `androidApp` sau khi đổi
 
 ```kotlin
-// settings.gradle.kts — mavenLocal CHỈ cho group của SDK. Thả rông thì nó tranh resolve với mọi
-// thư viện khác và cho ra build không tái lập được.
+// settings.gradle.kts — cả hai repo đều CHỈ mở cho group của SDK. Thả rông thì chúng tranh resolve
+// với mọi thư viện khác (repo nội bộ proxy thiếu một version androidx là build đứt).
 dependencyResolutionManagement {
     repositories {
-        mavenLocal { content { includeGroup("com.ttcn.promotion") } }
+        // ~/.m2 đứng TRƯỚC: sửa SDK → publishToMavenLocal → build app, không phải đợi đẩy lên server.
+        // Mặt trái: bản local cũ CHE bản trên Artifactory. Nghi ngờ thì xoá thư mục group trong ~/.m2.
+        mavenLocal { content { includeGroup(sdkGroup) } }
+        // Chỉ đăng ký khi có artifactoryUrl — thiếu thì im lặng bỏ qua, build vẫn chạy bằng ~/.m2.
+        maven {
+            name = "artifactory"
+            url = uri("$artifactoryUrl/$repoKey")
+            credentials { … }
+            content { includeGroup(sdkGroup) }
+        }
         google { … }
         mavenCentral()
     }
@@ -226,7 +294,7 @@ dependencyResolutionManagement {
 ```kotlin
 // androidApp/build.gradle.kts
 dependencies {
-    implementation("com.ttcn.promotion:promotionSDK:$sdkVersion")   // hết fileTree, 20 dòng còn 4
+    implementation("$sdkGroup:promotionSDK:$sdkVersion")   // hết fileTree, 20 dòng còn 4
 
     // androidx/material vẫn phải khai — xem §5.1, đây KHÔNG phải thừa:
     implementation(libs.androidx.appcompat)
@@ -318,8 +386,10 @@ kỹ thuật đã biết**, không phải trạng thái mong muốn.
   và chỉ tiêu thụ Maven khi **nghiệm thu**. Nếu dùng version `-SNAPSHOT`, nhớ
   `configurations.all { resolutionStrategy.cacheChangingModulesFor(0, "seconds") }` — mặc định Gradle
   cache SNAPSHOT **24 giờ**.
-- **Cần hạ tầng.** `mavenLocal()` chỉ là cái máy của bạn. Chia cho đối tác thì phải có Nexus/
-  Artifactory/GitHub Packages, kèm quản lý credentials và quyền đọc.
+- **Cần hạ tầng.** `mavenLocal()` chỉ là cái máy của bạn — chia cho đối tác thì phải qua
+  Artifactory (§3.4). Cấu hình Gradle đã xong, phần **còn lại là việc của hạ tầng**: tạo repo
+  release/snapshot, cấp identity token cho từng dev/CI, và mở **quyền đọc** cho tài khoản của đối
+  tác (họ cũng phải khai `artifactoryUrl` + credentials phía họ — repo nội bộ không ẩn danh được).
 - **Cần kỷ luật version.** Maven không nghĩ hộ: bump version, changelog, và **breaking API vẫn là
   breaking** (AI_AGENT_RULES điều 7 — đổi public API thì cập nhật [PublicApi.md](../common/PublicApi.md)).
 - **ProGuard/R8 không đổi.** `consumerProguardFiles("consumer-rules.pro")` đi kèm AAR ở **cả hai**

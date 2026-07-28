@@ -14,10 +14,11 @@ kotlin {
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
 
 // Toạ độ Maven. Cần `group` + `version` để Gradle dịch `projects.promotionLogic` bên dưới thành
-// toạ độ thật trong metadata — không có thì publish hỏng. Xem docs/Distribution.md.
-group = "com.ttcn.promotion"
+// toạ độ thật trong metadata — không có thì publish hỏng. Xem docs/android/Distribution.md.
+group = sdkGroup
 version = sdkVersion
 
 android {
@@ -64,7 +65,10 @@ base {
  * Đổi artifactId ở đây **an toàn** vì host khai thẳng toạ độ này. Ngược lại, artifactId của
  * `:promotionLogic` thì **không** được đổi — xem ghi chú trong `promotionLogic/build.gradle.kts`.
  *
- * Chạy: `./gradlew :AndroidPromotionSDK:publishToMavenLocal` (xem docs/Distribution.md §3.4).
+ * Chạy: `./gradlew :AndroidPromotionSDK:publishToMavenLocal` (xem docs/android/Distribution.md §3.4).
+ *
+ * Repo đích (Artifactory) khai ở **build.gradle.kts gốc** cho cả hai module. `publishToMavenLocal`
+ * là task built-in nên không cần khai `mavenLocal()` ở đây.
  */
 publishing {
     publications {
@@ -72,10 +76,6 @@ publishing {
             afterEvaluate { from(components["release"]) }
             artifactId = "promotionSDK"
         }
-    }
-    repositories {
-        // Bước 1: ~/.m2. Đổi sang Nexus/Artifactory khi luồng đã thông — Distribution.md §3.4.
-        mavenLocal()
     }
 }
 

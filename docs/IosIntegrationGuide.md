@@ -47,6 +47,13 @@ Hệ quả cho host:
 | Slice | `ios-arm64` (thiết bị) + `ios-arm64_x86_64-simulator` (simulator) |
 | UI | UIKit — API trả `UIViewController` / `UIView` |
 | Linking | **Dynamic framework** → bắt buộc **Embed & Sign** (dylib phải copy vào app bundle; deps Kotlin/RxSwift link tĩnh sẵn bên trong) |
+| Version | `SDK_VERSION` (mặc định `1.0.0`) → stamp vào `MARKETING_VERSION` = `CFBundleShortVersionString` trong Info.plist của framework |
+
+> **Gói phát hành & version.** `iosPromotionSDK/scripts/build-xcframework.sh` xuất ra thư mục `build/`:
+> `PRM.xcframework` + `PRM.xcframework.zip` (tên **cố định**, mang đi tích hợp luôn). Đánh version bằng
+> `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh` — version nằm trong Info.plist (host đọc lại lúc
+> runtime qua `Bundle`), không lộ ra tên file. Đối xứng property `SDK_VERSION` bên Android (ở đó version
+> nằm trong toạ độ Maven `com.ttcn.promotion:promotionSDK:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
 
 ---
 

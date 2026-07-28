@@ -48,19 +48,20 @@ android {
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
 
 dependencies {
     // ─── SDK: nạp từ Maven, đúng như app host của đối tác ────────────────────────────────
     // Artifact mang theo POM/metadata → Gradle tự kéo promotion-logic, Ktor, AppCompat, Glide…
     // đúng version SDK đã compile. Host **không** phải khai tay dependency nào của SDK.
     //
-    // Trước khi build app, phải có artifact trong ~/.m2:
+    // Trước khi build app, phải có artifact trong ~/.m2 (hoặc trên Artifactory):
     //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
     //
     // Sửa SDK xong mà quên publish thì app vẫn build với bản cũ — im lặng, y như "quên syncSdkAars"
     // ngày trước. Vòng lặp dev nhanh thì dùng `implementation(projects.androidPromotionUI)`;
-    // để nghiệm thu bộ artifact như host thật thì giữ dòng dưới. Xem docs/Distribution.md §5.
-    implementation("com.ttcn.promotion:promotionSDK:$sdkVersion")
+    // để nghiệm thu bộ artifact như host thật thì giữ dòng dưới. Xem docs/android/Distribution.md §5.
+    implementation("$sdkGroup:promotionSDK:$sdkVersion")
 
     // ─── androidx/material: HOST vẫn phải khai ───────────────────────────────────────────
     // Hai lý do khác nhau, đừng lẫn:

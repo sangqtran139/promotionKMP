@@ -2,12 +2,13 @@
 #
 # Build SDK Android + app demo trên một máy bất kỳ.
 #
-# Từ khi SDK phát hành qua Maven (docs/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR trong
-# libs/ nữa — nó khai toạ độ `com.ttcn.promotion:promotionSDK`. Nghĩa là **phải publish SDK trước**,
-# nếu không Gradle báo "Could not find com.ttcn.promotion:promotionSDK". Script này ép đúng thứ tự đó.
+# Từ khi SDK phát hành qua Maven (docs/android/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR
+# trong libs/ nữa — nó khai toạ độ `$SDK_GROUP:promotionSDK`. Nghĩa là **phải publish SDK trước**,
+# nếu không Gradle báo "Could not find …:promotionSDK". Script này ép đúng thứ tự đó.
 #
 #   ./scripts/build-android.sh                 # publish SDK → build app demo (APK debug)
 #   ./scripts/build-android.sh --skip-app      # chỉ publish SDK vào ~/.m2
+#   ./scripts/build-android.sh --remote        # publish LÊN Artifactory (không build app demo)
 #   ./scripts/build-android.sh --clean         # dọn build cũ rồi làm lại từ đầu
 #   ./scripts/build-android.sh --install       # build xong cài luôn vào máy/emulator đang cắm
 #   ./scripts/build-android.sh --run           # build → cài → MỞ app trên máy/emulator đang cắm
@@ -21,6 +22,7 @@ SKIP_APP=false
 DO_CLEAN=false
 DO_INSTALL=false
 DO_RUN=false
+DO_REMOTE=false
 SDK_VERSION=""
 
 APP_ID="com.ttcn.promotionsdk.app"
@@ -32,14 +34,19 @@ while [[ $# -gt 0 ]]; do
         --clean)    DO_CLEAN=true; shift ;;
         --install)  DO_INSTALL=true; shift ;;
         --run)      DO_RUN=true; shift ;;   # --run bao gồm cả --install
+        --remote)   DO_REMOTE=true; shift ;;
         --version)  SDK_VERSION="${2:-}"; shift 2 ;;
-        -h|--help)  sed -n '3,15p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)  sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)          echo "Tham số lạ: $1 (xem --help)" >&2; exit 1 ;;
     esac
 done
 
 # --run kéo theo --install (phải cài mới mở được).
 [[ "$DO_RUN" == true ]] && DO_INSTALL=true
+
+# --remote là thao tác PHÁT HÀNH, không phải vòng lặp dev: nó đẩy artifact lên Artifactory chứ không
+# bỏ gì vào ~/.m2, nên build app demo ngay sau đó sẽ kéo bản CŨ trong ~/.m2 và cho cảm giác sai.
+[[ "$DO_REMOTE" == true ]] && SKIP_APP=true
 
 # Tìm adb: PATH → ANDROID_HOME/ANDROID_SDK_ROOT → sdk.dir trong local.properties.
 resolve_adb() {
@@ -82,11 +89,46 @@ fi
 # Bước bắt buộc, và là bước dễ quên nhất: sửa SDK xong mà không publish thì app vẫn build với bản
 # cũ trong ~/.m2 — im lặng, không cảnh báo (docs/Distribution.md §5).
 
-echo "▸ Publish SDK vào ~/.m2 (promotionLogic + promotionUI)"
+# Toạ độ SDK lấy từ gradle.properties (nguồn tập trung), chỉ để in ra cho người dùng —
+# Gradle tự đọc lại các property này, không phụ thuộc hai dòng dưới.
+SDK_GROUP="$(grep -E '^SDK_GROUP=' gradle.properties | head -1 | cut -d= -f2-)"
+SDK_GROUP="${SDK_GROUP:-com.ttcn.promotion}"
+PUBLISHED_VERSION="$SDK_VERSION"
+if [[ -z "$PUBLISHED_VERSION" ]]; then
+    PUBLISHED_VERSION="$(grep -E '^SDK_VERSION=' gradle.properties | head -1 | cut -d= -f2-)"
+fi
+
+if [[ "$DO_REMOTE" == true ]]; then
+    # Cần artifactoryUrl + credentials ở ~/.gradle/gradle.properties hoặc env ARTIFACTORY_*
+    # (docs/android/Distribution.md §3.4). Thiếu URL thì repo "artifactory" không được đăng ký và
+    # Gradle báo "Task ... not found" — chặn sớm cho rõ nguyên nhân.
+    if [[ -z "${ARTIFACTORY_URL:-}" ]] && ! grep -qE '^\s*artifactoryUrl\s*=' "${GRADLE_USER_HOME:-$HOME/.gradle}/gradle.properties" 2>/dev/null; then
+        cat >&2 <<'MSG'
+Chưa cấu hình Artifactory.
+
+Thêm vào ~/.gradle/gradle.properties (KHÔNG commit):
+  artifactoryUrl=https://<host>/artifactory
+  artifactoryUser=<user>
+  artifactoryPassword=<identity token>
+
+Hoặc export ARTIFACTORY_URL / ARTIFACTORY_USER / ARTIFACTORY_PASSWORD.
+Chi tiết: docs/android/Distribution.md §3.4
+MSG
+        exit 1
+    fi
+
+    echo "▸ Publish SDK lên Artifactory (promotionLogic + promotionSDK)"
+    gradle :promotionLogic:publishAllPublicationsToArtifactoryRepository \
+           :AndroidPromotionSDK:publishAllPublicationsToArtifactoryRepository
+    echo "✓ Xong. Host khai: implementation(\"$SDK_GROUP:promotionSDK:$PUBLISHED_VERSION\")"
+    exit 0
+fi
+
+echo "▸ Publish SDK vào ~/.m2 (promotionLogic + promotionSDK)"
 gradle :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 
 if [[ "$SKIP_APP" == true ]]; then
-    echo "✓ Xong. SDK đã nằm trong ~/.m2/repository/com/ttcn/promotion/"
+    echo "✓ Xong. SDK đã nằm trong ~/.m2/repository/${SDK_GROUP//.//}/"
     exit 0
 fi
 

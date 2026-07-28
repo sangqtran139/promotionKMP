@@ -48,7 +48,7 @@ Hệ quả cho host:
 | minSdk | **24** |
 | Namespace SDK | `com.ttcn.promotionsdk` (dùng chung `R` / databinding) |
 | UI | XML View + View/DataBinding (**không** Compose) — trả `Fragment` / custom `View` |
-| Repo | `mavenLocal()` (đang dùng) hoặc Nexus/Artifactory nội bộ |
+| Repo | **JFrog Artifactory nội bộ** (cần tài khoản đọc); `mavenLocal()` khi dev trên máy team |
 
 ---
 
@@ -56,12 +56,27 @@ Hệ quả cho host:
 
 ### 3.1. Khai dependency (Gradle Kotlin DSL)
 
+SDK nằm trên **Artifactory nội bộ**, không phải Maven Central — host phải khai repo đó kèm tài
+khoản đọc (xin identity token của bên cấp SDK):
+
 ```kotlin
-// settings.gradle.kts hoặc build.gradle.kts (project)
-repositories {
-    mavenLocal()          // hoặc maven("https://nexus.noi-bo/...") — repo nội bộ
-    google()
-    mavenCentral()
+// settings.gradle.kts (host)
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url = uri("https://<artifactory-host>/artifactory/libs-release-local")
+            credentials {
+                // Để credentials ở ~/.gradle/gradle.properties — KHÔNG commit.
+                username = providers.gradleProperty("ttcnArtifactoryUser").orNull
+                password = providers.gradleProperty("ttcnArtifactoryToken").orNull
+            }
+            // Chỉ mở cho group của SDK: repo nội bộ không nên tranh resolve androidx/kotlin
+            // với google()/mavenCentral().
+            content { includeGroup("com.ttcn.promotion") }
+        }
+        google()
+        mavenCentral()
+    }
 }
 
 // build.gradle.kts (app module host)
@@ -72,7 +87,7 @@ dependencies {
 
 Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppCompat, Glide, Gson… đúng version SDK
 đã compile. **Không** cần khai tay từng lib. (Cách cũ dùng file-AAR thì host phải tự `implementation(libs.ktor…)`
-— đã bỏ; xem [`Distribution.md`](./Distribution.md) §2.)
+— đã bỏ; xem [`android/Distribution.md`](./android/Distribution.md) §2.)
 
 ### 3.2. Kiểm tra nhanh
 
@@ -112,7 +127,7 @@ Cần cấu hình sâu hơn (theme, ...) thì dùng overload nhận `PromotionSD
 
 ```kotlin
 PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
-    session = PromotionSessionConfig(user.id, auth.accessToken, baseUrl, environment = PromotionEnvironment.PROD),
+    session = PromotionSessionConfig(auth.accessToken, baseUrl, environment = PromotionEnvironment.PROD),
     availableServices = services, theme = myTheme, callback = myCallback,
 ))
 ```

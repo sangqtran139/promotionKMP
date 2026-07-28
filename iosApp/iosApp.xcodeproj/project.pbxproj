@@ -6,11 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		554C61F22FB437570091059A /* PRM.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PRM.xcframework */; };
-		554C61F32FB437570091059A /* PRM.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 55B9CE9D2F8C979D00184BBF /* PRM.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-/* End PBXBuildFile section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		554C61F42FB437570091059A /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -18,7 +13,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				554C61F32FB437570091059A /* PRM.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -26,12 +20,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		55B9CE9D2F8C979D00184BBF /* PRM.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = PRM.xcframework; path = ../iosPromotionSDK/build/PRM.xcframework; sourceTree = SOURCE_ROOT; };
 		55D4D5852F8C96950042667F /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		55D4D5972F8C96960042667F /* Exceptions for "iosApp" folder in "iosApp" target */ = {
+		55D4D5972F8C96960042667F /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -44,7 +37,7 @@
 		55D4D5872F8C96950042667F /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				55D4D5972F8C96960042667F /* Exceptions for "iosApp" folder in "iosApp" target */,
+				55D4D5972F8C96960042667F /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -56,7 +49,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				554C61F22FB437570091059A /* PRM.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,7 +58,6 @@
 		55B9CE9C2F8C979D00184BBF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				55B9CE9D2F8C979D00184BBF /* PRM.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

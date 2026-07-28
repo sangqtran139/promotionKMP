@@ -8,6 +8,17 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Changed — phát hành (Android)
+- Thêm đích publish **JFrog Artifactory** bên cạnh `~/.m2`: repo khai một lần ở `build.gradle.kts`
+  gốc cho cả `:promotionLogic` và `:AndroidPromotionSDK`, tự chọn repo release/snapshot theo hậu tố
+  `SDK_VERSION`. Chạy `./scripts/build-android.sh --remote`. Xem
+  [docs/android/Distribution.md](./docs/android/Distribution.md) §3.4.
+  - Cấu hình đặt ở `~/.gradle/gradle.properties` (`artifactoryUrl` / `artifactoryUser` /
+    `artifactoryPassword`) hoặc env `ARTIFACTORY_*` — thiếu thì repo không đăng ký, build vẫn chạy.
+  - `groupId` tách thành property tập trung `SDK_GROUP` trong `gradle.properties` (giá trị **không
+    đổi**: `com.ttcn.promotion`). Đổi giá trị này là breaking với host.
+  - Host giờ phải khai repo Artifactory + credentials — [AndroidIntegrationGuide](./docs/AndroidIntegrationGuide.md) §3.1.
+
 ### Removed — ⚠️ BREAKING (bề mặt public)
 - Bỏ hoàn toàn `customerId` khỏi SDK. Định danh khách BFF đã lấy từ JWT `sub`, không API nào
   còn gửi tham số này; consumer cuối cùng là feature flag (`userId` → Unleash) cũng đã gỡ.
