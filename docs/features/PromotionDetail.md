@@ -10,6 +10,9 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 > Màn chi tiết **chỉ hiển thị khi `getCustomerVoucherDetail` trả về**. Navigation chỉ mang `voucherId`;
 > dữ liệu từ màn danh sách (tên, logo, HSD, trạng thái) **không** được dùng để dựng card/nút — tránh
 > hai nguồn sự thật lệch nhau (list có thể cũ hơn detail).
+> Skeleton phải khớp từng con số với UI thật và khớp giữa 2 nền tảng — bảng số chuẩn ở
+> [android/UIGuide.md §12](../android/UIGuide.md).
+>
 > Trong lúc chờ: shimmer toàn màn (Android `showDetailLoading`, iOS `PromotionDetailShimmerView` +
 > `Display.empty`). Vì vậy `PromotionDetailStore` **không có** intent seed.
 

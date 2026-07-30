@@ -19,11 +19,19 @@
         android:layout_height="wrap_content"
         android:paddingVertical="@dimen/_6sdp">
 
-        <com.ttcn.prm.ui.widget.PRMCardView
+        <!--
+          Dùng ĐÚNG widget của card thật: `androidx.cardview.widget.CardView` + `cardElevation=0dp`.
+          Trước đây là `PRMCardView` — class đó kế thừa `PRMShadowView` và mặc định
+          `PRMShadowType.TokenShadowsCard` nên **có đổ bóng**, trong khi card thật phẳng
+          (`cardElevation="0dp"`) → skeleton nhìn nổi hơn card thật.
+        -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="@dimen/_82sdp"
             android:layout_marginHorizontal="@dimen/_15sdp"
-            app:prmCvCornerRadius="@dimen/_12sdp"
+            android:background="@color/white"
+            app:cardCornerRadius="@dimen/_12sdp"
+            app:cardElevation="0dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -46,8 +54,8 @@
 
                     <com.ttcn.prm.ui.widget.PRMCircleImageView
                         android:id="@+id/imgVoucher"
-                        android:layout_width="@dimen/_37sdp"
-                        android:layout_height="@dimen/_37sdp"
+                        android:layout_width="@dimen/view_size_48"
+                        android:layout_height="@dimen/view_size_48"
                         android:background="@drawable/prm_background_shimmer_circle"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -136,6 +144,6 @@
                         app:layout_constraintEnd_toEndOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </com.ttcn.prm.ui.widget.PRMCardView>
+        </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

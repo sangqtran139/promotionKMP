@@ -36,8 +36,8 @@
 
                     <io.github.florent37.shapeofview.shapes.CircleView
                         android:id="@+id/avatar_container"
-                        android:layout_width="@dimen/_37sdp"
-                        android:layout_height="@dimen/_37sdp"
+                        android:layout_width="@dimen/view_size_48"
+                        android:layout_height="@dimen/view_size_48"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -45,8 +45,8 @@
 
                         <com.ttcn.prm.ui.widget.PRMImageView
                             android:id="@+id/imgVoucher"
-                            android:layout_width="@dimen/_37sdp"
-                            android:layout_height="@dimen/_37sdp"
+                            android:layout_width="@dimen/view_size_48"
+                            android:layout_height="@dimen/view_size_48"
                             android:src="@drawable/prm_bg_image_placeholder" />
                     </io.github.florent37.shapeofview.shapes.CircleView>
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -123,13 +123,23 @@
                         style="@style/fontPRMRegular12"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/_3sdp"
                         android:layout_marginBottom="@dimen/_4sdp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:textColor="@color/tokenDark60"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/lnDetail"
+                        app:layout_constraintEnd_toStartOf="@id/brExpired"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/tvContent"
                         tools:text="HSD 18/10/2023" />
+
+                    <androidx.constraintlayout.widget.Barrier
+                        android:id="@+id/brExpired"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:barrierDirection="start"
+                        app:constraint_referenced_ids="txtExpired, lnDetail" />
 
                     <com.ttcn.prm.ui.widget.PRMTextView
                         android:id="@+id/txtExpired"

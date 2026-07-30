@@ -86,4 +86,12 @@
     <dimen name="dimen_56dp">56dp</dimen>
     <!-- TabLayout detail: layer-list line extends past tab bounds -->
     <dimen name="prm_detail_tab_underline_horizontal_inset">-5dp</dimen>
+
+    <!--
+      Chiều cao banner màn chi tiết — dp CỐ ĐỊNH để soi gương iOS (XIB `bannerImageView` = 173pt).
+      Trước đây dùng `@dimen/tokenSizing184` → `@dimen/_147sdp`, tức scale theo bề rộng màn hình:
+      147dp ở sw300, 176dp ở sw360, 191dp ở sw390, 294dp ở sw600 (tablet) — chỉ trùng 173 của iOS ở
+      đúng một cỡ máy, còn lại lệch, tablet lệch 70%. Ảnh 2 nền tảng phải cùng kích thước nên bỏ sdp.
+    -->
+    <dimen name="prm_detail_banner_height">173dp</dimen>
 </resources>

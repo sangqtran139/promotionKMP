@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bản tròn của `prm_bg_image_placeholder` — nền cho logo tròn khi chưa có ảnh.
+  Cùng màu `tokenDark10` (#E9E9E9) với bản chữ nhật và với iOS (`VoucherCardView.logoImageView`
+  backgroundColor = tokenDark10). Cố ý KHÔNG dùng lại `prm_background_shimmer_circle`: cái đó là màu
+  nền của hiệu ứng shimmer (đậm hơn, có animation phủ lên), không phải placeholder ảnh.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/tokenDark10" />
+</shape>

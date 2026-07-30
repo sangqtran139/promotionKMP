@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nền vùng ảnh khi chưa tải xong / tải lỗi. `tokenDark10` (#E9E9E9) để khớp iOS
+  `UIImageView.remotePlaceholderColor` — trước đây là `tokenDark20` (#D3D3D3), đậm hơn iOS một bậc
+  nên cùng một voucher thiếu ảnh mà hai nền tảng ra hai màu xám khác nhau.
+-->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/tokenDark20" />
+    <solid android:color="@color/tokenDark10" />
 </shape>

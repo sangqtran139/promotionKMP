@@ -95,13 +95,17 @@ public final class VoucherCardView: PRMBaseView {
         self.brandNameLabel = UILabel()
         self.brandNameLabel.font = Typography.fontRegular14
         self.brandNameLabel.textColor = Colors.tokenDark60
-        self.brandNameLabel.numberOfLines = 1
+        // Tên brand (`VoucherCardViewModel.title`): tối đa 2 dòng, dài quá → ba chấm.
+        // Trùng `txtVoucherName` bên Android (`maxLines=2` + `ellipsize=end`).
+        self.brandNameLabel.numberOfLines = 2
         self.brandNameLabel.lineBreakMode = .byTruncatingTail
 
         self.titleLabel = UILabel()
         self.titleLabel.font = Typography.fontBold16
         self.titleLabel.textColor = Colors.tokenDark100
-        self.titleLabel.numberOfLines = 2
+        // Tên ưu đãi (`VoucherCardViewModel.description`): tối đa 5 dòng, dài quá → ba chấm.
+        // Trùng `tvContent` bên Android (`maxLines=5` + `ellipsize=end`).
+        self.titleLabel.numberOfLines = 5
         self.titleLabel.lineBreakMode = .byTruncatingTail
 
         self.expiryLabel = UILabel()
@@ -134,7 +138,7 @@ public final class VoucherCardView: PRMBaseView {
                 .trailing(equalTo: self.trailingAnchor, constant: -16)
         }
         
-        // Title: cách header 8dp. Tối đa 2 dòng + ba chấm (cấu hình ở configLabels).
+        // Title: cách header 8dp. Tối đa 5 dòng + ba chấm (cấu hình ở configLabels).
         self.titleLabel.makeAnchor { maker in
             maker.top(equalTo: self.headerStack.bottomAnchor, constant: 8)
                 .leading(equalTo: self.leadingAnchor, constant: 16)

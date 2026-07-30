@@ -25,9 +25,15 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Hàng tab: bám đúng `rvTabs` của `fragment_my_promotion.xml` (marginTop 24, padding
-             ngang 10) để lúc tab thật hiện lên không bị dịch một nấc. Chip cao 34 = 12sp chữ +
-             padding 8/10 của `item_tag_my_promotion.xml`. -->
+        <!--
+          Hàng tab: bám đúng `rvTabs` của `fragment_my_promotion.xml` (marginTop 24, padding ngang 10)
+          để lúc tab thật hiện lên không bị dịch một nấc.
+
+          Chip giả dùng **đúng style + đúng padding + đúng textSize** của `tvTag`
+          (`item_tag_my_promotion.xml`) rồi cho chữ trong suốt → tự cao bằng chip thật ở MỌI cỡ máy.
+          Ghim cứng 34dp như trước chỉ đúng ở sw360: `lineHeight` của style là `_14sdp` nên chip thật
+          cao ~34dp ở sw360 nhưng ~36dp ở sw390 trở lên. Chỉ bề RỘNG là ước lệ (nhãn thật dài ngắn khác nhau).
+        -->
         <LinearLayout
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
@@ -36,22 +42,49 @@
           android:paddingStart="@dimen/view_size_10"
           android:paddingEnd="@dimen/view_size_10">
 
-          <View
+          <com.ttcn.prm.ui.widget.PRMTextView
+            style="@style/fontPRMSfDisplayRegular14"
             android:layout_width="@dimen/view_size_60"
-            android:layout_height="@dimen/view_size_34"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/view_size_8"
-            android:background="@drawable/prm_background_shimmer" />
+            android:background="@drawable/prm_background_shimmer"
+            android:maxLines="1"
+            android:paddingStart="@dimen/view_size_10"
+            android:paddingTop="@dimen/view_size_8"
+            android:paddingEnd="@dimen/view_size_10"
+            android:paddingBottom="@dimen/view_size_10"
+            android:text="@string/prm_promotion_example"
+            android:textColor="@android:color/transparent"
+            android:textSize="@dimen/text_size_12" />
 
-          <View
+          <com.ttcn.prm.ui.widget.PRMTextView
+            style="@style/fontPRMSfDisplayRegular14"
             android:layout_width="@dimen/view_size_80"
-            android:layout_height="@dimen/view_size_34"
+            android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/view_size_8"
-            android:background="@drawable/prm_background_shimmer" />
+            android:background="@drawable/prm_background_shimmer"
+            android:maxLines="1"
+            android:paddingStart="@dimen/view_size_10"
+            android:paddingTop="@dimen/view_size_8"
+            android:paddingEnd="@dimen/view_size_10"
+            android:paddingBottom="@dimen/view_size_10"
+            android:text="@string/prm_promotion_example"
+            android:textColor="@android:color/transparent"
+            android:textSize="@dimen/text_size_12" />
 
-          <View
+          <com.ttcn.prm.ui.widget.PRMTextView
+            style="@style/fontPRMSfDisplayRegular14"
             android:layout_width="@dimen/view_size_80"
-            android:layout_height="@dimen/view_size_34"
-            android:background="@drawable/prm_background_shimmer" />
+            android:layout_height="wrap_content"
+            android:background="@drawable/prm_background_shimmer"
+            android:maxLines="1"
+            android:paddingStart="@dimen/view_size_10"
+            android:paddingTop="@dimen/view_size_8"
+            android:paddingEnd="@dimen/view_size_10"
+            android:paddingBottom="@dimen/view_size_10"
+            android:text="@string/prm_promotion_example"
+            android:textColor="@android:color/transparent"
+            android:textSize="@dimen/text_size_12" />
 
         </LinearLayout>
 

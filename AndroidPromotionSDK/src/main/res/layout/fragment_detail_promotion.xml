@@ -22,7 +22,7 @@
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgBanner"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/tokenSizing184"
+                android:layout_height="@dimen/prm_detail_banner_height"
                 android:scaleType="centerCrop"
                 android:src="@drawable/prm_bg_image_placeholder"
                 app:layout_constraintStart_toStartOf="parent"
@@ -45,9 +45,9 @@
             android:id="@+id/cardViewTop"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/view_size_13"
-            android:layout_marginTop="-30dp"
-            android:layout_marginEnd="@dimen/view_size_13"
+            android:layout_marginStart="@dimen/view_size_20"
+            android:layout_marginTop="-32dp"
+            android:layout_marginEnd="@dimen/view_size_20"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ctlTop"
             app:prmCvBottomLeftRadius="@dimen/view_size_16"
@@ -61,27 +61,57 @@
                 android:layout_height="wrap_content"
                 android:paddingBottom="@dimen/view_size_16">
 
-                <com.ttcn.prm.ui.widget.PRMCircleImageView
+                <!--
+                  ImageView THƯỜNG, không dùng `PRMCircleImageView`.
+                  Vòng tròn đã do Glide `CircleCrop` lo (áp cho từng frame, kể cả GIF), nên mask của
+                  custom view là dư — mà nó còn LÀM CHẾT GIF: `PRMCircleImageView.getBitmapFromDrawable`
+                  vẽ drawable **một lần** vào một `Bitmap` rồi `onDraw` chỉ vẽ lại snapshot đó bằng
+                  `BitmapShader`, không gọi `super.onDraw()`. `GifDrawable` tự `invalidateSelf()` mỗi
+                  frame nhưng snapshot không bao giờ được cập nhật → GIF đứng ở frame 1.
+                -->
+                <com.ttcn.prm.ui.widget.PRMImageView
                     android:id="@+id/circleLogo"
                     android:layout_width="@dimen/view_size_44"
                     android:layout_height="@dimen/view_size_44"
                     android:layout_marginStart="@dimen/view_size_16"
                     android:layout_marginTop="@dimen/view_size_20"
-                    android:background="@drawable/prm_background_shimmer_circle"
+                    android:background="@drawable/prm_bg_image_placeholder_circle"
+                    android:scaleType="centerCrop"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
+                <!--
+                  Tên brand: tối đa 2 dòng + ba chấm (khớp `brandNameLabel` iOS).
+                  `layout_width=0dp` + ghim `constraintEnd` là BẮT BUỘC để chữ xuống dòng được —
+                  `wrap_content` chỉ với constraint start thì chữ dài chạy tràn ra khỏi khung, không wrap.
+                -->
                 <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/txtVoucherName"
                     style="@style/fontPRMDisPlayRegular14"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/view_size_8"
+                    android:layout_marginEnd="@dimen/view_size_8"
+                    android:ellipsize="end"
+                    android:maxLines="2"
                     android:textColor="@color/color_7A7A7A"
                     app:layout_constraintBottom_toBottomOf="@+id/circleLogo"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@+id/circleLogo"
                     app:layout_constraintTop_toTopOf="@+id/circleLogo"
                     tools:text="The Coffee House" />
+
+                <!--
+                  Tên brand 2 dòng có thể cao hơn logo 44dp (font scale lớn của hệ thống) → mốc dưới của
+                  khối header là cạnh dưới của cái NÀO CAO HƠN, không phải của logo. Không có barrier thì
+                  `tvContent` ghim theo logo và bị tên brand đè lên.
+                -->
+                <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/barrierVoucherHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="bottom"
+                    app:constraint_referenced_ids="circleLogo,txtVoucherName" />
 
                 <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/tvContent"
@@ -90,11 +120,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/view_size_7"
                     android:layout_marginEnd="@dimen/view_size_8"
-                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:maxLines="5"
                     android:textColor="@color/black"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="@+id/circleLogo"
-                    app:layout_constraintTop_toBottomOf="@+id/circleLogo"
+                    app:layout_constraintTop_toBottomOf="@+id/barrierVoucherHeader"
                     tools:text="Giảm 50k cho hóa đơn từ 200k áp dụng tại cửa hàng The Coffee House" />
 
                 <com.ttcn.prm.ui.widget.PRMTextView
@@ -116,10 +147,10 @@
             android:id="@+id/ctlContent"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginStart="@dimen/view_size_13"
-            android:layout_marginEnd="@dimen/view_size_13"
+            android:layout_marginStart="@dimen/view_size_20"
+            android:layout_marginEnd="@dimen/view_size_20"
             app:layout_constraintBottom_toTopOf="@+id/tvUse"
-            android:layout_marginBottom="@dimen/_8sdp"
+            android:layout_marginBottom="@dimen/view_size_16"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/cardViewTop">
@@ -133,10 +164,15 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
+                <!--
+                  KHÔNG thụt thêm lề: `UnderlinedSegmentControlView` bên iOS ghim đúng lề 20 của card
+                  (XIB `deD-2e-wws` leading/trailing = 20), nên hàng tab Android phải trải trọn bề ngang
+                  `ctlContent` (đã có lề 20). Trước đây còn `marginHorizontal="_10sdp"` → tab hẹp hơn
+                  card, không khớp iOS.
+                -->
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="@dimen/_10sdp">
+                    android:layout_height="wrap_content">
 
                     <View
                         android:id="@+id/vIndicator"
@@ -175,8 +211,8 @@
             android:id="@+id/tvUse"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/tokenSpacing12"
-            android:layout_marginEnd="@dimen/tokenSpacing12"
+            android:layout_marginStart="@dimen/view_size_16"
+            android:layout_marginEnd="@dimen/view_size_16"
             android:layout_marginBottom="@dimen/tokenSpacing12"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"

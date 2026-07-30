@@ -201,7 +201,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
      * Khung màn khi KHÔNG có data — vẫn đủ 2 tab, chữ để trống, ảnh xám mặc định.
      *
      * CỐ Ý không đụng vào `imgBanner` và `circleLogo`: layout đã khai sẵn
-     * `@drawable/prm_bg_image_placeholder` và `@drawable/prm_background_shimmer_circle`, nên cứ để
+     * `@drawable/prm_bg_image_placeholder` và `@drawable/prm_bg_image_placeholder_circle`, nên cứ để
      * nguyên là ra đúng ảnh xám. Gọi `loadPromotionVoucherBanner("")` ở đây chỉ tổ nạp lại đúng cái
      * placeholder đó qua Glide, còn `circleLogo.background = null` (như [bindDetailContent] làm) sẽ
      * **xoá mất** vòng tròn xám.

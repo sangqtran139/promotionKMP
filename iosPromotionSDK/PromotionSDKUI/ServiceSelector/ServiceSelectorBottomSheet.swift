@@ -292,6 +292,9 @@ private final class ServiceSelectorCell: UICollectionViewCell {
         super.init(frame: frame)
         iconView.contentMode = .scaleAspectFill
         iconView.clipsToBounds = true
+        // Bo TRÒN: icon dịch vụ bên Android đi qua `loadPromotionVoucherLogo` → Glide `.circleCrop()`,
+        // nên thiếu dòng này là Android tròn mà iOS vuông. 24 = nửa của 48 (kích thước ghim dưới).
+        iconView.layer.cornerRadius = 24
         iconView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(iconView)
 

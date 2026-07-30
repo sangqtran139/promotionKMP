@@ -308,6 +308,118 @@ Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/en
 
 ---
 
+## 7.5. Ảnh từ mạng (`UIImageView.setImage`)
+
+> **LUẬT: mọi chỗ có ảnh phải hiển thị được GIF động — cả iOS lẫn Android.** Thêm ô ảnh mới thì test
+> bằng URL GIF động, không chỉ PNG/JPEG. Bẫy phía Android xem
+> [android/UIGuide.md §11](../android/UIGuide.md) (view snapshot drawable thành `Bitmap` là chết GIF).
+
+Toàn bộ ảnh remote của SDK (logo card, banner chi tiết, icon service selector) đi qua một cửa duy nhất:
+`PRMFoundation/Extension/UIImageView+Remote.swift` — `URLSession` + cache RAM (`RemoteImageCache`),
+tự cancel request cũ khi cell tái sử dụng. **Không** dùng thư viện ngoài (Kingfisher/SDWebImage) —
+xem §1.
+
+| Hạng mục | iOS | Android (đối chiếu) |
+|---|---|---|
+| Loader | `URLSession` + `NSCache` | Glide |
+| **GIF/APNG động** | ✅ `UIImage.prmDecoded(from:)` (ImageIO) | ✅ Glide sẵn có |
+| Cache đĩa | phó mặc `URLCache.shared` + header `Cache-Control` của server | ép `DiskCacheStrategy.ALL` |
+| Giảm kích thước khi decode | chỉ ảnh động, theo hạn mức RAM (dưới) | `.override()` mọi ảnh |
+
+> Cache đĩa **cố ý** không làm giống nhau: Android ép `DiskCacheStrategy.ALL` (còn ảnh khi offline),
+> iOS tôn trọng header của server qua `URLCache.shared`. SDK không được cấu hình lại `URLCache.shared`
+> — đó là cache dùng chung của app host. Hệ quả: offline, Android còn ảnh cũ, iOS về nền xám.
+>
+> Bên Android **không** dùng `.dontAnimate()` ở nhánh cache-probe. Trong Glide 4/5 hàm đó chỉ set
+> `GifOptions.DISABLE_ANIMATION` (đã kiểm bằng `javap` trên `glide-5.0.5.aar`), **không** liên quan
+> crossfade — crossfade do `.transition()` quyết định. Gọi nó thì GIF đã cache hiện tĩnh 1 frame còn
+> GIF tải mới lại chạy: cùng một logo mà lần đầu chạy, vào lại thì đứng.
+
+### Kích thước & cách fill — phải trùng số giữa hai nền tảng
+
+| Ảnh | Kích thước (cả 2 bên) | iOS | Android |
+|---|---|---|---|
+| Logo card danh sách (My/Choose) | **48** | `iconContainer` 48×48, radius 24, `scaleAspectFill` | `avatar_container`/`imgVoucher` `@dimen/view_size_48` trong `CircleView` + Glide `.circleCrop()` |
+| Banner màn chi tiết | **173** | XIB `bannerImageView` height 173, `scaleAspectFill` | `@dimen/prm_detail_banner_height` = 173dp, `centerCrop` |
+| Logo màn chi tiết | **44** | `logoImageView` radius 22, `scaleAspectFill` | `@dimen/view_size_44` + `.circleCrop()` |
+| Icon service selector | **48**, **tròn** | 48×48, `scaleAspectFill`, `cornerRadius = 24` | `@dimen/view_size_48` + `.circleCrop()` |
+| Nền placeholder | **#E9E9E9** (`tokenDark10`) | `UIImageView.remotePlaceholderColor` | `prm_bg_image_placeholder` / `prm_bg_image_placeholder_circle` |
+| Transition khi ảnh lên | **không có** | gán thẳng `image` | **không** `.transition(withCrossFade())` |
+
+Hai luật rút ra từ lần lệch trước:
+
+1. **Ảnh dùng dp/pt cố định, KHÔNG dùng `sdp`.** `sdp` scale theo bề rộng màn hình nên chỉ trùng số
+   của iOS ở đúng một cỡ máy: `_147sdp` = 147dp @sw300, 176 @sw360, 191 @sw390, **294 @sw600 (tablet)**;
+   `_37sdp` = 37/44.4/48.1/74. iOS không có cơ chế tương ứng → dùng `sdp` là bảo đảm lệch.
+2. **Fill phải là crop, không phải fit.** `.circleCrop()`/`centerCrop` bên Android ⇔ `scaleAspectFill`
+   bên iOS. `scaleAspectFit` làm logo tỉ lệ ngang bị letterbox, lọt giữa vòng tròn trong khi Android
+   crop kín.
+3. **Bo tròn phải khai ở CẢ hai bên.** Bên Android cái tròn đến "miễn phí" từ `.circleCrop()` của
+   `loadPromotionVoucherLogo`, còn iOS phải tự set `cornerRadius` — quên là Android tròn, iOS vuông.
+4. **Placeholder phải cùng HÌNH với ảnh load xong.** Glide **không** áp transformation lên
+   `placeholder`/`error`, nên ô tròn phải dùng `prm_bg_image_placeholder_circle`; dùng bản chữ nhật thì
+   hiện ô xám vuông rồi nhảy thành tròn (rõ nhất ở service selector — view phẳng, không có `CircleView`
+   che giúp). Bên iOS `backgroundColor` tự bị `cornerRadius` bo nên không cần drawable riêng.
+5. **Không transition.** Fade 300 ms của `withCrossFade()` cộng vào thời gian tải khiến Android "lên
+   chậm" hơn iOS thấy rõ. Muốn có fade thì thêm ở cả hai bên (`UIView.transition`), đừng bật một bên.
+
+### Ảnh động decode 2 chặng
+
+Dựng ảnh động phải giải nén **mọi** frame trước khi vẽ được gì. Đo trên Mac (máy thật chậm hơn 2–4 lần):
+
+| GIF | frames | dung lượng | frame đầu | toàn bộ frame |
+|---|---|---|---|---|
+| 200×200 | 51 | 92 KB | 0,2 ms | 4,6 ms |
+| 764×781 | 90 | 287 KB | 7,4 ms | **247 ms** |
+| 295×274 | 249 | **7,3 MB** | 5,5 ms | **190 ms** |
+
+Gộp một chặng thì iOS hiện ảnh muộn hơn Android đúng bằng cột cuối, vì Glide vẽ frame đầu rồi decode
+dần các frame sau theo nhịp animation. Nên loader chia 2 chặng:
+
+1. `UIImage.prmQuickDecoded(from:)` → frame đầu, gán ngay.
+2. `UIImage.prmDecoded(from:)` ở background → thay bằng ảnh động, cache lại.
+
+Frame đầu decode với **cùng hạn mức kích thước** như chặng 2 để lúc thay không bị "nét rồi mờ". Chặng 1
+của ảnh động **không** ghi cache (ghi thì cache giữ ảnh tĩnh, view sau mở ra sẽ không bao giờ chạy).
+
+Cột "dung lượng" mới là phần lớn thời gian chờ lần đầu: ảnh động **không thể vẽ trước khi tải xong cả
+file**, 7,3 MB cho một cái logo thì mạng yếu là chờ vài giây — chỗ này chỉ backend giảm được.
+
+> **Mọi lần gán ảnh phải đối chiếu `currentImageURL`.** Cancel task không đủ: chặng 2 chạy **sau khi**
+> request đã xong (`cancel()` lúc đó là no-op) và mất thêm vài trăm ms — đủ để cell được gán URL khác,
+> rồi chặng 2 ghi ảnh của URL cũ lên. Đây là lý do có `applyLoadedImage(_:if:)`.
+
+**Ảnh động giữ mọi frame trong RAM** (khác Glide: stream frame theo nhịp vẽ), nên
+`UIImage+Animated.swift` áp hạn mức `kAnimatedBitmapBudget` = 32MB/ảnh: vượt hạn mức thì mỗi frame
+được decode nhỏ lại qua `CGImageSourceCreateThumbnailAtIndex`. Đo thực tế: GIF 90 frame @764×781
+(204MB nguyên bản) → 31MB; GIF 200×200 nhỏ thì decode nguyên bản. Sửa hằng số này là sửa đúng một chỗ.
+
+**Ảnh 1×1 = ảnh rỗng.** BFF ảnh promotion trả **HTTP 200 + PNG 1×1 trong suốt** khi record không có
+ảnh thật (không phải 404), ví dụ:
+
+```
+GET http://…/promotion-vtm-bff/images/<uuid>.png/preview
+→ 200, Content-Type: image/png, Content-Length: 70, PNG 1×1 RGBA(0,0,0,0)
+```
+
+Decode "thành công" nhưng vẽ ra thì trong suốt → `prmIsRenderable` chặn lại để giữ nền xám
+placeholder, và **không** cache (để ảnh thật lên là hiện ngay).
+
+Android phải chặn **cùng luật đó**, bằng `PRMEmptyImageTransformation` (`ui/utils/`) chèn trước
+`CircleCrop`. Không chặn thì Glide vẫn vẽ ô trong suốt, và trong `CircleView` (shapeofview mask bằng
+`PorterDuff.DST_IN`/`DST_OUT`) vùng trong suốt hiện ra **màu ĐEN** — đúng lỗi "Android đen, iOS xám".
+Phải chèn *trước* `CircleCrop` vì sau khi crop thì ảnh 1×1 đã bị phóng lên bằng khung, không còn nhận
+ra được. Kèm theo đó `circleCrop()` phải viết tay lại thành
+`downsample(CENTER_INSIDE).transform(guard, CircleCrop())` — đúng những gì `circleCrop()` làm bên trong.
+Khác biệt còn lại (chấp nhận): Android cache ảnh rỗng đó theo `DiskCacheStrategy.ALL`, iOS thì không.
+
+**Mọi nhánh lỗi đều ra cùng một ô xám**, nên loader bắt buộc log `[PRMRemoteImage]` kèm lý do
+(network error / HTTP status / decode fail / ảnh rỗng) — chỉ ở bản DEBUG. Khi "ảnh không hiện", đọc log
+này trước, đừng đoán. Riêng ảnh trên host HTTP: app host phải tự khai ngoại lệ ATS trong `Info.plist`
+(app demo khai sẵn cho `125.235.38.229`), Android tương ứng cần `usesCleartextTraffic`.
+
+---
+
 ## 8. Quy tắc
 
 1. **Business logic không được viết bằng Swift.** Mọi nghiệp vụ mới thuộc `:promotionLogic`.
