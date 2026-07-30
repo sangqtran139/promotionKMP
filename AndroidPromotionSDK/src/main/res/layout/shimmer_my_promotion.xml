@@ -25,29 +25,32 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- Hàng tab: bám đúng `rvTabs` của `fragment_my_promotion.xml` (marginTop 24, padding
+             ngang 10) để lúc tab thật hiện lên không bị dịch một nấc. Chip cao 34 = 12sp chữ +
+             padding 8/10 của `item_tag_my_promotion.xml`. -->
         <LinearLayout
           android:layout_width="match_parent"
           android:layout_height="wrap_content"
           android:orientation="horizontal"
-          android:layout_marginTop="@dimen/view_size_7"
+          android:layout_marginTop="@dimen/view_size_24"
           android:paddingStart="@dimen/view_size_10"
           android:paddingEnd="@dimen/view_size_10">
 
           <View
             android:layout_width="@dimen/view_size_60"
-            android:layout_height="@dimen/view_size_36"
+            android:layout_height="@dimen/view_size_34"
             android:layout_marginEnd="@dimen/view_size_8"
             android:background="@drawable/prm_background_shimmer" />
 
           <View
             android:layout_width="@dimen/view_size_80"
-            android:layout_height="@dimen/view_size_36"
+            android:layout_height="@dimen/view_size_34"
             android:layout_marginEnd="@dimen/view_size_8"
             android:background="@drawable/prm_background_shimmer" />
 
           <View
             android:layout_width="@dimen/view_size_80"
-            android:layout_height="@dimen/view_size_36"
+            android:layout_height="@dimen/view_size_34"
             android:background="@drawable/prm_background_shimmer" />
 
         </LinearLayout>

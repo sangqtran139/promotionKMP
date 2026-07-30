@@ -21,8 +21,42 @@ public class PromotionCardView: PRMTapableView {
     // MARK: - Delegate
     public weak var delegate: PromotionCardViewDelegate?
     
+    // MARK: - Metrics
+
+    /// Khoảng cách các mốc dựng card — gom lại vì **skeleton (shimmer) phải khớp** để lúc dữ liệu
+    /// thật hiện lên list không bị nhảy. Đổi ở đây là cả card lẫn shimmer đổi theo.
+    public enum Metrics {
+        public static let checkboxTop: CGFloat = 9
+        public static let checkboxSize: CGFloat = 24
+        /// Mép trái khối chữ (merchant / tên ưu đãi / HSD).
+        public static let contentLeading: CGFloat = 124
+        public static let iconSize: CGFloat = 48
+        public static let iconCenterX: CGFloat = 54
+        /// merchant → tên ưu đãi.
+        public static let titleTopGap: CGFloat = 4
+        /// tên ưu đãi (2 dòng) → hàng HSD.
+        public static let footerTopGap: CGFloat = 5
+        public static let footerMinHeight: CGFloat = 24
+        public static let bottom: CGFloat = 9
+        /// `fontRegular12`.
+        public static let merchantLineHeight: CGFloat = 14
+        /// `fontMedium16`.
+        public static let titleLineHeight: CGFloat = 19
+    }
+
+    /// Chiều cao card khi dựng đủ: merchant 1 dòng + tên ưu đãi **luôn chừa 2 dòng** + hàng HSD/nút.
+    ///
+    /// Suy từ đúng chuỗi ràng buộc trong `setupConstraints`, nên **không đoán tay** — shimmer dùng
+    /// số này (xem `PRMPromotionCardShimmerCell.itemHeight`).
+    public static var estimatedHeight: CGFloat {
+        let merchantBottom = Metrics.checkboxTop + Metrics.checkboxSize / 2 + Metrics.merchantLineHeight / 2
+        let titleTop = merchantBottom + Metrics.titleTopGap
+        let twoLineTitle = (Metrics.titleLineHeight * 2).rounded(.up)
+        return titleTop + twoLineTitle + Metrics.footerTopGap + Metrics.footerMinHeight + Metrics.bottom
+    }
+
     // MARK: - UI Components
-    
+
     private let backgroundView: CouponBackgroundView = {
         let view = CouponBackgroundView()
         view.absoluteDashPosition = 108
