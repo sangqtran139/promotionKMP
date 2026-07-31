@@ -12,8 +12,6 @@ internal data class PromotionDetailUiState(
     val actionEnabled: Boolean = false,
     /** Nhãn server — **Fragment không dùng**, nút dùng `prm_use_now`. Xem `PromotionDetailState`. */
     val actionLabel: String = "",
-    /** Sắp hết hạn → "HSD còn X ngày" tô cam; null = hiện HSD thường. Rule chung với màn danh sách. */
-    val expiringInDays: Int? = null,
 )
 
 /**

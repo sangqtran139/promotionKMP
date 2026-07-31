@@ -84,6 +84,10 @@ Fragment: render thông tin + cấu hình nút theo state
 
 - `PrmContentDetailEndowFragment` hiển thị nội dung mô tả/điều khoản.
 - `PrmCustomFragmentPagerAdapter` quản lý các tab nội dung.
+- Nguồn dữ liệu 2 tab (`VoucherMapper.toVoucherDetail`, `promotionLogic/.../dto/voucher/VoucherMapper.kt`):
+  - **"Thông tin chi tiết"** ← `VoucherDetail.description` ← `voucher.content`.
+  - **"Hướng dẫn sử dụng"** ← `VoucherDetail.guideline` ← `voucher.guideline`.
+  Test khoá: `VoucherDetailFieldBranchTest.detail_fullVoucher_*` / `detail_guidelineMissing_isNull`.
 
 ---
 

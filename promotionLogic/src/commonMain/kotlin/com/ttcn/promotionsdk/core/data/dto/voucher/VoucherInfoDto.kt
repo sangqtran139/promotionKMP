@@ -25,9 +25,12 @@ data class VoucherInfoDto(
     @SerialName("discountValue") val discountValue: Double? = null,
     @SerialName("maxDiscount") val maxDiscount: Double? = null,
     @SerialName("minOrder") val minOrder: Double? = null,
-    /** Nội dung/điều khoản ngắn của ưu đãi. */
+    /** Nội dung chi tiết — nguồn cho tab "Thông tin chi tiết" (`VoucherDetail.description`). */
     @SerialName("content") val content: String? = null,
+    /** Mô tả ngắn — dùng cho card ở màn danh sách (`VoucherItem.description`). */
     @SerialName("description") val description: String? = null,
+    /** Hướng dẫn sử dụng — nguồn cho tab "Hướng dẫn sử dụng". */
+    @SerialName("guideline") val guideline: String? = null,
     @SerialName("tags") val tags: List<String> = emptyList(),
     /** Ngày kết thúc hiệu lực voucher, format `dd-MM-yyyy`. */
     @SerialName("endDate") val endDate: String? = null,

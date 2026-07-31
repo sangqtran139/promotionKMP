@@ -43,7 +43,8 @@ class VoucherDetailFieldBranchTest {
     fun detail_fullVoucher_mapsBrandLogoAndCodes() = runTest {
         val json = """
         {"status":200,"data":{
-          "voucher":{"id":"c1","title":"Tieu de","description":"Mo ta","content":"Huong dan",
+          "voucher":{"id":"c1","title":"Tieu de","description":"Mo ta ngan","content":"Noi dung chi tiet",
+                     "guideline":"Huong dan",
                      "image":"http://banner",
                      "brand":{"name":"Thuong hieu","logo":["http://logo1","http://logo2"]}},
           "startDate":"2020-01-01","endDate":"2099-01-01",
@@ -57,12 +58,21 @@ class VoucherDetailFieldBranchTest {
         assertEquals("http://logo1", d.logo)       // lấy phần tử ĐẦU của mảng logo
         assertEquals("http://banner", d.banner)
         assertEquals("Tieu de", d.title)
-        assertEquals("Mo ta", d.description)
+        assertEquals("Noi dung chi tiet", d.description)
         assertEquals("Huong dan", d.guideline)
         assertEquals("2099-01-01", d.expirationDate)
         assertEquals("http://guide", d.usageGuideUrl)
         assertEquals(listOf("CODE1", "CODE2"), d.codes)   // mã trắng bị loại
         assertEquals("c1", d.campaignId)
+    }
+
+    @Test
+    fun detail_guidelineMissing_isNull() = runTest {
+        val json = """
+        {"status":200,"data":{"voucher":{"id":"c1","content":"Noi dung cu, khong con dung"}}}
+        """.trimIndent()
+        val d = GetCustomerVoucherDetailUseCase(repo(json)).invoke("v", null)!!
+        assertNull(d.guideline)
     }
 
     @Test

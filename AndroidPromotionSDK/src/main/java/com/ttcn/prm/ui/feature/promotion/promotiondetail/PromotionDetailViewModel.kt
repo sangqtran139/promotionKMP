@@ -80,5 +80,4 @@ private fun PromotionDetailState.toUiState() = PromotionDetailUiState(
     actionVisible = actionVisible,
     actionEnabled = actionEnabled,
     actionLabel = actionLabel,
-    expiringInDays = expiringInDays,
 )

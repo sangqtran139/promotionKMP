@@ -59,7 +59,6 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         self.voucherCardView.brandName = voucherCardViewModel.title
         self.voucherCardView.title = voucherCardViewModel.description
         self.voucherCardView.expiryText = voucherCardViewModel.date
-        self.voucherCardView.expiryColor = voucherCardViewModel.dateColor
         self.voucherCardView.setLogo(urlString: voucherCardViewModel.logoURL)
     }
 

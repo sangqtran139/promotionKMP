@@ -126,20 +126,11 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         )
         binding.txtVoucherName.text = detail.merchantName.orEmpty()
         binding.tvContent.text = detail.title.orEmpty()
-        // Dòng HSD — **cùng thứ tự ưu tiên với màn danh sách** (TLNV MOB_002 2.4 → MOB_001 #4):
-        // sắp hết hạn (cam) → HSD thường → "Không hết hạn" (API không trả) → ẩn (parse hỏng).
+        // Dòng HSD — luôn hiện ngày thô, không tô cam / không hiện "còn X ngày" (khác màn danh sách).
         val rawExpiration = detail.expirationDate
         val displayDate = rawExpiration.orEmpty().toVoucherDisplayDate()
-        val expiringInDays = state.expiringInDays
-        // Màu set ở mọi nhánh: cùng một view được bind lại mỗi lần state đổi, không reset thì dòng
-        // HSD thường vẫn dính cam từ lần render trước.
-        val dateColor = if (expiringInDays != null) R.color.tokenCarrotOrange100 else R.color.tokenDark60
-        binding.tvExpired.setTextColor(ContextCompat.getColor(requireContext(), dateColor))
+        binding.tvExpired.setTextColor(ContextCompat.getColor(requireContext(), R.color.tokenDark60))
         when {
-            expiringInDays != null -> {
-                binding.tvExpired.isVisible = true
-                binding.tvExpired.text = getString(R.string.prm_expiry_remaining_days, expiringInDays)
-            }
             displayDate.isNotBlank() -> {
                 binding.tvExpired.isVisible = true
                 binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)

@@ -48,7 +48,7 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
 
         /// Trước khi có detail — trống hoàn toàn, shimmer che ở VC.
         static let initial = UiState(
-            card: VoucherCardViewModel(title: "", description: "", logoURL: nil, date: "", dateColor: nil),
+            card: VoucherCardViewModel(title: "", description: "", logoURL: nil, date: ""),
             banner: nil,
             tabContents: .empty,
             applyTitle: "",
@@ -195,10 +195,7 @@ private extension PromotionDetailState {
                 title: detail.merchantName ?? "",
                 description: detail.title ?? "",
                 logoURL: detail.logo,
-                // Sắp hết hạn → "HSD còn X ngày" tô cam, y như màn danh sách (TLNV MOB_002 2.4).
-                date: expiringInDays.map { PromotionUIStrings.remainingDays(Int(truncating: $0)) }
-                    ?? Self.dateString(detail.expirationDate),
-                dateColor: expiringInDays == nil ? nil : Colors.tokenCarrotOrange100
+                date: Self.dateString(detail.expirationDate)
             ),
             banner: detail.banner,
             tabContents: .init(

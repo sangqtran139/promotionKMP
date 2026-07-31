@@ -73,7 +73,8 @@ class ApiMappingVerifyTest {
         assertEquals("Vietcombank", d.merchantName)
         assertEquals("https://cdn.pp/vcb-logo.png", d.logo)
         assertEquals("https://cdn.pp/vcb-banner.png", d.banner)
-        assertEquals("Hoàn 20% giá trị sổ tiết kiệm, tối đa 150.000đ", d.guideline)
+        assertEquals("Hoàn 20% giá trị sổ tiết kiệm, tối đa 150.000đ", d.description)
+        assertEquals(null, d.guideline)   // JSON không có `guideline` (field BE thêm sau v1.3)
         assertEquals("2026-07-31T23:59:59", d.expirationDate)
         assertEquals(VoucherDisplayState.USABLE, d.displayState())
     }
