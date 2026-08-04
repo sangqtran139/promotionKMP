@@ -100,6 +100,8 @@ public final class PromotionSDK {
         // một lần; lần sau chỉ cần initialize lại, theme tự sống lại. Đối ứng PromotionSDK.initialize bên Android.
         impl.restoreOrApplyTheme(options.theme)
         wireCallbacks(impl)
+        // Phải gọi **sau** wireCallbacks: cờ nạp xong mới báo host, và lúc đó callback đã được nối.
+        impl.notifyAvailabilityAfterInitialLoad()
     }
 
     /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ token + baseUrl.
@@ -225,11 +227,61 @@ public final class PromotionSDK {
 
     // MARK: - Feature flag
     //
-    // SDK **không** phơi API hỏi cờ ra ngoài. Host không cần biết cờ nào đang bật: mọi điểm vào đều tự
-    // gác (`openMyPromotion`, `openPromotionDetail`, widget), và khi bị chặn thì SDK hiện toast
-    // PRM_MOB_021 rồi báo host qua `onAvailabilityChanged(enabled:)`.
+    // SDK **vẫn tự gác** mọi điểm vào (`openMyPromotion`, `openPromotionDetail`, widget) — bốn hàm
+    // dưới đây **không** thay thế việc đó, chúng chỉ cho host *hỏi trước* để ẩn entry point của mình
+    // thay vì để user bấm rồi ăn toast PRM_MOB_021.
+    //
+    // Tất cả đều **fail-open**: chưa `initialize` hoặc chưa có cache → trả "bật hết". Không hàm nào
+    // dừng chương trình, vì cờ hỏng không được phép làm chết màn hình của host.
     //
     // Logic quyết định nằm ở `PromotionFeatureGate` trong `promotionLogic`, dùng chung với Android.
+
+    /// Ảnh chụp toàn bộ cờ, đọc **cache đồng bộ** — không gọi mạng, gọi được từ main thread.
+    /// Đã áp sẵn công tắc tổng: `all == false` thì mọi field còn lại đều `false`.
+    ///
+    /// Cache được nạp ở `initialize` và mỗi lần `refreshFeatureFlags`; muốn chắc chắn mới nhất thì
+    /// gọi `refreshFeatureFlags` rồi đọc trong `completion`. Đối ứng `PromotionSDK.featureFlags()` Android.
+    public static func featureFlags() -> PromotionFeatureFlagsSnapshot {
+        PromotionSDKImpl.featureFlagsSnapshot()
+    }
+
+    /// Tra **một** tính năng. Tương đương `featureFlags().isEnabled(feature)` nhưng khỏi dựng snapshot.
+    ///
+    /// ```swift
+    /// myVoucherButton.isHidden = !PromotionSDK.isFeatureEnabled(.voucherList)
+    /// ```
+    ///
+    /// Đối ứng `PromotionSDK.isFeatureEnabled(feature)` bên Android.
+    public static func isFeatureEnabled(_ feature: PromotionFeature) -> Bool {
+        PromotionSDKImpl.isFeatureEnabled(feature)
+    }
+
+    /// Công tắc tổng `PROMOTION.ENABLE_ALL` — `false` thì host nên ẩn **toàn bộ** điểm vào ưu đãi.
+    /// Tương đương `isFeatureEnabled(.all)`. Đối ứng `PromotionSDK.isSdkEnabled()` bên Android.
+    public static func isSdkEnabled() -> Bool {
+        PromotionSDKImpl.isSdkEnabled()
+    }
+
+    /// Nạp lại cờ từ server rồi trả snapshot mới. **Không ném**: gọi API hỏng thì giữ nguyên cache
+    /// và vẫn gọi `completion` với giá trị đang có (fail-open).
+    ///
+    /// `completion` chạy trên **main thread** để host set UI được ngay; gọi trước `initialize` cũng
+    /// an toàn (trả cờ mặc định bật hết). Sau mỗi lần nạp, SDK báo lại công tắc tổng qua
+    /// `PromotionSDKCallback.onAvailabilityChanged(enabled:)`.
+    ///
+    /// ```swift
+    /// PromotionSDK.refreshFeatureFlags { flags in
+    ///     self.promotionSection.isHidden = !flags.all
+    /// }
+    /// ```
+    ///
+    /// Đối ứng `PromotionSDK.refreshFeatureFlags(onComplete)` bên Android.
+    public static func refreshFeatureFlags(completion: ((PromotionFeatureFlagsSnapshot) -> Void)? = nil) {
+        PromotionSDKImpl.refreshFeatureFlags { flags in
+            callback?.onAvailabilityChanged(enabled: flags.all)
+            completion?(flags)
+        }
+    }
 
     // MARK: - Screens
 

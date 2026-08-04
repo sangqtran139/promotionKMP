@@ -33,6 +33,10 @@
 | Đặt theme | `configure(theme)` | ✅ | ✅ | ✅ |
 | Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `var currentTheme` 🔧 | 🔧 iOS đổi property → hàm |
 | Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | *(thiếu)* 🔧 | 🔧 iOS bổ sung |
+| Cờ — chụp tất cả | `featureFlags()` | `fun featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | ✅ cache đồng bộ, fail-open |
+| Cờ — tra một | `isFeatureEnabled(feature)` | `fun isFeatureEnabled(feature: PromotionFeature)` | `isFeatureEnabled(_ feature: PromotionFeature)` | ✅ enum public mỗi bên; hằng chuỗi lõi không ra tới host |
+| Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
+| Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread**; kèm bắn `onAvailabilityChanged` |
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
 | Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId])` | `openPromotionDetail(activity, voucherId, containerViewId?)` 🔧 | `openPromotionDetail(voucherId:, from:)` | 🔧 **Android đổi thứ tự → voucherId đứng trước** |
 | Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.3](#53-widget)) |
@@ -68,7 +72,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 | `onVoucherCleared()` | — | |
 | `onVoucherCountChanged(count)` | `Int` | |
 | `onServiceSelected(selection)` | `PromotionServiceSelection` | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). |
-| `onAvailabilityChanged(enabled)` | `Bool` | Từ iOS `didUpdateAvailability`. |
+| `onAvailabilityChanged(enabled)` | `Bool` | Từ iOS `didUpdateAvailability`. **Bắn cả `true` lẫn `false` ở cả 2 nền tảng** (trước 2026-08-04 Android chỉ bắn `false` lúc user bị chặn, nên host ẩn rồi không hiện lại được): nạp cờ xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Bảng đầy đủ: [features/FeatureFlag.md §3](../features/FeatureFlag.md). |
 | `onClosed()` | — | Từ iOS `didClose` / Android `onSDKClosed`. |
 
 **Đã loại:** Android `onError(errorCode)` — iOS không có, không nằm trong 6 sự kiện chuẩn. Đã bỏ khỏi

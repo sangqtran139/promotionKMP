@@ -8,6 +8,31 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Added — feature flag phơi ra host (cả 2 nền tảng)
+- `PromotionSDK` có thêm 4 hàm để host **hỏi trước** trạng thái cờ, thay vì để user bấm rồi ăn toast
+  PRM_MOB_021: `featureFlags()`, `isFeatureEnabled(feature)`, `isSdkEnabled()`,
+  `refreshFeatureFlags(onComplete/completion:)`. Cùng tên và **cùng thứ tự** ở Android ↔ iOS.
+  - Ba hàm đầu đọc **cache đồng bộ** (không gọi mạng); `refreshFeatureFlags` gọi server rồi trả
+    snapshot mới trên **main thread**.
+  - **Fail-open, không ném lỗi**: chưa `initialize()` hoặc chưa có cache → trả bật hết.
+  - DTO public mới: `PromotionFeature` (enum) + `PromotionFeatureFlagsSnapshot` —
+    `entry/api/PromotionFeatureModels.kt` ↔ `Entry/API/PromotionFeatureModels.swift`. Hằng chuỗi
+    `PromotionFeatureFlag` và data class `PromotionFeatureFlags` của lõi **không** ra tới host
+    (cùng lý do đã có `PromotionApiModels`).
+  - **Tầng gác của SDK không đổi.** Đây là tầng tuỳ chọn; host bỏ qua thì kill-switch vẫn chạy đủ.
+  - Xem [features/FeatureFlag.md §3](./docs/features/FeatureFlag.md) và
+    [common/PublicApi.md §2](./docs/common/PublicApi.md).
+
+### Changed — `onAvailabilityChanged` nay bắn cả `true`
+- Trước đây callback này **chỉ** bắn `false`, và chỉ khi user đã bấm vào một điểm vào bị chặn — host
+  ẩn entry point rồi thì không có đường hiện lại. Nay nó bắn ở 4 thời điểm với cả hai giá trị: nạp cờ
+  xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và
+  khi user bấm mà bị chặn.
+- Android còn thiếu so với iOS ở luồng widget — `PRMEndowView.applyFeatureFlag()` nay cũng báo host
+  mỗi lần đổi trạng thái, đối xứng `PromotionSDKImpl.applyFlag`.
+- **Tương thích:** thuần bổ sung, không đổi chữ ký. Host nào đang coi mọi lần gọi là "tắt SDK" thì
+  phải đọc tham số `enabled` — hành vi cũ tương đương `if (!enabled)`.
+
 ### Changed — phát hành (Android)
 - Thêm đích publish **JFrog Artifactory** bên cạnh `~/.m2`: repo khai một lần ở `build.gradle.kts`
   gốc cho cả `:promotionLogic` và `:AndroidPromotionSDK`, tự chọn repo release/snapshot theo hậu tố

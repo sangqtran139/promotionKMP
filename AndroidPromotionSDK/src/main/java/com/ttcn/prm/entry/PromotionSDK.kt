@@ -7,9 +7,14 @@ import androidx.fragment.app.FragmentActivity
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureFlagUseCases
 import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.prm.entry.api.PromotionFeature
+import com.ttcn.prm.entry.api.PromotionFeatureFlagsSnapshot
 import com.ttcn.prm.entry.api.PromotionOrderItem
 import com.ttcn.prm.entry.api.PromotionSDKApi
+import com.ttcn.prm.entry.api.flagName
+import com.ttcn.prm.entry.api.toSnapshot
 import com.ttcn.prm.ui.base.PromotionToastGate
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyPromotionFragment
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
@@ -21,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Điểm vào SDK — singleton `object`, đối ứng 1:1 `PromotionSDK` bên iOS (thứ tự thành viên khớp nhau:
@@ -131,7 +137,11 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(resolved ?: PromotionThemeStore.load())
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
-        sdkScope?.launch { PromotionFeatureGate.refresh() }
+        // Nạp xong mới báo host: đây là lúc đầu tiên biết chắc SDK có được bật hay không.
+        sdkScope?.launch {
+            PromotionFeatureGate.refresh()
+            notifyAvailability()
+        }
     }
 
     /**
@@ -207,7 +217,10 @@ object PromotionSDK {
         PromotionContainer.clear()
         PromotionContainer.initialize(context, newMutable.toCoreConfig())
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        sdkScope?.launch { PromotionFeatureGate.refresh() }
+        sdkScope?.launch {
+            PromotionFeatureGate.refresh()
+            notifyAvailability()
+        }
         // callback + theme giữ nguyên trong bộ nhớ — không đụng.
     }
 
@@ -332,10 +345,96 @@ object PromotionSDK {
 
     // ─── Feature flag ────────────────────────────────────────────────────────
     //
-    // SDK **không** phơi API hỏi feature flag ra host. Host không cần biết cờ nào đang bật: mọi
-    // điểm vào đều tự gác qua `PromotionFeatureGate` của `promotionLogic` — `openMyPromotion`,
-    // `PRMBaseFragment.openPromotionDetail`, `PRMEndowView` — và hiện thông báo PRM_MOB_021 khi bị
-    // chặn. Trước đây có `PromotionSDK.featureFlags`, nhưng không nơi nào dùng.
+    // SDK **vẫn tự gác** mọi điểm vào (`openMyPromotion`, `PRMBaseFragment.openPromotionDetail`,
+    // `PRMEndowView`) qua `PromotionFeatureGate` — bốn hàm dưới đây **không** thay thế việc đó, chúng
+    // chỉ cho host *hỏi trước* để ẩn entry point của mình thay vì để user bấm rồi ăn toast PRM_MOB_021.
+    //
+    // Tất cả đều **fail-open**: chưa [initialize] hoặc chưa có cache → trả "bật hết". Không hàm nào
+    // ném lỗi, vì cờ hỏng không được phép làm chết màn hình của host.
+
+    /**
+     * Ảnh chụp toàn bộ cờ, đọc **cache đồng bộ** — không gọi mạng, gọi được từ main thread.
+     * Đã áp sẵn công tắc tổng: `all == false` thì mọi field còn lại đều `false`.
+     *
+     * Cache được nạp ở [initialize] và mỗi lần [refreshFeatureFlags]; muốn chắc chắn mới nhất thì
+     * gọi [refreshFeatureFlags] rồi đọc trong `onComplete`.
+     *
+     * Đối ứng `PromotionSDK.featureFlags()` bên iOS.
+     */
+    @JvmStatic
+    fun featureFlags(): PromotionFeatureFlagsSnapshot =
+        runCatching { PromotionFeatureFlagUseCases().all().toSnapshot() }
+            .getOrDefault(PromotionFeatureFlagsSnapshot.AllEnabled)
+
+    /**
+     * Tra **một** tính năng. Tương đương `featureFlags().isEnabled(feature)` nhưng khỏi dựng snapshot.
+     *
+     * ```kotlin
+     * binding.btnMyVoucher.isVisible = PromotionSDK.isFeatureEnabled(PromotionFeature.VOUCHER_LIST)
+     * ```
+     *
+     * Đối ứng `PromotionSDK.isFeatureEnabled(_:)` bên iOS.
+     */
+    @JvmStatic
+    fun isFeatureEnabled(feature: PromotionFeature): Boolean =
+        PromotionFeatureGate.isEnabled(feature.flagName())
+
+    /**
+     * Công tắc tổng `PROMOTION.ENABLE_ALL` — `false` thì host nên ẩn **toàn bộ** điểm vào ưu đãi.
+     * Tương đương `isFeatureEnabled(PromotionFeature.ALL)`.
+     *
+     * Đối ứng `PromotionSDK.isSdkEnabled()` bên iOS.
+     */
+    @JvmStatic
+    fun isSdkEnabled(): Boolean = PromotionFeatureGate.isSdkEnabled()
+
+    /**
+     * Nạp lại cờ từ server rồi trả snapshot mới. **Không ném**: gọi API hỏng thì giữ nguyên cache
+     * và vẫn gọi [onComplete] với giá trị đang có (fail-open).
+     *
+     * [onComplete] chạy trên **main thread** để host set UI được ngay. Chưa [initialize] thì gọi
+     * luôn với [PromotionFeatureFlagsSnapshot.AllEnabled].
+     *
+     * Sau mỗi lần nạp, SDK báo lại công tắc tổng qua [PromotionSDKCallback.onAvailabilityChanged].
+     *
+     * ```kotlin
+     * PromotionSDK.refreshFeatureFlags { flags ->
+     *     binding.groupPromotion.isVisible = flags.all
+     * }
+     * ```
+     *
+     * Đối ứng `PromotionSDK.refreshFeatureFlags(completion:)` bên iOS.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun refreshFeatureFlags(onComplete: ((PromotionFeatureFlagsSnapshot) -> Unit)? = null) {
+        val scope = sdkScope
+        if (scope == null) {
+            // Chưa init → không có gì để nạp. Trả mặc định fail-open ngay, vẫn trên main thread.
+            onComplete?.let { done ->
+                CoroutineScope(Dispatchers.Main).launch { done(PromotionFeatureFlagsSnapshot.AllEnabled) }
+            }
+            return
+        }
+        scope.launch {
+            PromotionFeatureGate.refresh()
+            val flags = featureFlags()
+            withContext(Dispatchers.Main) {
+                callback?.onAvailabilityChanged(flags.all)
+                onComplete?.invoke(flags)
+            }
+        }
+    }
+
+    /**
+     * Báo host trạng thái công tắc tổng sau khi cờ đã được nạp xong ở [initialize] / [applySession].
+     * Chạy sẵn trên coroutine nền nên phải chuyển về main thread trước khi gọi callback của host.
+     */
+    private suspend fun notifyAvailability() {
+        val cb = callback ?: return
+        val enabled = isSdkEnabled()
+        withContext(Dispatchers.Main) { cb.onAvailabilityChanged(enabled) }
+    }
 
     // ─── Screens ─────────────────────────────────────────────────────────────
 

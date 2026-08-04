@@ -59,6 +59,8 @@ class PRMEndowView @JvmOverloads constructor(
     // Theo dõi transition để phát callback host đúng một lần mỗi lần đổi (không spam theo mỗi render).
     private var lastNotifiedState: EndowViewState? = null
     private var lastNotifiedCount: Int = -1
+    /** `null` = chưa báo lần nào, nên lần áp cờ đầu tiên luôn bắn callback. */
+    private var lastNotifiedAvailability: Boolean? = null
 
     // ─── Read-only accessors (delegate to ViewModel state) ────────────────────
 
@@ -131,8 +133,18 @@ class PRMEndowView @JvmOverloads constructor(
         }
     }
 
-    /** Cờ TẮT → ẩn widget và không gọi API. Cờ BẬT → hiện và nạp ưu đãi (chỉ nạp một lần). */
+    /**
+     * Cờ TẮT → ẩn widget và không gọi API. Cờ BẬT → hiện và nạp ưu đãi (chỉ nạp một lần).
+     *
+     * Báo host mỗi lần đổi trạng thái, y như `PromotionSDKImpl.applyFlag` bên iOS: widget bị rút đi
+     * là lúc host cần biết để thu gọn layout của mình. Chỉ bắn khi **đổi** để `applyFlag` gọi hai lần
+     * (cache rồi server) không sinh callback trùng.
+     */
     private fun applyFeatureFlag(enabled: Boolean, vm: EndowViewModel) {
+        if (lastNotifiedAvailability != enabled) {
+            lastNotifiedAvailability = enabled
+            PromotionSDK.getCallback()?.onAvailabilityChanged(enabled)
+        }
         isVisible = enabled
         if (enabled) vm.loadInitial()
     }

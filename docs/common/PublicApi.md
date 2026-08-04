@@ -60,6 +60,12 @@ object PromotionSDK {
     fun configure(theme: PromotionSDKTheme?)
     fun currentTheme(): PromotionSDKTheme?
 
+    // Feature flag — fail-open, không hàm nào ném lỗi (xem §2)
+    fun featureFlags(): PromotionFeatureFlagsSnapshot          // cache đồng bộ, không gọi mạng
+    fun isFeatureEnabled(feature: PromotionFeature): Boolean
+    fun isSdkEnabled(): Boolean                                // công tắc tổng ENABLE_ALL
+    fun refreshFeatureFlags(onComplete: ((PromotionFeatureFlagsSnapshot) -> Unit)? = null)
+
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null)
     fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int? = null)
 }
@@ -127,11 +133,32 @@ tiện tay `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget
 
 ---
 
-## 2. Feature flag — SDK **không** phơi ra
+## 2. Feature flag — SDK tự gác, host hỏi thêm được
 
-Host không cần biết cờ nào đang bật. Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
+**Tầng bắt buộc (SDK tự làm).** Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
 (`openMyPromotion`, mở chi tiết, widget) và báo lại khi bị chặn: toast `PRM_MOB_021` ở **cả hai nền
-tảng**, kèm `onAvailabilityChanged(enabled:)` bên iOS. Xem [HeadlessAPI.md §4](./HeadlessAPI.md).
+tảng**, kèm `onAvailabilityChanged(enabled:)`. Host không làm gì thì kill-switch vẫn chạy đủ.
+
+**Tầng tuỳ chọn (host hỏi trước).** Bốn hàm ở bảng dưới cho host ẩn entry point của chính mình thay
+vì để user bấm rồi ăn toast:
+
+| Android | iOS |
+|---|---|
+| `PromotionSDK.featureFlags()` | `PromotionSDK.featureFlags()` |
+| `PromotionSDK.isFeatureEnabled(PromotionFeature.VOUCHER_LIST)` | `PromotionSDK.isFeatureEnabled(.voucherList)` |
+| `PromotionSDK.isSdkEnabled()` | `PromotionSDK.isSdkEnabled()` |
+| `PromotionSDK.refreshFeatureFlags { flags -> … }` | `PromotionSDK.refreshFeatureFlags { flags in … }` |
+
+Ba hàm đầu đọc **cache đồng bộ** (không gọi mạng); `refreshFeatureFlags` gọi server rồi trả snapshot
+mới trên **main thread**. Tất cả **fail-open**: chưa `initialize` / chưa có cache → bật hết, và
+không hàm nào ném lỗi.
+
+DTO public: `PromotionFeature` (enum) + `PromotionFeatureFlagsSnapshot` — song ánh
+`PromotionFeatureModels.kt` ↔ `PromotionFeatureModels.swift`, cùng lý do phải map như §3. Hằng chuỗi
+`PromotionFeatureFlag` và data class `PromotionFeatureFlags` của lõi **không** ra tới host.
+
+Chi tiết + bảng "khi nào `onAvailabilityChanged` bắn": [features/FeatureFlag.md §3](../features/FeatureFlag.md).
+Xem thêm [HeadlessAPI.md §4](./HeadlessAPI.md).
 
 ---
 

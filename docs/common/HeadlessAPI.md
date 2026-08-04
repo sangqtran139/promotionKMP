@@ -210,6 +210,10 @@ Ba hành vi cần nhớ:
 Cờ được ghi xuống `KeyValueStorage` nên lần mở app sau không phải chờ API.
 Xem [StorageGuide.md](./StorageGuide.md).
 
+> Đây là bề mặt **của lõi** — host không dùng nó (`promotionLogic` nằm ngoài compile classpath của
+> host). Bề mặt cho host là `PromotionSDK.featureFlags()` / `isFeatureEnabled(...)` / `isSdkEnabled()` /
+> `refreshFeatureFlags(...)` với DTO riêng — xem [features/FeatureFlag.md §3](../features/FeatureFlag.md).
+
 ### 4.1. Gác ở đâu
 
 Nguồn sự thật là **một object Kotlin duy nhất**, `PromotionFeatureGate`, dùng chung cho cả hai nền tảng:

@@ -195,9 +195,37 @@ let widget2 = PromotionSDK.createEndowView(
 )
 ```
 
-**Feature flag tự gác:** nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` tự hiện toast lỗi
-`PRM_MOB_021` trên `viewController` rồi báo host qua `onAvailabilityChanged(enabled: false)`. Host **không**
-cần hỏi cờ — chỉ cần lắng nghe callback để ẩn điểm vào (xem §8).
+**Feature flag — SDK tự gác, host hỏi thêm được.** Nếu cờ tương ứng TẮT, `openMyPromotion` /
+`openPromotionDetail` tự hiện toast lỗi `PRM_MOB_021` trên `viewController` rồi báo host qua
+`onAvailabilityChanged(enabled: false)`. **Không làm gì thêm thì kill-switch vẫn chạy đủ.**
+
+Muốn mượt hơn — ẩn hẳn nút trước khi user kịp bấm — thì hỏi SDK:
+
+```swift
+// Đọc cache, đồng bộ, không gọi mạng
+myVoucherButton.isHidden = !PromotionSDK.isFeatureEnabled(.voucherList)
+
+// Hoặc nạp lại từ server rồi dựng UI (completion chạy trên main thread)
+PromotionSDK.refreshFeatureFlags { flags in
+    self.promotionSection.isHidden = !flags.all
+    self.myVoucherButton.isHidden = !flags.voucherList
+}
+```
+
+| Hàm | Trả gì |
+|---|---|
+| `PromotionSDK.featureFlags()` | `PromotionFeatureFlagsSnapshot` — toàn bộ cờ, đọc cache |
+| `PromotionSDK.isFeatureEnabled(_:)` | `Bool` cho một `PromotionFeature` |
+| `PromotionSDK.isSdkEnabled()` | Công tắc tổng — `false` thì ẩn **toàn bộ** điểm vào ưu đãi |
+| `PromotionSDK.refreshFeatureFlags { … }` | Nạp lại từ server, trả snapshot mới trên main thread |
+
+Ba điều cần nhớ:
+
+- **Snapshot đã áp sẵn công tắc tổng**: `flags.all == false` → mọi field còn lại đều `false`.
+- **Fail-open**: chưa `initialize()` hoặc chưa gọi được API lần nào → trả bật hết. Không hàm nào dừng chương trình.
+- Cờ có thể đổi giữa phiên → **đừng cache lại** snapshot, hỏi lại mỗi khi dựng UI.
+
+Không muốn hỏi chủ động thì chỉ cần lắng nghe `onAvailabilityChanged` (§7).
 
 ---
 
@@ -222,7 +250,7 @@ final class MyPromotionCallback: PromotionSDKCallback {
 | `onVoucherCleared()` | User bỏ chọn voucher trên widget |
 | `onVoucherCountChanged(count:)` | Widget load xong, biết tổng voucher khả dụng |
 | `onServiceSelected(selection:)` | User chọn dịch vụ trong bottom sheet |
-| `onAvailabilityChanged(enabled:)` | Feature flag báo bật/tắt SDK |
+| `onAvailabilityChanged(enabled:)` | Feature flag báo bật/tắt SDK — bắn **cả `true` lẫn `false`**: nạp cờ xong sau `initialize`, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Nhớ đọc tham số `enabled`, đừng coi mọi lần gọi là "tắt". |
 | `onClosed()` | Màn SDK bị đóng |
 
 > Callback của SDK là kênh **1-1** (một object nhận sự kiện, truyền qua `initialize(callback: ...)`).

@@ -253,7 +253,7 @@ guard PromotionFeatureGate.shared.canOpenVoucherDetail() else { showDialog(); re
 | Hiện widget checkout | `PromotionSDKImpl.applyFlag()` |
 | 5 hàm headless | Đã gác sẵn bên trong `PromotionUseCases` của lõi — Swift **không** gác lại |
 | Nạp cờ lúc init | `PromotionSDKImpl.init` → `gate.refresh()` |
-| Hỏi cờ từ host | *(không có — SDK không phơi API này)* |
+| Hỏi cờ từ host | `PromotionSDK.featureFlags()` / `isFeatureEnabled(_:)` / `isSdkEnabled()` / `refreshFeatureFlags(completion:)` — tầng **tuỳ chọn**, xem [features/FeatureFlag.md §3](../features/FeatureFlag.md) |
 
 `refresh()` là `suspend` bên Kotlin → Swift thấy `async throws`. Nó không ném lỗi nghiệp vụ (hỏng thì
 giữ cache), nên `try? await gate.refresh()` là đúng.

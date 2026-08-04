@@ -239,11 +239,38 @@ override fun onDestroyView() {
 }
 ```
 
-### 6.3. Feature flag tự gác
+### 6.3. Feature flag — SDK tự gác, host hỏi thêm được
 
 Nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` tự hiện Toast `PRM_MOB_021` và **không** mở
-màn, rồi báo host qua `onAvailabilityChanged(false)`. Host **không** cần hỏi cờ — chỉ cần nghe callback để ẩn
-điểm vào (xem §7).
+màn, rồi báo host qua `onAvailabilityChanged(false)`. **Không làm gì thêm thì kill-switch vẫn chạy đủ.**
+
+Muốn mượt hơn — ẩn hẳn nút trước khi user kịp bấm — thì hỏi SDK:
+
+```kotlin
+// Đọc cache, đồng bộ, không gọi mạng
+binding.btnMyVoucher.isVisible = PromotionSDK.isFeatureEnabled(PromotionFeature.VOUCHER_LIST)
+
+// Hoặc nạp lại từ server rồi dựng UI (onComplete chạy trên main thread)
+PromotionSDK.refreshFeatureFlags { flags ->
+    binding.groupPromotion.isVisible = flags.all
+    binding.btnMyVoucher.isVisible = flags.voucherList
+}
+```
+
+| Hàm | Trả gì |
+|---|---|
+| `PromotionSDK.featureFlags()` | `PromotionFeatureFlagsSnapshot` — toàn bộ cờ, đọc cache |
+| `PromotionSDK.isFeatureEnabled(feature)` | `Boolean` cho một `PromotionFeature` |
+| `PromotionSDK.isSdkEnabled()` | Công tắc tổng — `false` thì ẩn **toàn bộ** điểm vào ưu đãi |
+| `PromotionSDK.refreshFeatureFlags { … }` | Nạp lại từ server, trả snapshot mới trên main thread |
+
+Ba điều cần nhớ:
+
+- **Snapshot đã áp sẵn công tắc tổng**: `flags.all == false` → mọi field còn lại đều `false`.
+- **Fail-open**: chưa `initialize()` hoặc chưa gọi được API lần nào → trả bật hết. Không hàm nào ném lỗi.
+- Cờ có thể đổi giữa phiên → **đừng cache lại** snapshot, hỏi lại mỗi khi dựng UI.
+
+Không muốn hỏi chủ động thì chỉ cần nghe `onAvailabilityChanged` (§7).
 
 ---
 
@@ -268,7 +295,7 @@ val myCallback = object : PromotionSDKCallback {
 | `onVoucherCleared()` | User bỏ chọn voucher trên widget |
 | `onVoucherCountChanged(count)` | Widget load xong, biết tổng voucher khả dụng |
 | `onServiceSelected(selection)` | User chọn dịch vụ trong bottom sheet |
-| `onAvailabilityChanged(enabled)` | Feature flag báo bật/tắt SDK |
+| `onAvailabilityChanged(enabled)` | Feature flag báo bật/tắt SDK — bắn **cả `true` lẫn `false`**: nạp cờ xong sau `initialize`, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Nhớ đọc tham số `enabled`, đừng coi mọi lần gọi là "tắt". |
 | `onClosed()` | Màn SDK bị đóng |
 
 > Callback của SDK là kênh **1-1** (một object nhận sự kiện, truyền qua `initialize(callback = ...)`).

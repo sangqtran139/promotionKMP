@@ -143,6 +143,10 @@ Cờ TẮT → hiện `R.string.prm_feature_disabled` (PRM_MOB_021) và không �
 **Không** gọi thẳng `PromotionFeatureFlagUseCases()` từ tầng UI; thêm màn mới thì thêm một hàm
 `canOpen…` vào gate.
 
+Host **hỏi trước được** để ẩn entry point của chính mình — `PromotionSDK.featureFlags()` /
+`isFeatureEnabled(feature)` / `isSdkEnabled()` / `refreshFeatureFlags(onComplete)`. Đó là tầng
+**tuỳ chọn**, không thay cho việc gác ở trên; xem [features/FeatureFlag.md §3](../features/FeatureFlag.md).
+
 ---
 
 ## 5. Resource & đặt tên

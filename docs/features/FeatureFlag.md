@@ -10,18 +10,17 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 - **Gate (dùng chung):** `PromotionFeatureGate` trong `core/domain/usecase/` — **một object Kotlin duy
   nhất** cho cả hai nền tảng. Android gọi `PromotionFeatureGate.canOpenVoucherDetail()`, iOS gọi
   `PromotionFeatureGate.shared.canOpenVoucherDetail()`.
-- **Tên tính năng:** chỉ có ở `PromotionFeatureFlag` (hằng chuỗi Kotlin). Enum Swift
-  `PromotionSDKFeature` đã bị xoá; không có enum thay thế ở bất kỳ ngôn ngữ nào.
+- **Tên tính năng:** nguồn sự thật là `PromotionFeatureFlag` (hằng chuỗi Kotlin). Host **không** gõ
+  chuỗi đó — bề mặt public dùng enum `PromotionFeature` ở mỗi nền tảng (xem §3).
 - **Phần riêng mỗi nền tảng:** chỉ còn *chỗ gọi* hiển thị thông báo khi bị chặn —
   `PRMBaseFragment.openPromotionDetail()` và `BaseRouter.canOpenVoucherDetail()`; **cả hai đều toast**
   (`Toast` / `PRMToast`) và toast này **luôn hiện, bỏ qua cổng bật/tắt toast chung** —
   `PromotionToastGate.showFeatureDisabled()` / `PromotionToast.showAlways()`, xem
   [ErrorHandling.md](../common/ErrorHandling.md).
 
-> **SDK không phơi API hỏi cờ ra host.** App đối tác không cần biết cờ nào đang bật: mọi điểm vào đều
-> tự gác, và khi bị chặn thì SDK hiện thông báo PRM_MOB_021 (iOS còn báo qua
-> `onAvailabilityChanged(enabled:)`). `PromotionSDK.featureFlags` (Android) và
-> `PromotionSDK.isEnabled(feature:)` (iOS) đã bị gỡ — không nơi nào dùng chúng.
+> **SDK vừa tự gác, vừa cho host hỏi.** Mọi điểm vào vẫn tự gác và hiện thông báo PRM_MOB_021 khi bị
+> chặn — kill-switch không phụ thuộc vào việc host có kiểm tra hay không. Ngoài ra, từ 2026-08-04 host
+> **hỏi trước được** qua bốn hàm ở §3 để ẩn entry point của mình thay vì để user bấm rồi ăn toast.
 
 ---
 
@@ -69,11 +68,12 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 | Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
 | Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
-Cả hai nền tảng đều **không** phơi API hỏi cờ cho host — xem ghi chú ở đầu file.
+Ngoài hai tầng trên còn **tầng thứ ba, tuỳ chọn**: host tự hỏi để ẩn entry point của chính mình — §3.
+Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn hoạt động đầy đủ.
 
-`PromotionFeatureGate` có sẵn `isSdkEnabled()`, `canApplyVoucher()`, `canRedeemVoucher()` nhưng
-**chưa nơi nào gọi**: công tắc tổng đã áp ngầm trong `PromotionFeatureFlags.isEnabled`, còn hai cờ
-`APPLY`/`REDEEM` thì `PromotionUseCases` tự gác bên trong. Giữ lại cho các màn sắp tới.
+`PromotionFeatureGate.canApplyVoucher()` / `canRedeemVoucher()` vẫn **chưa nơi nào gọi trực tiếp**:
+hai cờ `APPLY`/`REDEEM` được `PromotionUseCases` tự gác bên trong. Giữ lại cho các màn sắp tới.
+`isSdkEnabled()` nay có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
 
 Ánh xạ cờ ↔ hàm (giống hệt hai nền tảng):
 
@@ -96,17 +96,87 @@ khi** chạm mạng, và một cờ tắt không chặn nhầm hàm khác.
 
 ---
 
-## 3. Nguyên tắc dùng feature flag
+## 3. API cho host
+
+Bốn hàm, đối xứng hai nền tảng (cùng tên, **cùng thứ tự** khai báo trong `PromotionSDK`):
+
+| Android | iOS | Làm gì |
+|---|---|---|
+| `featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | Chụp toàn bộ cờ từ cache, **đồng bộ** |
+| `isFeatureEnabled(feature: PromotionFeature): Boolean` | `isFeatureEnabled(_ feature: PromotionFeature) -> Bool` | Tra một cờ |
+| `isSdkEnabled(): Boolean` | `isSdkEnabled() -> Bool` | Công tắc tổng `ENABLE_ALL` |
+| `refreshFeatureFlags(onComplete)` | `refreshFeatureFlags(completion:)` | Nạp lại từ server rồi trả snapshot mới trên **main thread** |
+
+DTO public, cũng là **song ánh** hai file (sửa một bên thì sửa cả hai):
+
+| Android `entry/api/` | iOS `Entry/API/` |
+|---|---|
+| `PromotionFeatureModels.kt` — `PromotionFeature`, `PromotionFeatureFlagsSnapshot` | `PromotionFeatureModels.swift` |
+| `PromotionFeatureMapper.kt` (`internal`) | phần `MARK: - Feature flag` trong `PromotionSDKImpl.swift` |
+
+Vì sao phải có DTO riêng thay vì trả thẳng `PromotionFeatureFlags` của lõi: host chỉ tích hợp
+`AndroidPromotionSDK` / `PRM.framework`, không có type của `promotionLogic` trên compile classpath —
+đúng lý do đã có `PromotionApiModels`. Xem [PublicApi.md](../common/PublicApi.md).
+
+```kotlin
+// Android — ẩn entry point trước khi user kịp bấm
+PromotionSDK.refreshFeatureFlags { flags ->
+    binding.btnMyVoucher.isVisible = flags.voucherList
+    binding.groupPromotion.isVisible = flags.all
+}
+```
+
+```swift
+// iOS
+PromotionSDK.refreshFeatureFlags { flags in
+    self.myVoucherButton.isHidden = !flags.voucherList
+}
+```
+
+Ba điều phải nhớ:
+
+1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Mapper đi qua
+   `PromotionFeatureFlags.isEnabled(...)` chứ **không** đọc thẳng field lõi, vì luật `if (!enableAll)`
+   chỉ nằm trong hàm đó — đọc thẳng field sẽ trả `voucherList = true` khi công tắc tổng đang tắt.
+2. **Fail-open, không ném.** Chưa `initialize()` / chưa có cache → trả bật hết. Không hàm nào ném lỗi
+   hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
+3. **Đây là tầng tuỳ chọn.** Host bỏ qua hoàn toàn thì SDK vẫn tự gác như cũ (§2).
+
+**`onAvailabilityChanged(enabled:)` giờ bắn cả `true` lẫn `false`** — trước đây chỉ bắn `false` khi
+user đã bấm và bị chặn, nên host ẩn entry point rồi thì không có đường hiện lại. Nay nó bắn ở:
+
+| Lúc | Giá trị | Android | iOS |
+|---|---|---|---|
+| Nạp cờ xong sau `initialize` / login lại | `ENABLE_ALL` | `PromotionSDK.notifyAvailability()` | `PromotionSDKImpl.notifyAvailabilityAfterInitialLoad()` |
+| Mỗi lần `refreshFeatureFlags` | `ENABLE_ALL` | `PromotionSDK.refreshFeatureFlags` | idem |
+| Widget checkout đổi trạng thái | `VOUCHER_SELECTION` | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag` |
+| User bấm mà bị chặn | luôn `false` | `openMyPromotion` / `openPromotionDetail` | idem |
+
+> iOS phải đợi `wireCallbacks` chạy xong mới báo được lần đầu: `PromotionSDKImpl.init` bắn Task nạp cờ,
+> nhưng `onAvailabilityUpdate` chỉ được nối **sau khi** `init` trả về. Vì thế Task được giữ lại ở
+> `initialFlagLoad` và `PromotionSDK.initialize` `await` nó sau `wireCallbacks`. Android không vướng:
+> `callback` được gán trước khi `launch`.
+
+Test: `AndroidPromotionSDK/src/test/.../entry/api/PromotionFeatureMapperTest.kt` — ánh xạ enum ↔ hằng
+số lõi, và khẳng định công tắc tổng tắt thì snapshot tắt hết.
+
+---
+
+## 4. Nguyên tắc dùng feature flag
 
 - Luôn hỏi `PromotionFeatureGate`; **không** gọi thẳng `PromotionFeatureFlagUseCases()` từ tầng UI.
   Thêm màn mới thì thêm một hàm `canOpen…` vào gate, đừng lặp `isEnabled("PROMOTION.…")` tại chỗ.
 - Giữ **fail-open**: thiếu cờ không được làm treo hay khoá tính năng.
-- Đặt tên cờ tập trung ở `PromotionFeatureFlag` trong lõi Kotlin — iOS đọc lại chính hằng số đó
-  (`PromotionFeature.flagName`), không định nghĩa lại chuỗi.
+- Đặt tên cờ tập trung ở `PromotionFeatureFlag` trong lõi Kotlin. Cả hai nền tảng đọc lại **chính
+  hằng số đó** khi map từ enum public — `PromotionFeature.flagName()` (Android) /
+  `PromotionSDKImpl.flagName(for:)` (iOS); không nơi nào định nghĩa lại chuỗi.
+- **Thêm cờ mới thì sửa đủ 5 chỗ:** hằng số ở `PromotionFeatureFlag` + field ở `PromotionFeatureFlags`
+  (lõi), rồi case ở `PromotionFeature` + field ở `PromotionFeatureFlagsSnapshot` + nhánh ở mapper
+  (mỗi nền tảng). Thiếu một chỗ thì host không hỏi được cờ vừa thêm.
 
 ---
 
-## 4. Việc còn treo
+## 5. Việc còn treo
 
 **`ui/feature/featureflag/` (Android) là code chết** — `FeatureFlagViewModel`, `FeatureFlagUIState`,
 `FeatureFlagUIAction` không có nơi nào dùng (0 tham chiếu). Chúng là khung sót lại từ bản gốc.

@@ -71,7 +71,22 @@ final class PromotionSDKImpl: NSObject {
         )
         super.init()
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
-        Task { try? await PromotionFeatureGate.shared.refresh() }
+        initialFlagLoad = Task { try? await PromotionFeatureGate.shared.refresh() }
+    }
+
+    /// Task nạp cờ lần đầu, giữ lại để `PromotionSDK.initialize` báo host **sau khi** nó xong.
+    /// Không notify thẳng trong `init` được: `wireCallbacks` chạy **sau** khi `init` trả về, nên
+    /// `onAvailabilityUpdate` lúc đó còn `nil` và callback đầu tiên sẽ rơi mất.
+    private var initialFlagLoad: Task<Void, Never>?
+
+    /// Chờ lần nạp cờ đầu tiên xong rồi báo host công tắc tổng — đây là lúc đầu tiên biết chắc
+    /// SDK có được bật hay không. Đối ứng `notifyAvailability()` bên Android.
+    func notifyAvailabilityAfterInitialLoad() {
+        let load = initialFlagLoad
+        Task { @MainActor [weak self] in
+            if let load { await load.value }
+            self?.onAvailabilityUpdate?(PromotionSDKImpl.isSdkEnabled())
+        }
     }
 
     // MARK: - Theming
@@ -271,7 +286,11 @@ final class PromotionSDKImpl: NSObject {
 
         PromotionContainer.shared.clear()
         PromotionContainer.shared.initialize(config: newContext.toCoreConfig(isDebug: PromotionSDKImpl.isDebugBuild))
-        Task { try? await PromotionFeatureGate.shared.refresh() }
+        // Callback đã được nối từ lần initialize đầu nên báo thẳng, không cần đợi như lúc init.
+        Task { @MainActor [weak self] in
+            try? await PromotionFeatureGate.shared.refresh()
+            self?.onAvailabilityUpdate?(PromotionSDKImpl.isSdkEnabled())
+        }
         // callback + theme giữ nguyên — không đụng.
     }
 
@@ -296,6 +315,57 @@ final class PromotionSDKImpl: NSObject {
     func canOpenVoucherDetail(_ completion: @escaping (Bool) -> Void) {
         let enabled = PromotionFeatureGate.shared.canOpenVoucherDetail()
         DispatchQueue.main.async { completion(enabled) }
+    }
+
+    // MARK: - Feature flag — ranh giới lõi ↔ DTO public
+    //
+    // `static` chứ không phải instance method: bề mặt feature flag của `PromotionSDK` phải trả lời
+    // được **cả khi chưa initialize** (fail-open → bật hết), lúc đó chưa có `impl` nào để hỏi.
+    // Đối ứng `PromotionFeatureMapper.kt` bên Android.
+
+    /// Tên cờ thật của lõi Kotlin cho một `PromotionFeature`.
+    static func flagName(for feature: PromotionFeature) -> String {
+        switch feature {
+        case .all: return PromotionFeatureFlag.shared.ENABLE_ALL
+        case .voucherList: return PromotionFeatureFlag.shared.VOUCHER_LIST
+        case .voucherDetail: return PromotionFeatureFlag.shared.VOUCHER_DETAIL
+        case .voucherSelection: return PromotionFeatureFlag.shared.VOUCHER_SELECTION
+        case .voucherApply: return PromotionFeatureFlag.shared.VOUCHER_APPLY
+        case .voucherRedeem: return PromotionFeatureFlag.shared.VOUCHER_REDEEM
+        }
+    }
+
+    static func isFeatureEnabled(_ feature: PromotionFeature) -> Bool {
+        PromotionFeatureGate.shared.isEnabled(flagName: flagName(for: feature))
+    }
+
+    static func isSdkEnabled() -> Bool {
+        PromotionFeatureGate.shared.isSdkEnabled()
+    }
+
+    /// Đọc từng cờ qua `PromotionFeatureGate.isEnabled` chứ **không** đọc thẳng field của
+    /// `PromotionFeatureFlags`: công tắc tổng `ENABLE_ALL` chỉ được áp bên trong `isEnabled`
+    /// (`if (!enableAll) return false`), field thô thì không. Đọc thẳng field sẽ trả
+    /// `voucherList = true` ngay cả khi công tắc tổng đang tắt — host ẩn nhầm/hiện nhầm.
+    static func featureFlagsSnapshot() -> PromotionFeatureFlagsSnapshot {
+        PromotionFeatureFlagsSnapshot(
+            all: isFeatureEnabled(.all),
+            voucherList: isFeatureEnabled(.voucherList),
+            voucherDetail: isFeatureEnabled(.voucherDetail),
+            voucherSelection: isFeatureEnabled(.voucherSelection),
+            voucherApply: isFeatureEnabled(.voucherApply),
+            voucherRedeem: isFeatureEnabled(.voucherRedeem)
+        )
+    }
+
+    /// Nạp lại cờ từ server rồi trả snapshot mới trên **main thread**. `refresh()` không ném lỗi
+    /// nghiệp vụ; `try?` chỉ để nuốt `CancellationException` đã khai báo cho Swift.
+    static func refreshFeatureFlags(_ completion: @escaping (PromotionFeatureFlagsSnapshot) -> Void) {
+        Task {
+            try? await PromotionFeatureGate.shared.refresh()
+            let flags = featureFlagsSnapshot()
+            await MainActor.run { completion(flags) }
+        }
     }
 
     /// Báo lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
