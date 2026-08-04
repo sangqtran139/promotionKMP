@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -24,7 +24,7 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
     private var services: List<ServiceSelectorUiItem> = emptyList()
     private var onServiceSelected: ((ServiceSelectorUiItem) -> Unit)? = null
 
-    private val adapter = ServiceSelectorAdapter(VISIBLE_ITEM_COUNT) { service ->
+    private val adapter = ServiceSelectorAdapter { service ->
         onServiceSelected?.invoke(service)
         dismiss()
     }
@@ -50,10 +50,12 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvServices.apply {
-            // **Một hàng, vuốt ngang** — TLNV MOB_002 item #6: "Danh sách hiển thị trên 1 dòng, màn
-            // hình hiển thị tối đa 3 dịch vụ, cho phép vuốt sang trái/phải để xem thêm".
-            // Bề rộng item do adapter chia lúc `onCreateViewHolder` (xem lý do ở đó).
-            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            // **Lưới [SPAN_COUNT] cột, cuộn dọc.** Nhiều dịch vụ thì xuống hàng, tràn quá trần 60%
+            // màn hình ([MAX_HEIGHT_RATIO]) thì cuộn trong lưới — xem [onStart].
+            //
+            // Không cần chia bề rộng bằng code như bản cuộn ngang trước đây: `GridLayoutManager` tự
+            // chia mỗi ô đúng 1/[SPAN_COUNT] bề ngang, nên item layout khai `match_parent` là đúng.
+            layoutManager = GridLayoutManager(requireContext(), SPAN_COUNT)
             adapter = this@ServiceSelectorBottomSheet.adapter
             itemAnimator = null
         }
@@ -88,8 +90,8 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
     }
 
     companion object {
-        /** Số dịch vụ nhìn thấy cùng lúc trên 1 hàng; dư ra thì vuốt ngang. Khớp iOS `visibleItemCount`. */
-        private const val VISIBLE_ITEM_COUNT = 3
+        /** Số cột của lưới; dịch vụ dư ra thì xuống hàng. Khớp `spanCount` của iOS. */
+        private const val SPAN_COUNT = 3
 
         /** Trần chiều cao sheet theo màn hình — khớp `maxHeightRatio` của iOS. */
         private const val MAX_HEIGHT_RATIO = 0.6f

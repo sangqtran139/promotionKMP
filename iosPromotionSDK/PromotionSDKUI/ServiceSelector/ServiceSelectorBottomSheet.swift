@@ -3,9 +3,9 @@
 //  PromotionSDK
 //
 //  Bottom sheet "Chọn dịch vụ" — hiện khi user bấm "Áp dụng" trên voucher.
-//  Liệt kê các dịch vụ khả dụng (lưới 3 cột) được lọc theo `applicableProducts`
-//  của voucher giao với `availableServices` host cung cấp. Parity Android
-//  `ServiceSelectorBottomSheet` + `ServiceSelectorAdapter`.
+//  Liệt kê các dịch vụ khả dụng (lưới 3 cột, cuộn dọc, card cao tối đa 60% màn hình)
+//  được lọc theo `applicableProducts` của voucher giao với `availableServices` host
+//  cung cấp. Parity Android `ServiceSelectorBottomSheet` + `ServiceSelectorAdapter`.
 //
 
 import UIKit
@@ -22,10 +22,11 @@ struct ServiceSelectorItem: Equatable {
 final class ServiceSelectorBottomSheet: UIViewController {
 
     // MARK: - Config
-    /// Số dịch vụ nhìn thấy cùng lúc trên 1 hàng; dư ra thì vuốt ngang (TLNV MOB_002 item #6).
-    private static let visibleItemCount = 3
-    /// Icon 48 + spacing 4 + tên 1 dòng (~32). Danh sách luôn **1 hàng** nên đây cũng là chiều cao lưới.
+    /// Số cột của lưới; dịch vụ dư ra thì xuống hàng. Khớp `SPAN_COUNT` của Android.
+    private static let spanCount = 3
+    /// Icon 48 + spacing 4 + tên 2 dòng (~32). Mọi ô cao bằng nhau nên nhân số hàng ra chiều cao lưới.
     private static let itemHeight: CGFloat = 48 + 4 + 32
+    /// Trần chiều cao card theo màn hình — khớp `MAX_HEIGHT_RATIO` của Android.
     private static let maxHeightRatio: CGFloat = 0.6
 
     private let services: [ServiceSelectorItem]
@@ -34,11 +35,11 @@ final class ServiceSelectorBottomSheet: UIViewController {
     // MARK: - UI
     private let dimView = UIView()
     private let cardView = UIView()
-    /// **Một hàng, vuốt ngang** — TLNV MOB_002 item #6: "Danh sách hiển thị trên 1 dòng, màn hình
-    /// hiển thị tối đa 3 dịch vụ, cho phép vuốt sang trái/phải để xem thêm".
+    /// **Lưới `spanCount` cột, cuộn dọc.** Nhiều dịch vụ thì xuống hàng; cao quá trần
+    /// `maxHeightRatio` thì cuộn trong lưới — xem `computedCardHeight()`.
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
+        layout.scrollDirection = .vertical
         layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
         return UICollectionView(frame: .zero, collectionViewLayout: layout)
@@ -218,9 +219,10 @@ final class ServiceSelectorBottomSheet: UIViewController {
             return headerHeight + 24 + 24 + 40 + safeBottom
         }
 
-        // Luôn **1 hàng** (vuốt ngang) nên chiều cao không phụ thuộc số dịch vụ; trần 60% giữ lại
-        // phòng máy nhỏ / font lớn.
-        let listHeight = Self.itemHeight + 16 + 24   // + contentInset top/bottom
+        // Lưới `spanCount` cột → số hàng làm tròn LÊN (7 dịch vụ / 3 cột = 3 hàng, hàng cuối 1 ô).
+        // Card cao vừa đủ nội dung, và bị cắt trần `maxHeightRatio`; phần dư thì cuộn trong lưới.
+        let rowCount = (services.count + Self.spanCount - 1) / Self.spanCount
+        let listHeight = CGFloat(rowCount) * Self.itemHeight + 16 + 24   // + contentInset top/bottom
         let raw = headerHeight + listHeight + safeBottom
         return min(raw, screenHeight * Self.maxHeightRatio)
     }
@@ -267,9 +269,11 @@ extension ServiceSelectorBottomSheet: UICollectionViewDataSource, UICollectionVi
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout,
                         sizeForItemAt indexPath: IndexPath) -> CGSize {
-        // Chia đúng 3 phần bề ngang → item thứ 4 trở đi nằm ngoài màn, vuốt ngang mới tới.
+        // Chia đúng `spanCount` phần bề ngang → ô thứ 4 trở đi rơi xuống hàng dưới.
+        // `floor` để tổng bề rộng một hàng không vượt quá chỗ trống vì số lẻ — dư 1pt là
+        // FlowLayout đẩy ô cuối xuống hàng riêng.
         let insets = collectionView.contentInset.left + collectionView.contentInset.right
-        let width = (collectionView.bounds.width - insets) / CGFloat(Self.visibleItemCount)
+        let width = ((collectionView.bounds.width - insets) / CGFloat(Self.spanCount)).rounded(.down)
         return CGSize(width: max(width, 1), height: Self.itemHeight)
     }
 

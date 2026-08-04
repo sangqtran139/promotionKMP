@@ -31,10 +31,14 @@
         android:layout_height="1dp"
         android:background="@color/tokenDark10" />
 
+    <!-- Lưới 3 cột, cuộn dọc. Cao theo nội dung, bị cắt trần 60% màn hình ở
+         ServiceSelectorBottomSheet.onStart() → dư ra thì cuộn trong lưới.
+         clipToPadding=false để padding thành content inset khi cuộn (khớp `contentInset` iOS). -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvServices"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clipToPadding="false"
         android:paddingStart="@dimen/view_size_8"
         android:paddingTop="@dimen/view_size_16"
         android:paddingEnd="@dimen/view_size_8"

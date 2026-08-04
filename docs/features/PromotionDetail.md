@@ -132,21 +132,27 @@ Khi bấm "Sử dụng ngay", số dịch vụ khả dụng quyết định hàn
 
 Nút bị **ẩn** khi voucher REDEEMED / EXPIRED / REVOKED / SUSPENDED (`actionVisible` từ store).
 
-### Bottom sheet "Chọn dịch vụ" — chiều cao
+### Bottom sheet "Chọn dịch vụ" — bố cục & chiều cao
 
-**Một hàng, vuốt ngang, thấy tối đa 3 dịch vụ** (TLNV MOB_002 item #6) — không phải lưới nhiều hàng.
+**Lưới 3 cột, cuộn dọc, sheet cao tối đa 60% màn hình.** Dịch vụ dư ra thì xuống hàng; vượt trần thì
+cuộn trong lưới.
 
 | | Android | iOS |
 |---|---|---|
-| Hướng | `LinearLayoutManager(HORIZONTAL)` | `flowLayout.scrollDirection = .horizontal` |
-| Bề rộng item | adapter chia `(width - padding) / 3` trong `doOnLayout` (item layout khai `match_parent` nên **bắt buộc** set bằng code) | `sizeForItemAt` chia `(bounds - inset) / 3` |
-| Chiều cao | 1 hàng; trần `behavior.maxHeight = 60% heightPixels` | 1 hàng; `min(raw, screen * 0.6)` |
+| Bố cục | `GridLayoutManager(context, SPAN_COUNT = 3)` | `flowLayout.scrollDirection = .vertical`, `spanCount = 3` |
+| Bề rộng ô | do `GridLayoutManager` tự chia — item layout khai `match_parent` là vừa khít, **không** set bằng code | `sizeForItemAt` chia `floor((bounds - inset) / 3)` |
+| Chiều cao | nội dung thật; trần `behavior.maxHeight = 60% heightPixels` | `min(header + rowCount * itemHeight + inset, screen * 0.6)` |
+| Cuộn | RecyclerView tự cuộn khi bị AT_MOST cắt (`clipToPadding=false` cho padding thành content inset) | `collectionView` cuộn dọc, `contentInset` 16/24 |
 | Trạng thái mở | `skipCollapsed = true` + `STATE_EXPANDED` | luôn mở đúng chiều cao đã tính |
 
 > **Đừng bỏ `skipCollapsed`/`maxHeight` bên Android.** Mặc định `BottomSheetDialogFragment` mở ở
 > `STATE_COLLAPSED` với peek auto (~9/16 bề ngang, cỡ 230dp) → **từ 4 dịch vụ (2 hàng) là hàng dưới đã
 > khuất**; và không có trần thì content cao hơn màn hình sẽ tràn xuống dưới, kéo trong lưới chỉ làm
 > **đóng sheet** chứ không cuộn → item cuối không cách nào chạm tới.
+
+> **Lệch TLNV.** MOB_002 item #6 ghi "danh sách hiển thị trên 1 dòng, tối đa 3 dịch vụ, vuốt trái/phải
+> để xem thêm". Bản hiện tại đổi sang **lưới cuộn dọc** theo yêu cầu sản phẩm (2026-08-04): nhiều dịch
+> vụ thì vuốt ngang khó thấy hết. Cần chốt lại với BA nếu TLNV không được cập nhật theo.
 
 ## 5. Lưu ý khi sửa
 
