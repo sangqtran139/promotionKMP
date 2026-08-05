@@ -17,12 +17,14 @@ public struct PromotionServiceSelection {
     /// Mã dịch vụ được chọn (khớp `serviceCode` host cấu hình / `productId` của voucher).
     public let serviceCode: String
     public let serviceName: String
+    public let serviceType: String
     public let iconUrl: String
 
-    public init(voucherId: String, serviceCode: String, serviceName: String, iconUrl: String) {
+    public init(voucherId: String, serviceCode: String, serviceName: String, serviceType: String = "", iconUrl: String) {
         self.voucherId = voucherId
         self.serviceCode = serviceCode
         self.serviceName = serviceName
+        self.serviceType = serviceType
         self.iconUrl = iconUrl
     }
 }

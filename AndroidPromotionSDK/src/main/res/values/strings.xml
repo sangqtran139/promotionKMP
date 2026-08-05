@@ -8,8 +8,6 @@
     <string name="prm_use">Sử dụng</string>
     <!-- Nút màn Chi tiết khi vào từ luồng thanh toán (TLNV MOB_002 control #5). -->
     <string name="prm_apply">Áp dụng</string>
-    <!-- TẠM THỜI: phản hồi sau khi chọn dịch vụ, trong lúc chưa có đích điều hướng thật. -->
-    <string name="prm_service_selected">Đã chọn dịch vụ: %1$s</string>
     <string name="prm_deal_hot">Ngàn deal HOT chờ bạn</string>
     <string name="prm_hot_deal_description">Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!</string>
     <string name="prm_my_promotion">Ưu đãi của tôi</string>

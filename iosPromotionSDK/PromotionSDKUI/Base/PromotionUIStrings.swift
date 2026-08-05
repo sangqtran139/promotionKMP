@@ -14,9 +14,6 @@ enum PromotionUIStrings {
     static let use = "Sử dụng"
     /// Nút màn Chi tiết khi vào từ luồng thanh toán (TLNV MOB_002 control #5) — `prm_apply` bên Android.
     static let apply = "Áp dụng"
-    /// TẠM THỜI: phản hồi sau khi chọn dịch vụ, trong lúc chưa có đích điều hướng thật.
-    /// Đối ứng `prm_service_selected` bên Android.
-    static func serviceSelected(_ name: String) -> String { "Đã chọn dịch vụ: \(name)" }
     static let used = "Đã sử dụng"
     static let expired = "Đã hết hạn"
     static let ineligible = "Không đủ điều kiện"

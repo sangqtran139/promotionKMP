@@ -177,6 +177,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
                     voucherId = voucher.voucherId,
                     serviceCode = service.serviceCode,
                     serviceName = service.serviceName,
+                    serviceType = service.serviceType,
                     iconUrl = service.iconUrl,
                 )
             )

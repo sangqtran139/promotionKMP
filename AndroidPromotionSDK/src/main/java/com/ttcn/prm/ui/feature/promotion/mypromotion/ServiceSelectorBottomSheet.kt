@@ -13,7 +13,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ttcn.prm.R
 import com.ttcn.prm.databinding.BottomSheetServiceSelectorBinding
-import com.ttcn.prm.ui.base.PromotionToastGate
 import com.ttcn.prm.ui.feature.promotion.mypromotion.adapter.ServiceSelectorAdapter
 
 internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
@@ -107,13 +106,11 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
 
         /**
          * Lối vào DUY NHẤT của bottom sheet — mọi màn (Ưu đãi của tôi, Tìm kiếm, Chi tiết) gọi qua
-         * đây để hai luật sau không phải lặp lại ở từng màn:
+         * đây để luật sau không phải lặp lại ở từng màn:
          *
-         * 1. **Đúng 1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control #5): bắt user mở
-         *    sheet rồi bấm lại đúng cái đó là thừa. 0 dịch vụ vẫn mở (sheet hiện "Không có dịch vụ
-         *    thoả mãn") để user biết vì sao không đi tiếp được.
-         * 2. **Toast xác nhận** khi đã chọn — tạm thời, để hai nền tảng cùng phản hồi giống nhau
-         *    trong lúc chưa có đích điều hướng thật (`ServiceSelected` bên VM vẫn là TODO).
+         * **Đúng 1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control #5): bắt user mở
+         * sheet rồi bấm lại đúng cái đó là thừa. 0 dịch vụ vẫn mở (sheet hiện "Không có dịch vụ
+         * thoả mãn") để user biết vì sao không đi tiếp được.
          *
          * Đối ứng `ServiceSelectorBottomSheet.present(from:services:onServiceSelected:)` bên iOS.
          */
@@ -122,21 +119,13 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
             services: List<ServiceSelectorUiItem>,
             onServiceSelected: (ServiceSelectorUiItem) -> Unit,
         ) {
-            val notify: (ServiceSelectorUiItem) -> Unit = { service ->
-                val name = service.serviceName.ifBlank { service.serviceCode }
-                PromotionToastGate.showAlways(
-                    host.requireContext(),
-                    host.getString(R.string.prm_service_selected, name),
-                )
-                onServiceSelected(service)
-            }
             val only = services.singleOrNull()
             if (only != null) {
-                notify(only)
+                onServiceSelected(only)
                 return
             }
             if (host.childFragmentManager.findFragmentByTag(TAG) != null) return
-            newInstance(services, notify).show(host.childFragmentManager, TAG)
+            newInstance(services, onServiceSelected).show(host.childFragmentManager, TAG)
         }
     }
 }

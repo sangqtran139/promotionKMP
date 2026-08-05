@@ -10,6 +10,7 @@ data class PromotionServiceSelection(
     val voucherId: String,
     val serviceCode: String,
     val serviceName: String,
+    val serviceType: String = "",
     val iconUrl: String,
 )
 

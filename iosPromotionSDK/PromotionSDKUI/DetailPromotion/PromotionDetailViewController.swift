@@ -227,6 +227,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
             voucherId: viewModel.voucherId,
             serviceCode: service.serviceCode,
             serviceName: service.serviceName,
+            serviceType: service.serviceType,
             iconUrl: service.iconUrl
         ))
         viewModel.handleAction(.serviceSelected(service))

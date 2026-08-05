@@ -19,6 +19,6 @@ enum ServiceSelectorBuilder {
     static func items(forApplicableProducts products: [ApplicableProduct]) -> [ServiceSelectorItem] {
         let services = PromotionContainer.shared.requireConfig().availableServices
         return ServiceSelectorKt.servicesForApplicableProducts(applicableProducts: products, availableServices: services)
-            .map { ServiceSelectorItem(serviceCode: $0.serviceCode, serviceName: $0.serviceName, iconUrl: $0.iconUrl) }
+            .map { ServiceSelectorItem(serviceCode: $0.serviceCode, serviceName: $0.serviceName, serviceType: $0.serviceType, iconUrl: $0.iconUrl) }
     }
 }

@@ -16,6 +16,7 @@ import UIKit
 struct ServiceSelectorItem: Equatable {
     let serviceCode: String
     let serviceName: String
+    let serviceType: String
     let iconUrl: String
 }
 
@@ -61,29 +62,20 @@ final class ServiceSelectorBottomSheet: UIViewController {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     /// Lối vào DUY NHẤT của bottom sheet — mọi màn (Ưu đãi của tôi, Tìm kiếm, Chi tiết) gọi qua đây
-    /// để hai luật sau không phải lặp lại ở từng màn:
+    /// để luật sau không phải lặp lại ở từng màn:
     ///
-    /// 1. **Đúng 1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control #5). 0 dịch vụ vẫn
-    ///    mở (sheet hiện "Không có dịch vụ thoả mãn") để user biết vì sao không đi tiếp được.
-    /// 2. **Toast xác nhận** khi đã chọn — tạm thời, để hai nền tảng cùng phản hồi giống nhau trong
-    ///    lúc chưa có đích điều hướng thật.
+    /// **Đúng 1 dịch vụ → chọn thẳng, không mở sheet** (TLNV MOB_002 control #5). 0 dịch vụ vẫn
+    /// mở (sheet hiện "Không có dịch vụ thoả mãn") để user biết vì sao không đi tiếp được.
     ///
     /// Đối ứng `ServiceSelectorBottomSheet.present(host:services:onServiceSelected:)` bên Android.
     static func present(from presenter: UIViewController,
                         services: [ServiceSelectorItem],
                         onServiceSelected: @escaping (ServiceSelectorItem) -> Void) {
-        let notify: (ServiceSelectorItem) -> Void = { [weak presenter] service in
-            let name = service.serviceName.isEmpty ? service.serviceCode : service.serviceName
-            if let view = presenter?.view {
-                PromotionToast.showAlways(PromotionUIStrings.serviceSelected(name), in: view)
-            }
-            onServiceSelected(service)
-        }
         if services.count == 1, let only = services.first {
-            notify(only)
+            onServiceSelected(only)
             return
         }
-        let sheet = ServiceSelectorBottomSheet(services: services, onServiceSelected: notify)
+        let sheet = ServiceSelectorBottomSheet(services: services, onServiceSelected: onServiceSelected)
         presenter.present(sheet, animated: false)
     }
 

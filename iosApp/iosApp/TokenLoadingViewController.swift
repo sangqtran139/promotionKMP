@@ -29,11 +29,11 @@ final class TokenLoadingViewController: UIViewController {
     /// nhưng list bị `distinctBy { serviceCode }` → khai **một dòng mỗi productId**, tên gộp các SKU.
     /// Khai theo từng SKU thì dòng thứ hai bị loại âm thầm.
     private let demoServices: [PromotionAvailableService] = [
-        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000002", serviceName: "Data Viettel MIMAX125 - không giới hạn", serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/mimax125/96"),
-        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000003", serviceName: "Gói cước V120 / V90",                    serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/goicuoc/96"),
-        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000010", serviceName: "BH xe máy Vespa 1 năm",                  serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/vespa/96"),
-        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000011", serviceName: "BH ô tô (2 chiều / doanh nghiệp)",       serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/bhoto/96"),
-        PromotionAvailableService(serviceCode: "019a7000-0002-0000-0000-000000000013", serviceName: "Combo đồ uống đóng chai",                serviceType: "BEVERAGE",  iconUrl: "https://picsum.photos/seed/douong/96")
+        PromotionAvailableService(serviceCode: "P-ALC-001", serviceName: "Data Viettel MIMAX125 - không giới hạn", serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/mimax125/96"),
+        PromotionAvailableService(serviceCode: "P-BILL-001", serviceName: "Gói cước V120 / V90",                    serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/goicuoc/96"),
+        PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "BH xe máy Vespa 1 năm",                  serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/vespa/96"),
+        PromotionAvailableService(serviceCode: "P-FOOD-002", serviceName: "BH ô tô",       serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/bhoto/96"),
+        PromotionAvailableService(serviceCode: "P-FOOD-003", serviceName: "Combo đồ uống đóng chai",                serviceType: "BEVERAGE",  iconUrl: "https://picsum.photos/seed/douong/96")
     ]
 
     // MARK: - UI

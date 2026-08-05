@@ -39,7 +39,10 @@
                 app:prmCvBottomLeftRadius="@dimen/view_size_16"
                 app:prmCvBottomRightRadius="@dimen/view_size_16"
                 app:prmCvTopLeftRadius="@dimen/view_size_16"
-                app:prmCvTopRightRadius="@dimen/view_size_16">
+                app:prmCvTopRightRadius="@dimen/view_size_16"
+                app:prmSvBackgroundType="fill_stroke"
+                app:prmSvStrokeColor="@color/color_D3D3D3"
+                app:prmSvStrokeWidth="0.5dp">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -153,7 +156,10 @@
                 app:prmCvBottomLeftRadius="@dimen/view_size_16"
                 app:prmCvBottomRightRadius="@dimen/view_size_16"
                 app:prmCvTopLeftRadius="@dimen/view_size_16"
-                app:prmCvTopRightRadius="@dimen/view_size_16">
+                app:prmCvTopRightRadius="@dimen/view_size_16"
+                app:prmSvBackgroundType="fill_stroke"
+                app:prmSvStrokeColor="@color/color_D3D3D3"
+                app:prmSvStrokeWidth="0.5dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"

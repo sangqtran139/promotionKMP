@@ -89,11 +89,11 @@ class PromotionTokenLoadingFragment : Fragment() {
      * Khai theo từng SKU thì dòng thứ hai bị loại âm thầm.
      */
     private val demoServices = listOf(
-        PromotionAvailableService("019a7000-0002-0000-0000-000000000002", "Data Viettel MIMAX125 - không giới hạn", "TELCO", "https://picsum.photos/seed/mimax125/96"),
-        PromotionAvailableService("019a7000-0002-0000-0000-000000000003", "Gói cước V120 / V90", "TELCO", "https://picsum.photos/seed/goicuoc/96"),
-        PromotionAvailableService("019a7000-0002-0000-0000-000000000010", "BH xe máy Vespa 1 năm", "INSURANCE", "https://picsum.photos/seed/vespa/96"),
-        PromotionAvailableService("019a7000-0002-0000-0000-000000000011", "BH ô tô (2 chiều / doanh nghiệp)", "INSURANCE", "https://picsum.photos/seed/bhoto/96"),
-        PromotionAvailableService("019a7000-0002-0000-0000-000000000013", "Combo đồ uống đóng chai", "BEVERAGE", "https://picsum.photos/seed/douong/96"),
+        PromotionAvailableService("P-ALC-001", "Data Viettel MIMAX125 - không giới hạn", "TELCO", "https://picsum.photos/seed/mimax125/96"),
+        PromotionAvailableService("P-BILL-001", "Gói cước V120 / V90", "TELCO", "https://picsum.photos/seed/goicuoc/96"),
+        PromotionAvailableService("P-FOOD-001", "BH xe máy Vespa 1 năm", "INSURANCE", "https://picsum.photos/seed/vespa/96"),
+        PromotionAvailableService("P-FOOD-002", "BH ô tô", "INSURANCE", "https://picsum.photos/seed/bhoto/96"),
+        PromotionAvailableService("P-FOOD-003", "Combo đồ uống đóng chai", "BEVERAGE", "https://picsum.photos/seed/douong/96"),
     )
 
     private fun updateDemoContext() {

@@ -285,6 +285,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                 voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty(),
                 serviceCode = service.serviceCode,
                 serviceName = service.serviceName,
+                serviceType = service.serviceType,
                 iconUrl = service.iconUrl,
             )
         )

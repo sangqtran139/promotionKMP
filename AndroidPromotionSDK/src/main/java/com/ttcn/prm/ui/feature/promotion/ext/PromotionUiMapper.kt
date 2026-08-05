@@ -101,6 +101,7 @@ internal fun ValidateDiscountsResult.appliedDiscountFor(objectId: String, object
 internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem = ServiceSelectorUiItem(
     serviceCode = serviceCode,
     serviceName = serviceName,
+    serviceType = serviceType,
     iconUrl = iconUrl,
 )
 

@@ -71,7 +71,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
 | `onVoucherCleared()` | — | |
 | `onVoucherCountChanged(count)` | `Int` | |
-| `onServiceSelected(selection)` | `PromotionServiceSelection` | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). |
+| `onServiceSelected(selection)` | `PromotionServiceSelection` | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `serviceType` (lấy từ `PromotionAvailableService.serviceType` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
 | `onAvailabilityChanged(enabled)` | `Bool` | Từ iOS `didUpdateAvailability`. **Bắn cả `true` lẫn `false` ở cả 2 nền tảng** (trước 2026-08-04 Android chỉ bắn `false` lúc user bị chặn, nên host ẩn rồi không hiện lại được): nạp cờ xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Bảng đầy đủ: [features/FeatureFlag.md §3](../features/FeatureFlag.md). |
 | `onClosed()` | — | Từ iOS `didClose` / Android `onSDKClosed`. |
 

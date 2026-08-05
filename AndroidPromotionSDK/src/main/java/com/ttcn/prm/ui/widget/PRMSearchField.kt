@@ -11,7 +11,7 @@ import android.widget.LinearLayout
 import androidx.annotation.ColorRes
 import androidx.core.widget.addTextChangedListener
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.ViewsSearchFieldBinding
+import com.ttcn.prm.databinding.PrmViewsSearchFieldBinding
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.theme.token.SearchBarToken
 import com.ttcn.prm.ui.utils.applyCornerRadiusDp
@@ -30,7 +30,7 @@ class PRMSearchField @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs), View.OnFocusChangeListener, IPRMInput {
 
-    val viewBinding = ViewsSearchFieldBinding.inflate(LayoutInflater.from(context), this, true)
+    val viewBinding = PrmViewsSearchFieldBinding.inflate(LayoutInflater.from(context), this, true)
 
     private var onFocusListener: ((Boolean) -> Unit)? = null
 

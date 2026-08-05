@@ -189,6 +189,7 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
                 voucherId: voucherId,
                 serviceCode: service.serviceCode,
                 serviceName: service.serviceName,
+                serviceType: service.serviceType,
                 iconUrl: service.iconUrl
             ))
             self?.viewModel.handleAction(.serviceSelected(service))
