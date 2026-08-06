@@ -62,15 +62,8 @@ object PromotionSDK {
     private var fixedConfig: FixedConfig? = null
 
     /**
-     * Gác "đã [initialize] chưa" cho các **điểm mở màn**: chưa init → log rồi `false` để nơi gọi
-     * `return`, **không ném**. Đối ứng `requireImpl(_:)` bên iOS (cũng log + trả `nil`).
-     *
-     * Vì sao không `check(...)` như trước: bề mặt feature flag ([isFeatureEnabled], [featureFlags])
-     * **fail-open** — chưa init thì nó trả "bật hết". Host làm đúng hướng dẫn (hỏi trước để ẩn entry
-     * point) sẽ thấy `true`, hiện nút, user bấm, và SDK ném `IllegalStateException` giết app của host.
-     * Hai vế đó phải cùng một thái độ: cờ hỏng/chưa sẵn sàng không được phép làm chết màn hình host.
-     *
-     * Đây là lỗi lập trình của host nên vẫn phải ồn ào — dùng `Log.e`, không nuốt im lặng.
+     * Gác "đã [initialize] chưa" cho các **điểm mở màn**: chưa init → ghi `Log.e` rồi trả `false` để
+     * nơi gọi `return`, **không ném**. Đối ứng `requireImpl(_:)` bên iOS (cũng log + trả `nil`).
      */
     private fun requireInitialized(caller: String): Boolean {
         if (PromotionContainer.isInitialized()) return true

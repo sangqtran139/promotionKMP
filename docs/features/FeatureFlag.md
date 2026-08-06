@@ -19,8 +19,8 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
   [ErrorHandling.md](../common/ErrorHandling.md).
 
 > **SDK vừa tự gác, vừa cho host hỏi.** Mọi điểm vào vẫn tự gác và hiện thông báo PRM_MOB_021 khi bị
-> chặn — kill-switch không phụ thuộc vào việc host có kiểm tra hay không. Ngoài ra, từ 2026-08-04 host
-> **hỏi trước được** qua bốn hàm ở §3 để ẩn entry point của mình thay vì để user bấm rồi ăn toast.
+> chặn — kill-switch không phụ thuộc vào việc host có kiểm tra hay không. Ngoài ra host **hỏi trước
+> được** qua bốn hàm ở §3 để ẩn entry point của mình thay vì để user bấm rồi ăn toast.
 
 ---
 
@@ -40,11 +40,6 @@ Instance `PromotionFeatureFlags` **thoát ra khỏi repository đã được chu
 `normalized()` (`FeatureFlagRepositoryImpl.getPromotionFeatureFlags`), nên đọc thẳng field cũng đúng
 luật: `all().voucherList == isEnabled(VOUCHER_LIST)` cho cả sáu cờ. Riêng bản đem **lưu cache** vẫn là
 giá trị thô — bật lại `ENABLE_ALL` thì các cờ con phải trở về giá trị riêng, không được kẹt `false`.
-
-> **Bug đã sửa.** `when (flag)` trong `PromotionFeatureFlags.isEnabled` không có nhánh `ENABLE_ALL`
-> nên hỏi thẳng công tắc tổng luôn rơi vào `else -> false` — tức `isEnabled(ENABLE_ALL)` **luôn trả
-> `false`**, kể cả khi nó đang bật. Cờ vẫn gác được cờ con (dòng `if (!enableAll)`), nên bug này ẩn.
-> Nay có nhánh riêng và ba test trong `EnableAllFlagTest`.
 
 Cờ ghi xuống `KeyValueStorage` (SharedPreferences / NSUserDefaults) nên lần mở app sau không phải
 chờ API. Xem `../StorageGuide.md`.
@@ -79,17 +74,9 @@ Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn h
 
 `isSdkEnabled()` có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
 
-> **Lỗ đã vá (2026-08-06).** Trước đây tài liệu này ghi "`canApplyVoucher()`/`canRedeemVoucher()` chưa
-> nơi nào gọi trực tiếp vì `PromotionUseCases` đã tự gác" — **sai**. Luồng checkout Android không đi qua
-> facade đó: `PromotionIntegrateManager.confirmRedemption` gọi thẳng `CreateRedemptionSessionUseCase`,
-> nên hai cờ `APPLY`/`REDEEM` **không có hiệu lực nào** trên Android, kể cả khi tắt `ENABLE_ALL` — đây
-> là chỗ duy nhất công tắc tổng chặn không được. iOS không dính vì `PromotionSDKApi.createRedemption`
-> đi qua facade. Nay `confirmRedemption` hỏi `canRedeemVoucher()` và `revalidateAndUpdate` hỏi
-> `canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng.
->
-> Thứ tự trong `confirmRedemption` quan trọng: gác nằm **sau** nhánh `discountDetails.isEmpty()`.
-> Không có voucher nào thì đơn hàng không dính tới SDK — kill-switch tắt ưu đãi, không được tắt thanh
-> toán của host. Có voucher rồi thì bắt buộc `onError`, vì giá ở `PRMEndowView` đang là giá đã giảm.
+`PromotionIntegrateManager.confirmRedemption` hỏi `canRedeemVoucher()`, `revalidateAndUpdate` hỏi
+`canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng. Gác nằm **sau** nhánh
+`discountDetails.isEmpty()`: đơn không có voucher nào thì `onSuccess` chạy bất kể cờ.
 
 Ánh xạ cờ ↔ hàm (giống hệt hai nền tảng):
 
@@ -103,9 +90,7 @@ Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn h
 
 Mã lỗi chung: `PromotionErrorCodes.FEATURE_DISABLED` = `"PRM_MOB_021"`.
 
-> **Cạm bẫy đã gặp.** Android từng nạp cờ lúc `PromotionSDK.initialize()` rồi **không đọc lại ở đâu cả** —
-> tắt `VOUCHER_DETAIL` trên server thì iOS chặn màn chi tiết, Android vẫn vào bình thường. Thêm màn
-> mới thì phải gác ở tầng UI; facade không thấy được điều hướng.
+Thêm màn mới thì phải gác ở tầng UI — facade không thấy được điều hướng.
 
 Test: `promotionLogic/src/commonTest/.../FeatureFlagGateTest.kt` khẳng định cờ tắt thì chặn **trước
 khi** chạm mạng, và một cờ tắt không chặn nhầm hàm khác.
@@ -151,18 +136,15 @@ PromotionSDK.refreshFeatureFlags { flags in
 
 Ba điều phải nhớ:
 
-1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Luật này giờ
-   được chốt ở **hai lớp**: repository trả bản `normalized()` (§1), và mapper vẫn đi qua
-   `PromotionFeatureFlags.isEnabled(...)` thay vì đọc field thô. Lớp thứ hai là dư thừa có chủ đích —
-   nó rẻ, và giữ cho mapper đúng kể cả khi ai đó dựng `PromotionFeatureFlags` thô rồi map thẳng.
+1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Luật chốt ở
+   **hai lớp**: repository trả bản `normalized()` (§1), và mapper đi qua
+   `PromotionFeatureFlags.isEnabled(...)` thay vì đọc field thô.
 
-   `isFeatureEnabled(feature)` còn viết thẳng luật này ra ở bề mặt public — hai vế phải **song song
-   đúng**: `isSdkEnabled() && gate.isEnabled(<cờ riêng>)`. `&&` đó **không đổi kết quả** (lõi đã áp
-   `ENABLE_ALL` rồi) và **không phá fail-open** (chưa `initialize()` thì cả hai vế `true`); nó tồn tại
-   để người đọc hàm host-facing thấy ngay "SDK tắt ⇒ tính năng tắt", khỏi lần vào lõi. Cả hai nền tảng
-   viết giống nhau: `PromotionSDK.kt` (Android) / `PromotionSDKImpl.swift` (iOS).
-   Đây là **ngoại lệ duy nhất** được phép lặp điều kiện `ENABLE_ALL`; các call site khác vẫn chỉ hỏi
-   `PromotionFeatureGate.isEnabled(...)`, đừng nhân bản `isSdkEnabled() &&` đi khắp nơi.
+   `isFeatureEnabled(feature)` viết thẳng luật ra ở bề mặt public: `isSdkEnabled() &&
+   gate.isEnabled(<cờ riêng>)` — không đổi kết quả và không phá fail-open. Cả hai nền tảng viết giống
+   nhau: `PromotionSDK.kt` (Android) / `PromotionSDKImpl.swift` (iOS). Đây là **ngoại lệ duy nhất**
+   được phép lặp điều kiện `ENABLE_ALL`; các call site khác chỉ hỏi
+   `PromotionFeatureGate.isEnabled(...)`.
 2. **Fail-open, không ném.** Chưa `initialize()` / chưa có cache → trả bật hết. Không hàm nào ném lỗi
    hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
 3. **Đây là tầng tuỳ chọn.** Host bỏ qua hoàn toàn thì SDK vẫn tự gác như cũ (§2).

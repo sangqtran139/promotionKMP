@@ -91,33 +91,21 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     private var installedWindowCallback: PrmBackKeyWindowCallback? = null
 
     /**
-     * Chặn back hệ thống ở tầng `Window.Callback` — thay cho cách cũ dựa vào `View.requestFocus()` +
-     * `setOnKeyListener`, vốn phụ thuộc đúng view nào đang GIỮ FOCUS trong cây View. Cách cũ chạy được
-     * ở [PromotionDetailFragment] nhưng KHÔNG ổn định ở [MyPromotionFragment] vì màn đó có
-     * `RecyclerView` (tabs + danh sách) load dữ liệu bất đồng bộ sau `onResume()`, nhiều khả năng tự
-     * cướp focus sau khi mình request xong -> `setOnKeyListener` mất tác dụng tuỳ thời điểm dữ liệu về.
+     * Chặn back hệ thống ở tầng `Window.Callback`: thay `window.callback` bằng wrapper chỉ override
+     * `dispatchKeyEvent()`, phần còn lại delegate nguyên cho callback gốc. `dispatchKeyEvent()` là
+     * điểm đầu tiên mọi `KeyEvent` của Window đi qua, nên back bị bắt trước khi tới
+     * `Activity.dispatchKeyEvent()` / `onBackPressed()` của host.
      *
-     * `Window.Callback.dispatchKeyEvent()` là điểm ĐẦU TIÊN mọi KeyEvent của Window đi qua — `Activity`
-     * chính là implementation mặc định của `Window.Callback` (`window.callback` trỏ vào `activity` lúc
-     * `Activity.attach()`). Thay `window.callback` bằng 1 wrapper chỉ override `dispatchKeyEvent()`,
-     * còn lại delegate nguyên cho callback gốc (`by delegate`) — bắt được back TRƯỚC KHI event tới
-     * `Activity.dispatchKeyEvent()`/`onBackPressed()` của host, không phụ thuộc View nào đang focus,
-     * không phụ thuộc host viết `onBackPressed()` thế nào.
+     * Wrap ở [onResume], unwrap ở [onPause] — chỉ chặn khi màn này đang hiện trên cùng.
      *
-     * Wrap ở [onResume] / unwrap ở [onPause] để chỉ chặn đúng lúc màn này đang hiện trên cùng; đảm bảo
-     * trả lại callback gốc khi rời màn, tránh host bị dính wrapper của SDK sau khi SDK đã lui.
+     * ⚠️ Nhiều fragment SDK cùng resumed (host `add()` không hide): fragment thứ hai thấy
+     * `window.callback` đã là [PrmBackKeyWindowCallback] nên early-return, không wrap chồng. Back vật
+     * lý lúc đó gọi `onBackFragment()` của fragment SDK **đầu tiên** trong stack, bất kể fragment nào
+     * đang hiện trên cùng — xem [onBackFragment].
      *
-     * ⚠️ **Nhiều fragment SDK cùng resumed** (host `add()` không hide — vd `PromotionDetailFragment`
-     * mở trên `MyPromotionFragment` qua [openPromotionDetail]/[addFragment]): fragment thứ hai thấy
-     * `window.callback` đã là [PrmBackKeyWindowCallback] nên early-return, không tự wrap. Back vật lý
-     * lúc đó luôn gọi `onBackFragment()` của fragment SDK **đầu tiên** trong stack, bất kể fragment nào
-     * đang hiện trên cùng — xem cảnh báo ở [onBackFragment].
-     *
-     * Không thay thế [registerBackPressedCallback]: giữ cả hai vì predictive back (Android 13+,
-     * `enableOnBackInvokedCallback=true`) không sinh `KeyEvent` nên wrapper này sẽ không bắt được, lúc
-     * đó cần `OnBackPressedCallback` xử lý qua `OnBackInvokedDispatcher`. Hai lớp không đụng nhau: nếu
-     * wrapper này consume xong (trả `true`, không gọi `delegate.dispatchKeyEvent`) thì event không bao
-     * giờ tới `Activity.onBackPressed()` nữa nên dispatcher không được gọi lại lần 2 cho cùng 1 lần bấm.
+     * Chạy song song với [registerBackPressedCallback]: predictive back (Android 13+) không sinh
+     * `KeyEvent` nên wrapper này không bắt được, phần đó do `OnBackPressedCallback` lo. Hai lớp không
+     * chồng nhau vì wrapper consume xong thì event không tới `Activity.onBackPressed()` nữa.
      */
     override fun onResume() {
         super.onResume()
@@ -138,12 +126,9 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     }
 
     /**
-     * Chỉ khôi phục `window.callback` khi nó **vẫn đúng là instance mình đã gắn** ([installedWindowCallback],
-     * so bằng `===`) — KHÔNG so theo kiểu (`is PrmBackKeyWindowCallback`). Nếu ai đó (thư viện khác,
-     * fragment SDK khác) đã thay `window.callback` sau lúc mình wrap, so theo kiểu sẽ giật nhầm/giẫm
-     * lên dây chuyền của người khác, có thể để lại 1 wrapper "chết" (trỏ fragment đã destroy) kẹt vĩnh
-     * viễn trong window — back sau đó gọi `onBackFragment()` trên fragment đã detach → crash host ở
-     * màn hình không liên quan gì tới SDK. Không phải mình đang giữ thì đơn giản bỏ qua, không đụng gì.
+     * Khôi phục `window.callback` **chỉ khi** nó vẫn đúng là instance mình đã gắn
+     * ([installedWindowCallback], so bằng `===`, không so theo kiểu). Ai đó đã thay `window.callback`
+     * sau lúc mình wrap thì bỏ qua, không đụng gì.
      */
     override fun onPause() {
         val window = activity?.window

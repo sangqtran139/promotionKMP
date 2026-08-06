@@ -9,8 +9,6 @@
 //
 //  KHÔNG dùng Combine: store đã phơi callback (`watchState`), nên VM cũng phơi callback
 //  (`onState` / `onEffect`) — đối ứng 1-1 `uiState: StateFlow` / `uiEffect: Flow` bên Android.
-//  Trước đây khúc giữa Combine (Input/Output publisher + transform) chỉ làm đường ống: không có
-//  combineLatest/debounce/merge nào, nên bỏ đi là mất boilerplate chứ không mất chức năng.
 //
 
 import Foundation

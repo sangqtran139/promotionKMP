@@ -22,12 +22,9 @@ import Foundation
 /// thứ tự khai báo, cùng cách xử lý `NO_RESULT`. Khác duy nhất ở kiểu bất đồng bộ — Swift dùng
 /// closure, Kotlin dùng `suspend`. Sửa một bên thì sửa cả hai.
 ///
-/// **Vì sao bắt buộc phải map, không trả thẳng model Kotlin?**
-/// iOS ship **một** xcframework: Kotlin được link tĩnh và giấu sau `@_implementationOnly import`.
-/// Type nào xuất hiện trong API public sẽ bị ghi vào `.swiftinterface` của framework, kéo theo
-/// `import PRMKotlinBridge` — module mà app host không có. Host sẽ **không build được**:
-///
-///     error: Unable to find module dependency: 'PRMKotlinBridge'
+/// Ràng buộc: Kotlin được link tĩnh và giấu sau `@_implementationOnly import`, nên type nào lọt vào
+/// API public sẽ bị ghi vào `.swiftinterface` và kéo theo `import PRMKotlinBridge` — module app host
+/// không có (`error: Unable to find module dependency: 'PRMKotlinBridge'`).
 ///
 /// Android chịu ràng buộc tương đương nhưng nhẹ hơn: nó khai `implementation(projects.promotionLogic)`
 /// nên `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host, và type lõi lọt vào chữ

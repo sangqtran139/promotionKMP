@@ -27,13 +27,9 @@ import kotlin.coroutines.cancellation.CancellationException
  * Việc nó làm, và chỉ một việc: đổi model của lõi sang DTO của `AndroidPromotionSDK`
  * ([PromotionVoucher], [PromotionEligibleOffer], …), và đổi `PromotionResult` sang [PromotionApiResult].
  *
- * **Vì sao bắt buộc phải map, không trả thẳng model của lõi?**
- * Host chỉ tích hợp `AndroidPromotionSDK`, không có `com.ttcn.prm.core.*` trên compile
- * classpath. Type nào của lõi xuất hiện trong chữ ký public thì host **không resolve được** — chính
- * là lý do `PromotionSDK.useCases` (trả thẳng `PromotionUseCases`) đã bị gỡ.
- *
- * Cùng vai trò với `PromotionSDKApi.swift`; bên iOS ràng buộc còn cứng hơn vì type Kotlin lọt vào
- * public API sẽ kéo `import PromotionKit` vào `.swiftinterface` và app host không build được.
+ * Ràng buộc: `com.ttcn.promotionsdk.core.*` **không** nằm trên compile classpath của host, nên
+ * không type nào của lõi được xuất hiện trong chữ ký public của lớp này.
+ * Cùng vai trò với `PromotionSDKApi.swift`.
  *
  * Lấy qua `PromotionSDK.api` sau khi đã `PromotionSDK.initialize(...)`:
  * ```kotlin

@@ -72,8 +72,7 @@ public class PromotionCardView: PRMTapableView {
     }()
     
     /// `scaleAspectFill` — logo lấp kín vòng tròn 48×48, đối ứng `.circleCrop()` (= center-crop) của
-    /// Glide bên Android. Trước đây là `scaleAspectFit`: logo tỉ lệ ngang bị letterbox, nằm lọt giữa
-    /// vòng tròn trong khi Android crop kín → hai nền tảng nhìn khác nhau rõ rệt.
+    /// Glide bên Android.
     private let iconImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill

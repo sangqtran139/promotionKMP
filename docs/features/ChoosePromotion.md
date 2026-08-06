@@ -71,8 +71,7 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
 ```
 
 > **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`
-> bên iOS (completion của `endowVM.validateAndApply`). Trước đây Android đóng ngay lập tức nên nuốt
-> mất lỗi validate.
+> bên iOS (completion của `endowVM.validateAndApply`).
 
 - Use case: `ValidateStackableDiscountsUseCase` (Domain) → repository → API, gọi từ `EndowStore`.
 - `objectId` gửi lên là `EligibleOffer.id`: `voucherId` nếu khách đã sở hữu, ngược lại `campaignId`.

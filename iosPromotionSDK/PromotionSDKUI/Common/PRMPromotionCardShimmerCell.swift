@@ -15,11 +15,8 @@ final class PRMPromotionCardShimmerCell: UIView, PRMShimmerReplicatorViewCell {
     /// Khe dưới mỗi card — bằng đúng ràng buộc `bottom = 12` của `MyPromotionCell.xib`.
     private static let cardBottomGap: CGFloat = 12
 
-    /// Chiều cao 1 dòng skeleton = **card thật + khe dưới**.
-    ///
-    /// Trước đây hardcode 96 trong khi card thật cao ~110 → skeleton vừa thấp hơn vừa sát nhau, và
-    /// list "nhảy" một nấc khi dữ liệu về. Giờ lấy thẳng `PromotionCardView.estimatedHeight` nên
-    /// sửa card là shimmer tự theo.
+    /// Chiều cao 1 dòng skeleton = **card thật + khe dưới**. Lấy thẳng
+    /// `PromotionCardView.estimatedHeight` nên sửa card là shimmer tự theo.
     static var itemHeight: CGFloat { PromotionCardView.estimatedHeight + cardBottomGap }
 
     private var pieces: [PRMShimmerView] = []

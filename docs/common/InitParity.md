@@ -38,8 +38,8 @@
 | Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
 | Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread**; kèm bắn `onAvailabilityChanged` |
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
-| *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ Android trước đây `check(...)` ném `IllegalStateException` — lệch iOS, đã sửa 2026-08-06 |
-| Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, hostHandlesDismiss = false, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:hostHandlesDismiss:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào** (`PromotionDetailEntry` / `PromotionDetailBuilder.Entry` đã xoá 2026-08-06); cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public. `hostHandlesDismiss` = ai pop màn chi tiết sau khi "Áp dụng" (mặc định SDK tự pop) |
+| *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ |
+| Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, hostHandlesDismiss = false, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:hostHandlesDismiss:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào**; cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public. `hostHandlesDismiss` = ai pop màn chi tiết sau khi "Áp dụng" (mặc định SDK tự pop) |
 | Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.3](#53-widget)) |
 
 **Callback identity:** bỏ tham số `sdk` ở **mọi** method callback trên cả 2 nền tảng (SDK là singleton →
@@ -144,9 +144,8 @@ với `voucherId` đó (trả `PromotionValidationResult` — cùng dữ liệu,
 
 ## 6. Tích hợp trực tiếp — host **không** cần wrapper
 
-**Bỏ khuyến nghị `PromotionManager`/`PromotionServing` (2026-07-24).** Trước đây spec bắt mỗi host tự
-viết một wrapper anti-corruption (~340 dòng Android / ~420 dòng iOS) để nuốt các ràng buộc của SDK.
-Nay các ràng buộc đó đã đưa **vào chính SDK**, nên host gọi thẳng `PromotionSDK` — tích hợp tối thiểu:
+Host gọi thẳng `PromotionSDK`, **không** cần wrapper anti-corruption — mọi ràng buộc đã nằm trong
+chính SDK. Tích hợp tối thiểu:
 
 ```text
 // Sau khi login:

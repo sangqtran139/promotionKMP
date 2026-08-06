@@ -69,11 +69,7 @@ class PromotionIntegrateManager internal constructor(
      *    - INSUFFICIENT_BUDGET (body hoặc HTTP 422) → revalidate → tự update [endowView] → [onError]
      *    - Lỗi khác → [onError]
      *
-     * Bước 3 nằm **sau** bước 2 là có chủ đích: kill-switch tắt ưu đãi, **không được** tắt thanh toán
-     * của host. User không chọn voucher nào thì đơn hàng chẳng dính gì tới SDK — chặn ở đó là SDK tự
-     * cho mình quyền dừng giao dịch của đối tác. Ngược lại, khi user *đã* chọn voucher thì giá hiển
-     * thị ở [endowView] đang là giá đã giảm; cho [onSuccess] chạy tiếp mà không tạo redemption session
-     * sẽ khiến host thu tiền theo giá giảm trong khi server không hề ghi nhận — nên phải [onError].
+     * Bước 3 nằm **sau** bước 2: đơn không có voucher nào thì [onSuccess] chạy bất kể cờ.
      *
      * @param onSuccess   Thanh toán được phép tiến hành — đối tác gọi logic payment của mình
      * @param onError     Có lỗi — đối tác hiển thị thông báo với [errorCode]

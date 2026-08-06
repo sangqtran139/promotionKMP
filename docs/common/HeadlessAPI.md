@@ -241,9 +241,7 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 đi qua facade — đó là lý do tầng UI phải hỏi gate lần nữa, chứ không phải gác hai lần thừa.
 Cách **hiển thị** thông báo cũng đã đồng nhất: toast ở cả hai (`Toast` / `PRMToast`).
 
-> Cạm bẫy đã gặp: Android nạp cờ lúc `PromotionSDK.initialize()` rồi **không đọc lại ở đâu cả**.
-> Tắt `VOUCHER_DETAIL` trên server thì iOS chặn màn chi tiết, Android vẫn vào bình thường.
-> Nếu thêm một màn mới, thêm một hàm `canOpen…` vào gate — facade không thấy được điều hướng.
+Thêm một màn mới thì thêm một hàm `canOpen…` vào gate — facade không thấy được điều hướng.
 
 ---
 

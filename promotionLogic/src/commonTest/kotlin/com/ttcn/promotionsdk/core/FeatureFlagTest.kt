@@ -127,9 +127,8 @@ class FeatureFlagTest {
     }
 
     /**
-     * `all()` thoát ra tới host, nên đọc thẳng field phải cho kết quả giống `isEnabled` — không được
-     * để `voucherList = true` trong khi công tắc tổng đang tắt. Trước đây repository trả cache thô
-     * nên bất biến này sai.
+     * `all()` thoát ra tới host, nên đọc thẳng field phải cho kết quả giống `isEnabled`: không được
+     * để `voucherList = true` trong khi công tắc tổng đang tắt.
      */
     @Test
     fun all_appliesEnableAll_soRawFieldsMatchIsEnabled() = runTest {

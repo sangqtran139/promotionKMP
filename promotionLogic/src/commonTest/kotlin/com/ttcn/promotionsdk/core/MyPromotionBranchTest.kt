@@ -102,7 +102,6 @@ class MyPromotionBranchTest {
         testScheduler.advanceUntilIdle()
 
         // Quay lại t1: cache còn tươi (< TTL) → dùng thẳng, KHÔNG gọi lại API.
-        // (Trước đây tab qua tab lại là mỗi lần một request — chính chỗ phí cần bỏ.)
         val before = repo.calls
         s.dispatch(MyPromotionIntent.SelectTab("t1"))
         testScheduler.advanceUntilIdle()

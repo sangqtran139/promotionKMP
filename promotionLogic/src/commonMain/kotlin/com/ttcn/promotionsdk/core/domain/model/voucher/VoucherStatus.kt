@@ -1,11 +1,7 @@
 package com.ttcn.promotionsdk.core.domain.model.voucher
 
 /**
- * Mã trạng thái thô của voucher do server trả.
- *
- * Trước đây Android chỉ biết 7 giá trị, còn iOS biết thêm 6 giá trị nữa và tự `switch` trên chuỗi
- * trong `PromotionModel.displayState()`. Hệ quả: voucher `AVAILABLE_TO_CLAIM` dùng được trên iOS
- * nhưng bị khoá trên Android. Gộp về một chỗ để hai nền tảng không thể lệch nữa.
+ * Mã trạng thái thô của voucher do server trả. Dùng chung Android & iOS.
  */
 enum class VoucherStatus {
     // Dùng được

@@ -10,10 +10,8 @@
 //
 //      error: Unable to find module dependency: 'PRMKotlinBridge'
 //
-//  Ngày tháng giữ nguyên **chuỗi thô của server**. Trước đây tầng này parse sang `Date` qua
-//  `PRMPromotionDate`, nhưng parse hỏng thì trả `nil` — host không phân biệt được "voucher vô thời hạn"
-//  với "server trả định dạng lạ". Việc định dạng ngày là của tầng hiển thị; `PRMPromotionDate` vẫn còn,
-//  dùng cho UI nội bộ của SDK.
+//  Ngày tháng giữ nguyên **chuỗi thô của server** — định dạng là việc của tầng hiển thị.
+//  `PRMPromotionDate` chỉ dùng cho UI nội bộ của SDK.
 //
 
 import Foundation

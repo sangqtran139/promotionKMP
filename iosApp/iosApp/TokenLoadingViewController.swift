@@ -6,8 +6,8 @@
 //  lấy token đăng nhập (progress bar) → init SDK → bơm context demo → mới vào màn chính.
 //  Login lỗi thì hiện lý do + nút "Thử lại", KHÔNG đi tiếp bằng token rỗng.
 //
-//  Vì sao cần cổng này: SDK khởi tạo bất đồng bộ sau login. Trước đây màn chính hiện ngay từ
-//  `viewDidLoad` nên bấm sớm là rơi vào SDK chưa `initialize` — màn không mở được và widget rỗng.
+//  Cổng này chặn màn chính cho tới khi `PromotionSDK.initialize` xong — SDK khởi tạo bất đồng bộ
+//  sau login, vào sớm thì màn không mở được và widget rỗng.
 //
 
 import UIKit

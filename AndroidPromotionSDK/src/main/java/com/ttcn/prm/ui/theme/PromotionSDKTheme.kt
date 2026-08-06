@@ -10,10 +10,6 @@ import com.ttcn.prm.ui.theme.token.TabUnderlineToken
 /**
  * Cấu hình theme của SDK. Đối ứng 1-1 với `PromotionSDKTheme.swift` bên iOS: cùng sáu token, cùng
  * tên field, cùng ngữ nghĩa `null` = **giữ mặc định của SDK** cho nhóm đó.
- *
- * Trước đây Android còn có `PromotionThemeConfig` — bản sao đúng sáu field này, kèm
- * `PromotionSDKTheme.from(config)` và `toThemeConfig()` chuyển qua lại mà không type nào mang thêm
- * thông tin gì. Đã gộp về một, khớp với iOS.
  */
 data class PromotionSDKTheme(
     val buttonToken: ButtonToken? = null,

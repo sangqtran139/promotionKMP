@@ -8,9 +8,8 @@ object TokenColorParser {
     /**
      * Parse `#AARRGGBB` / `#RRGGBB` (có hoặc không có `#`). `null` nếu chuỗi không hợp lệ.
      *
-     * Trước đây gọi `Color.parseColor`, vốn còn nhận cả tên màu (`"red"`, `"cyan"`). Nay uỷ quyền
-     * cho [com.ttcn.prm.ui.theme.ThemeHex] — cùng thuật toán với iOS, và không kéo `android.graphics` vào đường serialize
-     * theme (nhờ vậy `PromotionThemeJson` test được bằng unit test JVM thường).
+     * Uỷ quyền cho [com.ttcn.prm.ui.theme.ThemeHex] — Kotlin thuần, cùng thuật toán với iOS, không
+     * chạm `android.graphics`. Chỉ nhận chuỗi hex; tên màu (`"red"`, `"cyan"`) trả `null`.
      */
     @ColorInt
     fun parse(hex: String?): Int? = ThemeHex.parse(hex)

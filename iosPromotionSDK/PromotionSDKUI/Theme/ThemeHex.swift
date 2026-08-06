@@ -5,8 +5,7 @@
 //  Codec màu ↔ hex `#AARRGGBB`. Đối ứng `ThemeHex.kt` bên Android — cùng tên type (`ThemeHex`),
 //  cùng hàm `format` / `parse`, cùng thuật toán, nên JSON theme đọc được ở cả hai nền tảng.
 //
-//  Alpha đứng **trước**, theo quy ước Android (`Color.parseColor`) — không phải CSS. Bản cũ ghi
-//  `#RRGGBBAA`, nên `#EE0033FF` (đỏ đục) đọc sang Android thành `alpha=EE, b=FF`: xanh mờ, sai lặng lẽ.
+//  Alpha đứng **trước** (`#AARRGGBB`), theo quy ước Android (`Color.parseColor`) — không phải CSS.
 //
 
 import UIKit

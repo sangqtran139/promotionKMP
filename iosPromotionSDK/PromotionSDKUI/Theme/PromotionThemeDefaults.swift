@@ -5,9 +5,7 @@
 //  Giá trị mặc định của SDK cho màn cấu hình theme của host: token nào chưa set thì hiện giá trị này.
 //  Đối ứng `PromotionThemeDefaults.kt`.
 //
-//  **Màu khớp Android.** Trước đây iOS chọn nhầm token PRMDesignKit (`tokenRed100 = #FF645C` thay vì
-//  `tokenViettelPayRed100 = #EE0033`, `tokenDark60` thay vì `tokenDark100`…) nên lệch. Nay dùng đúng
-//  token của design system PRMDesignKit có giá trị **bằng** `R.color.*` bên Android — đối chiếu từng dòng:
+//  **Màu khớp Android.** Dùng token PRMDesignKit có giá trị **bằng** `R.color.*` bên Android:
 //
 //    tokenViettelPayRed100 = #EE0033   tokenWhite   = #FFFFFF   tokenDark02 = #FBFBFB
 //    tokenDark10  = #E9E9E9  tokenDark40 = #A7A7A7   tokenDark100 = #222222

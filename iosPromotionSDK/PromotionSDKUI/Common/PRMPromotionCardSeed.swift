@@ -6,8 +6,7 @@
 //
 //  **Đây là model trình bày, không phải domain model.** Nó tồn tại vì hai luồng mở màn Chi tiết
 //  bằng hai kiểu khác nhau của lõi: "Ưu đãi của tôi" đưa `VoucherItem`, còn "Chọn ưu đãi"
-//  (checkout) đưa `EligibleOffer`. Bản cũ gộp cả hai vào `PromotionModel` — một domain model
-//  Swift trùng lặp với Kotlin. Nay chỉ giữ đúng phần mà cái card cần.
+//  (checkout) đưa `EligibleOffer`. Chỉ giữ đúng phần mà cái card cần.
 //
 
 import Foundation

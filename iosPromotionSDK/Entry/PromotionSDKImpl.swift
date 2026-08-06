@@ -48,8 +48,7 @@ final class PromotionSDKImpl: NSObject {
         set { context.orderItems = newValue }
     }
     /// ViewModel widget checkout — bọc `EndowStore` (findEligible + validate&apply + widget-state),
-    /// đối ứng Android `PRMEndowViewModel`. Trước đây iOS không có VM cho `PRMEndowView`; nghiệp vụ
-    /// (kể cả `loadVouchers`/`setState` tay) dồn ở đây — nay `PromotionSDKImpl` chỉ observe + render.
+    /// đối ứng Android `PRMEndowViewModel`. `PromotionSDKImpl` chỉ observe + render.
     private let endowVM = EndowViewModel()
 
     weak var activeWidget: PRMEndowView?

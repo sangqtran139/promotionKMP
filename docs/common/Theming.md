@@ -287,8 +287,8 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
   trong `lastAppliedToken`; khi re-attach chúng ưu tiên token cache. Nếu host đổi theme **sau khi view đã render**,
   view đó chỉ cập nhật khi rebind. Item trong RecyclerView **không** bị ảnh hưởng (đọc registry mỗi lần bind).
   → Khuyến nghị: cấu hình theme **một lần** lúc khởi tạo. Nếu cần đổi theme động, làm mới màn hình liên quan.
-- `TokenColorParser` (Android) chỉ nhận hex. Trước đây nó gọi `Color.parseColor` nên còn nhận cả tên
-  màu (`"red"`); nay đi qua `ThemeHex` để dùng chung thuật toán với iOS.
+- `TokenColorParser` (Android) chỉ nhận hex, đi qua `ThemeHex` để dùng chung thuật toán với iOS.
+  Tên màu (`"red"`) trả `null`.
 
 ---
 

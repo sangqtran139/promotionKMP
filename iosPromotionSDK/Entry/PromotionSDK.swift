@@ -26,13 +26,8 @@ public final class PromotionSDK {
     private static var _impl: NSObject?
     private static var impl: PromotionSDKImpl? { _impl as? PromotionSDKImpl }
 
-    /// Đồ thị đang sống, kèm **cảnh báo rõ ràng** khi host gọi trước `initialize`.
-    ///
-    /// Trước đây mỗi điểm vào tự xử lý một kiểu: điều hướng thì `guard … else { return }` (im lặng —
-    /// host thấy "bấm không ăn"), còn `updateContext` thì `preconditionFailure` (**crash app host**).
-    /// Nay thống nhất: **không** crash, log một dòng nêu đúng hàm bị gọi sớm. Đối ứng Android — chỉ
-    /// khác ở chỗ Kotlin ném `IllegalStateException` (host bắt được), Swift `fatalError` thì không,
-    /// nên iOS chọn log thay vì kết liễu tiến trình của host.
+    /// Đồ thị đang sống. Gọi trước `initialize` → **không** crash: ghi `NSLog` nêu đúng hàm bị gọi
+    /// sớm rồi trả `nil` để nơi gọi `guard … else { return }`. Đối ứng `requireInitialized` bên Android.
     private static func requireImpl(_ caller: String) -> PromotionSDKImpl? {
         guard let impl else {
             NSLog("[PromotionSDK] %@ bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(options:) trước.", caller)

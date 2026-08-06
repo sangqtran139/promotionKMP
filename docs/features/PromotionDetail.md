@@ -62,14 +62,10 @@ Fragment: render thông tin + cấu hình nút theo state
   nhãn server không phải sửa store, nhưng **hai màn native đang bỏ qua** — BE trả "Sử dụng" cho mọi voucher,
   còn màn này muốn "Sử dụng ngay". Card ở màn danh sách thì **vẫn theo nhãn server**.
 
-  > **Nguồn nhãn (đã sửa 2026-07-28):** BE trả sẵn `voucher.displayStatusLabel` ("Sử dụng") **trong object
-  > `voucher`** ở cả API list lẫn detail. Trước đây `VoucherInfoDto` không khai field này nên
-  > `ignoreUnknownKeys` nuốt mất, và mapper lấy nhầm `metadata.disabledReason` làm nhãn — mà field đó là
-  > **mã enum** (`EXPIRED`/`REDEEMED`/`SERVICE_NOT_APPLICABLE`) và **chỉ có khi `usable="false"`**. Hệ quả:
-  > nhãn nút luôn rỗng (rơi về chuỗi cứng), còn badge của voucher không dùng được thì lòi chữ tiếng Anh.
-  >
-  > Nay: `displayStatusLabel = voucher.displayStatusLabel ?: metadata.disabledReason`
-  > (`VoucherMapper.displayLabelOrReason`). UI không phải sửa — vốn đã ưu tiên field này.
+  > **Nguồn nhãn:** BE trả `voucher.displayStatusLabel` ("Sử dụng") **trong object `voucher`** ở cả
+  > API list lẫn detail. Mapper: `displayStatusLabel = voucher.displayStatusLabel ?: metadata.disabledReason`
+  > (`VoucherMapper.displayLabelOrReason`). `metadata.disabledReason` là **mã enum**
+  > (`EXPIRED`/`REDEEMED`/`SERVICE_NOT_APPLICABLE`) và chỉ có khi `usable="false"`.
   >
   > **Ngoại lệ:** badge trạng thái ĐÃ DÙNG / HẾT HẠN vẫn dùng chuỗi của SDK ("Đã sử dụng" / "Đã hết hạn"),
   > **không** lấy nhãn server — vì BE đang trả "Sử dụng" cho mọi voucher trong danh sách, tin nhãn đó thì
@@ -129,9 +125,6 @@ Cờ đi kèm navigation là **một boolean duy nhất, không có enum ở n�
 `PromotionDetailBuilder.DataModel`. Đặt tên theo *hành vi* chứ không theo *màn gọi*, vì nơi mở màn có
 thể là "Chọn ưu đãi" nội bộ **hoặc** màn bất kỳ của host; tên kiểu `checkout` sẽ sai nghĩa ngay.
 Xem [PublicApi.md](../common/PublicApi.md).
-
-> Trước 2026-08-06 chỗ này là enum `PromotionDetailEntry { MY_PROMOTION, CHECKOUT }` (Android) /
-> `PromotionDetailBuilder.Entry` (iOS). Đã xoá hẳn cả hai.
 
 Đường về khi "Áp dụng" có **hai người nhận**, tuỳ ai mở màn:
 

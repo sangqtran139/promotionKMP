@@ -107,11 +107,8 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
                 return@collectFlow
             }
 
-            // Không có data (voucherId không tồn tại, hoặc API lỗi).
-            //
-            // Bản cũ `hideDetailLoading(showContent = false)` ẩn sạch content → user nhận một màn
-            // trắng, không tab, không biết đang ở đâu. Giờ VẪN dựng khung đầy đủ với dữ liệu trống —
-            // đúng như iOS: hai tab "Thông tin chi tiết" / "Hướng dẫn sử dụng" vẫn có, nội dung để
+            // Không có data (voucherId không tồn tại, hoặc API lỗi): vẫn dựng khung đầy đủ với dữ
+            // liệu trống — hai tab "Thông tin chi tiết" / "Hướng dẫn sử dụng" vẫn có, nội dung để
             // trống, ảnh rơi về placeholder xám mặc định của layout.
             hideDetailLoading()
             bindEmptyContent()

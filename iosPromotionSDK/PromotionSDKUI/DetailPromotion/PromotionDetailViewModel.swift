@@ -156,8 +156,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     // ─── State → View ─────────────────────────────────────────────────────────
     /// Chỉ hiển thị khi API detail trả về. Không có detail → về **khung rỗng** (shimmer che lúc đang
     /// tải; hết tải thì card/tab trống, nút ẩn) — đối ứng `PromotionDetailFragment.bindEmptyContent()`
-    /// bên Android. Trước đây chỉ cập nhật `isLoading` nên nếu lần load sau trả `detail == nil`
-    /// (API lỗi / voucher biến mất) màn **vẫn giữ nội dung voucher cũ**, lệch với Android.
+    /// bên Android. `detail == nil` ở lần load sau (API lỗi / voucher biến mất) cũng về khung rỗng,
+    /// không giữ lại nội dung voucher cũ.
     private func render(_ state: PromotionDetailState) {
         guard let detail = state.detail else {
             applicableProducts = []
@@ -231,9 +231,8 @@ private extension PromotionDetailState {
         .init(html: PromotionHtmlContentKt.wrapPromotionHtml(content: raw))
     }
 
-    /// Tiền tố "HSD:" — **khớp Android** (`prm_expiry_short_format`) và khớp luôn màn danh sách iOS
-    /// (`MyPromotionCell` dùng `expiryDate`). Trước đây màn này dùng `expiryDateLong` ("Hạn sử dụng …")
-    /// nên là chỗ DUY NHẤT lệch chữ. Không parse được ngày → chuỗi rỗng, card tự ẩn dòng.
+    /// Tiền tố "HSD:" — khớp Android (`prm_expiry_short_format`) và khớp màn danh sách iOS
+    /// (`MyPromotionCell` dùng `expiryDate`). Không parse được ngày → chuỗi rỗng, card tự ẩn dòng.
     /// API không trả HSD (nil/rỗng) → "HSD: Không hết hạn"; có chuỗi mà parse hỏng → rỗng (ẩn dòng).
     /// Đối ứng `PromotionDetailFragment.bindDetailContent` bên Android.
     static func dateString(_ raw: String?) -> String {

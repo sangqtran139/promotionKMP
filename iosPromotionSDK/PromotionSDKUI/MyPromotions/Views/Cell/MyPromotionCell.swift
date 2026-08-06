@@ -123,7 +123,6 @@ struct MyPromotionCellViewModel {
             id: voucher.voucherId,
             title: voucher.merchantName ?? "",
             // `title` rỗng → rơi về `description` (đối ứng Android `title.ifBlank { description }`).
-            // Trước đây iOS không fallback nên voucher thiếu title hiện dòng mô tả trống.
             description: (voucher.title?.isEmpty == false ? voucher.title : voucher.description_) ?? "",
             imageURL: voucher.logo,
             date: PRMPromotionDate.parse(voucher.expirationDate),

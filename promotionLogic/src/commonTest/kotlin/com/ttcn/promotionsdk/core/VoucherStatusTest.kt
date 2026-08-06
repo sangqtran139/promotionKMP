@@ -28,7 +28,6 @@ class VoucherStatusTest {
 
     @Test
     fun availableToClaim_isUsable_onBothPlatforms() {
-        // Trước đây: iOS cho dùng, Android khoá. Giờ cả hai đều cho dùng.
         assertEquals(VoucherDisplayState.USABLE, voucher("AVAILABLE_TO_CLAIM").displayState())
     }
 

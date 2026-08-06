@@ -345,8 +345,7 @@ binding.endowView.onOpenVoucherSelection = {
 ```
 
 `forEndowView` lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher
-đang áp, và đẩy kết quả ngược về widget. Trước đây host phải tự làm bốn việc đó bằng tay — và phải
-chạm vào `EligibleOffer`, một type của lõi.
+đang áp, và đẩy kết quả ngược về widget — host không phải chạm `EligibleOffer`, một type của lõi.
 
 > **Đang hỏng:** `PRMEndowView.onVoucherItemClick` khai báo rồi nhưng **không được gọi ở đâu cả** trong
 > SDK. Wire vào cũng không bao giờ bắn. Bug có sẵn, chưa sửa.

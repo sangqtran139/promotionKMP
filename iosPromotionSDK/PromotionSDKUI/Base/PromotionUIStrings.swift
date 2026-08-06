@@ -3,8 +3,8 @@
 //  PromotionSDK
 //
 //  Gom chuỗi hiển thị tiếng Việt của tầng UI vào MỘT nơi — parity với `strings.xml` bên Android
-//  (store/promotionLogic cố ý không giữ chuỗi; native lo hiển thị). Trước đây literal nằm rải trong
-//  cell/ViewModel. Bước sau có thể chuyển sang `Localizable.strings` mà không đổi call-site.
+//  (store/promotionLogic cố ý không giữ chuỗi; native lo hiển thị). Chuyển sang
+//  `Localizable.strings` được mà không đổi call-site.
 //
 
 import Foundation

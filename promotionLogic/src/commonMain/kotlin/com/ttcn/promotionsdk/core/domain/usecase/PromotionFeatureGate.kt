@@ -7,9 +7,8 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * Kill-switch: "tính năng này có được phép chạy không?".
  *
- * Đây là **luật nghiệp vụ**, không phải chuyện UI — nên nó nằm ở lõi Kotlin, dùng chung cho
- * `AndroidPromotionSDK` và `iosPromotionUI`. Hai nền tảng chỉ khác nhau ở cách **hiển thị** thông báo
- * khi bị chặn (Toast vs popup), không khác nhau ở chỗ *khi nào* bị chặn.
+ * Object Kotlin dùng chung cho `AndroidPromotionSDK` và `iosPromotionUI`; hai nền tảng chỉ khác ở
+ * cách hiển thị thông báo khi bị chặn.
  *
  * ```kotlin
  * // Android
@@ -23,11 +22,11 @@ import kotlin.coroutines.cancellation.CancellationException
  * Cờ đọc từ cache đồng bộ (`isEnabled` **không gọi mạng**). `PROMOTION.ENABLE_ALL` là công tắc
  * tổng: tắt nó thì mọi cờ con đều tắt.
  *
- * **Fail-open**: chưa `PromotionContainer.initialize(...)` hoặc chưa có cache → coi như bật hết,
- * đúng như [PromotionFeatureFlags.AllEnabled]. SDK không tự khoá tính năng chỉ vì chưa gọi được API.
- * Vì thế mọi hàm ở đây nuốt lỗi thay vì ném — gọi trước `initialize()` trả `true`.
+ * **Fail-open**: chưa `PromotionContainer.initialize(...)` hoặc chưa có cache → bật hết, đúng như
+ * [PromotionFeatureFlags.AllEnabled]. Mọi hàm ở đây nuốt lỗi thay vì ném; gọi trước `initialize()`
+ * trả `true`.
  *
- * Chặn ở **hai tầng**, vì có hai đường vào khác nhau:
+ * Chặn ở **hai tầng**:
  *  - [PromotionUseCases] (facade headless) tự gác 5 hàm nghiệp vụ → `Failure(FEATURE_DISABLED)`.
  *  - UI native dựng thẳng use case đơn lẻ nên **không** qua facade; nó gác ở điểm điều hướng bằng
  *    các hàm `canOpen…` / `canShow…` dưới đây.
@@ -53,9 +52,6 @@ object PromotionFeatureGate {
 
     /**
      * Công tắc tổng `PROMOTION.ENABLE_ALL`. Tắt nó thì mọi hàm `canX()` dưới đây đều trả `false`.
-     *
-     * Hiện chưa có nơi gọi: cả hai nền tảng đều gác theo từng tính năng, và công tắc tổng đã được
-     * áp ngầm bên trong [PromotionFeatureFlags.isEnabled]. Giữ lại để host/UI hỏi trạng thái SDK.
      */
     fun isSdkEnabled(): Boolean = isEnabled(PromotionFeatureFlag.ENABLE_ALL)
 
@@ -68,27 +64,16 @@ object PromotionFeatureGate {
     /** Hiện widget chọn ưu đãi ở màn thanh toán, và mở màn "Chọn ưu đãi". */
     fun canShowVoucherSelection(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_SELECTION)
 
-    /**
-     * Áp voucher vào đơn hàng (`validateDiscounts`).
-     * Chưa có nơi gọi: lời gọi nghiệp vụ đã được [PromotionUseCases] tự gác bằng cờ này.
-     */
+    /** Áp voucher vào đơn hàng (`validateDiscounts`). */
     fun canApplyVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_APPLY)
 
-    /**
-     * Tạo phiên thanh toán (`createRedemption`).
-     * Chưa có nơi gọi: lời gọi nghiệp vụ đã được [PromotionUseCases] tự gác bằng cờ này.
-     */
+    /** Tạo phiên thanh toán (`createRedemption`). */
     fun canRedeemVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_REDEEM)
 
     /**
-     * Làm mới cờ từ server. **Không ném**: `FeatureFlagRepositoryImpl.fetchFlags` đã tự nuốt lỗi
-     * mạng và giữ nguyên cờ đang cache. Ở đây chỉ cần chắn thêm trường hợp chưa `initialize()`.
-     *
-     * `runCatching` chỉ bọc lúc **dựng** use case, không bọc lời gọi `suspend` — bọc cả lời gọi thì
-     * nó sẽ nuốt luôn `CancellationException` và phá structured concurrency.
-     *
-     * `@Throws(CancellationException)` là bắt buộc cho iOS: hàm `suspend` xuất sang Swift dưới dạng
-     * `async`, và Kotlin/Native `abort()` nếu một exception không khai báo thoát ra.
+     * Làm mới cờ từ server. **Không ném**: `FeatureFlagRepositoryImpl.fetchFlags` tự nuốt lỗi mạng và
+     * giữ nguyên cờ đang cache; `runCatching` ở đây chỉ bọc bước dựng use case, còn lời gọi `suspend`
+     * để ngoài nên `CancellationException` truyền tiếp lên caller.
      */
     @Throws(CancellationException::class)
     suspend fun refresh() {

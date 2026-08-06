@@ -129,10 +129,9 @@ này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
 **Ràng buộc còn lại (đừng kỳ vọng sai):**
 
-- ✅ **Nguy cơ trùng symbol RxSwift đã được loại bỏ.** Trước đây RxSwift link tĩnh vào SDK → nếu host
-  cũng dùng RxSwift thì có hai bản trong cùng process (trùng symbol / lẫn version). Nay tầng UI đã
-  chuyển sang **Combine + async/await** (thành phần của iOS 13+, không link thư viện) và RxSwift bị gỡ
-  hẳn → SDK **không** mang theo thư viện reactive nào, host dùng RxSwift/Combine tùy ý đều vô can.
+- ✅ **Không có nguy cơ trùng symbol thư viện reactive.** Tầng UI dùng Combine + async/await (thành
+  phần của iOS 13+, không link thư viện), SDK **không** mang theo thư viện reactive nào — host dùng
+  RxSwift/Combine tuỳ ý đều vô can.
 - Bất biến chỉ đúng khi phát hành **qua xcframework**. Nếu ai đó tích hợp bằng cách thêm trực tiếp SPM
   package của SDK vào project host thì tính đóng gói mất — **kênh phát hành hỗ trợ duy nhất là xcframework rời**.
 - Host **vẫn** tự ký framework lúc embed (`CODE_SIGNING_ALLOWED=NO` khi build SDK) — đây là thao tác

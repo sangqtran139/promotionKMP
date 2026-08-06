@@ -19,9 +19,6 @@ data class SearchCustomerVouchersResult(
      * server chỉ định ([selectedTab]) → mặc định ([defaultTab]) → tab client vừa yêu cầu
      * ([requestedTab]) → tab đầu danh sách (theo [VoucherTabItem.order], không phụ thuộc
      * thứ tự list thô từ server).
-     *
-     * Trước đây quy tắc này nằm inline trong `MyPromotionViewModel` (Android) và bị iOS bỏ qua
-     * (luôn mặc định "all"). Đưa xuống domain để hai nền tảng đọc cùng một nguồn sự thật.
      */
     fun resolveActiveTab(requestedTab: String? = null): String? =
         selectedTab

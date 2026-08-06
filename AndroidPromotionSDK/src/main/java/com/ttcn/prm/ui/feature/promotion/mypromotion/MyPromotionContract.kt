@@ -92,8 +92,6 @@ internal fun VoucherItem.toMyVoucherListItem(): MyVoucherListItem {
         displayStatusLabel = displayStatusLabel.orEmpty(),
         status = VoucherStatus.from(status),
         objectType = objectType,
-        // Trước đây field này luôn false: `MyVoucherListItem` có khai báo nhưng không ai gán,
-        // vì `VoucherItem` chưa có `isAutoApplied`. Voucher tự-áp-dụng do đó chưa từng chạy.
         isAutoApplied = isAutoApplied,
         applicableProducts = applicableProducts,
     )

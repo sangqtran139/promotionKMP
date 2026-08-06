@@ -148,8 +148,7 @@ Task { @MainActor in
 
 ### Gọi use case: async/await trực tiếp (không còn adapter Rx)
 
-Trước đây ViewModel chờ `Single<T>`, nên có adapter `singleFromKotlin` (trong `PRMKotlinBridge`) bọc
-`async` thành `Single`. **Adapter đó đã bị xoá.** ViewModel/Impl nay gọi thẳng trong `Task`:
+ViewModel/Impl gọi thẳng use case trong `Task`, không qua adapter reactive nào:
 
 ```swift
 private func performSearch(...) {
@@ -301,10 +300,9 @@ nên hỏng ngay cả khi host chưa dùng tới nó. Android chỉ hỏng ở �
 Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
 `PromotionSDKApi.swift`, `PromotionApiModels.swift`, `PromotionApiResult.swift`.
 
-> **Cạm bẫy đã mất một buổi.** Đổi chữ ký public rồi dựng lại xcframework, app host **vẫn** compile
-> theo chữ ký cũ: Xcode cache module nhị phân ở `SwiftExplicitPrecompiledModules/` và không tự dọn.
-> Compiler báo lỗi kèm `note:` trỏ vào một chữ ký không còn tồn tại trong file interface bên cạnh.
-> `build-xcframework.sh` nay tự xoá cache đó; build tay thì `⇧⌘K`.
+> **Cache module của Xcode.** Đổi chữ ký public rồi dựng lại xcframework, app host có thể vẫn
+> compile theo chữ ký cũ vì Xcode cache module nhị phân ở `SwiftExplicitPrecompiledModules/`.
+> `build-xcframework.sh` tự xoá cache đó; build tay thì `⇧⌘K`.
 
 ---
 

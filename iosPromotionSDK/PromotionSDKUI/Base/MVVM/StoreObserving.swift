@@ -4,7 +4,6 @@
 //
 //  Cầu observe store dùng chung cho các ViewModel bọc shared store (promotionLogic).
 //  Gom phần lặp lại: `store.watchState { ... }` + hop về main thread + trả PromotionCancellable.
-//  Trước đây mỗi VM (My/Search/Choose/Detail) tự viết `DispatchQueue.main.async { [weak self] ... }`.
 //
 
 import Foundation

@@ -4,11 +4,8 @@ package com.ttcn.prm.entry.api
  * DTO công khai của bề mặt **feature flag**. Đối ứng 1-1 với `PromotionFeatureModels.swift` bên iOS:
  * cùng tên type, cùng tên case/field, cùng thứ tự khai báo. Sửa một bên thì sửa cả hai.
  *
- * Vì sao phải có type riêng ở đây thay vì dùng thẳng của lõi? Cùng lý do với `PromotionApiModels.kt`:
- * host chỉ tích hợp `AndroidPromotionSDK`, không có `com.ttcn.promotionsdk.core.*` trên compile
- * classpath — `PromotionFeatureFlag` (hằng chuỗi) và `PromotionFeatureFlags` (data class) của lõi
- * xuất hiện trong chữ ký public thì host **không resolve được**. Ánh xạ lõi ↔ public nằm ở
- * `PromotionFeatureMapper.kt`.
+ * Type riêng thay vì dùng thẳng của lõi: `com.ttcn.promotionsdk.core.*` không nằm trên compile
+ * classpath của host. Ánh xạ lõi ↔ public nằm ở `PromotionFeatureMapper.kt`.
  */
 
 /**

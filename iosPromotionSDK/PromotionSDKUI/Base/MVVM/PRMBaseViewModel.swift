@@ -12,9 +12,7 @@ import Foundation
 ///  - `onEffect: ((Effect) -> Void)?`  ↔ `uiEffect: Flow<Effect>` (một-lần, không replay)
 ///  - `handleAction(_:)`               ↔ `handleAction(action)`
 ///
-/// Trước đây có `PRMViewModelType` (`transform(input:) -> Output` với publisher) — đã bỏ: khúc
-/// Combine đó chỉ làm đường ống giữa callback của store và UIKit, không có combineLatest/debounce
-/// nào (debounce nằm ở store, dùng chung 2 nền tảng).
+/// Không dùng Combine: store phơi callback, VM phơi callback. Debounce nằm ở store, dùng chung 2 nền tảng.
 class PRMBaseViewModel<R: PRMBaseRouterProtocol> {
 
     let router: R

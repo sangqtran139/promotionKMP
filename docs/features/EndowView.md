@@ -9,18 +9,17 @@
 > **Cập nhật (tầng UI-logic dùng chung):** Toàn bộ nghiệp vụ widget — `findEligible`, **validate & apply**,
 > và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
 > **`EndowStore`** (`promotionLogic/presentation/endow`), dùng chung Android & iOS.
-> `PRMEndowViewModel` (Android) và `EndowViewModel` (iOS, mới — trước đây iOS không có VM cho widget,
-> logic dồn ở `PromotionSDKImpl`) đều là **lớp bọc mỏng** quanh store.
-> - Validate&apply đi qua `EndowStore.ValidateAndApply(offers)` (trước: Android ở `ChoosePromotionViewModel`,
->   iOS ở `PromotionSDKImpl`). Màn "Chọn ưu đãi" nay chỉ **trả offers đang chọn** (`ApplySelectedOffers` /
+> `PRMEndowViewModel` (Android) và `EndowViewModel` (iOS) đều là **lớp bọc mỏng** quanh store.
+> - Validate&apply đi qua `EndowStore.ValidateAndApply(offers)`. Màn "Chọn ưu đãi" chỉ **trả offers
+>   đang chọn** (`ApplySelectedOffers` /
 >   `onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate.
 > - Kết quả validate dùng model shared `EndowAppliedDiscount`; mỗi nền tảng map sang model public riêng
 >   (`AppliedDiscount` bên Android).
-> - **iOS widget reactive off store** (parity Android): `PromotionSDKImpl` bỏ `loadVouchers`/`cachedListModel`/
->   `setState` tay — nay `endowVM.observe { render(EndowState) }` + `endowVM.loadInitial()`; `render` map
->   `EndowStore.widgetState` → `PRMEndowView.setState`, callback host (count/applied) theo transition.
-> - **Order items dùng chung**: request `findEligible` lấy `items` từ `PromotionRequestContextProvider.getOrderItems()`
->   (iOS: `PromotionMutableContext`), thay cho `items = emptyList()` — đồng bộ campaign theo SKU.
+> - **iOS widget reactive off store** (parity Android): `endowVM.observe { render(EndowState) }` +
+>   `endowVM.loadInitial()`; `render` map `EndowStore.widgetState` → `PRMEndowView.setState`, callback
+>   host (count/applied) theo transition.
+> - **Order items dùng chung**: request `findEligible` lấy `items` từ
+>   `PromotionRequestContextProvider.getOrderItems()` (iOS: `PromotionMutableContext`).
 
 ---
 
@@ -56,9 +55,8 @@ ngay khi attach, rồi `PromotionFeatureGate.refresh()` và áp lại nếu giá
 ### Auto-apply hiện đang tắt
 
 `findEligible` chưa trả `isAutoApplied` (không có ở `EligibleOfferDto` lẫn các DTO lồng bên trong),
-nên voucher tự-áp-dụng **không chạy** ở luồng checkout — trên cả Android lẫn iOS. Trước đây Android
-lấy cờ này từ `searchVouchers` và nhánh auto-apply có chạy; đổi sang `findEligible` là đánh đổi có
-chủ đích để hai nền tảng khớp nhau. `validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
+nên voucher tự-áp-dụng **không chạy** ở luồng checkout — trên cả Android lẫn iOS.
+`validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
 Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
 ### `EndowViewState` (trạng thái hiển thị)
