@@ -37,5 +37,12 @@ internal class FeatureFlagRepositoryImpl(
 
     override fun isEnabled(featureName: String): Boolean = cachedFlags.isEnabled(featureName)
 
-    override fun getPromotionFeatureFlags(): PromotionFeatureFlags = cachedFlags
+    /**
+     * Trả bản đã chuẩn hoá, **không** phải [cachedFlags] thô: instance này thoát ra tới host qua
+     * `PromotionFeatureFlagUseCases.all()`, mà ngoài đó không ai bị ép gọi [PromotionFeatureFlags.isEnabled]
+     * — đọc thẳng `.voucherList` là chuyện tự nhiên. Chuẩn hoá ở đây thì đọc kiểu nào cũng đúng luật.
+     *
+     * Cache vẫn giữ giá trị thô để bật lại `ENABLE_ALL` là các cờ con trở về đúng giá trị riêng.
+     */
+    override fun getPromotionFeatureFlags(): PromotionFeatureFlags = cachedFlags.normalized()
 }

@@ -327,10 +327,36 @@ public final class PromotionSDK {
     /// Màn tự gọi API lấy chi tiết đầy đủ; trong lúc chờ hiện shimmer.
     /// Cờ `VOUCHER_DETAIL` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
-    public static func openPromotionDetail(voucherId: String, from viewController: UIViewController) {
+    ///
+    /// `returnVoucherOnApply` quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
+    /// - `true` (mặc định): nút "Áp dụng" → trả `voucherId` về `onVoucherApplied`, SDK tự đóng màn.
+    /// - `false`: nút "Sử dụng ngay" → SDK mở sheet chọn dịch vụ, kết quả về
+    ///   `PromotionSDKCallback.onServiceSelected`.
+    ///
+    /// Bật là để **màn host nào cũng mang đi tích hợp được**: `onVoucherApplied` gắn với chính lời
+    /// gọi này nên data về đúng màn vừa mở, khác `PromotionSDKCallback` là kênh singleton không biết
+    /// ai gọi. Đối ứng `PromotionSDK.openPromotionDetail(...)` bên Android.
+    ///
+    /// - Parameters:
+    ///   - onVoucherApplied: Chỉ dùng khi `returnVoucherOnApply == true`. Nhận **cả object
+    ///     `PromotionVoucherDetail`** — cùng thứ `api.getVoucherDetail` trả, nên host không phải gọi
+    ///     API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code. Gọi trên main thread, **trước** khi màn pop
+    ///     (đối ứng Android). Bỏ trống thì màn vẫn đóng, không ai nhận data.
+    public static func openPromotionDetail(
+        voucherId: String,
+        from viewController: UIViewController,
+        returnVoucherOnApply: Bool = true,
+        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
+    ) {
         guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
-        impl.openPromotionDetail(voucherId: voucherId, on: viewController, navigator: nav)
+        impl.openPromotionDetail(
+            voucherId: voucherId,
+            on: viewController,
+            navigator: nav,
+            returnVoucherOnApply: returnVoucherOnApply,
+            onVoucherApplied: onVoucherApplied
+        )
     }
 
     /// Create the promotion widget view. Attach it to your layout; it manages its own data loading.

@@ -155,7 +155,7 @@ class PromotionSDKApi internal constructor(
         serviceCode: String? = null,
     ): PromotionApiResult<PromotionVoucherDetail> = handle(
         call = { useCases.getVoucherDetail(voucherId, serviceCode) },
-        map = ::toVoucherDetail,
+        map = VoucherDetail::toPublicDetail,
     )
 
     /**
@@ -280,22 +280,6 @@ class PromotionSDKApi internal constructor(
         displayStatusLabel = model.displayStatusLabel,
     )
 
-    private fun toVoucherDetail(model: VoucherDetail) = PromotionVoucherDetail(
-        id = model.voucherId,
-        merchantName = model.merchantName.orEmpty(),
-        title = model.title.orEmpty(),
-        description = model.description.orEmpty(),
-        guideline = model.guideline.orEmpty(),
-        startDate = model.startDate,
-        expireDate = model.expirationDate,
-        bannerURL = model.banner,
-        logoURL = model.logo,
-        status = model.status.orEmpty(),
-        displayStatusLabel = model.displayStatusLabel,
-        codes = model.codes,
-        usageGuideUrl = model.usageGuideUrl,
-    )
-
     private fun toOffer(model: EligibleOffer) = PromotionEligibleOffer(
         id = model.id,
         name = model.campaignName.orEmpty(),
@@ -316,3 +300,26 @@ class PromotionSDKApi internal constructor(
         const val DEFAULT_OBJECT_TYPE = "CAMPAIGN"
     }
 }
+
+/**
+ * Domain [VoucherDetail] → DTO public [PromotionVoucherDetail].
+ *
+ * `internal` top-level thay vì hàm private trong [PromotionSDKApi] vì **hai** nơi cần đúng phép map
+ * này: [PromotionSDKApi.getVoucherDetail] (headless) và `PromotionSDK.openPromotionDetail` (trả
+ * object về host khi bấm "Áp dụng"). Chép đôi thì hai bề mặt sẽ trôi khỏi nhau.
+ */
+internal fun VoucherDetail.toPublicDetail() = PromotionVoucherDetail(
+    id = voucherId,
+    merchantName = merchantName.orEmpty(),
+    title = title.orEmpty(),
+    description = description.orEmpty(),
+    guideline = guideline.orEmpty(),
+    startDate = startDate,
+    expireDate = expirationDate,
+    bannerURL = banner,
+    logoURL = logo,
+    status = status.orEmpty(),
+    displayStatusLabel = displayStatusLabel,
+    codes = codes,
+    usageGuideUrl = usageGuideUrl,
+)

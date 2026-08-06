@@ -122,7 +122,14 @@ class ViewController: UIViewController {
         PromotionSDK.api.getVouchers(page: 0) { [weak self] result in
             guard let self else { return }
             let voucherId = (try? result.get())?.vouchers.first?.id ?? self.fallbackVoucherId
-            PromotionSDK.openPromotionDetail(voucherId: voucherId, from: self)
+            // `returnVoucherOnApply` mặc định true → nút "Áp dụng" trả voucher về đúng lời gọi này,
+            // không qua PromotionSDKCallback singleton. Truyền false nếu muốn SDK tự mở chọn dịch vụ.
+            PromotionSDK.openPromotionDetail(voucherId: voucherId, from: self) { [weak self] detail in
+                // Cả object PromotionVoucherDetail — khỏi gọi thêm api.getVoucherDetail().
+                // Màn chi tiết đã tự pop → toast hiện trên chính màn này, đối ứng demo Android.
+                let expiry = detail.expireDate ?? "không giới hạn"
+                self?.showToast("Đã chọn: \(detail.title) — HSD \(expiry)")
+            }
         }
     }
 
@@ -151,4 +158,60 @@ class ViewController: UIViewController {
         present(alert, animated: true)
     }
 
+}
+
+// MARK: - Toast (tiện ích demo — KHÔNG chạm SDK)
+
+extension UIViewController {
+
+    /// Toast nổi ở đáy màn, tự tan sau `duration`. Đối ứng `Toast.makeText(...)` bên demo Android.
+    ///
+    /// Cố tình **không** dùng `PromotionToast` của SDK: đó là type nội bộ (`PRMPromotionUI`), host
+    /// thật không nhìn thấy — demo mà xài thì hết vai trò "mô phỏng host". Cũng không dùng
+    /// `UIAlertController` như `showAlert`: alert chặn tương tác và phải bấm OK, không phải toast.
+    func showToast(_ message: String, duration: TimeInterval = 2) {
+        let label = PaddedLabel()
+        label.text = message
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = .white
+        label.backgroundColor = UIColor.black.withAlphaComponent(0.8)
+        label.layer.cornerRadius = 8
+        label.clipsToBounds = true
+        label.alpha = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -32),
+            label.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
+        ])
+
+        UIView.animate(withDuration: 0.2, animations: { label.alpha = 1 }) { _ in
+            UIView.animate(withDuration: 0.3, delay: duration, animations: { label.alpha = 0 }) { _ in
+                label.removeFromSuperview()
+            }
+        }
+    }
+}
+
+/// Label có padding — `UILabel` thường không có `contentInset`, chữ sẽ dính sát mép nền toast.
+private final class PaddedLabel: UILabel {
+
+    private let inset = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 16)
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: inset))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(
+            width: size.width + inset.left + inset.right,
+            height: size.height + inset.top + inset.bottom
+        )
+    }
 }

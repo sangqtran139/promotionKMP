@@ -116,12 +116,33 @@ Fragment: render thông tin + cấu hình nút theo state
 |---|---|---|
 | "Ưu đãi của tôi" / Tìm kiếm | "Sử dụng ngay" (`prm_use_now`) | Chọn dịch vụ (xem dưới) |
 | Luồng thanh toán ("Chọn ưu đãi" → Chi tiết) | "Áp dụng" (`prm_apply`) | Quay lại "Chọn ưu đãi", voucher **đã tick** |
+| **Host gọi thẳng** `openPromotionDetail(..., returnVoucherOnApply = true)` — mặc định | "Áp dụng" | Trả **object `PromotionVoucherDetail`** về `onVoucherApplied` của chính lời gọi đó, rồi đóng màn |
+| Host gọi thẳng với `returnVoucherOnApply = false` | "Sử dụng ngay" | Chọn dịch vụ, như hàng đầu |
 
-Nơi mở màn đi kèm navigation: Android `PromotionDetailEntry` (arg của `newInstance`) ↔ iOS
-`PromotionDetailBuilder.Entry` (field của `DataModel`). Đường về khi "Áp dụng": Android
-`setFragmentResult(RESULT_APPLY_VOUCHER)` → `ChoosePromotionFragment.listenApplyFromDetail`; iOS
-closure `onApplyFromCheckout` → `ChoosePromotionViewController.selectVoucherFromDetail`. Cả hai dùng
-`SetPreSelected` (không phải toggle) để kết quả luôn là "đúng voucher này được chọn".
+Cờ đi kèm navigation là **một boolean duy nhất, không có enum ở nền tảng nào**:
+`returnVoucherOnApply` — Android là arg của `newInstance` (lưu vào `arguments`), iOS là field của
+`PromotionDetailBuilder.DataModel`. Đặt tên theo *hành vi* chứ không theo *màn gọi*, vì nơi mở màn có
+thể là "Chọn ưu đãi" nội bộ **hoặc** màn bất kỳ của host; tên kiểu `checkout` sẽ sai nghĩa ngay.
+Xem [PublicApi.md](../common/PublicApi.md).
+
+> Trước 2026-08-06 chỗ này là enum `PromotionDetailEntry { MY_PROMOTION, CHECKOUT }` (Android) /
+> `PromotionDetailBuilder.Entry` (iOS). Đã xoá hẳn cả hai.
+
+Đường về khi "Áp dụng" có **hai người nhận**, tuỳ ai mở màn:
+
+| Ai mở | Android | iOS |
+|---|---|---|
+| `ChoosePromotionFragment` (nội bộ) | `setFragmentResult(RESULT_APPLY_VOUCHER)` → `listenApplyFromDetail` | closure `onVoucherApplied` → `ChoosePromotionViewController.selectVoucherFromDetail` |
+| Host qua `openPromotionDetail` | `PromotionDetailFragment.onVoucherApplied` | cùng closure `onVoucherApplied`, do `PromotionSDKImpl` truyền vào |
+
+Android bắn **cả hai** trong `onActionClick` (mỗi lần mở chỉ một bên có người nghe); iOS dùng chung
+một closure nên không có chuyện đó.
+
+Kiểu dữ liệu closure: tầng UI nội bộ chuyền **`VoucherDetail` domain** (`ChoosePromotionRouter` chỉ
+lấy `.voucherId`), rồi `PromotionSDK` (Android) / `PromotionSDKImpl` (iOS) map sang DTO public
+`PromotionVoucherDetail` ngay tại ranh giới. Bắt buộc phải vậy ở iOS: `PRMPromotionUI` nằm **dưới**
+`Entry/API` trong chiều phụ thuộc nên builder không thể khai type public. Android làm y hệt cho đối xứng. Luồng nội bộ dùng `SetPreSelected` (không phải toggle) để kết quả
+luôn là "đúng voucher này được chọn".
 
 Khi bấm "Sử dụng ngay", số dịch vụ khả dụng quyết định hành vi:
 

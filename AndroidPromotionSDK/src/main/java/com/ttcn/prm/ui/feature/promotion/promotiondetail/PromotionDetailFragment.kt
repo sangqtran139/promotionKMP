@@ -17,6 +17,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
 import com.ttcn.prm.databinding.FragmentDetailPromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.prm.entry.PromotionSDKCallback
 import com.ttcn.prm.entry.PromotionServiceSelection
 import com.ttcn.prm.ui.di.PromotionViewModelFactory
 import com.ttcn.prm.ui.feature.promotion.mypromotion.ServiceSelectorBottomSheet
@@ -39,14 +40,35 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     private var tabMediator: TabLayoutMediator? = null
     private var pagerBoundVoucherId: String? = null
 
+    /**
+     * Kênh trả voucher về **đúng nơi đã mở màn này**, chỉ chạy khi [returnVoucherOnApply] bật.
+     * Dùng cho `PromotionSDK.openPromotionDetail(...)`: host mở từ màn bất kỳ và nhận lại `voucherId`
+     * ngay tại lời gọi đó, thay vì qua [PromotionSDKCallback] singleton (kênh đó không biết màn nào gọi).
+     *
+     * Đối ứng `PromotionDetailBuilder.DataModel.onVoucherApplied` bên iOS.
+     *
+     * Tách khỏi `setFragmentResult` trong [onActionClick] vì hai người nhận khác nhau: fragment
+     * result dành cho `ChoosePromotionFragment` nội bộ SDK (tick lại ô chọn), closure này dành cho
+     * host. Một lần mở màn chỉ có một trong hai thực sự có người nghe.
+     *
+     * Không sống qua process death (là `var` thường, không vào [arguments]) — cùng giới hạn với
+     * `ChoosePromotionFragment.onApplySelectedOffers`. Bị mất thì bấm "Áp dụng" vẫn đóng màn, chỉ là
+     * host không nhận được data.
+     */
+    internal var onVoucherApplied: ((detail: VoucherDetail) -> Unit)? = null
+
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentDetailPromotionBinding.inflate(inflater, container, false)
 
-    /** Nơi mở màn này — quyết định nhãn nút + hành vi khi bấm. Xem [PromotionDetailEntry]. */
-    private val entry: PromotionDetailEntry
-        get() = arguments?.getString(KEY_ENTRY)
-            ?.let { runCatching { PromotionDetailEntry.valueOf(it) }.getOrNull() }
-            ?: PromotionDetailEntry.MY_PROMOTION
+    /**
+     * Quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
+     * - `false` (mặc định): "Sử dụng ngay" → chọn dịch vụ (1 dịch vụ thì đi thẳng).
+     * - `true`: "Áp dụng" → trả `voucherId` về nơi đã mở màn rồi đóng màn này.
+     *
+     * Đối ứng `PromotionDetailBuilder.DataModel.returnVoucherOnApply` bên iOS.
+     */
+    private val returnVoucherOnApply: Boolean
+        get() = arguments?.getBoolean(KEY_RETURN_VOUCHER_ON_APPLY) ?: false
 
     override fun setupUI() {
         binding.imgBack.setOnClickListener { onBackFragment() }
@@ -148,10 +170,10 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         //
         // NHÃN: **cố định chuỗi SDK**, KHÔNG dùng `state.actionLabel` (= `displayStatusLabel` của
         // server). Server đang trả "Sử dụng" cho mọi voucher, còn màn này muốn chuỗi riêng — đối ứng
-        // iOS `applyTitle`. Nhãn phụ thuộc nơi mở màn (TLNV MOB_002 control #5):
-        // từ "Ưu đãi của tôi" → "Sử dụng ngay"; từ luồng thanh toán → "Áp dụng".
+        // iOS `applyTitle`. Nhãn phụ thuộc [returnVoucherOnApply] (TLNV MOB_002 control #5):
+        // tắt → "Sử dụng ngay"; bật → "Áp dụng".
         binding.tvUse.text = getString(
-            if (entry == PromotionDetailEntry.CHECKOUT) R.string.prm_apply else R.string.prm_use_now
+            if (returnVoucherOnApply) R.string.prm_apply else R.string.prm_use_now
         )
 
         bindDetailTabsIfNeeded(
@@ -163,7 +185,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
 
     companion object {
         private const val KEY_VOUCHER_ID = "prm_promotion_detail_voucher_id"
-        private const val KEY_ENTRY = "prm_promotion_detail_entry"
+        private const val KEY_RETURN_VOUCHER_ON_APPLY = "prm_promotion_detail_return_voucher"
 
         /** Key `setFragmentResult` khi bấm "Áp dụng" — màn "Chọn ưu đãi" lắng nghe để tick voucher. */
         const val RESULT_APPLY_VOUCHER = "prm_promotion_detail_apply_voucher"
@@ -172,17 +194,17 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         const val RESULT_KEY_VOUCHER_ID = KEY_VOUCHER_ID
 
         /**
-         * Navigation chỉ mang `voucherId` (+ nơi mở màn) — màn tự fetch chi tiết, **không** nhận dữ
-         * liệu dựng sẵn từ màn danh sách. Trong lúc chờ hiện shimmer. Giống iOS.
+         * Navigation chỉ mang `voucherId` (+ cờ [returnVoucherOnApply]) — màn tự fetch chi tiết,
+         * **không** nhận dữ liệu dựng sẵn từ màn danh sách. Trong lúc chờ hiện shimmer. Giống iOS.
          */
         internal fun newInstance(
             voucherId: String,
-            entry: PromotionDetailEntry = PromotionDetailEntry.MY_PROMOTION,
+            returnVoucherOnApply: Boolean = false,
         ): PromotionDetailFragment {
             return PromotionDetailFragment().apply {
                 arguments = Bundle().apply {
                     putString(KEY_VOUCHER_ID, voucherId)
-                    putString(KEY_ENTRY, entry.name)
+                    putBoolean(KEY_RETURN_VOUCHER_ON_APPLY, returnVoucherOnApply)
                 }
             }
         }
@@ -257,17 +279,27 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     }
 
     /**
-     * Bấm nút hành động — hai hành vi tuỳ nơi mở màn (TLNV MOB_002 control #5):
-     * - Từ "Ưu đãi của tôi": chọn dịch vụ để dùng ngay.
-     * - Từ luồng thanh toán: **không** chọn dịch vụ; trả voucherId về màn "Chọn ưu đãi" (tick sẵn
-     *   ô chọn) rồi đóng màn này.
+     * Bấm nút hành động — hai hành vi tuỳ [returnVoucherOnApply] (TLNV MOB_002 control #5):
+     * - Tắt (từ "Ưu đãi của tôi" / Tìm kiếm): chọn dịch vụ để dùng ngay.
+     * - Bật (từ "Chọn ưu đãi", hoặc host mở thẳng): **không** chọn dịch vụ; trả voucherId về nơi đã
+     *   mở màn rồi đóng màn này.
+     *
+     * Hai người nhận, bắn cả hai vì mỗi lần mở chỉ một bên thực sự có người nghe:
+     * [RESULT_APPLY_VOUCHER] cho `ChoosePromotionFragment` nội bộ, [onVoucherApplied] cho host.
+     *
+     * Gọi **trước** [onBackFragment] để nơi nhận có data ngay khi màn của họ hiện lại — đối ứng iOS
+     * (`notifyVoucherApplied()` rồi mới `routeToParent()`).
      */
     private fun onActionClick() {
-        if (entry == PromotionDetailEntry.CHECKOUT) {
+        if (returnVoucherOnApply) {
+            val voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty()
             requireActivity().supportFragmentManager.setFragmentResult(
                 RESULT_APPLY_VOUCHER,
-                bundleOf(RESULT_KEY_VOUCHER_ID to arguments?.getString(KEY_VOUCHER_ID).orEmpty()),
+                bundleOf(RESULT_KEY_VOUCHER_ID to voucherId),
             )
+            // Detail chỉ có sau khi API trả; nút "Áp dụng" bị khoá trước đó nên bình thường không
+            // null. Null thì bỏ callback — không bịa object rỗng cho host.
+            viewModel.uiState.value.detail?.let { onVoucherApplied?.invoke(it) }
             onBackFragment()
             return
         }

@@ -69,7 +69,13 @@ object PromotionSDK {
     fun refreshFeatureFlags(onComplete: ((PromotionFeatureFlagsSnapshot) -> Unit)? = null)
 
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null)
-    fun openPromotionDetail(voucherId: String, activity: FragmentActivity, containerViewId: Int? = null)
+    fun openPromotionDetail(
+        voucherId: String,
+        activity: FragmentActivity,
+        containerViewId: Int? = null,
+        returnVoucherOnApply: Boolean = true,
+        onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
+    )
 }
 ```
 
@@ -77,8 +83,33 @@ object PromotionSDK {
 
 `openPromotionDetail` mở **thẳng** màn chi tiết theo `voucherId`, không qua danh sách — dùng khi host
 đã biết id (bấm push notification, deeplink từ banner ngoài SDK). Đối ứng
-`sdk.openPromotionDetail(voucherId:from:)` bên iOS. Cả hai đều gác bởi cờ `VOUCHER_DETAIL` y như
-đường vào nội bộ: kill-switch không có cửa sau chỉ vì host gọi thẳng entry.
+`sdk.openPromotionDetail(voucherId:from:returnVoucherOnApply:onVoucherApplied:)` bên iOS. Cả hai đều
+gác bởi cờ `VOUCHER_DETAIL` y như đường vào nội bộ: kill-switch không có cửa sau chỉ vì host gọi
+thẳng entry.
+
+`returnVoucherOnApply` quyết định nhãn nút + hành vi khi bấm (TLNV MOB_002 control #5):
+
+| Giá trị | Nút | Bấm thì |
+|---|---|---|
+| `true` (**mặc định**) | "Áp dụng" | trả **object `PromotionVoucherDetail`** về `onVoucherApplied` rồi SDK tự đóng màn |
+| `false` | "Dùng ngay" | SDK mở bottom sheet chọn dịch vụ → `PromotionSDKCallback.onServiceSelected` |
+
+Đây là **kênh trả duy nhất gắn với lời gọi**, khác `PromotionSDKCallback` là singleton set một lần
+lúc `initialize` và không mang thông tin màn nào đã mở SDK. Nhờ vậy màn host bất kỳ — không cần là
+màn thanh toán — đều mở được chi tiết rồi nhận voucher về đúng chỗ.
+
+Callback trả **cả object `PromotionVoucherDetail`** (id, merchantName, title, description, guideline,
+startDate/expireDate, bannerURL/logoURL, status, displayStatusLabel, codes, usageGuideUrl) — đúng type
+`api.getVoucherDetail` trả, nên host không phải gọi API lần nữa. Phép map domain → DTO dùng chung với
+headless: `VoucherDetail.toPublicDetail()` (Android) / `PromotionSDKApi.toVoucherDetail(_:)` (iOS),
+đặt ở **ranh giới public**; tầng UI nội bộ vẫn chuyền `VoucherDetail` của lõi.
+
+> Object chỉ có sau khi API chi tiết trả về. Nút "Áp dụng" bị khoá trước đó nên bình thường luôn có;
+> trường hợp bất thường SDK **bỏ qua callback** thay vì trả object rỗng.
+
+> ⚠️ **Mặc định là `true`**, tức đổi hành vi so với bản trước (trước đây luôn là "Dùng ngay" + chọn
+> dịch vụ). Host đang gọi `openPromotionDetail` mà muốn giữ hành vi cũ phải truyền
+> `returnVoucherOnApply = false`.
 
 ```kotlin
 PromotionSDK.initialize(

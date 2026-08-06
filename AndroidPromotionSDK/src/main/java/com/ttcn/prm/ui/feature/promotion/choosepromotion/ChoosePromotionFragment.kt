@@ -18,7 +18,6 @@ import com.ttcn.prm.ui.di.PromotionViewModelFactory
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
 import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
-import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailEntry
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.utils.extension.VerticalSpaceItemDecoration
@@ -102,7 +101,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                     showToast(mapPromotionError(effect.errorCode))
 
                 is ChoosePromotionEffect.OpenVoucherDetail -> {
-                    openPromotionDetail(effect.voucherId, PromotionDetailEntry.CHECKOUT)
+                    openPromotionDetail(effect.voucherId, returnVoucherOnApply = true)
                 }
 
                 // Bấm "Áp dụng" → trả offers đang chọn cho widget (EndowStore validate).
@@ -141,7 +140,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
             onVoucherClick = { viewModel.handleAction(ChoosePromotionAction.ToggleSelection(it.voucherId)) },
-            onDetailClick  = { openPromotionDetail(it.voucherId, PromotionDetailEntry.CHECKOUT) },
+            onDetailClick  = { openPromotionDetail(it.voucherId, returnVoucherOnApply = true) },
             // Store chạy state-machine "mở hết → tải trang kế → thu gọn" (gộp cả expand & collapse).
             onSeeMoreMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },
             onCollapseMyVoucher = { viewModel.handleAction(ChoosePromotionAction.SeeMoreMy) },

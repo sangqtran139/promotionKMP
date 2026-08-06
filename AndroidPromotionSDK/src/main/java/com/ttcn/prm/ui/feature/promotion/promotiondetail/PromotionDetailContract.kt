@@ -18,14 +18,6 @@ internal data class PromotionDetailUiState(
  * Màn chi tiết **không nhận dữ liệu seed từ ngoài**: chỉ `voucherId` đi qua navigation, mọi thứ hiển
  * thị đều đến từ `getCustomerVoucherDetail`. Trong lúc chờ thì hiện shimmer. Giống hệt iOS.
  */
-/**
- * Màn Chi tiết mở từ đâu — quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
- * - [MY_PROMOTION]: "Sử dụng ngay" → chọn dịch vụ (1 dịch vụ thì đi thẳng).
- * - [CHECKOUT]: "Áp dụng" → quay lại màn "Chọn ưu đãi" với voucher này đã được tick.
- *
- * Đối ứng `PromotionDetailBuilder.DataModel.entry` bên iOS.
- */
-internal enum class PromotionDetailEntry { MY_PROMOTION, CHECKOUT }
 
 internal sealed interface PromotionDetailAction {
     data class LoadDetail(val voucherId: String) : PromotionDetailAction

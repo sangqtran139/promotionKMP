@@ -10,36 +10,40 @@ import UIKit
 
 final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController, PromotionDetailViewModel, PromotionDetailRouter, PromotionDetailBuilder.DataModel> {
     
-    /**
-     Màn Chi tiết mở từ đâu — quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
-     - `myPromotion`: "Sử dụng ngay" → chọn dịch vụ (1 dịch vụ thì đi thẳng).
-     - `checkout`: "Áp dụng" → quay lại màn "Chọn ưu đãi" với voucher này đã được tick.
-
-     Đối ứng `PromotionDetailEntry` bên Android.
-     */
-    enum Entry {
-        case myPromotion
-        case checkout
-    }
-
     struct DataModel {
         /// Promotion cơ bản (từ list) để hiện card NGAY; màn tự fetch detail đầy đủ theo voucherId.
         /// token/service KHÔNG ở đây — ViewModel đọc từ PromotionRequestContextProvider
         /// của lõi (đối xứng Android).
         let promotion: PRMPromotionCardSeed
-        let entry: Entry
-        /// Chỉ dùng khi `entry == .checkout`: màn "Chọn ưu đãi" nhận lại voucherId để tick ô chọn.
-        /// Router của màn Chi tiết tự pop; closure chỉ lo phần selection.
-        let onApplyFromCheckout: ((String) -> Void)?
+
+        /**
+         Quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
+         - `false` (mặc định): "Sử dụng ngay" → chọn dịch vụ (1 dịch vụ thì đi thẳng).
+         - `true`: "Áp dụng" → trả voucherId về nơi đã mở màn rồi tự pop.
+
+         Boolean chứ không phải enum: nơi mở màn có thể là "Chọn ưu đãi" nội bộ **hoặc** màn bất kỳ
+         của host qua `PromotionSDK.openPromotionDetail(...)`, nên đặt tên theo *hành vi* thay vì
+         theo *màn gọi*. Đối ứng `PromotionDetailFragment.returnVoucherOnApply` bên Android.
+         */
+        let returnVoucherOnApply: Bool
+
+        /// Chỉ dùng khi `returnVoucherOnApply == true`: nơi mở màn nhận lại chi tiết voucher (màn
+        /// "Chọn ưu đãi" chỉ lấy `voucherId`, host dùng cả object). Router tự pop; closure lo data.
+        ///
+        /// Kiểu là `VoucherDetail` **domain**, không phải DTO public `PromotionVoucherDetail`: module
+        /// này (`PRMPromotionUI`) nằm **dưới** `Entry/API` trong chiều phụ thuộc nên không thấy type
+        /// public. `PromotionSDKImpl` map ở ranh giới — đối ứng Android (fragment cầm domain,
+        /// `PromotionSDK` map).
+        let onVoucherApplied: ((VoucherDetail) -> Void)?
 
         init(
             promotion: PRMPromotionCardSeed,
-            entry: Entry = .myPromotion,
-            onApplyFromCheckout: ((String) -> Void)? = nil
+            returnVoucherOnApply: Bool = false,
+            onVoucherApplied: ((VoucherDetail) -> Void)? = nil
         ) {
             self.promotion = promotion
-            self.entry = entry
-            self.onApplyFromCheckout = onApplyFromCheckout
+            self.returnVoucherOnApply = returnVoucherOnApply
+            self.onVoucherApplied = onVoucherApplied
         }
     }
     

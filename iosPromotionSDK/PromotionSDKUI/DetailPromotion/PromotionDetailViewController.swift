@@ -248,8 +248,8 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         // Hai hành vi tuỳ nơi mở màn — parity Android `PromotionDetailFragment.onActionClick`
         // (TLNV MOB_002 control #5). Từ luồng thanh toán: KHÔNG chọn dịch vụ, chỉ trả voucherId về
         // màn "Chọn ưu đãi" (tick sẵn) rồi đóng màn này.
-        if viewModel.isCheckoutEntry {
-            viewModel.applyFromCheckout()
+        if viewModel.returnVoucherOnApply {
+            viewModel.notifyVoucherApplied()
             viewModel.routeToParent()
             return
         }

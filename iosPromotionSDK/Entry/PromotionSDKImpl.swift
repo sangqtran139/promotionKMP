@@ -386,7 +386,17 @@ final class PromotionSDKImpl: NSObject {
     /// Mở màn chi tiết ưu đãi theo `voucherId`. Màn tự fetch chi tiết đầy đủ; trong lúc chờ hiện shimmer.
     /// Gate bởi cờ `VOUCHER_DETAIL` (đã gate ngầm bởi master): TẮT → toast lỗi PRM_MOB_021 + báo host.
     /// Có navigationController → push, ngược lại → present modal.
-    func openPromotionDetail(voucherId: String, on viewController: UIViewController, navigator: UINavigationController?) {
+    ///
+    /// `returnVoucherOnApply` đi thẳng xuống `PromotionDetailBuilder.DataModel` — không còn enum
+    /// trung gian ở cả hai nền tảng: nơi mở màn có thể là màn bất kỳ của host, nên cờ đặt tên theo
+    /// *hành vi* ("tôi tự nhận voucher" / "để SDK điều hướng chọn dịch vụ") thay vì theo *màn gọi*.
+    func openPromotionDetail(
+        voucherId: String,
+        on viewController: UIViewController,
+        navigator: UINavigationController?,
+        returnVoucherOnApply: Bool = true,
+        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
+    ) {
         canOpenVoucherDetail { [weak self] enabled in
             guard let self else { return }
             guard enabled else {
@@ -398,7 +408,14 @@ final class PromotionSDKImpl: NSObject {
             // Seed tối thiểu từ voucherId — card trống + shimmer cho tới khi fetch detail xong.
             let seed = PRMPromotionCardSeed(voucherId: voucherId)
             let vc = PromotionDetailBuilder.build(
-                with: .init(promotion: seed),
+                with: .init(
+                    promotion: seed,
+                    returnVoucherOnApply: returnVoucherOnApply,
+                    // Map domain -> DTO ở đây, ranh giới public (đối ứng `PromotionSDK` bên Android).
+                    onVoucherApplied: onVoucherApplied.map { host in
+                        { detail in host(PromotionSDKApi.toVoucherDetail(detail)) }
+                    }
+                ),
                 navigator: nav
             )
             if let nav {

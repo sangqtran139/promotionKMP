@@ -3,6 +3,7 @@ package com.ttcn.promotionsdk.app
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentMainLauncherBinding
 import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
@@ -88,7 +89,22 @@ class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
                 is PromotionApiResult.Failure -> FALLBACK_VOUCHER_ID
             }
             Log.d(TAG, "openPromotionDetail(voucherId=$voucherId)")
-            PromotionSDK.openPromotionDetail(voucherId, requireActivity(), R.id.layoutRoot)
+            // `returnVoucherOnApply` mặc định true → nút "Áp dụng" trả voucher về đúng lời gọi này,
+            // không qua PromotionSDKCallback singleton. Truyền false nếu muốn SDK tự mở chọn dịch vụ.
+            PromotionSDK.openPromotionDetail(
+                voucherId = voucherId,
+                activity = requireActivity(),
+                containerViewId = R.id.layoutRoot,
+                onVoucherApplied = { detail ->
+                    // Cả object PromotionVoucherDetail — khỏi gọi thêm api.getVoucherDetail().
+                    Log.d(TAG, "onVoucherApplied(id=${detail.id}, codes=${detail.codes})")
+                    Toast.makeText(
+                        requireContext(),
+                        "Đã chọn: ${detail.title} — HSD ${detail.expireDate ?: "không giới hạn"}",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                },
+            )
         }
     }
 

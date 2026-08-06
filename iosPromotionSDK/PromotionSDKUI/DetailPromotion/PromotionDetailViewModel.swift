@@ -94,6 +94,8 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     private var didStart = false
     /// Dịch vụ/sản phẩm voucher áp dụng được — chỉ có sau khi detail về.
     private var applicableProducts: [ApplicableProduct] = []
+    /// Chi tiết mới nhất từ store — nguồn cho `notifyVoucherApplied()`. Nil khi chưa/không có data.
+    private var currentDetail: VoucherDetail?
 
     init(router: PromotionDetailRouter,
          data: PromotionDetailBuilder.DataModel,
@@ -110,14 +112,18 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
         store.clear()
     }
 
-    // ─── Entry point (TLNV MOB_002 control #5) ─────────────────────────────────
-    /// Mở từ luồng thanh toán → nút là "Áp dụng", bấm thì trả voucher về màn "Chọn ưu đãi".
-    var isCheckoutEntry: Bool { data.entry == .checkout }
+    // ─── Nhãn nút + hành vi khi bấm (TLNV MOB_002 control #5) ──────────────────
+    /// Bật → nút là "Áp dụng", bấm thì trả voucher về nơi đã mở màn (màn "Chọn ưu đãi" nội bộ, hoặc
+    /// màn host qua `PromotionSDK.openPromotionDetail(...)`).
+    var returnVoucherOnApply: Bool { data.returnVoucherOnApply }
 
-    /// Báo màn "Chọn ưu đãi" tick voucher này. VC tự `routeToParent()` sau đó (đối ứng Android:
-    /// `setFragmentResult` + `onBackFragment`).
-    func applyFromCheckout() {
-        data.onApplyFromCheckout?(voucherId)
+    /// Báo nơi đã mở màn rằng voucher này được chọn. VC tự `routeToParent()` sau đó (đối ứng Android:
+    /// `setFragmentResult` + `onVoucherApplied` + `onBackFragment`).
+    /// `currentDetail` chỉ có sau khi API trả; nút "Áp dụng" bị khoá trước đó nên bình thường không
+    /// nil. Nil thì bỏ callback — không bịa object rỗng cho host (đối ứng Android).
+    func notifyVoucherApplied() {
+        guard let currentDetail else { return }
+        data.onVoucherApplied?(currentDetail)
     }
 
     // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
@@ -152,16 +158,18 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     private func render(_ state: PromotionDetailState) {
         guard let detail = state.detail else {
             applicableProducts = []
+            currentDetail = nil
             var empty = UiState.initial
             empty.isLoading = state.isLoading
             uiState = empty
             return
         }
         applicableProducts = detail.applicableProducts
+        currentDetail = detail
         // Nhãn nút theo nơi mở màn (TLNV MOB_002 control #5) — chuỗi SDK, không dùng nhãn server.
         uiState = state.toUiState(
             detail: detail,
-            applyTitle: isCheckoutEntry ? PromotionUIStrings.apply : PromotionUIStrings.useNow
+            applyTitle: returnVoucherOnApply ? PromotionUIStrings.apply : PromotionUIStrings.useNow
         )
     }
 

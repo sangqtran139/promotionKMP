@@ -317,7 +317,12 @@ public final class PromotionSDKApi {
         )
     }
 
-    private static func toVoucherDetail(_ model: VoucherDetail) -> PromotionVoucherDetail {
+    /// Domain `VoucherDetail` → DTO public `PromotionVoucherDetail`.
+    ///
+    /// `internal` chứ không `private`: hai nơi cần đúng phép map này — `getVoucherDetail` (headless)
+    /// và `PromotionSDKImpl.openPromotionDetail` (trả object về host). Đối ứng
+    /// `VoucherDetail.toPublicDetail()` bên Android.
+    static func toVoucherDetail(_ model: VoucherDetail) -> PromotionVoucherDetail {
         PromotionVoucherDetail(
             id: model.voucherId,
             merchantName: model.merchantName ?? "",

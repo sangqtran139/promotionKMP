@@ -13,6 +13,8 @@ import com.ttcn.prm.entry.api.PromotionFeature
 import com.ttcn.prm.entry.api.PromotionFeatureFlagsSnapshot
 import com.ttcn.prm.entry.api.PromotionOrderItem
 import com.ttcn.prm.entry.api.PromotionSDKApi
+import com.ttcn.prm.entry.api.PromotionVoucherDetail
+import com.ttcn.prm.entry.api.toPublicDetail
 import com.ttcn.prm.entry.api.flagName
 import com.ttcn.prm.entry.api.toSnapshot
 import com.ttcn.prm.ui.base.PromotionToastGate
@@ -55,6 +57,23 @@ object PromotionSDK {
         val environment: PromotionEnvironment,
     )
     private var fixedConfig: FixedConfig? = null
+
+    /**
+     * Gác "đã [initialize] chưa" cho các **điểm mở màn**: chưa init → log rồi `false` để nơi gọi
+     * `return`, **không ném**. Đối ứng `requireImpl(_:)` bên iOS (cũng log + trả `nil`).
+     *
+     * Vì sao không `check(...)` như trước: bề mặt feature flag ([isFeatureEnabled], [featureFlags])
+     * **fail-open** — chưa init thì nó trả "bật hết". Host làm đúng hướng dẫn (hỏi trước để ẩn entry
+     * point) sẽ thấy `true`, hiện nút, user bấm, và SDK ném `IllegalStateException` giết app của host.
+     * Hai vế đó phải cùng một thái độ: cờ hỏng/chưa sẵn sàng không được phép làm chết màn hình host.
+     *
+     * Đây là lỗi lập trình của host nên vẫn phải ồn ào — dùng `Log.e`, không nuốt im lặng.
+     */
+    private fun requireInitialized(caller: String): Boolean {
+        if (PromotionContainer.isInitialized()) return true
+        Log.e(TAG, "$caller bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(...) trước.")
+        return false
+    }
 
     // ─── Init ────────────────────────────────────────────────────────────────
 
@@ -463,14 +482,12 @@ object PromotionSDK {
      * @param containerViewId Nếu khác null, dùng FragmentTransaction.replace trên container này;
      * nếu null, fragment được add lên android.R.id.content.
      *
-     * @throws IllegalStateException khi chưa gọi [initialize].
+     * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
     @JvmStatic
     @JvmOverloads
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null) {
-        check(PromotionContainer.isInitialized()) {
-            "PromotionSDK.initialize() must be called before openMyPromotion()."
-        }
+        if (!requireInitialized("openMyPromotion()")) return
         if (!PromotionFeatureGate.canOpenVoucherList()) {
             // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
             PromotionToastGate.showFeatureDisabled(activity)
@@ -505,12 +522,28 @@ object PromotionSDK {
      *
      * Màn tự fetch chi tiết theo [voucherId]; trong lúc chờ hiện shimmer.
      *
+     * [returnVoucherOnApply] quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
+     *
+     * | Giá trị | Nút | Bấm thì |
+     * |---|---|---|
+     * | `true` (mặc định) | "Áp dụng" | trả [PromotionVoucherDetail] về [onVoucherApplied], SDK tự đóng màn |
+     * | `false` | "Dùng ngay" | SDK mở bottom sheet chọn dịch vụ, kết quả về [PromotionSDKCallback.onServiceSelected] |
+     *
+     * Bật là để **màn host nào cũng mang đi tích hợp được**: [onVoucherApplied] gắn với chính lời gọi
+     * này nên data về đúng màn vừa mở, khác [PromotionSDKCallback] là kênh singleton không biết ai gọi.
+     *
      * @param voucherId Id voucher cần xem.
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
      * @param containerViewId Khác null → `replace` trên container này; null → `add` lên
      * `android.R.id.content`. Cùng quy ước với [openMyPromotion].
+     * @param returnVoucherOnApply `true` → trả voucher về [onVoucherApplied]; `false` → SDK tự điều
+     * hướng sang chọn dịch vụ.
+     * @param onVoucherApplied Chỉ dùng khi [returnVoucherOnApply] `true`. Nhận **cả object
+     * [PromotionVoucherDetail]** — cùng thứ [PromotionSDKApi.getVoucherDetail] trả, nên host không
+     * phải gọi API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code. Gọi trên main thread, **sau khi** màn
+     * chi tiết đã pop. Bỏ trống thì màn vẫn đóng nhưng không ai nhận data.
      *
-     * @throws IllegalStateException khi chưa gọi [initialize].
+     * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
     @JvmStatic
     @JvmOverloads
@@ -518,10 +551,10 @@ object PromotionSDK {
         voucherId: String,
         activity: FragmentActivity,
         containerViewId: Int? = null,
+        returnVoucherOnApply: Boolean = true,
+        onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
     ) {
-        check(PromotionContainer.isInitialized()) {
-            "PromotionSDK.initialize() must be called before openPromotionDetail()."
-        }
+        if (!requireInitialized("openPromotionDetail()")) return
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
             // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
             PromotionToastGate.showFeatureDisabled(activity)
@@ -530,7 +563,11 @@ object PromotionSDK {
         }
         val fm = activity.supportFragmentManager
         if (fm.findFragmentByTag(TAG_PROMOTION_DETAIL) != null) return
-        val fragment = PromotionDetailFragment.newInstance(voucherId)
+        val fragment = PromotionDetailFragment.newInstance(voucherId, returnVoucherOnApply).apply {
+            // Map domain -> DTO **ở đây**, ranh giới public. Fragment là tầng UI nội bộ, không
+            // được biết tới type public nào — cùng lý do `PromotionSDKApi` phải map trước khi trả.
+            this.onVoucherApplied = onVoucherApplied?.let { host -> { host(it.toPublicDetail()) } }
+        }
         fm.beginTransaction()
             .setReorderingAllowed(true)
             .apply {

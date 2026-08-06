@@ -41,6 +41,22 @@ data class PromotionFeatureFlags(
         }
     }
 
+    /**
+     * Bản đã **áp sẵn công tắc tổng**: đọc thẳng field cũng cho kết quả giống hệt [isEnabled].
+     *
+     * Vì sao cần: luật `if (!enableAll) return false` chỉ nằm trong [isEnabled], nên một instance thô
+     * có thể mang `voucherList = true` trong khi `enableAll = false`. Ai lấy được instance đó rồi đọc
+     * `.voucherList` sẽ nhận kết quả sai luật — mà `PromotionFeatureFlagUseCases.all()` là API công
+     * khai, host Kotlin lẫn Swift (qua SKIE) đều gọi được. Chuẩn hoá ở nguồn thì cái bẫy biến mất,
+     * thay vì chỉ dán comment cảnh báo ở từng chỗ đọc.
+     *
+     * Bất biến: `normalized().voucherList == isEnabled(VOUCHER_LIST)`, đúng cho cả sáu cờ.
+     *
+     * **Không** dùng cho bản đem đi lưu cache: `FeatureFlagLocalDataSource` phải giữ giá trị thô, để
+     * server bật lại `ENABLE_ALL` thì các cờ con trở về đúng giá trị riêng thay vì kẹt `false`.
+     */
+    fun normalized(): PromotionFeatureFlags = if (enableAll) this else AllDisabled
+
     companion object {
         /** Mặc định khi chưa có cache: bật hết, để SDK không tự khoá tính năng lúc chưa gọi được API. */
         val AllEnabled = PromotionFeatureFlags(
@@ -50,6 +66,16 @@ data class PromotionFeatureFlags(
             voucherSelection = true,
             voucherDetail = true,
             voucherList = true,
+        )
+
+        /** Kết quả của [normalized] khi công tắc tổng tắt — tắt tổng là tắt hết, không ngoại lệ. */
+        val AllDisabled = PromotionFeatureFlags(
+            enableAll = false,
+            voucherApply = false,
+            voucherRedeem = false,
+            voucherSelection = false,
+            voucherDetail = false,
+            voucherList = false,
         )
     }
 }

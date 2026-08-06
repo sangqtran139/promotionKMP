@@ -38,7 +38,8 @@
 | Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
 | Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread**; kèm bắn `onAvailabilityChanged` |
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
-| Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId])` | `openPromotionDetail(activity, voucherId, containerViewId?)` 🔧 | `openPromotionDetail(voucherId:, from:)` | 🔧 **Android đổi thứ tự → voucherId đứng trước** |
+| *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ Android trước đây `check(...)` ném `IllegalStateException` — lệch iOS, đã sửa 2026-08-06 |
+| Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào** (`PromotionDetailEntry` / `PromotionDetailBuilder.Entry` đã xoá 2026-08-06); cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public |
 | Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.3](#53-widget)) |
 
 **Callback identity:** bỏ tham số `sdk` ở **mọi** method callback trên cả 2 nền tảng (SDK là singleton →

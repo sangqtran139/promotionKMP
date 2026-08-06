@@ -36,6 +36,11 @@ Ba hành vi cần nhớ:
 2. **Fail-open.** Chưa có cache → bật hết. SDK không tự khoá tính năng khi chưa gọi được API lần nào.
 3. **`refresh()` không ném lỗi.** Gọi API thất bại thì giữ nguyên cờ đang cache.
 
+Instance `PromotionFeatureFlags` **thoát ra khỏi repository đã được chuẩn hoá** bằng
+`normalized()` (`FeatureFlagRepositoryImpl.getPromotionFeatureFlags`), nên đọc thẳng field cũng đúng
+luật: `all().voucherList == isEnabled(VOUCHER_LIST)` cho cả sáu cờ. Riêng bản đem **lưu cache** vẫn là
+giá trị thô — bật lại `ENABLE_ALL` thì các cờ con phải trở về giá trị riêng, không được kẹt `false`.
+
 > **Bug đã sửa.** `when (flag)` trong `PromotionFeatureFlags.isEnabled` không có nhánh `ENABLE_ALL`
 > nên hỏi thẳng công tắc tổng luôn rơi vào `else -> false` — tức `isEnabled(ENABLE_ALL)` **luôn trả
 > `false`**, kể cả khi nó đang bật. Cờ vẫn gác được cờ con (dòng `if (!enableAll)`), nên bug này ẩn.
@@ -146,9 +151,10 @@ PromotionSDK.refreshFeatureFlags { flags in
 
 Ba điều phải nhớ:
 
-1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Mapper đi qua
-   `PromotionFeatureFlags.isEnabled(...)` chứ **không** đọc thẳng field lõi, vì luật `if (!enableAll)`
-   chỉ nằm trong hàm đó — đọc thẳng field sẽ trả `voucherList = true` khi công tắc tổng đang tắt.
+1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Luật này giờ
+   được chốt ở **hai lớp**: repository trả bản `normalized()` (§1), và mapper vẫn đi qua
+   `PromotionFeatureFlags.isEnabled(...)` thay vì đọc field thô. Lớp thứ hai là dư thừa có chủ đích —
+   nó rẻ, và giữ cho mapper đúng kể cả khi ai đó dựng `PromotionFeatureFlags` thô rồi map thẳng.
 
    `isFeatureEnabled(feature)` còn viết thẳng luật này ra ở bề mặt public — hai vế phải **song song
    đúng**: `isSdkEnabled() && gate.isEnabled(<cờ riêng>)`. `&&` đó **không đổi kết quả** (lõi đã áp

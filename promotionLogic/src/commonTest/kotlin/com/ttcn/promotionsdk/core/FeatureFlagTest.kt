@@ -126,6 +126,47 @@ class FeatureFlagTest {
         assertFalse(flags.isEnabled(PromotionFeatureFlag.VOUCHER_REDEEM))
     }
 
+    /**
+     * `all()` thoát ra tới host, nên đọc thẳng field phải cho kết quả giống `isEnabled` — không được
+     * để `voucherList = true` trong khi công tắc tổng đang tắt. Trước đây repository trả cache thô
+     * nên bất biến này sai.
+     */
+    @Test
+    fun all_appliesEnableAll_soRawFieldsMatchIsEnabled() = runTest {
+        val flags = featureFlags(InMemoryStorage()) {
+            respond(flagsResponse(enableAll = false, voucherList = true), HttpStatusCode.OK, jsonHeaders)
+        }
+
+        flags.refresh()
+
+        val snapshot = flags.all()
+        assertFalse(snapshot.enableAll)
+        assertFalse(snapshot.voucherList)
+        assertFalse(snapshot.voucherApply)
+        for (name in listOf(
+            PromotionFeatureFlag.ENABLE_ALL,
+            PromotionFeatureFlag.VOUCHER_LIST,
+            PromotionFeatureFlag.VOUCHER_APPLY,
+        )) {
+            assertEquals(flags.isEnabled(name), snapshot.isEnabled(name), name)
+        }
+    }
+
+    /** Công tắc tổng bật thì chuẩn hoá không được đụng vào giá trị riêng của từng cờ con. */
+    @Test
+    fun all_keepsPerFlagValues_whenEnableAllOn() = runTest {
+        val flags = featureFlags(InMemoryStorage()) {
+            respond(flagsResponse(enableAll = true, voucherList = false), HttpStatusCode.OK, jsonHeaders)
+        }
+
+        flags.refresh()
+
+        val snapshot = flags.all()
+        assertTrue(snapshot.enableAll)
+        assertFalse(snapshot.voucherList)
+        assertTrue(snapshot.voucherApply)
+    }
+
     @Test
     fun flagsOf_returnsNameEnabledPairs() = runTest {
         val flags = featureFlags(InMemoryStorage()) {

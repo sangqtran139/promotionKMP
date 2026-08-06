@@ -191,8 +191,14 @@ PromotionSDK.updateContext(
 SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần gọi trước khi mở màn / gọi API. Đọc ngược lại qua
 `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
 
-> ⚠️ `updateContext` / `api` / `openMyPromotion` / `openPromotionDetail` gọi trước `initialize` sẽ ném
-> **`IllegalStateException`** — luôn init trước.
+> ⚠️ Gọi trước `initialize` thì:
+> - `updateContext` / `api` → ném **`IllegalStateException`**.
+> - `openMyPromotion` / `openPromotionDetail` → **không ném**, chỉ `Log.e` rồi bỏ qua (đối xứng
+>   `requireImpl` bên iOS). Lý do: `isFeatureEnabled`/`featureFlags` fail-open trả "bật hết" khi chưa
+>   init, host hỏi trước rồi hiện nút thì cú bấm của user không được phép giết app.
+>
+> Luôn init trước — hai điểm mở màn không ném không có nghĩa là bỏ qua được `initialize`, màn sẽ
+> không mở và log báo lỗi.
 
 ---
 
@@ -208,10 +214,23 @@ Android dùng **Fragment** cho màn, và **custom View** cho widget checkout (kh
 PromotionSDK.openMyPromotion(activity, containerViewId = R.id.promotion_container)
 
 // Chi tiết một ưu đãi (đã biết voucherId, vd từ push notification / deeplink)
-PromotionSDK.openPromotionDetail(voucherId = "V123", activity = activity, containerViewId = null)
+// Mặc định returnVoucherOnApply = true → nút "Áp dụng", trả voucher về đúng lời gọi này.
+PromotionSDK.openPromotionDetail(
+    voucherId = "V123",
+    activity = activity,
+    containerViewId = null,
+    onVoucherApplied = { id -> applyToMyScreen(id) },   // SDK đã tự đóng màn chi tiết
+)
+
+// Muốn hành vi cũ (nút "Dùng ngay" → SDK tự mở bottom sheet chọn dịch vụ):
+PromotionSDK.openPromotionDetail("V123", activity, returnVoucherOnApply = false)
 ```
 
 `activity` phải là `FragmentActivity` (AppCompatActivity là con của nó).
+
+`onVoucherApplied` là **kênh trả gắn với lời gọi**, nên màn nào của host mở cũng nhận đúng chỗ —
+khác `PromotionSDKCallback` (singleton, set một lần lúc `initialize`, không biết màn nào đã gọi).
+Màn gọi **không cần** là màn thanh toán.
 
 ### 6.2. Widget checkout — `PRMEndowView` + `PromotionIntegrateManager`
 
