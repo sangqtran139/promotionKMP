@@ -82,7 +82,7 @@ sau khi đã `initialize(...)`: `PromotionUseCases()`.
 |---|---|---|---|
 | `searchVouchers` | `GET .../customer-vouchers` | `VOUCHER_LIST` | Danh sách voucher khách **đã sở hữu** |
 | `getVoucherDetail` | `GET .../customer-vouchers/{voucherId}` | `VOUCHER_DETAIL` | Chi tiết một voucher |
-| `findEligible` | `POST .../redemption/eligible` | `VOUCHER_SELECTION` | Ưu đãi **đủ điều kiện cho một đơn hàng** (checkout) |
+| `findEligible` | `POST .../redemptions/eligible` | `VOUCHER_SELECTION` | Ưu đãi **đủ điều kiện cho một đơn hàng** (checkout) |
 | `validateDiscounts` | `POST .../redemptions/validate/stackable-discounts` | `VOUCHER_APPLY` | Validate trước khi áp dụng |
 | `createRedemption` | `POST .../redemptions/sessions` | `VOUCHER_REDEEM` | Tạo phiên thanh toán với voucher đã chọn |
 

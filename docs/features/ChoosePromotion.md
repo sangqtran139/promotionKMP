@@ -31,7 +31,7 @@ giữ bản đã lọc và đã map sang model UI.
 
 ### Nguồn dữ liệu: `findEligible`
 
-Màn này gọi `FindEligibleCampaignsUseCase` (`POST .../redemption/eligible`), **không** phải
+Màn này gọi `FindEligibleCampaignsUseCase` (`POST .../redemptions/eligible`), **không** phải
 `searchVouchers`. Nhờ đó `otherOffers` (campaign công khai khách chưa nhận) mới có dữ liệu — trước
 đây Android gọi `searchVouchers` nên section "Ưu đãi khác" luôn rỗng, lệch với iOS.
 

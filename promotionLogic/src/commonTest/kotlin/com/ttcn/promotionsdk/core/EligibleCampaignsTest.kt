@@ -169,7 +169,7 @@ class EligibleCampaignsTest {
         )
 
         val request = captured.single()
-        assertTrue(request.url.encodedPath.endsWith("/api/v1/vtm/redemption/eligible"), request.url.encodedPath)
+        assertTrue(request.url.encodedPath.endsWith("/api/v1/vtm/redemptions/eligible"), request.url.encodedPath)
 
         val body = (request.body as TextContent).text
         assertTrue("\"sectionCode\":\"other_offers\"" in body, body)

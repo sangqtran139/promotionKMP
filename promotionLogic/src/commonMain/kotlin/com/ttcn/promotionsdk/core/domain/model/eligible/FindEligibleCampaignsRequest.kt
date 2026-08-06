@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.core.domain.model.eligible
 
 /**
- * Request cho API Find Eligible Campaigns (`POST .../redemption/eligible`) — luồng checkout
+ * Request cho API Find Eligible Campaigns (`POST .../redemptions/eligible`) — luồng checkout
  * "Chọn ưu đãi". Trả hai nhóm `myOffers` (voucher đã sở hữu) và `otherOffers` (campaign công khai
  * chưa sở hữu), **phân trang độc lập**.
  *

@@ -94,11 +94,10 @@ internal class KtorPromotionApiService(
             setBody(request)
         }.body()
 
-    // Lưu ý: endpoint này là `redemption` số ít, khác `redemptions` của hai API trên.
     override suspend fun findEligibleCampaigns(
         request: EligibleCampaignsRequest,
     ): ApiResponseTemplate<EligibleCampaignsResponse> =
-        client.post("$BASE_PATH/redemption/eligible") {
+        client.post("$BASE_PATH/redemptions/eligible") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()

@@ -93,9 +93,6 @@ override suspend fun searchCustomerVouchers(
 
 `BASE_PATH = "promotion/promotion-vtm-bff/api/v1/vtm"`.
 
-> ⚠️ `findEligibleCampaigns` dùng `redemption/eligible` — **số ít**, khác `redemptions/sessions`
-> và `redemptions/validate/...` của hai API kia. Không phải lỗi chính tả.
-
 ---
 
 ## 4. Envelope và bóc dữ liệu
