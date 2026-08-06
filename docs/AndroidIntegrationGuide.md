@@ -136,7 +136,7 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 |---|---|
 | Khởi tạo (tối giản) | `PromotionSDK.initialize(context, accessToken, baseUrl)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(context, options)` |
-| **Login lại** (session mới) | `PromotionSDK.updateSession(accessToken, availableServices?)` |
+| **Login lại** (session mới) | `PromotionSDK.updateSession(accessToken, availableServices?, callback?)` |
 | Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
 | Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
@@ -149,12 +149,14 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 | `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
 
 - **Login lần đầu (mở app):** `initialize(...)` với đầy đủ config → SDK **chốt** field cố định.
-- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(accessToken, availableServices)`
-  — chỉ field động; SDK **giữ** field cố định đã khoá + callback. `availableServices` bỏ trống = giữ danh
-  mục hiện tại. Context đơn hàng reset về rỗng vì là phiên mới.
+- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(accessToken, availableServices, callback)`
+  — chỉ field động; SDK **giữ** field cố định đã khoá. `availableServices` / `callback` bỏ trống = giữ danh
+  mục / callback hiện tại (muốn **gỡ** callback thì dùng `release()`). Context đơn hàng reset về rỗng vì là
+  phiên mới.
 
   ```kotlin
   if (PromotionSDK.isInitialized()) {
+      // callback = ... chỉ cần truyền khi host đổi object nghe sự kiện theo user; bỏ trống = giữ cái cũ.
       PromotionSDK.updateSession(accessToken = token, availableServices = services)
   } else {
       PromotionSDK.initialize(applicationContext, token, baseUrl, availableServices = services, callback = cb)

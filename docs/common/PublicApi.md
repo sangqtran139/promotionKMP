@@ -38,9 +38,11 @@ object PromotionSDK {
     // Khởi tạo đầy đủ:
     fun initialize(context: Context, options: PromotionSDKOptions)
     // Login lại (lối chính): chỉ field động; giữ field cố định đã khoá (baseUrl/env/language/theme).
-    // availableServices null = giữ danh mục hiện tại. Gọi lại initialize() cũng được (guard cùng cơ chế).
+    // availableServices null = giữ danh mục hiện tại; callback null = giữ callback hiện tại.
+    // Gọi lại initialize() cũng được (guard cùng cơ chế).
     fun updateSession(accessToken: String,
-                      availableServices: List<PromotionAvailableService>? = null)
+                      availableServices: List<PromotionAvailableService>? = null,
+                      callback: PromotionSDKCallback? = null)
     fun updateToken(accessToken: String)                        // (tuỳ chọn) refresh token giữa phiên, giữ context đơn hàng
     fun release()
     fun isInitialized(): Boolean

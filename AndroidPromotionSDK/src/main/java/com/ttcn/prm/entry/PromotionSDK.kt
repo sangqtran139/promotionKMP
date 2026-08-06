@@ -146,11 +146,14 @@ object PromotionSDK {
 
     /**
      * **Đăng nhập user mới** sau khi đã [initialize] một lần — chỉ truyền field **động**
-     * (`accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
-     * (baseUrl / environment / language / theme) + callback. Đây là lối chính cho host: gọi [initialize]
+     * (`accessToken` + `availableServices` + `callback`); SDK **giữ nguyên** field cố định đã khoá
+     * (baseUrl / environment / language / theme). Đây là lối chính cho host: gọi [initialize]
      * **một lần** lúc mở app, mỗi lần login sau chỉ gọi [updateSession].
      *
      * @param availableServices Danh mục dịch vụ cho phiên mới; bỏ trống (`null`) = giữ danh mục hiện tại.
+     * @param callback Nơi nhận sự kiện cho phiên mới; bỏ trống (`null`) = **giữ nguyên** callback hiện tại
+     *   (giống [availableServices]). Không có đường "gỡ callback" ở đây — muốn gỡ thì [release].
+     *   Dùng khi host thay object nghe sự kiện theo user đang đăng nhập, thay vì phải gọi lại [initialize].
      *
      * Context đơn hàng/dịch vụ reset về rỗng vì đây là phiên mới. Đối ứng `updateSession(...)` bên iOS.
      *
@@ -161,11 +164,15 @@ object PromotionSDK {
     fun updateSession(
         accessToken: String,
         availableServices: List<PromotionAvailableService>? = null,
+        callback: PromotionSDKCallback? = null,
     ) {
         val ctx = checkNotNull(mutableContext) {
             "PromotionSDK.initialize() must be called before updateSession()."
         }
         val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
+        // Gán TRƯỚC applySession: nạp lại cờ tính năng ở cuối applySession sẽ bắn
+        // `onAvailabilityChanged` của phiên mới — phải về callback mới, không phải callback của user cũ.
+        if (callback != null) this.callback = callback
         applySession(
             context,
             ctx.session.copy(accessToken = accessToken),
@@ -369,6 +376,14 @@ object PromotionSDK {
     /**
      * Tra **một** tính năng. Tương đương `featureFlags().isEnabled(feature)` nhưng khỏi dựng snapshot.
      *
+     * Hai điều kiện phải **song song đúng**: công tắc tổng [isSdkEnabled] bật **và** cờ riêng của
+     * tính năng bật. SDK tắt ⇒ mọi tính năng tắt, không có ngoại lệ.
+     *
+     * `&&` này không đổi kết quả — `PromotionFeatureFlags.isEnabled` đã tự áp `ENABLE_ALL` bằng
+     * `if (!enableAll) return false`. Viết ra để luật hiện lên ngay tại bề mặt public: đây là hàm
+     * host đọc để quyết định ẩn/hiện entry point, không ai phải lần vào lõi mới biết công tắc tổng
+     * có được xét hay không. Fail-open giữ nguyên: chưa `initialize()` thì cả hai vế đều `true`.
+     *
      * ```kotlin
      * binding.btnMyVoucher.isVisible = PromotionSDK.isFeatureEnabled(PromotionFeature.VOUCHER_LIST)
      * ```
@@ -377,7 +392,7 @@ object PromotionSDK {
      */
     @JvmStatic
     fun isFeatureEnabled(feature: PromotionFeature): Boolean =
-        PromotionFeatureGate.isEnabled(feature.flagName())
+        isSdkEnabled() && PromotionFeatureGate.isEnabled(feature.flagName())
 
     /**
      * Công tắc tổng `PROMOTION.ENABLE_ALL` — `false` thì host nên ẩn **toàn bộ** điểm vào ưu đãi.

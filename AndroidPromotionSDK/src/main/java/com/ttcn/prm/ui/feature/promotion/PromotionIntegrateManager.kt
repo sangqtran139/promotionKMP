@@ -5,7 +5,9 @@ import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.core.domain.exception.PromotionException
 import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
+import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.prm.ui.feature.promotion.ext.toCreateRedemptionRequest
@@ -61,10 +63,17 @@ class PromotionIntegrateManager internal constructor(
      * Flow nội bộ:
      * 1. Lấy [discountDetails] hiện tại từ [endowView]
      * 2. Không có voucher → [onSuccess] ngay
-     * 3. Có voucher → gọi createRedemptionSession
+     * 3. Cờ [PromotionFeatureFlag.VOUCHER_REDEEM] TẮT → [onError] `PRM_MOB_021`, **không gọi mạng**
+     * 4. Có voucher → gọi createRedemptionSession
      *    - Success (không có lỗi INSUFFICIENT_BUDGET) → [onSuccess]
      *    - INSUFFICIENT_BUDGET (body hoặc HTTP 422) → revalidate → tự update [endowView] → [onError]
      *    - Lỗi khác → [onError]
+     *
+     * Bước 3 nằm **sau** bước 2 là có chủ đích: kill-switch tắt ưu đãi, **không được** tắt thanh toán
+     * của host. User không chọn voucher nào thì đơn hàng chẳng dính gì tới SDK — chặn ở đó là SDK tự
+     * cho mình quyền dừng giao dịch của đối tác. Ngược lại, khi user *đã* chọn voucher thì giá hiển
+     * thị ở [endowView] đang là giá đã giảm; cho [onSuccess] chạy tiếp mà không tạo redemption session
+     * sẽ khiến host thu tiền theo giá giảm trong khi server không hề ghi nhận — nên phải [onError].
      *
      * @param onSuccess   Thanh toán được phép tiến hành — đối tác gọi logic payment của mình
      * @param onError     Có lỗi — đối tác hiển thị thông báo với [errorCode]
@@ -77,6 +86,11 @@ class PromotionIntegrateManager internal constructor(
 
         if (discountDetails.isEmpty()) {
             onSuccess()
+            return
+        }
+
+        if (!PromotionFeatureGate.canRedeemVoucher()) {
+            onError(ErrorCodes.FEATURE_DISABLED)
             return
         }
 
@@ -122,10 +136,20 @@ class PromotionIntegrateManager internal constructor(
     /**
      * Gọi lại validateStackableDiscounts sau INSUFFICIENT_BUDGET.
      * Tự update [endowView] với discountDetails mới rồi báo lỗi về đối tác.
+     *
+     * Gác bởi [PromotionFeatureFlag.VOUCHER_APPLY] — đây là lời gọi mạng thứ hai, mang cờ riêng, nên
+     * phải hỏi riêng (chỉ rơi vào đây khi `VOUCHER_REDEEM` bật mà `VOUCHER_APPLY` tắt). Cờ tắt thì
+     * không lấy được discountDetails mới, nên **không** đụng vào [endowView]: để giá hiển thị cũ còn
+     * hơn ghi đè bằng dữ liệu không có.
      */
     private suspend fun revalidateAndUpdate(
         onError: (errorCode: String) -> Unit,
     ) {
+        if (!PromotionFeatureGate.canApplyVoucher()) {
+            onError(ErrorCodes.FEATURE_DISABLED)
+            return
+        }
+
         val currentDetails = endowView.discountDetails
 
         val request = currentDetails.toValidateDiscountsRequest(

@@ -128,15 +128,22 @@ public final class PromotionSDK {
     }
 
     /// **Đăng nhập user mới** sau khi đã `initialize` một lần — chỉ truyền field **động**
-    /// (`accessToken` + `availableServices`); SDK **giữ nguyên** field cố định đã khoá
-    /// (baseUrl / environment / language / theme) + callback. Lối chính cho host: `initialize` **một
+    /// (`accessToken` + `availableServices` + `callback`); SDK **giữ nguyên** field cố định đã khoá
+    /// (baseUrl / environment / language / theme). Lối chính cho host: `initialize` **một
     /// lần** lúc mở app, mỗi lần login sau chỉ gọi `updateSession`. Context đơn hàng reset (phiên mới).
     ///
     /// - Parameter availableServices: danh mục dịch vụ cho phiên mới; `nil` = giữ danh mục hiện tại.
+    /// - Parameter callback: nơi nhận sự kiện cho phiên mới; `nil` = **giữ nguyên** callback hiện tại
+    ///   (giống `availableServices`). Không có đường "gỡ callback" ở đây — muốn gỡ thì `release()`.
+    ///   Dùng khi host thay object nghe sự kiện theo user đang đăng nhập, thay vì gọi lại `initialize`.
     /// Đối ứng `updateSession(...)` bên Android.
     public static func updateSession(accessToken: String,
-                                     availableServices: [PromotionAvailableService]? = nil) {
-        guard let impl = requireImpl("updateSession(accessToken:availableServices:)") else { return }
+                                     availableServices: [PromotionAvailableService]? = nil,
+                                     callback: PromotionSDKCallback? = nil) {
+        guard let impl = requireImpl("updateSession(accessToken:availableServices:callback:)") else { return }
+        // Gán TRƯỚC updateSession: nạp lại cờ tính năng ở cuối `applySession` sẽ bắn
+        // `onAvailabilityChanged` của phiên mới — phải về callback mới, không phải callback của user cũ.
+        if let callback { Self.callback = callback }
         impl.updateSession(accessToken: accessToken, availableServices: availableServices)
     }
 

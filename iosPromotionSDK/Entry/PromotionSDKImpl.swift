@@ -335,8 +335,14 @@ final class PromotionSDKImpl: NSObject {
         }
     }
 
+    /// Hai điều kiện phải **song song đúng**: công tắc tổng `isSdkEnabled` bật **và** cờ riêng của
+    /// tính năng bật. SDK tắt ⇒ mọi tính năng tắt, không có ngoại lệ.
+    ///
+    /// `&&` này không đổi kết quả — `PromotionFeatureFlags.isEnabled` của lõi đã tự áp `ENABLE_ALL`
+    /// bằng `if (!enableAll) return false`. Viết ra để luật hiện lên ngay tại bề mặt public.
+    /// Fail-open giữ nguyên: chưa `initialize()` thì cả hai vế đều `true`.
     static func isFeatureEnabled(_ feature: PromotionFeature) -> Bool {
-        PromotionFeatureGate.shared.isEnabled(flagName: flagName(for: feature))
+        isSdkEnabled() && PromotionFeatureGate.shared.isEnabled(flagName: flagName(for: feature))
     }
 
     static func isSdkEnabled() -> Bool {

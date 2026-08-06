@@ -66,14 +66,25 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 | Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion()` | `PromotionSDK.openMyPromotion(from:)` |
 | Mở màn "Chi tiết ưu đãi" | `PRMBaseFragment.openPromotionDetail()` | `BaseRouter.canOpenVoucherDetail()` |
 | Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
+| Xác nhận thanh toán | `PromotionIntegrateManager.confirmRedemption()` | qua facade `PromotionSDKApi.createRedemption` |
 | Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
 Ngoài hai tầng trên còn **tầng thứ ba, tuỳ chọn**: host tự hỏi để ẩn entry point của chính mình — §3.
 Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn hoạt động đầy đủ.
 
-`PromotionFeatureGate.canApplyVoucher()` / `canRedeemVoucher()` vẫn **chưa nơi nào gọi trực tiếp**:
-hai cờ `APPLY`/`REDEEM` được `PromotionUseCases` tự gác bên trong. Giữ lại cho các màn sắp tới.
-`isSdkEnabled()` nay có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
+`isSdkEnabled()` có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
+
+> **Lỗ đã vá (2026-08-06).** Trước đây tài liệu này ghi "`canApplyVoucher()`/`canRedeemVoucher()` chưa
+> nơi nào gọi trực tiếp vì `PromotionUseCases` đã tự gác" — **sai**. Luồng checkout Android không đi qua
+> facade đó: `PromotionIntegrateManager.confirmRedemption` gọi thẳng `CreateRedemptionSessionUseCase`,
+> nên hai cờ `APPLY`/`REDEEM` **không có hiệu lực nào** trên Android, kể cả khi tắt `ENABLE_ALL` — đây
+> là chỗ duy nhất công tắc tổng chặn không được. iOS không dính vì `PromotionSDKApi.createRedemption`
+> đi qua facade. Nay `confirmRedemption` hỏi `canRedeemVoucher()` và `revalidateAndUpdate` hỏi
+> `canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng.
+>
+> Thứ tự trong `confirmRedemption` quan trọng: gác nằm **sau** nhánh `discountDetails.isEmpty()`.
+> Không có voucher nào thì đơn hàng không dính tới SDK — kill-switch tắt ưu đãi, không được tắt thanh
+> toán của host. Có voucher rồi thì bắt buộc `onError`, vì giá ở `PRMEndowView` đang là giá đã giảm.
 
 Ánh xạ cờ ↔ hàm (giống hệt hai nền tảng):
 
@@ -138,6 +149,14 @@ Ba điều phải nhớ:
 1. **Mọi field đã áp sẵn công tắc tổng.** `all == false` → mọi field còn lại `false`. Mapper đi qua
    `PromotionFeatureFlags.isEnabled(...)` chứ **không** đọc thẳng field lõi, vì luật `if (!enableAll)`
    chỉ nằm trong hàm đó — đọc thẳng field sẽ trả `voucherList = true` khi công tắc tổng đang tắt.
+
+   `isFeatureEnabled(feature)` còn viết thẳng luật này ra ở bề mặt public — hai vế phải **song song
+   đúng**: `isSdkEnabled() && gate.isEnabled(<cờ riêng>)`. `&&` đó **không đổi kết quả** (lõi đã áp
+   `ENABLE_ALL` rồi) và **không phá fail-open** (chưa `initialize()` thì cả hai vế `true`); nó tồn tại
+   để người đọc hàm host-facing thấy ngay "SDK tắt ⇒ tính năng tắt", khỏi lần vào lõi. Cả hai nền tảng
+   viết giống nhau: `PromotionSDK.kt` (Android) / `PromotionSDKImpl.swift` (iOS).
+   Đây là **ngoại lệ duy nhất** được phép lặp điều kiện `ENABLE_ALL`; các call site khác vẫn chỉ hỏi
+   `PromotionFeatureGate.isEnabled(...)`, đừng nhân bản `isSdkEnabled() &&` đi khắp nơi.
 2. **Fail-open, không ném.** Chưa `initialize()` / chưa có cache → trả bật hết. Không hàm nào ném lỗi
    hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
 3. **Đây là tầng tuỳ chọn.** Host bỏ qua hoàn toàn thì SDK vẫn tự gác như cũ (§2).
