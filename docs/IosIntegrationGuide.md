@@ -184,7 +184,14 @@ SDK tự lo navigation: nếu `viewController` có `navigationController` → **
 PromotionSDK.openMyPromotion(from: self)
 
 // Chi tiết một ưu đãi (đã biết voucherId, vd từ push notification / deeplink)
-PromotionSDK.openPromotionDetail(voucherId: "V123", from: self)
+// Mặc định returnVoucherOnApply = true → nút "Áp dụng", trả object về đúng lời gọi này.
+PromotionSDK.openPromotionDetail(voucherId: "V123", from: self) { detail in
+    // detail: PromotionVoucherDetail — SDK đã tự pop màn chi tiết
+    applyToMyScreen(detail)
+}
+
+// Muốn hành vi cũ (nút "Sử dụng ngay" → SDK tự mở sheet chọn dịch vụ):
+PromotionSDK.openPromotionDetail(voucherId: "V123", from: self, returnVoucherOnApply: false)
 
 // Widget checkout — gắn vào layout của bạn, tự load dữ liệu
 let widget = PromotionSDK.createEndowView(from: self, orderId: order.id, orderValue: "500000")
@@ -196,6 +203,11 @@ let widget2 = PromotionSDK.createEndowView(
     orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
 ```
+
+`onVoucherApplied` là **kênh trả gắn với lời gọi**, nên màn nào của host mở cũng nhận đúng chỗ —
+khác `PromotionSDKCallback` (singleton, set một lần lúc `initialize`, không biết màn nào đã gọi).
+Màn gọi **không cần** là màn thanh toán. Object trả về là `PromotionVoucherDetail`, đúng thứ
+`api.getVoucherDetail` trả, nên không phải gọi API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code.
 
 **Feature flag — SDK tự gác, host hỏi thêm được.** Nếu cờ tương ứng TẮT, `openMyPromotion` /
 `openPromotionDetail` tự hiện toast lỗi `PRM_MOB_021` trên `viewController` rồi báo host qua

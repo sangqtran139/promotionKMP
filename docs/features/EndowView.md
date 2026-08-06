@@ -116,7 +116,7 @@ Host bấm thanh toán
 
 ## 4. Lưu ý khi sửa (quan trọng — đây là public-facing)
 
-- `PromotionIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật `INTEGRATION.md` + docs (AI_AGENT_RULES điều 7).
+- `PromotionIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) §6.2 + [`PublicApi.md`](../common/PublicApi.md) (AI_AGENT_RULES điều 7). `INTEGRATION.md` ở gốc repo chỉ là trang điện, **đừng** viết nội dung vào đó.
 - **Luôn** gọi `clear()` khi view/Fragment huỷ để giải phóng scope (tránh leak).
 - Giữ tối ưu `PreloadVouchers` để không gọi API trùng giữa Endow và Choose Promotion.
 - Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionException` (xem `../ErrorHandling.md`).

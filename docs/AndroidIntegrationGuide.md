@@ -250,7 +250,7 @@ val promotionManager = PromotionIntegrateManager.create(binding.endowView)
 btnConfirmPayment.setOnClickListener {
     promotionManager.confirmRedemption(
         onSuccess = { proceedPayment() },
-        onError = { errorCode -> showError(errorCode) },
+        onError = { errorCode -> showError(errorCode) },   // có thể là PRM_MOB_021, xem dưới
     )
 }
 
@@ -259,6 +259,14 @@ override fun onDestroyView() {
     promotionManager.clear()   // giải phóng coroutine scope
 }
 ```
+
+> **`confirmRedemption` cũng bị feature flag gác.** Cờ `VOUCHER_REDEEM` (hoặc công tắc tổng
+> `ENABLE_ALL`) TẮT → `onError("PRM_MOB_021")`, **không gọi mạng**, và **không** gọi `onSuccess`.
+> Host phải xử lý mã này như một lỗi chặn thanh toán, đừng cho đi tiếp: giá đang hiển thị ở
+> `PRMEndowView` là giá đã giảm, mà server không hề ghi nhận redemption.
+>
+> Ngoại lệ có chủ đích: user **chưa chọn voucher nào** thì `confirmRedemption` gọi `onSuccess` ngay,
+> bất kể cờ. Kill-switch tắt ưu đãi, không được tắt thanh toán của host.
 
 ### 6.3. Feature flag — SDK tự gác, host hỏi thêm được
 
