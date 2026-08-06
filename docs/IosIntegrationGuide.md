@@ -193,6 +193,15 @@ PromotionSDK.openPromotionDetail(voucherId: "V123", from: self) { detail in
 // Muốn hành vi cũ (nút "Sử dụng ngay" → SDK tự mở sheet chọn dịch vụ):
 PromotionSDK.openPromotionDetail(voucherId: "V123", from: self, returnVoucherOnApply: false)
 
+// Muốn TỰ đóng màn chi tiết (hỏi xác nhận / animation riêng / đi thẳng sang màn khác):
+PromotionSDK.openPromotionDetail(
+    voucherId: "V123", from: self,
+    hostHandlesDismiss: true            // SDK báo xong ĐỂ NGUYÊN màn
+) { [weak self] detail in
+    self?.navigationController?.popViewController(animated: true)   // host tự đóng
+    self?.goToCheckout(detail)
+}
+
 // Widget checkout — gắn vào layout của bạn, tự load dữ liệu
 let widget = PromotionSDK.createEndowView(from: self, orderId: order.id, orderValue: "500000")
 container.addSubview(widget)

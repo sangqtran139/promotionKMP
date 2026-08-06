@@ -395,6 +395,7 @@ final class PromotionSDKImpl: NSObject {
         on viewController: UIViewController,
         navigator: UINavigationController?,
         returnVoucherOnApply: Bool = true,
+        hostHandlesDismiss: Bool = false,
         onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
     ) {
         canOpenVoucherDetail { [weak self] enabled in
@@ -411,6 +412,7 @@ final class PromotionSDKImpl: NSObject {
                 with: .init(
                     promotion: seed,
                     returnVoucherOnApply: returnVoucherOnApply,
+                    hostHandlesDismiss: hostHandlesDismiss,
                     // Map domain -> DTO ở đây, ranh giới public (đối ứng `PromotionSDK` bên Android).
                     onVoucherApplied: onVoucherApplied.map { host in
                         { detail in host(PromotionSDKApi.toVoucherDetail(detail)) }

@@ -27,6 +27,15 @@ final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController
          */
         let returnVoucherOnApply: Bool
 
+        /**
+         `true` → bấm "Áp dụng" xong SDK **không** tự pop; host tự đóng trong `onVoucherApplied`.
+         Dùng khi host cần hỏi xác nhận, chạy animation riêng, hoặc đẩy thẳng sang màn khác.
+
+         Chỉ có nghĩa khi `returnVoucherOnApply == true` — nhánh "Sử dụng ngay" không pop bao giờ.
+         Đối ứng `PromotionDetailFragment.hostHandlesDismiss` bên Android.
+         */
+        let hostHandlesDismiss: Bool
+
         /// Chỉ dùng khi `returnVoucherOnApply == true`: nơi mở màn nhận lại chi tiết voucher (màn
         /// "Chọn ưu đãi" chỉ lấy `voucherId`, host dùng cả object). Router tự pop; closure lo data.
         ///
@@ -39,10 +48,12 @@ final class PromotionDetailBuilder: PRMBaseBuilder<PromotionDetailViewController
         init(
             promotion: PRMPromotionCardSeed,
             returnVoucherOnApply: Bool = false,
+            hostHandlesDismiss: Bool = false,
             onVoucherApplied: ((VoucherDetail) -> Void)? = nil
         ) {
             self.promotion = promotion
             self.returnVoucherOnApply = returnVoucherOnApply
+            self.hostHandlesDismiss = hostHandlesDismiss
             self.onVoucherApplied = onVoucherApplied
         }
     }

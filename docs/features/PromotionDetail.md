@@ -119,6 +119,11 @@ Fragment: render thông tin + cấu hình nút theo state
 | **Host gọi thẳng** `openPromotionDetail(..., returnVoucherOnApply = true)` — mặc định | "Áp dụng" | Trả **object `PromotionVoucherDetail`** về `onVoucherApplied` của chính lời gọi đó, rồi đóng màn |
 | Host gọi thẳng với `returnVoucherOnApply = false` | "Sử dụng ngay" | Chọn dịch vụ, như hàng đầu |
 
+Ai đóng màn sau khi "Áp dụng" do `hostHandlesDismiss` quyết (mặc định `false` = SDK tự pop). Bật `true`
+thì SDK báo xong **để nguyên màn**, host tự đóng — Android `PromotionDetailFragment.onActionClick`
+bỏ `onBackFragment()`, iOS `PromotionDetailViewController.didTapApplyButton` bỏ `routeToParent()`.
+Callback chạy **trước** bước pop ở cả hai bên, chính là điều kiện để chế độ này dùng được.
+
 Cờ đi kèm navigation là **một boolean duy nhất, không có enum ở nền tảng nào**:
 `returnVoucherOnApply` — Android là arg của `newInstance` (lưu vào `arguments`), iOS là field của
 `PromotionDetailBuilder.DataModel`. Đặt tên theo *hành vi* chứ không theo *màn gọi*, vì nơi mở màn có

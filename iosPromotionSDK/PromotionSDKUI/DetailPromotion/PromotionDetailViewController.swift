@@ -249,8 +249,10 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         // (TLNV MOB_002 control #5). Từ luồng thanh toán: KHÔNG chọn dịch vụ, chỉ trả voucherId về
         // màn "Chọn ưu đãi" (tick sẵn) rồi đóng màn này.
         if viewModel.returnVoucherOnApply {
+            // Báo TRƯỚC khi pop — nhờ vậy `hostHandlesDismiss` chạy được: host nhận data lúc màn
+            // vẫn còn sống rồi tự quyết khi nào đóng (đối ứng Android `onActionClick`).
             viewModel.notifyVoucherApplied()
-            viewModel.routeToParent()
+            if !viewModel.hostHandlesDismiss { viewModel.routeToParent() }
             return
         }
         viewModel.handleAction(.openServiceSelector)

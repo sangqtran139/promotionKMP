@@ -117,6 +117,9 @@ final class PromotionDetailViewModel: PRMBaseViewModel<PromotionDetailRouter> {
     /// màn host qua `PromotionSDK.openPromotionDetail(...)`).
     var returnVoucherOnApply: Bool { data.returnVoucherOnApply }
 
+    /// `true` → VC **không** `routeToParent()` sau khi báo; host tự đóng trong `onVoucherApplied`.
+    var hostHandlesDismiss: Bool { data.hostHandlesDismiss }
+
     /// Báo nơi đã mở màn rằng voucher này được chọn. VC tự `routeToParent()` sau đó (đối ứng Android:
     /// `setFragmentResult` + `onVoucherApplied` + `onBackFragment`).
     /// `currentDetail` chỉ có sau khi API trả; nút "Áp dụng" bị khoá trước đó nên bình thường không

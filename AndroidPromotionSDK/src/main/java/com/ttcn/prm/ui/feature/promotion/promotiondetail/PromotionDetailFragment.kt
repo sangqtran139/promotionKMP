@@ -70,6 +70,16 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     private val returnVoucherOnApply: Boolean
         get() = arguments?.getBoolean(KEY_RETURN_VOUCHER_ON_APPLY) ?: false
 
+    /**
+     * `true` → bấm "Áp dụng" xong SDK **không** tự đóng màn; host tự pop trong [onVoucherApplied].
+     * Dùng khi host muốn giữ màn lại thêm (hỏi xác nhận, chạy animation riêng, điều hướng chỗ khác).
+     *
+     * Chỉ có nghĩa khi [returnVoucherOnApply] bật — nhánh "Sử dụng ngay" không đóng màn bao giờ.
+     * Đối ứng `PromotionDetailBuilder.DataModel.hostHandlesDismiss` bên iOS.
+     */
+    private val hostHandlesDismiss: Boolean
+        get() = arguments?.getBoolean(KEY_HOST_HANDLES_DISMISS) ?: false
+
     override fun setupUI() {
         binding.imgBack.setOnClickListener { onBackFragment() }
         binding.tvUse.setOnClickListener { onActionClick() }
@@ -186,6 +196,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     companion object {
         private const val KEY_VOUCHER_ID = "prm_promotion_detail_voucher_id"
         private const val KEY_RETURN_VOUCHER_ON_APPLY = "prm_promotion_detail_return_voucher"
+        private const val KEY_HOST_HANDLES_DISMISS = "prm_promotion_detail_host_dismiss"
 
         /** Key `setFragmentResult` khi bấm "Áp dụng" — màn "Chọn ưu đãi" lắng nghe để tick voucher. */
         const val RESULT_APPLY_VOUCHER = "prm_promotion_detail_apply_voucher"
@@ -200,11 +211,13 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         internal fun newInstance(
             voucherId: String,
             returnVoucherOnApply: Boolean = false,
+            hostHandlesDismiss: Boolean = false,
         ): PromotionDetailFragment {
             return PromotionDetailFragment().apply {
                 arguments = Bundle().apply {
                     putString(KEY_VOUCHER_ID, voucherId)
                     putBoolean(KEY_RETURN_VOUCHER_ON_APPLY, returnVoucherOnApply)
+                    putBoolean(KEY_HOST_HANDLES_DISMISS, hostHandlesDismiss)
                 }
             }
         }
@@ -288,7 +301,8 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
      * [RESULT_APPLY_VOUCHER] cho `ChoosePromotionFragment` nội bộ, [onVoucherApplied] cho host.
      *
      * Gọi **trước** [onBackFragment] để nơi nhận có data ngay khi màn của họ hiện lại — đối ứng iOS
-     * (`notifyVoucherApplied()` rồi mới `routeToParent()`).
+     * (`notifyVoucherApplied()` rồi mới `routeToParent()`). Thứ tự này cũng là thứ khiến
+     * [hostHandlesDismiss] chạy được: host nhận data lúc màn vẫn còn sống, rồi tự quyết khi nào đóng.
      */
     private fun onActionClick() {
         if (returnVoucherOnApply) {
@@ -300,7 +314,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
             // Detail chỉ có sau khi API trả; nút "Áp dụng" bị khoá trước đó nên bình thường không
             // null. Null thì bỏ callback — không bịa object rỗng cho host.
             viewModel.uiState.value.detail?.let { onVoucherApplied?.invoke(it) }
-            onBackFragment()
+            if (!hostHandlesDismiss) onBackFragment()
             return
         }
         viewModel.handleAction(PromotionDetailAction.OpenServiceSelector)

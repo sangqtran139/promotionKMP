@@ -537,10 +537,26 @@ object PromotionSDK {
      * [openMyPromotion] (xem [addOrHideThenAdd]).
      * @param returnVoucherOnApply `true` → trả voucher về [onVoucherApplied]; `false` → SDK tự điều
      * hướng sang chọn dịch vụ.
+     * @param hostHandlesDismiss `false` (mặc định) → SDK tự đóng màn chi tiết sau khi bấm "Áp dụng".
+     * `true` → SDK **để màn đó lại**, host tự pop trong [onVoucherApplied] — dùng khi cần hỏi xác
+     * nhận, chạy animation riêng, hoặc điều hướng thẳng sang màn khác thay vì quay lại màn cũ:
+     *
+     * ```kotlin
+     * PromotionSDK.openPromotionDetail(
+     *     voucherId, activity, hostHandlesDismiss = true,
+     *     onVoucherApplied = { detail ->
+     *         activity.supportFragmentManager.popBackStack()   // host tự đóng
+     *         goToCheckout(detail)
+     *     },
+     * )
+     * ```
+     *
+     * Chỉ có nghĩa khi [returnVoucherOnApply] bật — nhánh "Dùng ngay" không đóng màn bao giờ.
      * @param onVoucherApplied Chỉ dùng khi [returnVoucherOnApply] `true`. Nhận **cả object
      * [PromotionVoucherDetail]** — cùng thứ [PromotionSDKApi.getVoucherDetail] trả, nên host không
-     * phải gọi API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code. Gọi trên main thread, **sau khi** màn
-     * chi tiết đã pop. Bỏ trống thì màn vẫn đóng nhưng không ai nhận data.
+     * phải gọi API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code. Gọi trên main thread, **trước** khi màn
+     * chi tiết pop — nhờ vậy [hostHandlesDismiss] mới chạy được (host còn màn để tự đóng). Bỏ trống
+     * thì màn vẫn đóng nhưng không ai nhận data.
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
@@ -551,6 +567,7 @@ object PromotionSDK {
         activity: FragmentActivity,
         containerViewId: Int? = null,
         returnVoucherOnApply: Boolean = true,
+        hostHandlesDismiss: Boolean = false,
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
     ) {
         if (!requireInitialized("openPromotionDetail()")) return
@@ -572,11 +589,13 @@ object PromotionSDK {
                 "existingTagFragment=${fm.findFragmentByTag(TAG_PROMOTION_DETAIL)}"
         )
         if (fm.findFragmentByTag(TAG_PROMOTION_DETAIL) != null) return
-        val fragment = PromotionDetailFragment.newInstance(voucherId, returnVoucherOnApply).apply {
-            // Map domain -> DTO **ở đây**, ranh giới public. Fragment là tầng UI nội bộ, không
-            // được biết tới type public nào — cùng lý do `PromotionSDKApi` phải map trước khi trả.
-            this.onVoucherApplied = onVoucherApplied?.let { host -> { host(it.toPublicDetail()) } }
-        }
+        val fragment = PromotionDetailFragment
+            .newInstance(voucherId, returnVoucherOnApply, hostHandlesDismiss)
+            .apply {
+                // Map domain -> DTO **ở đây**, ranh giới public. Fragment là tầng UI nội bộ, không
+                // được biết tới type public nào — cùng lý do `PromotionSDKApi` map trước khi trả.
+                this.onVoucherApplied = onVoucherApplied?.let { host -> { host(it.toPublicDetail()) } }
+            }
         fm.beginTransaction()
             .setReorderingAllowed(true)
             .addOrHideThenAdd(fm, containerViewId, fragment, TAG_PROMOTION_DETAIL)

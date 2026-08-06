@@ -337,15 +337,30 @@ public final class PromotionSDK {
     /// gọi này nên data về đúng màn vừa mở, khác `PromotionSDKCallback` là kênh singleton không biết
     /// ai gọi. Đối ứng `PromotionSDK.openPromotionDetail(...)` bên Android.
     ///
+    /// `hostHandlesDismiss` (mặc định `false`) → SDK tự pop màn chi tiết sau khi bấm "Áp dụng".
+    /// `true` → SDK **để màn đó lại**, host tự pop trong `onVoucherApplied`:
+    ///
+    /// ```swift
+    /// PromotionSDK.openPromotionDetail(
+    ///     voucherId: id, from: self, hostHandlesDismiss: true
+    /// ) { [weak self] detail in
+    ///     self?.navigationController?.popViewController(animated: true)   // host tự đóng
+    ///     self?.goToCheckout(detail)
+    /// }
+    /// ```
+    ///
+    /// Chỉ có nghĩa khi `returnVoucherOnApply == true` — nhánh "Sử dụng ngay" không pop bao giờ.
+    ///
     /// - Parameters:
     ///   - onVoucherApplied: Chỉ dùng khi `returnVoucherOnApply == true`. Nhận **cả object
     ///     `PromotionVoucherDetail`** — cùng thứ `api.getVoucherDetail` trả, nên host không phải gọi
     ///     API lần nữa để lấy tên/mô tả/HSD/ảnh/mã code. Gọi trên main thread, **trước** khi màn pop
-    ///     (đối ứng Android). Bỏ trống thì màn vẫn đóng, không ai nhận data.
+    ///     — nhờ vậy `hostHandlesDismiss` mới chạy được. Bỏ trống thì màn vẫn đóng, không ai nhận data.
     public static func openPromotionDetail(
         voucherId: String,
         from viewController: UIViewController,
         returnVoucherOnApply: Bool = true,
+        hostHandlesDismiss: Bool = false,
         onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
     ) {
         guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }
@@ -355,6 +370,7 @@ public final class PromotionSDK {
             on: viewController,
             navigator: nav,
             returnVoucherOnApply: returnVoucherOnApply,
+            hostHandlesDismiss: hostHandlesDismiss,
             onVoucherApplied: onVoucherApplied
         )
     }

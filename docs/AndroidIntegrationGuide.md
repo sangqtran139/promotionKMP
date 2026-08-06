@@ -224,6 +224,17 @@ PromotionSDK.openPromotionDetail(
 
 // Muốn hành vi cũ (nút "Dùng ngay" → SDK tự mở bottom sheet chọn dịch vụ):
 PromotionSDK.openPromotionDetail("V123", activity, returnVoucherOnApply = false)
+
+// Muốn TỰ đóng màn chi tiết (hỏi xác nhận / animation riêng / đi thẳng sang màn khác):
+PromotionSDK.openPromotionDetail(
+    voucherId = "V123",
+    activity = activity,
+    hostHandlesDismiss = true,          // SDK báo xong ĐỂ NGUYÊN màn
+    onVoucherApplied = { detail ->
+        activity.supportFragmentManager.popBackStack()   // host tự đóng
+        goToCheckout(detail)
+    },
+)
 ```
 
 `activity` phải là `FragmentActivity` (AppCompatActivity là con của nó).

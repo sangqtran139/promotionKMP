@@ -74,6 +74,7 @@ object PromotionSDK {
         activity: FragmentActivity,
         containerViewId: Int? = null,
         returnVoucherOnApply: Boolean = true,
+        hostHandlesDismiss: Boolean = false,
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
     )
 }
@@ -106,6 +107,33 @@ headless: `VoucherDetail.toPublicDetail()` (Android) / `PromotionSDKApi.toVouche
 
 > Object chỉ có sau khi API chi tiết trả về. Nút "Áp dụng" bị khoá trước đó nên bình thường luôn có;
 > trường hợp bất thường SDK **bỏ qua callback** thay vì trả object rỗng.
+
+`hostHandlesDismiss` (mặc định `false`) quyết định **ai đóng màn chi tiết** sau khi bấm "Áp dụng":
+
+| Giá trị | SDK làm gì |
+|---|---|
+| `false` (**mặc định**) | Gọi `onVoucherApplied` rồi **tự pop** màn chi tiết |
+| `true` | Gọi `onVoucherApplied` rồi **để nguyên màn** — host tự đóng |
+
+Callback luôn chạy **trước** khi pop, nên ở chế độ `true` host vẫn còn màn để tự xử lý: hỏi xác nhận,
+chạy animation riêng, hoặc đẩy thẳng sang màn khác thay vì quay lại màn cũ.
+
+```kotlin
+// Android — host tự đóng
+PromotionSDK.openPromotionDetail(voucherId, activity, hostHandlesDismiss = true) { detail ->
+    activity.supportFragmentManager.popBackStack()
+    goToCheckout(detail)
+}
+```
+```swift
+// iOS
+PromotionSDK.openPromotionDetail(voucherId: id, from: self, hostHandlesDismiss: true) { [weak self] detail in
+    self?.navigationController?.popViewController(animated: true)
+    self?.goToCheckout(detail)
+}
+```
+
+Chỉ có nghĩa khi `returnVoucherOnApply == true` — nhánh "Dùng ngay" không đóng màn bao giờ.
 
 > ⚠️ **Mặc định là `true`**, tức đổi hành vi so với bản trước (trước đây luôn là "Dùng ngay" + chọn
 > dịch vụ). Host đang gọi `openPromotionDetail` mà muốn giữ hành vi cũ phải truyền
