@@ -44,7 +44,7 @@ final class ChoosePromotionItemCell: UITableViewCell {
         var dateColor: UIColor?
         // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
         // dùng chung Android (`ChooseOffer.expiringInDays`). Cell chỉ format; KHÔNG tự suy ngưỡng
-        // (trước đây hardcode 3 ngày nên lệch Android). Sắp hết hạn → tô cam, khớp Android.
+        // Sắp hết hạn → tô cam, khớp Android.
         if let days = viewModel.expiringInDays {
             dateString = PromotionUIStrings.remainingDays(days)
             dateColor = Colors.tokenCarrotOrange100

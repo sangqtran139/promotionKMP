@@ -68,12 +68,9 @@ private fun VoucherListItem.toVoucherItem() = VoucherItem(
 )
 
 /**
- * Nhãn hiển thị của voucher: **ưu tiên `voucher.displayStatusLabel` của server** ("Sử dụng", …) —
- * đây là chuỗi BE dựng sẵn cho text nút và nhãn trạng thái ở màn "Ưu đãi của tôi" / "Chi tiết ưu đãi".
- *
- * Chỉ khi server không gửi mới rơi về `metadata.disabledReason`. Lưu ý `disabledReason` là **mã enum**
- * (`EXPIRED`, `REDEEMED`, `SERVICE_NOT_APPLICABLE`) chứ không phải chuỗi hiển thị — trước đây mapper
- * lấy thẳng nó làm nhãn nên UI lòi chữ tiếng Anh; giữ làm dự phòng để không mất thông tin lý do.
+ * Nhãn hiển thị của voucher: ưu tiên `voucher.displayStatusLabel` của server ("Sử dụng", …), server
+ * không gửi thì rơi về `metadata.disabledReason` — **mã enum** (`EXPIRED`, `REDEEMED`,
+ * `SERVICE_NOT_APPLICABLE`), không phải chuỗi hiển thị.
  */
 private fun VoucherInfoDto.displayLabelOrReason(metadata: VoucherMetadataDto?): String? =
     displayStatusLabel?.takeIf { it.isNotBlank() } ?: metadata?.disabledReason

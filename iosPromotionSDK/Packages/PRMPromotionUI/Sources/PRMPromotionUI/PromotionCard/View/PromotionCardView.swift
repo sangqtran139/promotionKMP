@@ -83,8 +83,7 @@ public class PromotionCardView: PRMTapableView {
     /// HSD: 1 dòng, dài quá thì TỰ CHẠY CHỮ (marquee) chứ không cắt ba chấm.
     /// - hugging cao hơn `spacerView` → phần dư dồn cho spacer, nút "Sử dụng" luôn sát mép phải.
     /// - compression resistance THẤP → máy nhỏ thì HSD bị bóp trước, khối "Sử dụng + icon"
-    ///   và badge trạng thái không bao giờ co (trước đây cả hai cùng 750 → hoà, Auto Layout
-    ///   tự chọn bên nào bóp nên hay mất chữ "Sử dụng"/mũi tên).
+    ///   và badge trạng thái không bao giờ co.
     private let dateLabel: PRMMarqueeLabel = {
         let label = PRMMarqueeLabel()
         label.font = Typography.fontRegular12

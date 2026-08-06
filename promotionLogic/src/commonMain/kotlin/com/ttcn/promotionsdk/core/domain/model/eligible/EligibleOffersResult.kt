@@ -23,8 +23,7 @@ data class EligibleOffersResult(
  * (nhóm khác). Dùng [id] cho `validateDiscounts` / `createRedemption`.
  *
  * [usable] = false nghĩa là server trả `displayMode = "DISABLED"`: hiển thị mờ, không cho chọn.
- * Lý do hiển thị lấy từ [minOrderValue] hoặc [unmatchedRules] — SDK không dựng sẵn câu tiếng Việt
- * vì đó là copy của tầng UI.
+ * Lý do hiển thị lấy từ [minOrderValue] hoặc [unmatchedRules]; SDK trả rule thô, không dựng sẵn câu.
  */
 data class EligibleOffer(
     val id: String,

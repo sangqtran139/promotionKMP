@@ -284,8 +284,7 @@ object PromotionSDK {
      * }
      * ```
      *
-     * Thay cho `useCases: PromotionUseCases` trước đây — kiểu đó thuộc `promotionLogic`, mà host
-     * chỉ tích hợp `AndroidPromotionSDK` nên không resolve được. Xem [PromotionSDKApi].
+     * Trả DTO public; type của `promotionLogic` không lọt ra chữ ký. Xem [PromotionSDKApi].
      *
      * Dựng mới mỗi lần đọc: sau [release] + [initialize] lại, instance cũ vẫn giữ use case của đồ thị DI đã bị huỷ.
      *

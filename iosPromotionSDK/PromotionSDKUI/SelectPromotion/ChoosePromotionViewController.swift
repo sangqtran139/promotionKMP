@@ -143,7 +143,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         promotionsTableView.reloadData()
 
         // Thanh "Đã chọn N voucher" — trạng thái do VM/store quyết định (đối ứng Android
-        // `updateApplyButtonState`); trước đây iOS ẩn cứng nên bật multi-select là lệch.
+        // `updateApplyButtonState`).
         // Số tiền giảm để trống: Android cũng không set `txtReducedPrice`.
         totalVoucherView.isHidden = !state.showsSelectedCount
         if state.showsSelectedCount {

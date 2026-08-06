@@ -4,8 +4,7 @@ import PackageDescription
 
 /// Lớp keo mỏng giữa lõi Kotlin và tầng UI iOS. **Không chứa nghiệp vụ.**
 ///
-/// Thay cho hai gói cũ `PromotionLogic` (Swift) và `Repository` — cả hai đã bị xoá vì nghiệp vụ
-/// nay nằm trọn trong `PromotionLogic.xcframework` (Kotlin Multiplatform).
+/// Nghiệp vụ nằm trọn trong `PromotionLogic.xcframework` (Kotlin Multiplatform).
 ///
 /// Gói này chỉ làm các việc keo mà Kotlin không làm được:
 /// 1. `boxed(_:)` — bọc `Int?` của Swift thành `KotlinInt?` mà Kotlin/Native chờ.

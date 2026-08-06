@@ -27,7 +27,7 @@ enum PRMPromotionDate {
     }()
 
     /// Server không phải lúc nào cũng trả ISO8601 chuẩn — thiếu timezone, có mili-giây, hoặc
-    /// date-time thường. Giữ nguyên danh sách fallback của bản cũ.
+    /// date-time thường.
     private static let fallbackFormats = [
         "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX",
         "yyyy-MM-dd'T'HH:mm:ssXXXXX",
@@ -72,7 +72,7 @@ enum PRMPromotionDate {
         displayFormatter.string(from: date)
     }
 
-    /// Đã hết hạn thì **không** tính là "sắp hết hạn" — giữ nguyên logic bản cũ.
+    /// Đã hết hạn thì **không** tính là "sắp hết hạn".
     static func isExpiringSoon(_ expirationDate: Date, thresholdDays: Int) -> Bool {
         let now = Date()
         guard expirationDate >= now else { return false }

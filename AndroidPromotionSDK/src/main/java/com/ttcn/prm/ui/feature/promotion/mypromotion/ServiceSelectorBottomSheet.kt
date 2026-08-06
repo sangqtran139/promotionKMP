@@ -52,8 +52,8 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
             // **Lưới [SPAN_COUNT] cột, cuộn dọc.** Nhiều dịch vụ thì xuống hàng, tràn quá trần 60%
             // màn hình ([MAX_HEIGHT_RATIO]) thì cuộn trong lưới — xem [onStart].
             //
-            // Không cần chia bề rộng bằng code như bản cuộn ngang trước đây: `GridLayoutManager` tự
-            // chia mỗi ô đúng 1/[SPAN_COUNT] bề ngang, nên item layout khai `match_parent` là đúng.
+            // `GridLayoutManager` tự chia mỗi ô đúng 1/[SPAN_COUNT] bề ngang, nên item layout khai
+            // `match_parent` là đúng — không cần chia bề rộng bằng code.
             layoutManager = GridLayoutManager(requireContext(), SPAN_COUNT)
             adapter = this@ServiceSelectorBottomSheet.adapter
             itemAnimator = null

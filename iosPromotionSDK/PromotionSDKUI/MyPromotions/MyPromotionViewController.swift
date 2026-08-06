@@ -80,7 +80,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
-    /// Chiều cao cố định của tab chip (nhỏ gọn hơn — trước đây chip kéo đầy container).
+    /// Chiều cao cố định của tab chip.
     private let tabChipHeight: CGFloat = 28
     private var tabViewsByCode: [String: PromotionTabView] = [:]
     private var currentTabCodes: [String] = []
@@ -173,7 +173,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         self.promotionsTableview.rowHeight = UITableView.automaticDimension
         // Bind list bằng dataSource cổ điển + reloadData khi mảng đổi.
         self.promotionsTableview.dataSource = self
-        // Bật infinite scroll: kéo tới đáy -> `.loadMore` (trước đây không bật nên load-more không chạy).
+        // Bật infinite scroll: kéo tới đáy -> `.loadMore`.
         self.promotionsTableview.hasInfinityScrolling = true
         // Kéo-làm-mới / cuộn-tới-đáy → action, qua closure của PRMRefreshTableView (không Combine).
         self.promotionsTableview.onRefresh = { [weak self] in self?.viewModel.handleAction(.refresh) }

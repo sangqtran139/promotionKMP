@@ -19,8 +19,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Lớp bọc mỏng quanh [EndowStore] (tầng UI-logic dùng chung ở `promotionLogic`) cho custom view
- * [PRMEndowView]. **Đồng nhất với iOS**: iOS có `EndowViewModel` tương ứng bọc cùng store, thay cho
- * việc trước đây dồn logic trong `PromotionSDKImpl`.
+ * [PRMEndowView]. **Đồng nhất với iOS**: iOS có `EndowViewModel` tương ứng bọc cùng store.
  *
  * Tạo qua [create] để DI tự resolve; [scope] gắn với vòng đời View.
  */

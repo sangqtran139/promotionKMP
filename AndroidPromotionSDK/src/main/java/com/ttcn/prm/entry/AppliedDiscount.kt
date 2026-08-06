@@ -6,7 +6,6 @@ package com.ttcn.prm.entry
  * Host nhận danh sách này từ callback của widget
  * [com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView] và truyền lại cho
  * [com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView.setDiscountDetails].
- * Thay cho DTO data-layer trước đây để không rò chi tiết tầng data ra public API.
  *
  * Lưu ý: [PromotionSDKCallback.onVoucherApplied] (thống nhất với iOS) chỉ trả `voucherId`; chi tiết
  * giảm giá đi theo luồng widget ở trên, không qua callback.

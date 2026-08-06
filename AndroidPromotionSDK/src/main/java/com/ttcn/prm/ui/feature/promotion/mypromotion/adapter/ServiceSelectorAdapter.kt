@@ -15,8 +15,7 @@ internal class ServiceSelectorAdapter(
 
     /**
      * Không chia bề rộng bằng code: sheet dùng `GridLayoutManager`, nó tự cấp cho mỗi ô đúng
-     * 1/`spanCount` bề ngang nên `match_parent` ở item layout là vừa khít. (Bản cuộn ngang trước đây
-     * phải tự chia, vì `match_parent` trong `LinearLayoutManager` ngang = trọn bề ngang RecyclerView.)
+     * 1/`spanCount` bề ngang nên `match_parent` ở item layout là vừa khít.
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemServiceSelectorBinding.inflate(

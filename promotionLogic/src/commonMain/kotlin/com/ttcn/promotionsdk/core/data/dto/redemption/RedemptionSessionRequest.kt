@@ -47,10 +47,7 @@ data class RedeemableRequest(
     @SerialName("objectId") val objectId: String,
     @SerialName("priority") val priority: Int,
     @SerialName("expectedDiscount") val expectedDiscount: String,
-    /**
-     * Gson serialize `Map<String, Any>` bằng reflection lúc runtime; kotlinx.serialization cần kiểu
-     * tĩnh, nên payload tự do này chuyển sang [JsonObject]. Server nhận cùng một JSON.
-     */
+    /** Payload tự do, kiểu [JsonObject] để kotlinx.serialization có kiểu tĩnh. */
     @SerialName("metadata") val metadata: JsonObject = JsonObject(emptyMap()),
 )
 

@@ -29,10 +29,8 @@ data class FindEligibleCampaignsRequest(
     val filterOptions: EligibleFilterOptions = EligibleFilterOptions(),
 ) {
     /**
-     * Bản sao với cặp trang đúng cho lần gọi kế khi hai nhóm phân trang **ĐỘC LẬP** — rule dùng
-     * chung Android & iOS. Chỉ [section] được yêu cầu mới tiến sang [nextPage]; nhóm còn lại giữ
-     * trang hiện tại ([currentMyPage] / [currentOtherPage]). [section] null (load đầu/refresh) →
-     * cả hai nhóm cùng về [nextPage] (thường là 0).
+     * Bản sao với cặp trang cho lần gọi kế — hai nhóm phân trang **độc lập**: chỉ [section] được yêu
+     * cầu mới tiến sang [nextPage], nhóm còn lại giữ trang hiện tại. [section] null → cả hai về [nextPage].
      */
     fun forSectionPage(
         section: EligibleSection?,

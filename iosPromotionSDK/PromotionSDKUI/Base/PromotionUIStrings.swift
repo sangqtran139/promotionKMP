@@ -41,8 +41,7 @@ enum PromotionUIStrings {
     static func selectedVoucherCount(_ count: Int) -> String { "Đã chọn \(count) voucher" }
 
     /// Map mã lỗi (raw từ store) → chuỗi hiển thị — **dùng chung mọi màn**, KHỚP wording Android
-    /// (`R.string.prm_*`). Mã là chữ THƯỜNG khớp `ErrorCodes` của lõi (trước đây iOS so `"MISSING_CUSTOMER_ID"`
-    /// chữ HOA → không bao giờ khớp, luôn rơi default).
+    /// (`R.string.prm_*`). Mã là chữ **thường**, khớp `ErrorCodes` của lõi.
     static func errorMessage(_ code: String) -> String {
         switch code {
         case "missing_customer_id": return "Không tìm thấy thông tin khách hàng"

@@ -7,8 +7,7 @@ import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
  * Dịch vụ khả dụng cho một voucher: **giao** giữa `applicableProducts.productId` và
  * `availableServices.serviceCode`, loại trùng theo `serviceCode` (giữ thứ tự host cung cấp).
  *
- * **Tầng UI-logic dùng chung** — trước đây trùng ở Android (`*ViewModel.openServiceSelector`) và iOS
- * (`ServiceSelectorBuilder.items`). Nay cả hai gọi hàm này; mỗi nền tảng chỉ map [AvailableService]
+ * **Tầng UI-logic dùng chung** — cả hai nền tảng gọi hàm này; mỗi bên chỉ map [AvailableService]
  * sang model UI riêng (ServiceSelectorUiItem / ServiceSelectorItem) + dựng bottom sheet native.
  *
  * Không đọc config bên trong (để test thuần & không phụ thuộc DI): caller truyền [availableServices]

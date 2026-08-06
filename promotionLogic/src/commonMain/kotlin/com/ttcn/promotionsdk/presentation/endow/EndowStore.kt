@@ -22,9 +22,7 @@ import kotlinx.coroutines.launch
 
 /**
  * **Tầng UI-logic dùng chung** cho widget "Ưu đãi" ở màn thanh toán (`PRMEndowView`) — chạy trên cả
- * Android & iOS. Gom toàn bộ nghiệp vụ mà trước đây hai nền tảng làm khác chỗ:
- *  - Android: [PRMEndowViewModel] (load) + `ChoosePromotionViewModel.validateAndApply` (validate).
- *  - iOS: dồn hết trong `PromotionSDKImpl` (load + validate + set widget-state, không có ViewModel).
+ * Android & iOS. Gom `findEligible`, validate & apply, và quyết định widget-state về một chỗ.
  *
  * Nay cả hai chỉ còn: quan sát [state], map [EndowAppliedDiscount] → model public riêng, render widget
  * theo [EndowWidgetState]. Cùng khuôn với các store khác: `state`/`dispatch`/`watchState`/`currentState`/`clear`.

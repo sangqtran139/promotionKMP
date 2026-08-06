@@ -51,7 +51,7 @@ struct PRMPromotionCardSeed {
 
     init(offer: EligibleOffer) {
         self.id = offer.id
-        // Eligible API không trả merchant riêng — giữ như bản cũ.
+        // Eligible API không trả merchant riêng.
         self.merchantName = ""
         self.name = offer.campaignName ?? ""
         self.logo = nil

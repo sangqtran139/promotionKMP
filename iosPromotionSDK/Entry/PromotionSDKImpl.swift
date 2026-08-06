@@ -580,7 +580,7 @@ final class PromotionSDKImpl: NSObject {
             self.endowVM.validateAndApply(promotions) { [weak vc] state in
                 if let errorCode = state.errorCode {
                     // Map mã lỗi → chuỗi hiển thị (dùng chung mọi màn) — đối ứng Android
-                    // `mapPromotionError(errorCode)`; trước đây iOS nuốt mã, luôn hiện một câu chung.
+                    // `mapPromotionError(errorCode)`.
                     if let vc = vc {
                         PromotionToast.show(PromotionUIStrings.errorMessage(errorCode), in: vc.view)
                     }

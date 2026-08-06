@@ -20,7 +20,7 @@ import com.ttcn.prm.ui.feature.promotion.mypromotion.toTabItem
  * `handleError` + forward intent cùng thứ tự (xem `MyPromotionViewModel` để hiểu quy ước chung).
  *
  * Bấm "Áp dụng" chỉ **trả offers đang chọn** cho widget; validate + áp do `EndowStore` lo (dùng chung
- * iOS — trước đây Android validate ở đây, iOS ở `PromotionSDKImpl`).
+ * iOS).
  */
 internal class ChoosePromotionViewModel(
     findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,

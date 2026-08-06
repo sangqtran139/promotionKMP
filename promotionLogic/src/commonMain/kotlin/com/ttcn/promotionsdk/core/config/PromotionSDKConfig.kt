@@ -14,11 +14,7 @@ data class PromotionSDKConfig(
     val requestContextProvider: PromotionRequestContextProvider? = null,
     val environment: SdkEnvironment = SdkEnvironment.PROD,
     val availableServices: List<AvailableService> = emptyList(),
-    /**
-     * Bật log body của HTTP request/response. Trên Android bản gốc suy ra từ
-     * `ApplicationInfo.FLAG_DEBUGGABLE`; ở common không có `Context` nên host truyền vào.
-     * Xem overload `PromotionContainer.initialize(context, config)` phía androidMain.
-     */
+    /** Bật log body của HTTP request/response. */
     val isDebug: Boolean = false,
 )
 
@@ -30,11 +26,6 @@ interface PromotionRequestContextProvider {
     fun getOrderValue(): String? = null
     fun getMetaData(): String? = null
 
-    /**
-     * Order items (SKU) của đơn hiện tại — để `findEligible` lấy campaign yêu cầu SKU.
-     * Mặc định rỗng (host chưa cấp → chỉ campaign cấp đơn). **Dùng chung 2 nền tảng**: `EndowStore`
-     * và `ChoosePromotionStore` đọc hàm này thay cho `items = emptyList()` trước đây (đồng bộ request).
-     */
     fun getOrderItems(): List<EligibleOrderItem> = emptyList()
 }
 

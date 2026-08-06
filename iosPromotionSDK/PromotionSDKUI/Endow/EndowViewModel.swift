@@ -3,9 +3,8 @@
 //  PromotionSDK
 //
 //  ViewModel cho widget `PRMEndowView` — bọc `EndowStore` (tầng UI-logic dùng chung ở promotionLogic).
-//  ĐỐI ỨNG Android `PRMEndowViewModel`: trước đây iOS KHÔNG có ViewModel cho custom view — toàn bộ
-//  nghiệp vụ (findEligible + validate + set widget-state) dồn trong `PromotionSDKImpl`. Nay findEligible
-//  và validate&apply đi qua `EndowStore` dùng chung; `PromotionSDKImpl` chỉ quan sát state + render.
+//  ĐỐI ỨNG Android `PRMEndowViewModel`: findEligible và validate&apply đi qua `EndowStore` dùng
+//  chung; `PromotionSDKImpl` chỉ quan sát state + render.
 //
 
 import Foundation

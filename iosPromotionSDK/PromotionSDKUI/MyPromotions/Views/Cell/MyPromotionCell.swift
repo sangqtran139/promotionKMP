@@ -30,7 +30,7 @@ struct MyPromotionCellViewModel {
     let highlightKeyword: String?
     /// Số ngày còn lại khi voucher sắp hết hạn — **do store (promotionLogic) tính** theo
     /// `expireWarningDate` của server; `nil` = không sắp hết hạn. Cell chỉ format "Còn X ngày",
-    /// KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày → lệch Android).
+    /// KHÔNG tự suy ngưỡng.
     let expiringInDays: Int?
     /// API **không trả** HSD (nil/rỗng) = voucher không có hạn dùng → hiện "HSD: Không hết hạn".
     /// Khác với `date == nil` do parse hỏng (chuỗi có giá trị nhưng sai format) — ca đó giấu dòng
@@ -176,7 +176,6 @@ struct MyPromotionCellViewModel {
             title: derivedTitle,
             // Ưu tiên tên đối tác/merchant (partnerName, v1.6), fallback tên ưu đãi.
             description: offer.partnerName ?? offer.campaignName ?? "",
-            // logoUrl (v1.6) — trước đây findEligible không trả nên card offer để trống logo.
             imageURL: offer.logoUrl,
             date: PRMPromotionDate.parse(offer.expireDate),
             neverExpires: PRMPromotionDate.isMissing(offer.expireDate),
@@ -233,7 +232,7 @@ final class MyPromotionCell: UITableViewCell {
         var dateString: String?
         var dateColor: UIColor?
         // "Sắp hết hạn" do store (promotionLogic) quyết định theo `expireWarningDate` của server —
-        // dùng chung Android. Cell chỉ format; KHÔNG tự suy ngưỡng (trước đây hardcode 3 ngày).
+        // dùng chung Android. Cell chỉ format; KHÔNG tự suy ngưỡng.
         //
         // Màu: sắp hết hạn → cam `tokenCarrotOrange100`, khớp Android (`MyPromotionAdapter`);
         // các trường hợp còn lại để nil → PromotionCardView dùng màu mặc định `tokenDark60`.

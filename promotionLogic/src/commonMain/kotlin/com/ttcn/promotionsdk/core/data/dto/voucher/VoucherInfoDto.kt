@@ -39,17 +39,9 @@ data class VoucherInfoDto(
     /** Số ngày hiệu lực của mã (bản chuỗi của `expiredTimeNumber`). */
     @SerialName("expiredTime") val expiredTime: String? = null,
     @SerialName("unlimitedQty") val unlimitedQty: Boolean? = null,
-    /**
-     * Trạng thái thô do server trả (`ACTIVE`, …) — **hiện chưa dùng**: `status` của domain vẫn suy từ
-     * `metadata.usable`/`disabledReason` ([toStatusRaw]). Khai ở đây để thấy payload có gì; đổi nguồn
-     * suy trạng thái là đụng rule fail-closed nên phải quyết riêng.
-     */
+    /** Trạng thái thô server trả (`ACTIVE`, …) — **chưa dùng**; domain suy từ `metadata` ([toStatusRaw]). */
     @SerialName("status") val status: String? = null,
-    /**
-     * **Nhãn hiển thị do server quyết định** ("Sử dụng", …) — nguồn chính của text nút và nhãn trạng
-     * thái ở màn "Ưu đãi của tôi" / "Chi tiết ưu đãi". Khác hẳn `metadata.disabledReason` (mã enum,
-     * chỉ có khi `usable="false"`) mà mapper từng dùng nhầm làm nhãn.
-     */
+    /** Nhãn hiển thị server quyết định ("Sử dụng", …) — nguồn chính của text nút và nhãn trạng thái. */
     @SerialName("displayStatusLabel") val displayStatusLabel: String? = null,
     /**
      * Dự phòng vị trí: một số response lồng `applicableProducts` **trong** object `voucher` thay vì

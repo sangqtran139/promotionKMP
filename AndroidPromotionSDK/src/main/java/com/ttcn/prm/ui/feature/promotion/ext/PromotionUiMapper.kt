@@ -129,7 +129,6 @@ internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherL
     merchantName = partnerName ?: campaignName.orEmpty(),
     title = formatEstimatedDiscount(estimatedDiscount).orEmpty(),
     description = campaignName.orEmpty(),
-    // logoUrl (v1.6) — trước đây findEligible không trả, card offer để trống logo.
     logo = logoUrl.orEmpty(),
     expirationDate = expireDate.orEmpty(),
     // Lõi không dựng sẵn câu tiếng Việt; lý do lấy từ rule đầu tiên không khớp. Rỗng → layout tự
