@@ -1,8 +1,8 @@
 package com.ttcn.prm.ui.feature.promotion.searchmypromotion
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionState
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionStore

@@ -16,8 +16,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewbinding.ViewBinding
 import com.ttcn.prm.R
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch

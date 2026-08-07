@@ -3,7 +3,7 @@
     android:shape="rectangle">
     <solid android:color="@color/prm_color_picker_card_bg" />
     <stroke
-        android:width="@dimen/view_size_1"
+        android:width="@dimen/prm_view_size_1"
         android:color="@color/prm_theme_card_stroke" />
-    <corners android:radius="@dimen/view_size_12" />
+    <corners android:radius="@dimen/prm_view_size_12" />
 </shape>

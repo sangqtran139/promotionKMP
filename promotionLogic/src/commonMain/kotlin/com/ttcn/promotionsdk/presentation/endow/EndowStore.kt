@@ -1,14 +1,15 @@
 package com.ttcn.promotionsdk.presentation.endow
 
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
-import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -105,6 +106,8 @@ class EndowStore(
                         isLoading = false,
                         myOffers = myOffers,
                         otherOffers = otherOffers,
+                        myIsLastPage = result?.myIsLastPage ?: true,
+                        otherIsLastPage = result?.otherIsLastPage ?: true,
                         totalVoucherCount = total.toInt(),
                         hasLoadedInitial = true,
                         errorCode = null,
@@ -136,9 +139,15 @@ class EndowStore(
             )
             runCatching { validateStackableDiscountsUseCase(request) }
                 .onSuccess { result ->
-                    val details = result
-                        ?.let { r -> offers.map { r.toEndowAppliedDiscount(it.id, it.objectType) } }
-                        .orEmpty()
+                    // Không có kết quả (HTTP 200 nhưng `data` rỗng/parse hỏng) → **báo lỗi**, KHÔNG
+                    // coi là áp thành công. Trước đây `?.let{}.orEmpty()` biến null thành list rỗng:
+                    // widget về trạng thái "chưa áp gì" còn màn "Chọn ưu đãi" đóng như thành công —
+                    // user chọn voucher xong thấy widget không đổi, không có thông báo nào.
+                    if (result == null) {
+                        _state.update { it.copy(isValidating = false, errorCode = ErrorCodes.NO_RESULT) }
+                        return@onSuccess
+                    }
+                    val details = offers.map { result.toEndowAppliedDiscount(it.id, it.objectType) }
                     val hasInvalid = details.any { !it.valid }
                     _state.update {
                         it.copy(isValidating = false, appliedDiscounts = details, discountUnavailable = hasInvalid, errorCode = null)
@@ -168,6 +177,12 @@ data class EndowState(
     /** Ưu đãi từ `findEligible` — truyền thẳng sang màn "Chọn ưu đãi" để khỏi gọi API hai lần. */
     val myOffers: List<EligibleOffer> = emptyList(),
     val otherOffers: List<EligibleOffer> = emptyList(),
+    /**
+     * Cờ phân trang của chính lần `findEligible` này — màn "Chọn ưu đãi" nhận qua
+     * `ChoosePromotionIntent.Preload` để biết còn trang nào không.
+     */
+    val myIsLastPage: Boolean = true,
+    val otherIsLastPage: Boolean = true,
     val totalVoucherCount: Int = 0,
     val appliedDiscounts: List<EndowAppliedDiscount> = emptyList(),
     val discountUnavailable: Boolean = false,

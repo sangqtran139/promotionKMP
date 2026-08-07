@@ -121,10 +121,10 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
                         └──────────────┬─────────────────────────────────┘
                                        ▼   promotionLogic (KMP shared — Clean Arch + MVI-store)
    presentation/ : 5 Store (state · intent · UI-logic dùng chung)          ← §2
-   core/di       : PromotionContainer (DI tự viết) · requestContextProvider
-   core/config   : PromotionSDKConfig · PromotionRequestContextProvider (getOrderId/Value/Items/Service…)
-   core/domain   : model (VoucherItem/EligibleOffer/VoucherDetail…) · usecase · repository (interface)
-   core/data     : repository impl · RemoteDataSource · ApiService (Ktor) · dto + mapper
+   di       : PromotionContainer (DI tự viết) · requestContextProvider
+   config   : PromotionSDKConfig · PromotionRequestContextProvider (getOrderId/Value/Items/Service…)
+   domain   : model (VoucherItem/EligibleOffer/VoucherDetail…) · usecase · repository (interface)
+   data     : repository impl · RemoteDataSource · ApiService (Ktor) · dto + mapper
 ```
 
 ### 4.2 Class chủ chốt / dùng chung (bắt buộc nắm khi maintain)
@@ -186,5 +186,5 @@ Host Android khai `implementation("com.ttcn.promotion:promotionSDK:<SDK_VERSION>
 | 1 | `@_implementationOnly import` trong `iosPromotionSDK/PromotionSDKUI/**`; `iosPromotionSDK/scripts/build-xcframework.sh:111`; `iosApp/iosApp/*.swift` |
 | 2 | `promotionLogic/presentation/*Store.kt`; `ui/entry/*` (Android) & `Entry/API/PromotionApiModels.swift` (iOS); `PRMEndowView.myVouchers` (internal) |
 | 3 | [CodingStandards.md](./CodingStandards.md), [ProjectStructure.md](./ProjectStructure.md) |
-| 4 | [Architecture.md](./Architecture.md); `core/di/PromotionContainer.kt`; 5 `*Store.kt` |
+| 4 | [Architecture.md](./Architecture.md); `di/PromotionContainer.kt`; 5 `*Store.kt` |
 | 5 | `gradle.properties:19`; `*/build.gradle.kts`; `PRM.xcodeproj` (`MARKETING_VERSION`); `CHANGELOG.md` |

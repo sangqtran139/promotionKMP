@@ -1,12 +1,13 @@
 package com.ttcn.prm.ui.feature.promotion.choosepromotion
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionState
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
 import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
+import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
 import com.ttcn.prm.ui.base.PRMBaseViewModel
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ApplySelectedOffers
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.ChoosePromotionEffect.ShowError
@@ -49,7 +50,12 @@ internal class ChoosePromotionViewModel(
         when (action) {
             ChoosePromotionAction.LoadInitial -> store.dispatch(ChoosePromotionIntent.LoadInitial)
             is ChoosePromotionAction.PreloadVouchers -> store.dispatch(
-                ChoosePromotionIntent.Preload(action.myOffers, action.otherOffers, myIsLastPage = false, otherIsLastPage = true)
+                ChoosePromotionIntent.Preload(
+                    action.myOffers,
+                    action.otherOffers,
+                    myIsLastPage = action.myIsLastPage,
+                    otherIsLastPage = action.otherIsLastPage,
+                )
             )
             ChoosePromotionAction.Refresh -> store.dispatch(ChoosePromotionIntent.Refresh)
             is ChoosePromotionAction.QueryChanged -> store.dispatch(ChoosePromotionIntent.QueryChanged(action.keyword))
@@ -108,6 +114,7 @@ private fun ChoosePromotionState.toUiState() = ChoosePromotionUiState(
     otherSize = otherSize,
     isLastOtherPage = otherIsLastPage,
     vouchers = myOffers.map { it.toVoucherListItem() },
+    visibleVouchers = visibleMyOffers().map { it.toVoucherListItem() },
     otherVouchers = otherOffers.map { it.toVoucherListItem() },
     isMultiSelection = isMultiSelection,
     selectedIds = selectedIds,

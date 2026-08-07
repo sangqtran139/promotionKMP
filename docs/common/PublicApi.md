@@ -13,7 +13,7 @@ Bề mặt lõi được tài liệu ở [HeadlessAPI.md](./HeadlessAPI.md). **H
 chủ đích, không phải quy ước lỏng lẻo:
 
 - **Android** — `AndroidPromotionSDK` khai `implementation(projects.promotionLogic)`, nên
-  `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host. Thử import là lỗi compile:
+  `com.ttcn.promotionsdk.*` nằm ngoài compile classpath của host. Thử import là lỗi compile:
   `Unresolved reference 'PromotionUseCases'`.
 - **iOS** — `PromotionSDKUI` khai `@_implementationOnly import PRMKotlinBridge`. Type Kotlin lọt vào chữ
   ký public sẽ bị ghi vào `.swiftinterface` và app host không build được:
@@ -356,7 +356,7 @@ binding.endowView.onOpenVoucherSelection = {
 
 1. **Không để type của `promotionLogic` xuất hiện trong chữ ký public.** Trên Android nó không gây
    lỗi lúc build SDK — lỗi chỉ nổ ở app host. Cách kiểm tra: thêm tạm một file vào `androidApp`
-   import `com.ttcn.promotionsdk.core.*` và đổi `androidApp` sang `implementation(projects.androidPromotionUI)`;
+   import `com.ttcn.promotionsdk.*` và đổi `androidApp` sang `implementation(projects.androidPromotionUI)`;
    phải thấy `Unresolved reference`.
 2. **Model MVI, adapter, ViewModel đều `internal`.** Chúng mang `EligibleOffer`, `VoucherItem`,
    `VoucherStatus` — type của lõi.

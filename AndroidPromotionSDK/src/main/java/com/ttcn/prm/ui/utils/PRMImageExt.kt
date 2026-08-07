@@ -9,7 +9,7 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.ttcn.prm.R
-import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.di.PromotionContainer
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ internal fun isPromotionSdkDebug(): Boolean =
 
 /** Màu nền vùng ảnh khi chưa có/không có ảnh — cùng nguồn với `prm_bg_image_placeholder` và iOS. */
 private fun placeholderColor(context: Context): Int =
-    ContextCompat.getColor(context, R.color.tokenDark10)
+    ContextCompat.getColor(context, R.color.prm_tokenDark10)
 
 /**
  * `downsample(CENTER_INSIDE) + CircleCrop()` = đúng những gì `.circleCrop()` làm (kiểm bằng `javap`

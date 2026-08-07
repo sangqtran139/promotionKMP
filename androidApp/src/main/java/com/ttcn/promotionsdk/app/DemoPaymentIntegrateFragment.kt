@@ -3,15 +3,15 @@ package com.ttcn.promotionsdk.app
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.FragmentPaymentDemoBinding
+import com.ttcn.prm.databinding.PrmFragmentPaymentDemoBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.ui.feature.promotion.PromotionIntegrateManager
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
 
-class DemoPaymentIntegrateFragment : PRMBaseFragment<FragmentPaymentDemoBinding>() {
+class DemoPaymentIntegrateFragment : PRMBaseFragment<PrmFragmentPaymentDemoBinding>() {
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentPaymentDemoBinding.inflate(inflater, container, false)
+        PrmFragmentPaymentDemoBinding.inflate(inflater, container, false)
 
     // SDK Manager — đối tác khởi tạo 1 lần, truyền endowView vào
     private lateinit var promotionIntegrateManager: PromotionIntegrateManager

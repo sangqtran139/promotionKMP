@@ -1,22 +1,22 @@
 package com.ttcn.prm.entry.api
 
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.exception.PromotionErrorCodes
-import com.ttcn.promotionsdk.core.domain.model.PromotionResult
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleFilterOptions
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOrderItem
-import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
-import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
-import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDisplayState
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
-import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionUseCases
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.domain.exception.PromotionErrorCodes
+import com.ttcn.promotionsdk.domain.model.PromotionResult
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleFilterOptions
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOrderItem
+import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
+import com.ttcn.promotionsdk.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.domain.model.redemption.RedemptionItemRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDisplayState
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherItem
+import com.ttcn.promotionsdk.domain.model.voucher.displayState
+import com.ttcn.promotionsdk.domain.usecase.PromotionUseCases
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
@@ -27,7 +27,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * Việc nó làm, và chỉ một việc: đổi model của lõi sang DTO của `AndroidPromotionSDK`
  * ([PromotionVoucher], [PromotionEligibleOffer], …), và đổi `PromotionResult` sang [PromotionApiResult].
  *
- * Ràng buộc: `com.ttcn.promotionsdk.core.*` **không** nằm trên compile classpath của host, nên
+ * Ràng buộc: `com.ttcn.promotionsdk.*` **không** nằm trên compile classpath của host, nên
  * không type nào của lõi được xuất hiện trong chữ ký public của lớp này.
  * Cùng vai trò với `PromotionSDKApi.swift`.
  *

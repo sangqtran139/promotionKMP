@@ -1,7 +1,7 @@
 package com.ttcn.prm.entry.api
 
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags as CoreFeatureFlags
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlags as CoreFeatureFlags
 
 /**
  * Ranh giới chuyển đổi cho feature flag: lõi Kotlin ↔ DTO public. Cùng vai trò với phần map ở cuối

@@ -3,6 +3,6 @@
     android:shape="oval">
     <solid android:color="@android:color/white" />
     <stroke
-        android:width="@dimen/view_size_1"
+        android:width="@dimen/prm_view_size_1"
         android:color="@color/prm_theme_card_stroke" />
 </shape>

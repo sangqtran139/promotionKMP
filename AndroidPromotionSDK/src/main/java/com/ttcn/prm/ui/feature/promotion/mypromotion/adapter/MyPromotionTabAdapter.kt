@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.ttcn.prm.databinding.ItemTagMyPromotionBinding
+import com.ttcn.prm.databinding.PrmItemTagMyPromotionBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.TabItem
 import com.ttcn.prm.ui.theme.PromotionThemeDefaults
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
@@ -24,7 +24,7 @@ internal class MyPromotionTabAdapter(
     override fun getItemCount(): Int = tabs.size
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TabViewHolder {
-        val binding = ItemTagMyPromotionBinding.inflate(
+        val binding = PrmItemTagMyPromotionBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
             false,
@@ -37,7 +37,7 @@ internal class MyPromotionTabAdapter(
     }
 
     inner class TabViewHolder(
-        private val binding: ItemTagMyPromotionBinding,
+        private val binding: PrmItemTagMyPromotionBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
 
         init {

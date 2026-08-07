@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.di.promotionViewModelFactory
-import com.ttcn.prm.databinding.FragmentMyPromotionBinding
+import com.ttcn.prm.databinding.PrmFragmentMyPromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.entry.PromotionServiceSelection
@@ -20,7 +20,7 @@ import com.ttcn.prm.ui.feature.promotion.mypromotion.adapter.buildPromotionListI
 import com.ttcn.prm.ui.feature.promotion.searchmypromotion.SearchMyPromotionFragment
 import timber.log.Timber
 
-class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
+class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBinding>() {
 
     private val viewModelFactory by lazy { promotionViewModelFactory() }
 
@@ -50,7 +50,7 @@ class MyPromotionFragment : PRMBaseFragment<FragmentMyPromotionBinding>() {
     private var latestSubmittedItems: List<MyPromotionListItem> = emptyList()
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentMyPromotionBinding.inflate(inflater, container, false)
+        PrmFragmentMyPromotionBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
         binding.btnBack.setOnClickListener { onBackFragment() }

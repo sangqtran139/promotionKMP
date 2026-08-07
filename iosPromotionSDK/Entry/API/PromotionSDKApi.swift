@@ -27,7 +27,7 @@ import Foundation
 /// không có (`error: Unable to find module dependency: 'PRMKotlinBridge'`).
 ///
 /// Android chịu ràng buộc tương đương nhưng nhẹ hơn: nó khai `implementation(projects.promotionLogic)`
-/// nên `com.ttcn.promotionsdk.core.*` nằm ngoài compile classpath của host, và type lõi lọt vào chữ
+/// nên `com.ttcn.promotionsdk.*` nằm ngoài compile classpath của host, và type lõi lọt vào chữ
 /// ký public sẽ khiến host không resolve được.
 public final class PromotionSDKApi {
 

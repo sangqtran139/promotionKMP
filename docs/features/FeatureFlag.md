@@ -6,8 +6,8 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
   `flagsOf(names)`, `all()`. Dựng thẳng sau `PromotionContainer.initialize(...)`.
 - **Hỗ trợ:** `FetchFeatureFlagsUseCase`, `IsFeatureEnabledUseCase`, `GetFeatureFlagsUseCase`,
   `GetPromotionFeatureFlagsUseCase`, `FeatureFlagRepository(Impl)`, `FeatureFlagApiService`,
-  `FeatureFlagLocalDataSource`, `core/di/FeatureFlagModule`, `FeatureFlagException`
-- **Gate (dùng chung):** `PromotionFeatureGate` trong `core/domain/usecase/` — **một object Kotlin duy
+  `FeatureFlagLocalDataSource`, `di/FeatureFlagModule`, `FeatureFlagException`
+- **Gate (dùng chung):** `PromotionFeatureGate` trong `domain/usecase/` — **một object Kotlin duy
   nhất** cho cả hai nền tảng. Android gọi `PromotionFeatureGate.canOpenVoucherDetail()`, iOS gọi
   `PromotionFeatureGate.shared.canOpenVoucherDetail()`.
 - **Tên tính năng:** nguồn sự thật là `PromotionFeatureFlag` (hằng chuỗi Kotlin). Host **không** gõ
@@ -41,7 +41,7 @@ Instance `PromotionFeatureFlags` **thoát ra khỏi repository đã được chu
 luật: `all().voucherList == isEnabled(VOUCHER_LIST)` cho cả sáu cờ. Riêng bản đem **lưu cache** vẫn là
 giá trị thô — bật lại `ENABLE_ALL` thì các cờ con phải trở về giá trị riêng, không được kẹt `false`.
 
-Cờ ghi xuống `KeyValueStorage` (SharedPreferences / NSUserDefaults) nên lần mở app sau không phải
+Cờ ghi xuống `PromotionPreferences` (SharedPreferences / NSUserDefaults) nên lần mở app sau không phải
 chờ API. Xem `../StorageGuide.md`.
 
 ---

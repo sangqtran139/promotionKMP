@@ -13,8 +13,8 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.di.promotionViewModelFactory
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
-import com.ttcn.prm.databinding.FragmentDetailPromotionBinding
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
+import com.ttcn.prm.databinding.PrmFragmentDetailPromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.entry.PromotionSDKCallback
@@ -29,7 +29,7 @@ import com.ttcn.prm.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.prm.ui.utils.loadPromotionVoucherBanner
 import com.ttcn.prm.ui.utils.loadPromotionVoucherLogo
 
-class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>() {
+class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromotionBinding>() {
 
     private val viewModelFactory by lazy { promotionViewModelFactory() }
 
@@ -58,7 +58,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
     internal var onVoucherApplied: ((detail: VoucherDetail) -> Unit)? = null
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentDetailPromotionBinding.inflate(inflater, container, false)
+        PrmFragmentDetailPromotionBinding.inflate(inflater, container, false)
 
     /**
      * Quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
@@ -158,7 +158,7 @@ class PromotionDetailFragment : PRMBaseFragment<FragmentDetailPromotionBinding>(
         // Dòng HSD — luôn hiện ngày thô, không tô cam / không hiện "còn X ngày" (khác màn danh sách).
         val rawExpiration = detail.expirationDate
         val displayDate = rawExpiration.orEmpty().toVoucherDisplayDate()
-        binding.tvExpired.setTextColor(ContextCompat.getColor(requireContext(), R.color.tokenDark60))
+        binding.tvExpired.setTextColor(ContextCompat.getColor(requireContext(), R.color.prm_tokenDark60))
         when {
             displayDate.isNotBlank() -> {
                 binding.tvExpired.isVisible = true

@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/prm_color_FBFBFB"
+        android:clickable="true"
+        android:focusable="true"
+        app:layoutDescription="@xml/prm_home_scene">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlTop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgBanner"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/prm_detail_banner_height"
+                android:scaleType="centerCrop"
+                android:src="@drawable/prm_bg_image_placeholder"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/imgBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/prm_tokenSpacing10"
+            android:layout_marginTop="@dimen/prm_tokenSpacing24"
+            android:padding="@dimen/prm_tokenSizing08"
+            android:visibility="visible"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/prm_ic_back_with_bg" />
+
+        <com.ttcn.prm.ui.widget.PRMCardView
+            android:id="@+id/cardViewTop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/prm_view_size_20"
+            android:layout_marginTop="-32dp"
+            android:layout_marginEnd="@dimen/prm_view_size_20"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ctlTop"
+            app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
+            app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvTopRightRadius="@dimen/prm_view_size_16"
+            app:prmSvBackgroundType="fill_stroke"
+            app:prmSvStrokeColor="@color/prm_color_D3D3D3"
+            app:prmSvStrokeWidth="0.5dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/cvVoucherInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/prm_view_size_16">
+
+                <!--
+                  ImageView THƯỜNG, không dùng `PRMCircleImageView`.
+                  Vòng tròn đã do Glide `CircleCrop` lo (áp cho từng frame, kể cả GIF), nên mask của
+                  custom view là dư — mà nó còn LÀM CHẾT GIF: `PRMCircleImageView.getBitmapFromDrawable`
+                  vẽ drawable **một lần** vào một `Bitmap` rồi `onDraw` chỉ vẽ lại snapshot đó bằng
+                  `BitmapShader`, không gọi `super.onDraw()`. `GifDrawable` tự `invalidateSelf()` mỗi
+                  frame nhưng snapshot không bao giờ được cập nhật → GIF đứng ở frame 1.
+                -->
+                <com.ttcn.prm.ui.widget.PRMImageView
+                    android:id="@+id/circleLogo"
+                    android:layout_width="@dimen/prm_view_size_44"
+                    android:layout_height="@dimen/prm_view_size_44"
+                    android:layout_marginStart="@dimen/prm_view_size_16"
+                    android:layout_marginTop="@dimen/prm_view_size_20"
+                    android:background="@drawable/prm_bg_image_placeholder_circle"
+                    android:scaleType="centerCrop"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!--
+                  Tên brand: tối đa 2 dòng + ba chấm (khớp `brandNameLabel` iOS).
+                  `layout_width=0dp` + ghim `constraintEnd` là BẮT BUỘC để chữ xuống dòng được —
+                  `wrap_content` chỉ với constraint start thì chữ dài chạy tràn ra khỏi khung, không wrap.
+                -->
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/txtVoucherName"
+                    style="@style/PRMFontDisPlayRegular14"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/prm_view_size_8"
+                    android:layout_marginEnd="@dimen/prm_view_size_8"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:textColor="@color/prm_color_7A7A7A"
+                    app:layout_constraintBottom_toBottomOf="@+id/circleLogo"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/circleLogo"
+                    app:layout_constraintTop_toTopOf="@+id/circleLogo"
+                    tools:text="The Coffee House" />
+
+                <!--
+                  Tên brand 2 dòng có thể cao hơn logo 44dp (font scale lớn của hệ thống) → mốc dưới của
+                  khối header là cạnh dưới của cái NÀO CAO HƠN, không phải của logo. Không có barrier thì
+                  `tvContent` ghim theo logo và bị tên brand đè lên.
+                -->
+                <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/barrierVoucherHeader"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="bottom"
+                    app:constraint_referenced_ids="circleLogo,txtVoucherName" />
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvContent"
+                    style="@style/PRMFontSfDisplayBold16"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/prm_view_size_7"
+                    android:layout_marginEnd="@dimen/prm_view_size_8"
+                    android:ellipsize="end"
+                    android:maxLines="5"
+                    android:textColor="@color/prm_black"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/circleLogo"
+                    app:layout_constraintTop_toBottomOf="@+id/barrierVoucherHeader"
+                    tools:text="Giảm 50k cho hóa đơn từ 200k áp dụng tại cửa hàng The Coffee House" />
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvExpired"
+                    style="@style/PRMFontDisPlayRegular14"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/prm_view_size_7"
+                    android:textColor="@color/prm_color_7A7A7A"
+                    app:layout_constraintStart_toStartOf="@+id/tvContent"
+                    app:layout_constraintTop_toBottomOf="@+id/tvContent"
+                    tools:text="Hạn sử dụng 18/10/2023" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </com.ttcn.prm.ui.widget.PRMCardView>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlContent"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="@dimen/prm_view_size_20"
+            android:layout_marginEnd="@dimen/prm_view_size_20"
+            app:layout_constraintBottom_toTopOf="@+id/tvUse"
+            android:layout_marginBottom="@dimen/prm_view_size_16"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/cardViewTop">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/prm_color_FBFBFB"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <!--
+                  KHÔNG thụt thêm lề: `UnderlinedSegmentControlView` bên iOS ghim đúng lề 20 của card
+                  (XIB `deD-2e-wws` leading/trailing = 20), nên hàng tab Android phải trải trọn bề ngang
+                  `ctlContent` (đã có lề 20). Trước đây còn `marginHorizontal="_10sdp"` → tab hẹp hơn
+                  card, không khớp iOS.
+                -->
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:id="@+id/vIndicator"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/prm_view_size_3"
+                        android:layout_gravity="bottom"
+                        android:background="@color/prm_color_D3D3D3" />
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tabs"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        app:tabGravity="fill"
+                        app:tabIndicator="@drawable/prm_tab_indicator_color"
+                        app:tabIndicatorColor="@color/prm_color_red_EE0033"
+                        app:tabIndicatorHeight="@dimen/prm_view_size_3"
+                        app:tabMaxWidth="0dp"
+                        app:tabMode="fixed"
+                        app:tabRippleColor="@color/prm_color_D3D3D3"
+                        app:tabSelectedTextColor="@color/prm_black"
+                        app:tabTextAppearance="@style/PRMTabLayOutNew"
+                        app:tabTextColor="@color/prm_color_7a7a7a" />
+
+                </FrameLayout>
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/view_pager"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.ttcn.prm.ui.widget.PRMButton
+            android:id="@+id/tvUse"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/prm_view_size_16"
+            android:layout_marginEnd="@dimen/prm_view_size_16"
+            android:layout_marginBottom="@dimen/prm_tokenSpacing12"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:prmBtSize="large"
+            app:prmBtText="@string/prm_use_now" />
+
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/contentContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:constraint_referenced_ids="ctlTop,cardViewTop,ctlContent,tvUse"
+            tools:visibility="visible" />
+
+        <include
+            android:id="@+id/shimmer_provider"
+            layout="@layout/prm_shimmer_promotion_detail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>

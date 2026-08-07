@@ -2,17 +2,17 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape android:shape="rectangle">
-            <corners android:radius="@dimen/view_size_4" />
+            <corners android:radius="@dimen/prm_view_size_4" />
             <solid android:color="@color/prm_theme_slider_track" />
-            <size android:height="@dimen/view_size_4" />
+            <size android:height="@dimen/prm_view_size_4" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
         <clip>
             <shape android:shape="rectangle">
-                <corners android:radius="@dimen/view_size_4" />
+                <corners android:radius="@dimen/prm_view_size_4" />
                 <solid android:color="@color/prm_theme_primary" />
-                <size android:height="@dimen/view_size_4" />
+                <size android:height="@dimen/prm_view_size_4" />
             </shape>
         </clip>
     </item>

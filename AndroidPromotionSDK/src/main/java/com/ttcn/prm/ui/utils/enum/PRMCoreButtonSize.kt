@@ -16,21 +16,21 @@ enum class PRMCoreButtonSize(
     @DimenRes val loadingSizeRes: Int
 ) {
     SMALL(
-        R.dimen.tokenSizing24,
-        R.dimen.tokenFontSize12,
-        R.dimen.tokenSpacing08,
-        R.dimen.tokenSpacing16
+        R.dimen.prm_tokenSizing24,
+        R.dimen.prm_tokenFontSize12,
+        R.dimen.prm_tokenSpacing08,
+        R.dimen.prm_tokenSpacing16
     ),
     MEDIUM(
-        R.dimen.tokenSizing32,
-        R.dimen.tokenFontSize14,
-        R.dimen.tokenSpacing16,
-        R.dimen.tokenSpacing24
+        R.dimen.prm_tokenSizing32,
+        R.dimen.prm_tokenFontSize14,
+        R.dimen.prm_tokenSpacing16,
+        R.dimen.prm_tokenSpacing24
     ),
     LARGE(
-        R.dimen.tokenSizing48,
-        R.dimen.tokenFontSize18,
-        R.dimen.tokenSpacing24,
-        R.dimen.tokenSpacing32
+        R.dimen.prm_tokenSizing48,
+        R.dimen.prm_tokenFontSize18,
+        R.dimen.prm_tokenSpacing24,
+        R.dimen.prm_tokenSpacing32
     )
 }

@@ -1,0 +1,31 @@
+package com.ttcn.promotionsdk.domain.repository
+
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffersResult
+import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
+import com.ttcn.promotionsdk.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.domain.model.redemption.CreateRedemptionResult
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersResult
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
+
+internal interface PromotionRepository {
+    suspend fun searchCustomerVouchers(
+        keyword: String?,
+        serviceCode: String?,
+        tab: String?,
+        page: Int?,
+        size: Int?,
+    ): SearchCustomerVouchersResult?
+
+    suspend fun getCustomerVoucherDetail(
+        voucherId: String,
+        service: String?,
+    ): VoucherDetail?
+
+    suspend fun createRedemptionSession(request: CreateRedemptionRequest): CreateRedemptionResult?
+
+    suspend fun validateStackableDiscounts(request: ValidateDiscountsRequest): ValidateDiscountsResult?
+
+    suspend fun findEligibleCampaigns(request: FindEligibleCampaignsRequest): EligibleOffersResult?
+}

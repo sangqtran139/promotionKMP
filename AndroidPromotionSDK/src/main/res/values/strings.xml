@@ -37,7 +37,7 @@
     <string name="prm_search_no_result">Không tìm thấy kết quả phù hợp</string>
     <string name="prm_search_input_empty">Nhập từ khóa để tìm kiếm ưu đãi</string>
     <string name="prm_slide_to_verify">Trượt để xác thực</string>
-    <string name="prm_discount_amount_format">Giảm giá %1$sđ</string>
+    <string name="prm_discount_amount_format">Giảm %1$sđ</string>
     <string name="prm_expiry_short_format">HSD: %1$s</string>
     <string name="prm_expiry_remaining_days">HSD còn %1$d ngày</string>
     <!-- API không trả HSD (null/rỗng) = voucher không có hạn dùng. -->

@@ -1,13 +1,14 @@
 package com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.entry.AppliedDiscount
-import com.ttcn.prm.databinding.ItemListPromotionApplyBinding
-import com.ttcn.prm.databinding.ItemListPromotionCountBinding
+import com.ttcn.prm.databinding.PrmItemListPromotionApplyBinding
+import com.ttcn.prm.databinding.PrmItemListPromotionCountBinding
 import com.ttcn.prm.ui.theme.applier.DiscountBadgeApplier
 import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
@@ -55,10 +56,10 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             VIEW_TYPE_VOUCHER -> ApplyPromotionViewHolder(
-                ItemListPromotionApplyBinding.inflate(inflater, parent, false)
+                PrmItemListPromotionApplyBinding.inflate(inflater, parent, false)
             )
             VIEW_TYPE_COUNT -> CountChoosePromotionViewHolder(
-                ItemListPromotionCountBinding.inflate(inflater, parent, false)
+                PrmItemListPromotionCountBinding.inflate(inflater, parent, false)
             )
             else -> throw IllegalArgumentException("Unknown view type: $viewType")
         }
@@ -85,11 +86,13 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
     // ─── ViewHolders ──────────────────────────────────────────────────────────
 
     private class ApplyPromotionViewHolder(
-        private val binding: ItemListPromotionApplyBinding,
+        private val binding: PrmItemListPromotionApplyBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: AppliedDiscount, token: DiscountBadgeToken?) {
-            binding.txtName.text = item.calculatedDiscount  // objectId làm label fallback
+            // `calculatedDiscount` là chuỗi số thô của server ("75000") — phải format trước khi hiện,
+            // nếu không widget lòi số trần. Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
+            binding.txtName.text = formatDiscountAmount(binding.root.context, item.calculatedDiscount)
 
             // valid=false → hiển thị mờ
             binding.root.alpha = if (item.valid) 1f else 0.4f
@@ -103,7 +106,7 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     private class CountChoosePromotionViewHolder(
-        private val binding: ItemListPromotionCountBinding,
+        private val binding: PrmItemListPromotionCountBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(count: Int) {
@@ -112,4 +115,15 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
             )
         }
     }
+}
+
+/**
+ * `"75000"` → `"Giảm 75.000đ"`. Chuỗi không rút được số → trả nguyên bản (không bịa "0đ").
+ * Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
+ */
+private fun formatDiscountAmount(context: Context, raw: String): String {
+    val digits = raw.filter { it.isDigit() }
+    val value = digits.toLongOrNull() ?: return raw
+    val grouped = value.toString().reversed().chunked(3).joinToString(".").reversed()
+    return context.getString(R.string.prm_discount_amount_format, grouped)
 }

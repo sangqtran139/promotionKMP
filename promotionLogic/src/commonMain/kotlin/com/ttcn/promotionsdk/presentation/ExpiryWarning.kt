@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.presentation
 
-import com.ttcn.promotionsdk.core.util.daysUntil
+import com.ttcn.promotionsdk.common.daysUntil
 
 /**
  * Ngưỡng "sắp hết hạn" (số ngày) do server cấu hình — **dùng chung mọi màn**.

@@ -87,8 +87,8 @@ fun AppCompatRadioButton.applyRadioStrokeColors(
     if (unselectedStroke == null && selectedFill == null) return
 
     val ctx = context
-    val defaultSelectedFill = ContextCompat.getColor(ctx, R.color.color_EE0033)
-    val defaultUnselectedStroke = ContextCompat.getColor(ctx, R.color.tokenDark40)
+    val defaultSelectedFill = ContextCompat.getColor(ctx, R.color.prm_color_EE0033)
+    val defaultUnselectedStroke = ContextCompat.getColor(ctx, R.color.prm_tokenDark40)
     val checkedFill = selectedFill ?: defaultSelectedFill
     val uncheckedStroke = unselectedStroke ?: defaultUnselectedStroke
     val strokeWidthPx = (1f * resources.displayMetrics.density).toInt().coerceAtLeast(1)

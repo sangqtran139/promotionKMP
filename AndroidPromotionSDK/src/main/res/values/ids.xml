@@ -1,11 +1,11 @@
 <resources>
 
     <item
-        name="item_title_id"
+        name="prm_item_title_id"
         type="id"/>
 
     <item
-        name="item_promotion_id"
+        name="prm_item_promotion_id"
         type="id"/>
 
 </resources>

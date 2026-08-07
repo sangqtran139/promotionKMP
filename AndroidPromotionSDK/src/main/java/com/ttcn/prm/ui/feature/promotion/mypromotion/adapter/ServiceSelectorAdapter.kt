@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.ttcn.prm.databinding.ItemServiceSelectorBinding
+import com.ttcn.prm.databinding.PrmItemServiceSelectorBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 import com.ttcn.prm.ui.utils.loadPromotionVoucherLogo
 
@@ -18,7 +18,7 @@ internal class ServiceSelectorAdapter(
      * 1/`spanCount` bề ngang nên `match_parent` ở item layout là vừa khít.
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val binding = ItemServiceSelectorBinding.inflate(
+        val binding = PrmItemServiceSelectorBinding.inflate(
             LayoutInflater.from(parent.context), parent, false,
         )
         return ViewHolder(binding, onItemClick)
@@ -29,7 +29,7 @@ internal class ServiceSelectorAdapter(
     }
 
     class ViewHolder(
-        private val binding: ItemServiceSelectorBinding,
+        private val binding: PrmItemServiceSelectorBinding,
         private val onItemClick: (ServiceSelectorUiItem) -> Unit,
     ) : RecyclerView.ViewHolder(binding.root) {
 

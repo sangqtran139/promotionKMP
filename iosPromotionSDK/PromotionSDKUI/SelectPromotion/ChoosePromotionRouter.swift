@@ -22,9 +22,14 @@ final class ChoosePromotionRouter: PRMBaseRouter<ChoosePromotionViewController> 
             with: .init(
                 promotion: PRMPromotionCardSeed(offer: promotion),
                 returnVoucherOnApply: true,
-                onVoucherApplied: { [weak self] detail in
-                    // Màn này chỉ cần id để tick ô chọn — hành vi không đổi.
-                    self?.viewController?.selectVoucherFromDetail(detail.voucherId)
+                onVoucherApplied: { [weak self] _ in
+                    // Tick theo **id của offer trong danh sách này** (`EligibleOffer.id`), KHÔNG phải
+                    // `VoucherDetail.voucherId` của response chi tiết: nhóm "Ưu đãi khác" là campaign
+                    // chưa sở hữu nên `id` chính là `campaignId`, còn detail API trả `voucherId` khác
+                    // (hoặc rỗng) → `SetPreSelected` không khớp item nào, không tick được gì.
+                    // `selectedIds` của store so với `ChooseOffer.source.id`. Đối ứng Android:
+                    // `setFragmentResult` mang đúng id đã dùng để mở màn.
+                    self?.viewController?.selectVoucherFromDetail(promotion.id)
                 }
             ),
             navigator: navigator

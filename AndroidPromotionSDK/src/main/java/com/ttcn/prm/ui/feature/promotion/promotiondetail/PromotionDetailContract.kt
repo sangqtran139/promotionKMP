@@ -1,7 +1,7 @@
 package com.ttcn.prm.ui.feature.promotion.promotiondetail
 
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
 import com.ttcn.prm.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
 
 internal data class PromotionDetailUiState(

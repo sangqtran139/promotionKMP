@@ -3,14 +3,14 @@ package com.ttcn.prm.ui.theme.applier
 import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
 
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.ItemListPromotionApplyBinding
+import com.ttcn.prm.databinding.PrmItemListPromotionApplyBinding
 import com.ttcn.prm.ui.utils.applyDrawableBackgroundTintIfSet
 import com.ttcn.prm.ui.utils.applyTextColorIfSet
 
 internal object DiscountBadgeApplier {
 
     fun apply(
-        binding: ItemListPromotionApplyBinding,
+        binding: PrmItemListPromotionApplyBinding,
         token: DiscountBadgeToken?,
         available: Boolean,
     ) {

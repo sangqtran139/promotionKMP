@@ -12,12 +12,12 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.BottomSheetServiceSelectorBinding
+import com.ttcn.prm.databinding.PrmBottomSheetServiceSelectorBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.adapter.ServiceSelectorAdapter
 
 internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
 
-    private var _binding: BottomSheetServiceSelectorBinding? = null
+    private var _binding: PrmBottomSheetServiceSelectorBinding? = null
     private val binding get() = requireNotNull(_binding)
 
     private var services: List<ServiceSelectorUiItem> = emptyList()
@@ -42,7 +42,7 @@ internal class ServiceSelectorBottomSheet : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        _binding = BottomSheetServiceSelectorBinding.inflate(inflater, container, false)
+        _binding = PrmBottomSheetServiceSelectorBinding.inflate(inflater, container, false)
         return binding.root
     }
 

@@ -1,8 +1,8 @@
 package com.ttcn.prm.ui.feature.promotion.promotiondetail
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailIntent
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailState
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailStore

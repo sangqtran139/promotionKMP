@@ -9,8 +9,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.ItemChoosePromotionBinding
-import com.ttcn.prm.databinding.ItemTitleMyEndowBinding
+import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
+import com.ttcn.prm.databinding.PrmItemTitleMyEndowBinding
+import com.ttcn.prm.databinding.PrmItemSectionDividerBinding
 import com.ttcn.prm.databinding.PrmItemSeeMoreBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.theme.applier.PromotionListItemApplier
@@ -34,6 +35,9 @@ internal sealed class ChoosePromotionListItem {
      *                   false → chưa expanded hoặc còn trang  → hiển thị "Xem thêm"
      */
     data class SeeMoreMyVoucher(val isExpanded: Boolean) : ChoosePromotionListItem()
+
+    /** Vạch ngăn giữa hai nhóm — chỉ chèn khi cả hai nhóm cùng có dữ liệu. */
+    data object SectionDivider : ChoosePromotionListItem()
 }
 
 internal class ChoosePromotionMainAdapter(
@@ -47,19 +51,29 @@ internal class ChoosePromotionMainAdapter(
         private const val TYPE_HEADER = 0
         private const val TYPE_VOUCHER = 1
         private const val TYPE_SEE_MORE = 2
+        private const val TYPE_DIVIDER = 3
     }
 
     override fun getItemViewType(position: Int) = when (getItem(position)) {
         is ChoosePromotionListItem.SectionHeader -> TYPE_HEADER
         is ChoosePromotionListItem.VoucherItem -> TYPE_VOUCHER
         is ChoosePromotionListItem.SeeMoreMyVoucher -> TYPE_SEE_MORE
+        is ChoosePromotionListItem.SectionDivider -> TYPE_DIVIDER
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             TYPE_HEADER -> HeaderViewHolder(
-                ItemTitleMyEndowBinding.inflate(
+                PrmItemTitleMyEndowBinding.inflate(
+                    inflater,
+                    parent,
+                    false
+                )
+            )
+
+            TYPE_DIVIDER -> DividerViewHolder(
+                PrmItemSectionDividerBinding.inflate(
                     inflater,
                     parent,
                     false
@@ -74,7 +88,7 @@ internal class ChoosePromotionMainAdapter(
                 )
             )
 
-            else -> VoucherViewHolder(ItemChoosePromotionBinding.inflate(inflater, parent, false))
+            else -> VoucherViewHolder(PrmItemChoosePromotionBinding.inflate(inflater, parent, false))
         }
     }
 
@@ -92,17 +106,22 @@ internal class ChoosePromotionMainAdapter(
                     onSeeMoreMyVoucher,
                     onCollapseMyVoucher
                 )
+
+            ChoosePromotionListItem.SectionDivider -> Unit
         }
     }
 
     // ─── ViewHolders ──────────────────────────────────────────────────────────
 
-    class HeaderViewHolder(private val binding: ItemTitleMyEndowBinding) :
+    class HeaderViewHolder(private val binding: PrmItemTitleMyEndowBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(title: String) {
             binding.txtTitleEndow.text = title
         }
     }
+
+    class DividerViewHolder(binding: PrmItemSectionDividerBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     class FooterViewHolder(private val binding: PrmItemSeeMoreBinding) :
         RecyclerView.ViewHolder(binding.root) {
@@ -122,7 +141,7 @@ internal class ChoosePromotionMainAdapter(
         }
     }
 
-    class VoucherViewHolder(private val binding: ItemChoosePromotionBinding) :
+    class VoucherViewHolder(private val binding: PrmItemChoosePromotionBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(
             item: ChoosePromotionListItem.VoucherItem,
@@ -136,7 +155,7 @@ internal class ChoosePromotionMainAdapter(
                 // không tự suy lại từ status ở đây (giữ 2 nền tảng đồng nhất rule; xem MyPromotionAdapter).
                 val canUse = voucher.isEnabled
 
-                val highlightColor = ContextCompat.getColor(ctx, R.color.color_EE0033)
+                val highlightColor = ContextCompat.getColor(ctx, R.color.prm_color_EE0033)
                 txtVoucherName.text = voucher.merchantName.toHighlightedSpannable(
                     keyword = item.highlightKeyword,
                     highlightColor = highlightColor,
@@ -155,17 +174,17 @@ internal class ChoosePromotionMainAdapter(
                     expiringInDays != null -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenCarrotOrange100))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenCarrotOrange100))
                     }
                     displayDate.isNotBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenDark60))
                     }
                     voucher.expirationDate.isBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_never)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenDark60))
                     }
                     else -> tvEndDate.isVisible = false
                 }
@@ -205,6 +224,7 @@ internal class ChoosePromotionMainAdapter(
                 old is ChoosePromotionListItem.SectionHeader && new is ChoosePromotionListItem.SectionHeader -> old.title == new.title
                 old is ChoosePromotionListItem.VoucherItem && new is ChoosePromotionListItem.VoucherItem -> old.data.voucherId == new.data.voucherId
                 old is ChoosePromotionListItem.SeeMoreMyVoucher && new is ChoosePromotionListItem.SeeMoreMyVoucher -> true
+                old is ChoosePromotionListItem.SectionDivider && new is ChoosePromotionListItem.SectionDivider -> true
                 else -> false
             }
 

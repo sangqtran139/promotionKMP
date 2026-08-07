@@ -129,7 +129,7 @@ publishing {
 
 dependencies {
     // Nghiệp vụ đến từ đây. `implementation` chứ không `api`: host chỉ tích hợp AndroidPromotionSDK,
-    // nên `com.ttcn.promotionsdk.core.*` phải nằm ngoài compile classpath của host. Mọi model của
+    // nên `com.ttcn.promotionsdk.*` phải nằm ngoài compile classpath của host. Mọi model của
     // lõi được map sang DTO public ở `ui/entry/api` — xem `PromotionSDKApi`.
     implementation(projects.promotionLogic)
 

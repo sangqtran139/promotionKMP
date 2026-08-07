@@ -1,10 +1,10 @@
 package com.ttcn.prm.entry
 
-import com.ttcn.promotionsdk.core.config.AvailableService
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.config.SdkEnvironment
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOrderItem
+import com.ttcn.promotionsdk.config.AvailableService
+import com.ttcn.promotionsdk.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.config.SdkEnvironment
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOrderItem
 import com.ttcn.prm.entry.api.PromotionOrderItem
 
 /**

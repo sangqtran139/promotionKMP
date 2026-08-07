@@ -138,7 +138,7 @@ error code — cờ tính năng không hiển thị lỗi cho người dùng, ch
 
 ## 6. DTO
 
-- Đặt ở `core/data/dto/<nhóm>/`: `voucher/`, `redemption/`, `stackablediscount/`, `eligible/`, `featureflag/`.
+- Đặt ở `data/dto/<nhóm>/`: `voucher/`, `redemption/`, `stackablediscount/`, `eligible/`, `featureflag/`.
 - Mỗi DTO đánh `@Serializable`, dùng `@SerialName("...")` (không phải `@SerializedName`).
 - Mỗi nhóm có `XxxMapper.kt` với hàm `toXxx()` map DTO → domain model.
 - **Domain không được thấy DTO.**

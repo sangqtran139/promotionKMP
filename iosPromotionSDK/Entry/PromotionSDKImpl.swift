@@ -551,15 +551,15 @@ final class PromotionSDKImpl: NSObject {
         let nav = _navigator ?? host.navigationController
 
         // Preload từ EndowStore (offers đã nạp) để tránh gọi API hai lần — giống Android
-        // (`forEndowView` lấy `myVouchers`/`otherVouchers` từ state; lastPage giả định my=false/other=true).
+        // (`forEndowView` lấy `myVouchers`/`otherVouchers` + cờ phân trang từ state).
         let endowState = endowVM.state
         let vc = ChoosePromotionBuilder.build(
             with: .init(
                 orderItems: context.getOrderItems(),
                 preloadedMy: endowState.myOffers,
                 preloadedOther: endowState.otherOffers,
-                myIsLastPage: false,
-                otherIsLastPage: true,
+                myIsLastPage: endowState.myIsLastPage,
+                otherIsLastPage: endowState.otherIsLastPage,
                 preSelectedVoucherIds: endowState.appliedDiscounts.map { $0.objectId }
             ),
             navigator: nav
@@ -579,10 +579,17 @@ final class PromotionSDKImpl: NSObject {
             // Lỗi -> KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công/không-đủ-điều-kiện -> đóng màn.
             self.endowVM.validateAndApply(promotions) { [weak vc] state in
                 if let errorCode = state.errorCode {
-                    // Map mã lỗi → chuỗi hiển thị (dùng chung mọi màn) — đối ứng Android
-                    // `mapPromotionError(errorCode)`.
+                    // Validate hỏng → **popup** (không phải toast): user vừa bấm "Áp dụng" và đang
+                    // chờ kết quả, toast trôi mất thì tưởng đã áp xong. Popup buộc phải bấm "Đóng".
+                    // Màn "Chọn ưu đãi" **ở lại** để user chọn lại hoặc thoát chủ động.
+                    // Android tạm thời vẫn dùng toast (`ChoosePromotionFragment`).
+                    //
+                    // Mã lỗi → chuỗi hiển thị dùng chung mọi màn, đối ứng `mapPromotionError`.
                     if let vc = vc {
-                        PromotionToast.show(PromotionUIStrings.errorMessage(errorCode), in: vc.view)
+                        PRMConfirmationDialog.showError(
+                            PromotionUIStrings.errorMessage(errorCode),
+                            in: vc.view
+                        )
                     }
                     return
                 }

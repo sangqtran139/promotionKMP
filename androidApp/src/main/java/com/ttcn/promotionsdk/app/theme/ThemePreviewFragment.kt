@@ -31,7 +31,7 @@ import com.ttcn.promotionsdk.app.databinding.FragmentThemePreviewBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeColorTokenBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
-import com.ttcn.prm.databinding.ItemChoosePromotionBinding
+import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
 import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
@@ -725,7 +725,7 @@ class ThemePreviewFragment : Fragment() {
     private fun showBottomSheet(@StringRes titleRes: Int, content: View) {
         val sheet = BottomSheetDialog(requireContext())
         val container = FrameLayout(requireContext()).apply {
-            val pad = resources.getDimensionPixelSize(SdkR.dimen.view_size_16)
+            val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_16)
             setPadding(pad, pad, pad, pad)
             addView(content)
         }
@@ -767,7 +767,7 @@ class ThemePreviewFragment : Fragment() {
         syncFieldsFromViews()
         val row = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
-            val pad = resources.getDimensionPixelSize(SdkR.dimen.view_size_8)
+            val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_8)
             setPadding(pad, pad, pad, pad)
         }
         listOf(
@@ -776,7 +776,7 @@ class ThemePreviewFragment : Fragment() {
         ).forEach { (title, selected) ->
             val tv = TextView(requireContext()).apply {
                 text = title
-                val pad = resources.getDimensionPixelSize(SdkR.dimen.view_size_12)
+                val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_12)
                 setPadding(pad, pad, pad, pad)
             }
             val token = themeDisplay.tabChip
@@ -794,7 +794,7 @@ class ThemePreviewFragment : Fragment() {
 
     private fun showTabUnderlinePreview() {
         syncFieldsFromViews()
-        val indicatorHeight = resources.getDimensionPixelSize(SdkR.dimen.view_size_3)
+        val indicatorHeight = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_3)
         val vIndicator = View(requireContext()).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -803,7 +803,7 @@ class ThemePreviewFragment : Fragment() {
             setBackgroundColor(
                 themeDisplay.tabUnderline.backgroundColor
                     ?.let { TokenColorParser.parse(it) }
-                    ?: ContextCompat.getColor(requireContext(), SdkR.color.color_D3D3D3),
+                    ?: ContextCompat.getColor(requireContext(), SdkR.color.prm_color_D3D3D3),
             )
         }
         val tabs = TabLayout(requireContext()).apply {
@@ -835,19 +835,19 @@ class ThemePreviewFragment : Fragment() {
     private fun showListItemPreview() {
         syncFieldsFromViews()
         val inflater = LayoutInflater.from(requireContext())
-        val pad = resources.getDimensionPixelSize(SdkR.dimen.view_size_8)
+        val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_8)
         val container = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad, pad, pad, pad)
         }
         val token = themeDisplay.listItem
 
-        val activeBinding = ItemChoosePromotionBinding.inflate(inflater, container, false)
+        val activeBinding = PrmItemChoosePromotionBinding.inflate(inflater, container, false)
         bindListItemPreviewState(activeBinding, showExpiredBadge = false)
         PromotionListItemTheme.applyToken(activeBinding, token)
         container.addView(activeBinding.root)
 
-        val expiredBinding = ItemChoosePromotionBinding.inflate(inflater, container, false)
+        val expiredBinding = PrmItemChoosePromotionBinding.inflate(inflater, container, false)
         bindListItemPreviewState(expiredBinding, showExpiredBadge = true)
         PromotionListItemTheme.applyToken(expiredBinding, token)
         val expiredLp = expiredBinding.root.layoutParams as LinearLayout.LayoutParams
@@ -859,7 +859,7 @@ class ThemePreviewFragment : Fragment() {
     }
 
     private fun bindListItemPreviewState(
-        binding: ItemChoosePromotionBinding,
+        binding: PrmItemChoosePromotionBinding,
         showExpiredBadge: Boolean,
     ) {
         binding.apply {

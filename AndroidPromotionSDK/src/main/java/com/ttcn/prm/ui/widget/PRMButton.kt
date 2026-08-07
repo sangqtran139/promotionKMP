@@ -14,7 +14,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import com.ttcn.prm.R
-import com.ttcn.prm.databinding.ViewsCoreButtonPrmBinding
+import com.ttcn.prm.databinding.PrmViewsCoreButtonPrmBinding
 import com.ttcn.prm.ui.utils.enum.PRMCoreButtonSize
 import com.ttcn.prm.ui.utils.enum.PRMCoreButtonType
 import com.ttcn.prm.ui.utils.enum.PRMShadowType
@@ -27,11 +27,11 @@ import com.ttcn.prm.ui.utils.extension.retrieveColor
 
 /**
  * Main theme button with two type [PRMCoreButtonType.PRIMARY] and [PRMCoreButtonType.OUTLINE]
- * By default, [PRMCoreButtonType.PRIMARY] has margin of value [R.dimen.tokenSpacing16] because of shadow layer
+ * By default, [PRMCoreButtonType.PRIMARY] has margin of value [R.dimen.prm_tokenSpacing16] because of shadow layer
  */
 class PRMButton : PRMAbstractButton {
 
-    private var viewBinding: ViewsCoreButtonPrmBinding? = null
+    private var viewBinding: PrmViewsCoreButtonPrmBinding? = null
     private var lastAppliedToken: ButtonToken? = null
 
     var onSlideListener: OnSlideListener? = null
@@ -89,7 +89,7 @@ class PRMButton : PRMAbstractButton {
     /**
      * Type of the buttonText
      */
-    var typeface: Typeface? = ResourcesCompat.getFont(context, R.font.sf_pro_display_medium)
+    var typeface: Typeface? = ResourcesCompat.getFont(context, R.font.prm_sf_pro_display_medium)
         set(value) {
             field = value
             if (value != null) {
@@ -131,7 +131,7 @@ class PRMButton : PRMAbstractButton {
     }
 
     private fun init(attrs: AttributeSet?) {
-        viewBinding = ViewsCoreButtonPrmBinding.inflate(LayoutInflater.from(context), this, true)
+        viewBinding = PrmViewsCoreButtonPrmBinding.inflate(LayoutInflater.from(context), this, true)
         if (attrs == null) {
             updateSize()
             updateType()
@@ -278,8 +278,8 @@ class PRMButton : PRMAbstractButton {
                 override fun onPreDraw(): Boolean {
                     viewBinding?.buttonSlide?.viewTreeObserver?.removeOnPreDrawListener(this)
                     viewBinding?.buttonSlide?.setGradientOuter(
-                        ContextCompat.getColor(context, R.color.tokenRainbowRedStart),
-                        ContextCompat.getColor(context, R.color.tokenRainbowRedEnd)
+                        ContextCompat.getColor(context, R.color.prm_tokenRainbowRedStart),
+                        ContextCompat.getColor(context, R.color.prm_tokenRainbowRedEnd)
                     )
                     return true
                 }
@@ -331,7 +331,7 @@ class PRMButton : PRMAbstractButton {
         }
 
         if (buttonType == PRMCoreButtonType.TET) {
-            setShadowColor(context.retrieveColor(R.color.ui_color_tet_2))
+            setShadowColor(context.retrieveColor(R.color.prm_ui_color_tet_2))
         }
         reapplyTokenOverridesFromShadow()
     }

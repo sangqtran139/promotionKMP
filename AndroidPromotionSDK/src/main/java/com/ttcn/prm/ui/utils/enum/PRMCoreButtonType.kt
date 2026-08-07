@@ -20,44 +20,44 @@ enum class PRMCoreButtonType(
 ) {
     PRIMARY(
         backgroundRes = R.drawable.prm_foundations_button_primary_normal,
-        textColorRes = R.color.tokenWhite,
-        paddingRes = R.dimen.tokenSpacing16,
-        loadingColorRes = R.color.tokenWhite
+        textColorRes = R.color.prm_tokenWhite,
+        paddingRes = R.dimen.prm_tokenSpacing16,
+        loadingColorRes = R.color.prm_tokenWhite
     ),
     OUTLINE(
         backgroundRes = R.drawable.prm_foundations_button_outline_background,
-        textColorRes = R.color.tokenRedTheme,
+        textColorRes = R.color.prm_tokenRedTheme,
         paddingRes = 0,
-        loadingColorRes = R.color.tokenRedTheme
+        loadingColorRes = R.color.prm_tokenRedTheme
     ),
     WHITE_SOLID(
         backgroundRes = R.drawable.prm_foundations_button_white_solid_background,
-        textColorRes = R.color.tokenDark100,
+        textColorRes = R.color.prm_tokenDark100,
         paddingRes = 0,
-        loadingColorRes = R.color.tokenDark100
+        loadingColorRes = R.color.prm_tokenDark100
     ),
     TET(
         backgroundRes = R.drawable.prm_foundations_button_tet_background,
-        textColorRes = R.color.tokenWhite,
-        paddingRes = R.dimen.tokenSpacing16,
-        loadingColorRes = R.color.tokenWhite
+        textColorRes = R.color.prm_tokenWhite,
+        paddingRes = R.dimen.prm_tokenSpacing16,
+        loadingColorRes = R.color.prm_tokenWhite
     ),
     WHITE_OUTLINE(
         backgroundRes = R.drawable.prm_foundations_button_white_outline_background,
-        textColorRes = R.color.tokenWhite,
+        textColorRes = R.color.prm_tokenWhite,
         paddingRes = 0,
-        loadingColorRes = R.color.tokenWhite
+        loadingColorRes = R.color.prm_tokenWhite
     ),
     VER68(
         backgroundRes = R.drawable.prm_foundations_button_dark_solid_background,
-        textColorRes = R.color.tokenWhite,
-        paddingRes = R.dimen.tokenSpacing16,
-        loadingColorRes = R.color.tokenWhite
+        textColorRes = R.color.prm_tokenWhite,
+        paddingRes = R.dimen.prm_tokenSpacing16,
+        loadingColorRes = R.color.prm_tokenWhite
     ),
     SLIDE(
         backgroundRes = R.drawable.prm_foundations_button_primary_normal,
-        textColorRes = R.color.tokenWhite,
-        paddingRes = R.dimen.tokenSpacing16,
-        loadingColorRes = R.color.tokenWhite
+        textColorRes = R.color.prm_tokenWhite,
+        paddingRes = R.dimen.prm_tokenSpacing16,
+        loadingColorRes = R.color.prm_tokenWhite
     )
 }

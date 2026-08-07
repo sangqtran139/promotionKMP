@@ -15,36 +15,36 @@ enum class PRMShadowType(
 ) {
     TokenNone,
     TokenShadowsCard(
-        colorRes = R.color.tokenShadowsCardColor,
+        colorRes = R.color.prm_tokenShadowsCardColor,
         yOffset = com.intuit.sdp.R.dimen._3sdp,
         blurRadius = com.intuit.sdp.R.dimen._10sdp,
         cornerRes = com.intuit.sdp.R.dimen._6sdp
     ),
     TokenShadowsBottomTab(
-        colorRes = R.color.tokenShadowsCardColor,
+        colorRes = R.color.prm_tokenShadowsCardColor,
         yOffset = com.intuit.sdp.R.dimen._minus3sdp,
         blurRadius = com.intuit.sdp.R.dimen._10sdp
     ),
     TokenShadowsButtonLarge(
-        colorRes = R.color.tokenShadowsButtonColor,
+        colorRes = R.color.prm_tokenShadowsButtonColor,
         yOffset = com.intuit.sdp.R.dimen._5sdp,
         blurRadius = com.intuit.sdp.R.dimen._11sdp,
         cornerRes = com.intuit.sdp.R.dimen._38sdp
     ),
     TokenShadowsButtonMedium(
-        colorRes = R.color.tokenShadowsButtonColor,
+        colorRes = R.color.prm_tokenShadowsButtonColor,
         yOffset = com.intuit.sdp.R.dimen._3sdp,
         blurRadius = com.intuit.sdp.R.dimen._10sdp,
         cornerRes = com.intuit.sdp.R.dimen._26sdp
     ),
     TokenShadowsButtonSmall(
-        colorRes = R.color.tokenShadowsButtonColor,
+        colorRes = R.color.prm_tokenShadowsButtonColor,
         yOffset = com.intuit.sdp.R.dimen._2sdp,
         blurRadius = com.intuit.sdp.R.dimen._8sdp,
         cornerRes = com.intuit.sdp.R.dimen._19sdp
     ),
     TokenShadowsVoucher(
-        colorRes = R.color.tokenShadowsVoucher,
+        colorRes = R.color.prm_tokenShadowsVoucher,
         yOffset = com.intuit.sdp.R.dimen._1sdp,
         blurRadius = com.intuit.sdp.R.dimen._5sdp,
         cornerRes = com.intuit.sdp.R.dimen._13sdp

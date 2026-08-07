@@ -1,11 +1,11 @@
 package com.ttcn.promotionsdk.presentation.promotiondetail
 
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDetail
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
-import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.model.voucher.displayState
+import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

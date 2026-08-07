@@ -38,7 +38,7 @@ internal object TabLayoutThemeApplier {
         tabs: TabLayout,
         @ColorInt color: Int,
     ): GradientDrawable {
-        val indicatorHeight = tabs.resources.getDimensionPixelSize(R.dimen.view_size_2)
+        val indicatorHeight = tabs.resources.getDimensionPixelSize(R.dimen.prm_view_size_2)
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             setColor(color)

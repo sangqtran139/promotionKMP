@@ -4,7 +4,7 @@ package com.ttcn.prm.entry.api
  * DTO công khai của bề mặt **feature flag**. Đối ứng 1-1 với `PromotionFeatureModels.swift` bên iOS:
  * cùng tên type, cùng tên case/field, cùng thứ tự khai báo. Sửa một bên thì sửa cả hai.
  *
- * Type riêng thay vì dùng thẳng của lõi: `com.ttcn.promotionsdk.core.*` không nằm trên compile
+ * Type riêng thay vì dùng thẳng của lõi: `com.ttcn.promotionsdk.*` không nằm trên compile
  * classpath của host. Ánh xạ lõi ↔ public nằm ở `PromotionFeatureMapper.kt`.
  */
 

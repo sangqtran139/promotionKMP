@@ -17,8 +17,9 @@ import com.ttcn.prm.ui.feature.promotion.choosepromotion.ChoosePromotionFragment
 import com.ttcn.prm.databinding.PrmViewEndowBinding
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ApplyPromotionAdapter
 import androidx.core.view.isVisible
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
@@ -74,6 +75,13 @@ class PRMEndowView @JvmOverloads constructor(
 
     internal val otherVouchers: List<EligibleOffer>
         get() = viewModel?.uiState?.value?.otherVouchers ?: emptyList()
+
+    /** Cờ phân trang đi kèm [myVouchers] / [otherVouchers] — màn "Chọn ưu đãi" cần để biết còn trang không. */
+    internal val myIsLastPage: Boolean
+        get() = viewModel?.uiState?.value?.myIsLastPage ?: true
+
+    internal val otherIsLastPage: Boolean
+        get() = viewModel?.uiState?.value?.otherIsLastPage ?: true
 
     val discountDetails: List<AppliedDiscount>
         get() = viewModel?.uiState?.value?.discountDetails ?: emptyList()
@@ -180,7 +188,10 @@ class PRMEndowView @JvmOverloads constructor(
     ) {
         val vm = viewModel
         if (vm == null) {
-            onSettled?.invoke(null)
+            // Widget đã detach (host `replace` màn thay vì `add`) → không có store để validate.
+            // Báo LỖI chứ không phải `null`: `null` nghĩa là "áp xong", màn chọn sẽ đóng và user
+            // tưởng đã áp trong khi widget không hề đổi.
+            onSettled?.invoke(ErrorCodes.GENERAL)
             return
         }
         vm.validateAndApply(offers) { state -> onSettled?.invoke(state.errorCode) }
@@ -208,7 +219,8 @@ class PRMEndowView @JvmOverloads constructor(
         // Handle error
         state.error?.let {
             onError?.invoke(it)
-            viewModel?.consumeError()
+            // KHÔNG xoá khi đang chờ kết quả validate — xem `EndowViewModel.consumeErrorUnlessSettling`.
+            viewModel?.consumeErrorUnlessSettling()
         }
 
         if (!state.hasLoadedInitial) return

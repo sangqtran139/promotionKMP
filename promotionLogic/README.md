@@ -4,7 +4,9 @@ Module Kotlin Multiplatform đóng gói **data + domain + use case** của Promo
 Android và iOS. Không chứa UI, không chứa chuỗi hiển thị — dùng được cho cả XML View (Android),
 UIKit (iOS), lẫn Compose Multiplatform về sau.
 
-Package giữ nguyên `com.ttcn.promotionsdk.core.*` để code hiện có không phải sửa import.
+Package gốc `com.ttcn.promotionsdk.*`, chia theo tầng Clean Architecture:
+`config/` · `common/` · `data/` · `domain/` · `di/` · `presentation/`
+(xem [ProjectStructure.md §2](../docs/common/ProjectStructure.md)).
 
 > Tài liệu đầy đủ ở [`/docs`](../docs/README.md). Bề mặt API: [`HeadlessAPI.md`](../docs/HeadlessAPI.md).
 
@@ -61,7 +63,7 @@ Test nằm ở `commonTest` nên chạy trên **cả hai** nền tảng. Luôn c
 | OkHttp `ApiInterceptor` | Ktor `defaultRequest` | Header (Bearer, `X-Request-ID`, `Accept-Language`) giữ nguyên |
 | `java.util.UUID` | `kotlin.uuid.Uuid` | stdlib, không cần dependency |
 | `ConcurrentHashMap` + `synchronized` | `SdkLock` (expect/actual) | `ReentrantLock` (Android) / `NSRecursiveLock` (iOS). Phải reentrant vì `resolve()` gọi đệ quy |
-| `SharedPrefStorage` | `KeyValueStorage` (expect/actual) | `SharedPreferences` / `NSUserDefaults` |
+| `SharedPrefStorage` | `PromotionPreferences` + `SettingsPreferences` | Thân dùng chung ở `commonMain` (multiplatform-settings); `actual` chỉ dựng delegate `SharedPreferences` / `NSUserDefaults` |
 | `Context` trong `NetworkModule` | `PromotionSDKConfig.isDebug` | `Context` chỉ còn dùng để mở `SharedPreferences` |
 | `RetrofitClient` | `PromotionHttpClient` | Engine tự chọn theo classpath: OkHttp (Android), Darwin (iOS) |
 

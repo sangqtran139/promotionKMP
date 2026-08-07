@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.promotionsdk.presentation.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.prm.ui.di.promotionViewModelFactory
-import com.ttcn.prm.databinding.FragmentSearchMyPromotionBinding
+import com.ttcn.prm.databinding.PrmFragmentSearchMyPromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.ui.di.PromotionViewModelFactory
 import com.ttcn.prm.entry.PromotionSDK
@@ -21,7 +21,7 @@ import com.ttcn.prm.ui.feature.promotion.mypromotion.adapter.MyPromotionAdapter
 import com.ttcn.prm.ui.feature.promotion.mypromotion.adapter.buildPromotionListItems
 import com.ttcn.prm.ui.utils.extension.hideSoftInput
 
-class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBinding>() {
+class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPromotionBinding>() {
 
     private val viewModelFactory by lazy { promotionViewModelFactory() }
 
@@ -43,7 +43,7 @@ class SearchMyPromotionFragment : PRMBaseFragment<FragmentSearchMyPromotionBindi
     private var latestState: SearchMyPromotionUiState = SearchMyPromotionUiState()
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentSearchMyPromotionBinding.inflate(inflater, container, false)
+        PrmFragmentSearchMyPromotionBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
         binding.imgBack.setOnClickListener {

@@ -58,9 +58,9 @@ Khi nhận task, thực hiện **đúng thứ tự**:
 Luôn **tìm kiếm trong source** (grep/duyệt package) xem đã tồn tại chưa:
 
 - Class tương tự
-- UseCase tương tự (`core/domain/usecase/`)
-- Repository tương tự (`core/domain/repository/`, `core/data/repository/`)
-- Extension tương tự (`ui/utils/extension/`, `core/utils/`)
+- UseCase tương tự (`domain/usecase/`)
+- Repository tương tự (`domain/repository/`, `data/repository/`)
+- Extension tương tự (`ui/utils/extension/`, `common/`)
 
 → Nếu có thể tái sử dụng thì **không** tạo mới.
 
@@ -70,9 +70,9 @@ Luôn **tìm kiếm trong source** (grep/duyệt package) xem đã tồn tại c
 
 Luôn kiểm tra (xem [`docs/common/NetworkingGuide.md`](./docs/common/NetworkingGuide.md)):
 
-- API hiện có (`core/data/remote/PromotionApiService.kt`, `FeatureFlagApiService.kt`)
+- API hiện có (`data/remote/PromotionApiService.kt`, `FeatureFlagApiService.kt`)
 - Repository hiện có
-- DTO hiện có (`core/data/dto/`)
+- DTO hiện có (`data/dto/`)
 - Mapper hiện có (các hàm `toXxx()`)
 
 ---

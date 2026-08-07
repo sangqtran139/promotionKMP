@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="IAMConstraintLayout">
+    <declare-styleable name="PRMConstraintLayout">
         <attr name="prmIsGravityTop" format="boolean" />
     </declare-styleable>
 
@@ -9,7 +9,7 @@
         <attr name="prmEtPreventKeyboardDismiss" format="boolean" />
     </declare-styleable>
 
-    <declare-styleable name="app">
+    <declare-styleable name="PRMToggle">
         <attr name="prmChecked" format="boolean" />
         <attr name="prmColorOn" format="color" />
         <attr name="prmColorOff" format="color" />
@@ -252,7 +252,7 @@
 
     <declare-styleable name="PRMRadioButton">
         <!--  String resource id for button  -->
-        <attr name="rbText" format="reference" />
-        <attr name="rbShowText" format="boolean" />
+        <attr name="prmRbText" format="reference" />
+        <attr name="prmRbShowText" format="boolean" />
     </declare-styleable>
 </resources>

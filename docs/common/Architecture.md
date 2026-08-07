@@ -72,8 +72,8 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
                             PromotionResult → PromotionApiResult. KHÔNG chứa nghiệp vụ.
                                       │
                                       ▼
-  PromotionContainer  (core/di, `object` dùng chung KMP)  →  SdkDi (engine DI nội bộ)
-  • dựng & giữ: PromotionUseCases (facade headless) · Repository · RemoteDataSource · KeyValueStorage
+  PromotionContainer  (di, `object` dùng chung KMP)  →  SdkDi (engine DI nội bộ)
+  • dựng & giữ: PromotionUseCases (facade headless) · Repository · RemoteDataSource · PromotionPreferences
   • gác cờ:     PromotionFeatureGate — cùng nguồn sự thật cho UI (điểm điều hướng) lẫn headless
                                       │
                                       ▼
@@ -94,23 +94,24 @@ Các nút thắt cần nhớ:
 
 ## 2. Lõi dùng chung — `:promotionLogic`
 
-### 2.1. Data layer — `core/data/`
+### 2.1. Data layer — `data/`
 
 - `data/dto/` — DTO khớp JSON của API, chia sub-package theo feature: `voucher/`, `redemption/`,
   `stackablediscount/`, `eligible/`, `featureflag/`. Mỗi package có Request/Response + Mapper `toXxx()`.
-  Envelope chung `ApiResponseTemplate` đặt ở `core/data/remote/ApiResponse.kt`.
+  Envelope chung `ApiResponseTemplate` đặt ở `data/remote/ApiResponse.kt`.
 - `data/remote/` — `PromotionApiService` / `FeatureFlagApiService` (interface) và bản Ktor
   `KtorPromotionApiService` / `KtorFeatureFlagApiService`; `PromotionHttpClient`; các `RemoteDataSource`.
   Khi response lỗi, data source ném **exception domain** (`PromotionException` / `NetworkException`)
   mang theo `errorCode` / `httpStatus`.
-- `data/local/` — `KeyValueStorage` (expect/actual) và `FeatureFlagLocalDataSource`.
+- `data/local/` — `PromotionPreferences` (interface) + `SettingsPreferences` (thân dùng chung ở
+  `commonMain`, `expect/actual` chỉ dựng delegate) và `FeatureFlagLocalDataSource`.
 - `data/repository/` — `PromotionRepositoryImpl`, `FeatureFlagRepositoryImpl` — implement interface
   của Domain, gọi data source và map DTO → domain.
 
 > Retrofit sinh implementation của interface lúc runtime bằng dynamic proxy. Kotlin/Native không có
 > cơ chế đó, nên ở đây `KtorPromotionApiService` được **viết tay**.
 
-### 2.2. Domain layer — `core/domain/`
+### 2.2. Domain layer — `domain/`
 
 Logic nghiệp vụ thuần, độc lập framework.
 
@@ -128,11 +129,22 @@ Chỉ ba chỗ cần biết nền tảng, tất cả nằm ngoài Domain:
 | Trừu tượng | androidMain | iosMain | Vì sao |
 |---|---|---|---|
 | `SdkLock` | `ReentrantLock` | `NSRecursiveLock` | `synchronized` là JVM-only; DI cần khoá **reentrant** vì `resolve()` gọi đệ quy |
-| `KeyValueStorage` | `SharedPreferences` | `NSUserDefaults` | Cache feature flag |
+| `createPreferences()` | `SharedPreferencesSettings` | `NSUserDefaultsSettings` | Chỉ **dựng delegate** — thân `SettingsPreferences` nằm ở `commonMain`. Cache feature flag + theme |
 | `clearPlatformState()` | nhả `applicationContext` | no-op | Dọn khi `PromotionContainer.clear()` |
 
 Engine của Ktor **không** cần `expect`/`actual`: Ktor tự chọn theo artifact có trên classpath
 (`ktor-client-okhttp` ở androidMain, `ktor-client-darwin` ở iosMain).
+
+`currentEpochMillis()` **từng là chỗ thứ tư** (`System.currentTimeMillis()` / `NSDate()`), nhưng từ
+Kotlin 2.1.20 `kotlin.time.Clock` đã nằm sẵn trong **stdlib** — hai `actual` đã bỏ, không cần
+`kotlinx-datetime`. Ba dòng còn lại trong bảng thì **không** có cách nào bỏ:
+
+- `SdkLock` — ứng viên duy nhất là `kotlinx.atomicfu.locks`, mà tài liệu của nó ghi rõ *"not
+  recommended to use in libraries that other projects depend on"* và *"no ABI guarantees"*.
+  `:promotionLogic` chính là thư viện như vậy.
+- `createPreferences()` + `clearPlatformState()` — hệ quả của đúng một sự thật: Android cần `Context`
+  để mở `SharedPreferences`. Cách duy nhất cắt được là `multiplatform-settings-no-arg`, đã loại vì nó
+  xoá prefs của app host (xem [StorageGuide.md §2.1](./StorageGuide.md)).
 
 ---
 

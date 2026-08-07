@@ -1,8 +1,8 @@
 package com.ttcn.promotionsdk.presentation.searchmypromotion
 
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionVoucher
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionVoucher

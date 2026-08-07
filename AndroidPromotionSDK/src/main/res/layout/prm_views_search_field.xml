@@ -11,7 +11,7 @@
 
         <com.ttcn.prm.ui.widget.PRMEditText
             android:id="@+id/searchInput"
-            style="@style/fontPRMSfDisplayBold32"
+            style="@style/PRMFontSfDisplayBold32"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -25,7 +25,7 @@
             android:paddingTop="@dimen/_6sdp"
             android:paddingBottom="@dimen/_6sdp"
             android:singleLine="true"
-            android:textColor="@color/tokenDark100"
+            android:textColor="@color/prm_tokenDark100"
             android:textCursorDrawable="@null"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/buttonSearch"

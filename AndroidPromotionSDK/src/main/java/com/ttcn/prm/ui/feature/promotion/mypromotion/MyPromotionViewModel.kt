@@ -1,9 +1,9 @@
 package com.ttcn.prm.ui.feature.promotion.mypromotion
 
 import androidx.lifecycle.viewModelScope
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionIntent
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionState
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionStore

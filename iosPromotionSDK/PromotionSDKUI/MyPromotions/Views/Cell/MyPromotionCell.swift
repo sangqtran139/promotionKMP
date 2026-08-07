@@ -165,17 +165,18 @@ struct MyPromotionCellViewModel {
             derivedButtonTitle = PromotionUIStrings.use
         }
 
-        // Số tiền giảm dự kiến hiện ở label nhỏ phía trên tên ưu đãi.
-        var derivedTitle = ""
+        // Hai dòng chữ, đối ứng `EligibleOffer.toMyVoucherListItem()` bên Android:
+        // `title` = dòng nhỏ phía trên (merchant), `description` = dòng to phía dưới (số tiền giảm).
+        var derivedDescription = ""
         if let discount = offer.estimatedDiscount, let formatted = Self.formatDiscount(discount) {
-            derivedTitle = formatted
+            derivedDescription = formatted
         }
 
         self.init(
             id: offer.id,
-            title: derivedTitle,
             // Ưu tiên tên đối tác/merchant (partnerName, v1.6), fallback tên ưu đãi.
-            description: offer.partnerName ?? offer.campaignName ?? "",
+            title: offer.partnerName ?? offer.campaignName ?? "",
+            description: derivedDescription,
             imageURL: offer.logoUrl,
             date: PRMPromotionDate.parse(offer.expireDate),
             neverExpires: PRMPromotionDate.isMissing(offer.expireDate),

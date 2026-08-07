@@ -24,7 +24,7 @@
 SDK phát hành dạng **Android library (AAR)** qua Maven. Lõi Kotlin (`:promotionLogic`) được khai
 `implementation(projects.promotionLogic)` bên trong SDK → trong Gradle Module Metadata nó nằm ở scope
 **runtime**, không phải compile. Hệ quả: host **kéo được** `promotionLogic` để chạy nhưng **không thấy**
-`com.ttcn.promotionsdk.core.*` trên compile classpath. Type của lõi không lọt ra API public — cùng ranh
+`com.ttcn.promotionsdk.*` trên compile classpath. Type của lõi không lọt ra API public — cùng ranh
 giới mà [`PromotionSDKApi`](#8-headless-api-tự-dựng-ui--promotionsdkapi) cố tình map DTO thay vì trả thẳng model lõi.
 
 Hệ quả cho host:
@@ -34,7 +34,7 @@ Hệ quả cho host:
   `implementation` các lib này, và metadata Maven đưa chúng xuống runtime + compile transitively). Đây là
   điểm khác iOS (nơi mọi thứ giấu tuyệt đối trong một dynamic framework).
 
-> ⚠️ **Đừng** import `com.ttcn.promotionsdk.core.*` ở host — đó là lõi nội bộ, không nằm trên compile
+> ⚠️ **Đừng** import `com.ttcn.promotionsdk.*` ở host — đó là lõi nội bộ, không nằm trên compile
 > classpath; code sẽ không resolve.
 
 ---
@@ -420,7 +420,7 @@ PromotionSDK.configure(
 |---|---|
 | Gọi `api` / `updateContext` / mở màn trước `initialize` | Luôn `initialize` sau login trước tiên |
 | Login lại nhưng đổi luôn baseUrl/environment | Gọi lại `initialize(...)` — field cố định giữ nguyên; đổi thật thì `release()` trước |
-| Import `com.ttcn.promotionsdk.core.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
+| Import `com.ttcn.promotionsdk.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
 | Quên `PromotionIntegrateManager.clear()` trong `onDestroyView` | Luôn `clear()` để huỷ coroutine scope |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled)` |

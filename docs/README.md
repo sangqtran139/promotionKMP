@@ -61,7 +61,7 @@ Hai chế độ dùng SDK:
 | JSON | **kotlinx.serialization 1.8.1** |
 | Bất đồng bộ | Kotlin Coroutines 1.10.2 |
 | DI | Custom DI tự viết (`SdkDi`), không Hilt/Koin/Dagger |
-| Storage | `KeyValueStorage` expect/actual — `SharedPreferences` / `NSUserDefaults` |
+| Storage | `PromotionPreferences` expect/actual — `SharedPreferences` / `NSUserDefaults` |
 | Database | **Không có.** Không Room, không SQLDelight — xem [common/StorageGuide.md](./common/StorageGuide.md) |
 | Annotation processor | **Không có.** Không kapt, không KSP |
 
@@ -100,7 +100,7 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 | [common/SdkReview.md](./common/SdkReview.md) | Báo cáo rà soát & hoàn thiện SDK (UI public iOS, wrapper, terminology, kiến trúc, version) — kèm ví dụ. |
 | [common/NetworkingGuide.md](./common/NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
 | [common/DependencyInjection.md](./common/DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
-| [common/StorageGuide.md](./common/StorageGuide.md) | `KeyValueStorage`, cache feature flag. Vì sao không có DB. |
+| [common/StorageGuide.md](./common/StorageGuide.md) | `PromotionPreferences`, cache feature flag. Vì sao không có DB. |
 | [common/ErrorHandling.md](./common/ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |
 | [common/TlnvGap.md](./common/TlnvGap.md) | **Chỗ app còn lệch tài liệu nghiệp vụ** (`docs/tlnv/`) — đọc trước khi kết luận "bug". |
 | [common/TestingGuide.md](./common/TestingGuide.md) | Test `commonTest` chạy trên cả hai nền tảng, `MockEngine`. |

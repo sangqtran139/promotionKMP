@@ -8,11 +8,11 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDisplayState
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
-import com.ttcn.prm.databinding.ItemLoadingNotifyPrmBinding
-import com.ttcn.prm.databinding.ItemTitleMyEndowBinding
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDisplayState
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.model.voucher.displayState
+import com.ttcn.prm.databinding.PrmItemLoadingNotifyPrmBinding
+import com.ttcn.prm.databinding.PrmItemTitleMyEndowBinding
 import com.ttcn.prm.databinding.PrmItemPromotionBinding
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.theme.applier.PromotionListItemApplier
@@ -56,7 +56,7 @@ internal class MyPromotionAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             VIEW_TYPE_HEADER -> {
-                val binding = ItemTitleMyEndowBinding.inflate(inflater, parent, false)
+                val binding = PrmItemTitleMyEndowBinding.inflate(inflater, parent, false)
                 HeaderViewHolder(binding)
             }
 
@@ -66,7 +66,7 @@ internal class MyPromotionAdapter(
             }
 
             VIEW_TYPE_LOADING -> {
-                val binding = ItemLoadingNotifyPrmBinding.inflate(inflater, parent, false)
+                val binding = PrmItemLoadingNotifyPrmBinding.inflate(inflater, parent, false)
                 LoadingViewHolder(binding)
             }
 
@@ -83,11 +83,11 @@ internal class MyPromotionAdapter(
     }
 
     class LoadingViewHolder(
-        binding: ItemLoadingNotifyPrmBinding,
+        binding: PrmItemLoadingNotifyPrmBinding,
     ) : RecyclerView.ViewHolder(binding.root)
 
     class HeaderViewHolder(
-        private val binding: ItemTitleMyEndowBinding
+        private val binding: PrmItemTitleMyEndowBinding
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: MyPromotionListItem.Header) {
             binding.txtTitleEndow.text = item.title
@@ -110,7 +110,7 @@ internal class MyPromotionAdapter(
 
                 imgVoucher.loadPromotionVoucherLogo(voucher.logo)
 
-                val highlightColor = ContextCompat.getColor(ctx, R.color.color_EE0033)
+                val highlightColor = ContextCompat.getColor(ctx, R.color.prm_color_EE0033)
                 val highlightKeyword = item.highlightKeyword
                 txtVoucherName.text = voucher.merchantName.toHighlightedSpannable(
                     keyword = highlightKeyword,
@@ -132,17 +132,17 @@ internal class MyPromotionAdapter(
                     expiringInDays != null -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_remaining_days, expiringInDays)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenCarrotOrange100))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenCarrotOrange100))
                     }
                     displayDate.isNotBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_short_format, displayDate)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenDark60))
                     }
                     voucher.expirationDate.isBlank() -> {
                         tvEndDate.isVisible = true
                         tvEndDate.text = ctx.getString(R.string.prm_expiry_never)
-                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.tokenDark60))
+                        tvEndDate.setTextColor(ContextCompat.getColor(ctx, R.color.prm_tokenDark60))
                     }
                     else -> tvEndDate.isVisible = false
                 }

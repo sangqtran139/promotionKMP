@@ -1,14 +1,14 @@
 package com.ttcn.prm.ui.feature.promotion
 
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.exception.ErrorCodes
-import com.ttcn.promotionsdk.core.domain.exception.PromotionException
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
-import com.ttcn.promotionsdk.core.domain.usecase.CreateRedemptionSessionUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
-import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.exception.PromotionException
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.prm.ui.feature.promotion.ext.toCreateRedemptionRequest
 import com.ttcn.prm.ui.feature.promotion.ext.appliedDiscountFor

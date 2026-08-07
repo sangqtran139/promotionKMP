@@ -18,6 +18,9 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     @IBOutlet private weak var voucherLabel: UILabel!
     @IBOutlet private weak var totalVoucherView: UIStackView!
     @IBOutlet private weak var promotionsTableView: UITableView!
+    /// Nút "Áp dụng" — tìm bằng `wireApplyButton()` (không có outlet trong xib), giữ lại để
+    /// `updateApplyButtonState` bật/tắt theo selection.
+    private weak var applyButton: UIButton?
     
     // MARK: - Properties
     private var sections: [ChoosePromotionViewModel.PromotionSection] = []
@@ -55,7 +58,17 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     }()
 
     private func configShimmer() {
-        view.addSubview(shimmerView)
+        // Nền ĐỤC, trùng nền table: shimmer phủ lên table nên phải che hẳn danh sách cũ, nếu không
+        // lúc tìm kiếm user thấy kết quả cũ lộ xuyên qua skeleton. Đối ứng `shimmerOverlay` ở
+        // `MyPromotionViewController`.
+        shimmerView.backgroundColor = Colors.tokenDark05
+        // Chèn NGAY DƯỚI thanh đáy (chứa nút "Áp dụng") thay vì `addSubview` (luôn trên cùng):
+        // shimmer bám theo bounds của table, mà table chạy xuống tận đáy màn nên nó phủ luôn nút.
+        if let bottomBar = totalVoucherView.superview {
+            view.insertSubview(shimmerView, belowSubview: bottomBar)
+        } else {
+            view.addSubview(shimmerView)
+        }
         NSLayoutConstraint.activate([
             shimmerView.topAnchor.constraint(equalTo: promotionsTableView.topAnchor),
             shimmerView.leadingAnchor.constraint(equalTo: promotionsTableView.leadingAnchor),
@@ -66,10 +79,23 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 
     private func wireApplyButton() {
         // Apply button là sibling của totalVoucherView trong cùng parent stack
-        let applyButton = totalVoucherView.superview?.subviews.first { $0 is UIButton } as? UIButton
+        applyButton = totalVoucherView.superview?.subviews.first { $0 is UIButton } as? UIButton
         applyButton?.addTarget(self, action: #selector(didTapApplyButton), for: .touchUpInside)
         // Nút "Áp dụng" ở màn này là UIButton thường (không phải PRMButton) → áp button token thủ công.
         applyThemeToApplyButton(applyButton)
+    }
+
+    /**
+     Chưa chọn voucher nào → **disable** nút "Áp dụng". `applySelected()` lọc ra danh sách rỗng rồi
+     `guard` bỏ qua, nên để nút bấm được chỉ tạo cảm giác app treo. Đối ứng
+     `ChoosePromotionFragment.updateApplyButtonState` bên Android.
+
+     Android có sẵn nền disabled trong `PRMButton`; nút bên này là `UIButton` thường nên hạ `alpha`.
+     */
+    private func updateApplyButtonState(_ state: ChoosePromotionViewModel.UiState) {
+        let canApply = state.selectedCount > 0
+        applyButton?.isEnabled = canApply
+        applyButton?.alpha = canApply ? 1 : 0.5
     }
 
     /// Áp `button` token cho nút "Áp dụng" (null-safe — bỏ qua field nil để giữ default).
@@ -142,6 +168,8 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         sections = state.sections
         promotionsTableView.reloadData()
 
+        updateApplyButtonState(state)
+
         // Thanh "Đã chọn N voucher" — trạng thái do VM/store quyết định (đối ứng Android
         // `updateApplyButtonState`).
         // Số tiền giảm để trống: Android cũng không set `txtReducedPrice`.
@@ -205,6 +233,13 @@ extension ChoosePromotionViewController: UITextFieldDelegate {
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
 extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDelegate {
+
+    /// Kích thước vạch ngăn hai nhóm — chốt cứng theo thiết kế, bằng đúng bản Android
+    /// (`prm_item_section_divider.xml`: cao 16dp, cách trên/dưới 8dp).
+    fileprivate static let dividerHeight: CGFloat = 16
+    fileprivate static let dividerGap: CGFloat = 8
+    fileprivate static var dividerFooterHeight: CGFloat { dividerGap + dividerHeight + dividerGap }
+
     func numberOfSections(in tableView: UITableView) -> Int {
         return sections.count
     }
@@ -225,7 +260,9 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
             // "Ưu đãi của tôi": Xem thêm (lộ thêm/load page kế) hoặc Thu gọn (đã hiện hết).
             let isCollapse = sectionData.seeMoreState == .collapse
             cell.button.setTitle(isCollapse ? "Thu gọn" : "Xem thêm", for: .normal)
-            cell.button.setImage(UIImage.sdk(isCollapse ? "ic_up_arrow" : "ic_down_arrow"), for: .normal)
+            // Tên asset có tiền tố `prm_` (xem Assets.xcassets); thiếu tiền tố thì `UIImage.sdk` trả nil
+            // và nút mất hẳn icon.
+            cell.button.setImage(UIImage.sdk(isCollapse ? "prm_ic_up_arrow" : "prm_ic_down_arrow"), for: .normal)
 
             cell.action = { [weak self] in
                 self?.viewModel.handleAction(.seeMoreMy)
@@ -252,13 +289,36 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
         }
     }
 
-    // Grouped style tự thêm footer ~kích thước — khử về gần 0 để các section sát nhau.
+    /// Grouped style tự thêm footer ~kích thước — khử về gần 0 để các section sát nhau.
+    /// Riêng section có section khác đứng sau thì footer mang **vạch ngăn**: 8 + 16 + 8 = 32pt.
+    /// Đối ứng `ChoosePromotionListItem.SectionDivider` bên Android.
     func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return .leastNormalMagnitude
+        return hasDividerAfter(section) ? Self.dividerFooterHeight : .leastNormalMagnitude
     }
 
     func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
-        return UIView()
+        guard hasDividerAfter(section) else { return UIView() }
+
+        let container = UIView()
+        container.backgroundColor = .clear
+        let bar = UIView()
+        bar.backgroundColor = Colors.tokenDark02          // #FBFBFB, khớp `color_FBFBFB` bên Android
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(bar)
+        NSLayoutConstraint.activate([
+            bar.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            bar.topAnchor.constraint(equalTo: container.topAnchor, constant: Self.dividerGap),
+            bar.heightAnchor.constraint(equalToConstant: Self.dividerHeight)
+        ])
+        return container
+    }
+
+    /// Vạch chỉ kẻ khi **còn section phía sau** — danh sách chỉ có một nhóm thì không kẻ (đối ứng
+    /// nhánh `items.isNotEmpty()` bên Android). Vạch nằm ở footer nên tự đứng sau hàng "Xem thêm"
+    /// khi hàng đó hiện, khoảng cách không đổi giữa hai trường hợp.
+    private func hasDividerAfter(_ section: Int) -> Bool {
+        section < sections.count - 1
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {

@@ -7,11 +7,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.di.initialize
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureFlagUseCases
-import com.ttcn.promotionsdk.core.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.di.initialize
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureFlagUseCases
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.prm.entry.api.PromotionFeature
 import com.ttcn.prm.entry.api.PromotionFeatureFlagsSnapshot
 import com.ttcn.prm.entry.api.PromotionOrderItem

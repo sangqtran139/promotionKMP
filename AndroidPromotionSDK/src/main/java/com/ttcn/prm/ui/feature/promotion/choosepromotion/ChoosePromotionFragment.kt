@@ -8,12 +8,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.di.promotionViewModelFactory
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.presentation.PROMOTION_SEARCH_MAX_LENGTH
-import com.ttcn.promotionsdk.presentation.choosepromotion.COLLAPSED_MY_COUNT
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
-import com.ttcn.prm.databinding.FragmentChoosePromotionBinding
+import com.ttcn.prm.databinding.PrmFragmentChoosePromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
+import com.ttcn.prm.ui.base.PromotionToastGate
 import com.ttcn.prm.ui.di.PromotionViewModelFactory
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.adapter.ChoosePromotionMainAdapter
@@ -22,10 +23,10 @@ import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.utils.extension.VerticalSpaceItemDecoration
 
-class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>() {
+class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromotionBinding>() {
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
-        FragmentChoosePromotionBinding.inflate(inflater, container, false)
+        PrmFragmentChoosePromotionBinding.inflate(inflater, container, false)
 
     // ─── Input ────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,9 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
      */
     internal var initialMyOffers: List<EligibleOffer> = emptyList()
     internal var initialOtherOffers: List<EligibleOffer> = emptyList()
+    /** Cờ phân trang đi kèm dữ liệu preload — quyết định nút "Xem thêm" và có gọi trang kế không. */
+    internal var initialMyIsLastPage: Boolean = true
+    internal var initialOtherIsLastPage: Boolean = true
 
     /** objectId của các voucher cần pre-select (valid=true từ discountDetails trước đó). */
     internal var preSelectedVoucherIds: Set<String> = emptySet()
@@ -89,7 +93,12 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         super.observeData()
 
         collectFlow(viewModel.uiState) { state ->
+            // Phải ẩn list khi shimmer hiện: trong `fragment_choose_promotion.xml`, `shimmer_provider`
+            // là con ĐẦU TIÊN còn `rcvVoucher` là con sau nó, mà RecyclerView có nền đục
+            // (`@color/prm_color_f4f4f4`) nên vẽ đè kín shimmer. Đối ứng `homeList.isVisible` ở
+            // `MyPromotionFragment`.
             binding.shimmerProvider.root.isVisible = state.isLoading
+            binding.rcvVoucher.isVisible = !state.isLoading
 
             updateApplyButtonState(state)
             rebuildList(state)
@@ -112,12 +121,23 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
                     }
                     val apply = onApplySelectedOffers
                     if (apply == null) {
-                        onBackFragment()
+                        // Không có widget để áp (fragment bị FragmentManager tái tạo nên mất closure,
+                        // hoặc host tự dựng màn này không qua `forEndowView`). Báo lỗi rồi Ở LẠI —
+                        // đóng màn ở đây là nói dối user rằng đã áp xong.
+                        PromotionToastGate.showAlways(requireContext(), mapPromotionError(ErrorCodes.GENERAL))
                         return@collectFlow
                     }
                     apply(effect.offers) { errorCode ->
-                        if (errorCode != null) showToast(mapPromotionError(errorCode))
-                        else onBackFragment()
+                        if (errorCode != null) {
+                            // `showToast` đi qua `PromotionToastGate.isEnabled` — mặc định TẮT, nên
+                            // lỗi validate bị nuốt hoàn toàn: user bấm "Áp dụng", API hỏng, màn đứng
+                            // im không một thông báo. Dùng `showAlways` như PRM_MOB_021: user vừa
+                            // chủ động bấm và đang chờ kết quả, im lặng là không chấp nhận được.
+                            // (iOS dùng popup `PRMConfirmationDialog` cho cùng nhánh này.)
+                            PromotionToastGate.showAlways(requireContext(), mapPromotionError(errorCode))
+                        } else {
+                            onBackFragment()
+                        }
                     }
                 }
             }
@@ -131,6 +151,8 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             ChoosePromotionAction.PreloadVouchers(
                 myOffers = initialMyOffers,
                 otherOffers = initialOtherOffers,
+                myIsLastPage = initialMyIsLastPage,
+                otherIsLastPage = initialOtherIsLastPage,
             )
         )
     }
@@ -174,8 +196,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
 
         if (state.vouchers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
-            val visible = if (state.myExpanded) state.vouchers else state.vouchers.take(COLLAPSED_MY_COUNT)
-            visible.forEach { voucher ->
+            state.visibleVouchers.forEach { voucher ->
                 val isSelected = voucher.voucherId in state.selectedIds
                 items.add(
                     ChoosePromotionListItem.VoucherItem(
@@ -195,6 +216,11 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         }
 
         if (state.otherVouchers.isNotEmpty()) {
+            // Vạch ngăn chỉ chèn khi có nhóm ở TRÊN nó; danh sách chỉ có "Ưu đãi khác" thì không kẻ.
+            // Đứng sau hàng "Xem thêm" (nếu có) nên khoảng cách 8dp giữ nguyên ở cả hai trường hợp.
+            if (items.isNotEmpty()) {
+                items.add(ChoosePromotionListItem.SectionDivider)
+            }
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
             state.otherVouchers.forEach { voucher ->
                 val isSelected = voucher.voucherId in state.selectedIds
@@ -221,7 +247,14 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
         viewModel.handleAction(ChoosePromotionAction.ValidateAndApply)
     }
 
-    /** Thanh "giảm giá" (chỉ hiện ở chế độ multi-select) — selection lấy từ state store. */
+    /**
+     * Thanh "giảm giá" (chỉ hiện ở chế độ multi-select) + trạng thái nút "Áp dụng" — selection lấy
+     * từ state store.
+     *
+     * Chưa chọn voucher nào → **disable** nút: `applySelected()` lọc ra danh sách rỗng và cả hai nền
+     * tảng đều bỏ qua, nên để nút bấm được chỉ tạo cảm giác app treo. `PRMButton.setEnabled` tự đổi
+     * sang nền `prm_bg_button_primary_disabled`.
+     */
     private fun updateApplyButtonState(state: ChoosePromotionUiState) {
         val show = state.isMultiSelection && state.selectedIds.isNotEmpty()
         binding.layoutReducePrice.isVisible = show
@@ -229,6 +262,7 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             binding.txtNumberChooseEndow.text =
                 getString(R.string.prm_selected_voucher_count, state.selectedIds.size)
         }
+        binding.btnApply.isEnabled = state.selectedIds.isNotEmpty()
     }
 
     // ─── Search ───────────────────────────────────────────────────────────────
@@ -274,6 +308,8 @@ class ChoosePromotionFragment : PRMBaseFragment<FragmentChoosePromotionBinding>(
             ChoosePromotionFragment().apply {
                 initialMyOffers = endowView.myVouchers
                 initialOtherOffers = endowView.otherVouchers
+                initialMyIsLastPage = endowView.myIsLastPage
+                initialOtherIsLastPage = endowView.otherIsLastPage
                 // Pre-select TẤT CẢ ưu đãi đang áp (kể cả đang UNAVAILABLE) để user thấy & bỏ chọn
                 // được — khớp iOS (`appliedDiscounts.map { $0.objectId }`, không lọc `valid`).
                 preSelectedVoucherIds = endowView.discountDetails

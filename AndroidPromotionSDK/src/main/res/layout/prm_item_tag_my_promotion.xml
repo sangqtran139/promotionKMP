@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="@dimen/prm_view_size_8">
+
+    <com.ttcn.prm.ui.widget.PRMTextView
+        android:id="@+id/tvTag"
+        style="@style/PRMFontSfDisplayRegular14"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/prm_background_4e_corner"
+        android:paddingStart="@dimen/prm_view_size_10"
+        android:paddingTop="@dimen/prm_view_size_8"
+        android:paddingEnd="@dimen/prm_view_size_10"
+        android:paddingBottom="@dimen/prm_view_size_10"
+        android:textColor="@color/prm_white"
+        android:textSize="@dimen/prm_text_size_12"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Tất cả" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

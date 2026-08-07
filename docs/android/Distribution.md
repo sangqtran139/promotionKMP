@@ -76,7 +76,7 @@ version SDK đã compile. Hai mươi dòng khai tay biến mất, và cùng vớ
 
 **`implementation` vẫn là `implementation`.** Trong metadata, `implementation(projects.promotionLogic)`
 xuất hiện ở scope **runtime**, không phải compile. Nghĩa là host kéo được `promotionLogic` để chạy
-nhưng **không** thấy `com.ttcn.promotionsdk.core.*` trên compile classpath — đúng ranh giới mà
+nhưng **không** thấy `com.ttcn.promotionsdk.*` trên compile classpath — đúng ranh giới mà
 `AndroidPromotionSDK/build.gradle.kts` đang cố giữ. Cách file-AAR hiện tại thì ngược lại: host phải tự
 `implementation(libs.ktor…)`, nên Ktor và coroutines **nằm luôn trên compile classpath của host** —
 rò rỉ thứ đáng lẽ giấu.

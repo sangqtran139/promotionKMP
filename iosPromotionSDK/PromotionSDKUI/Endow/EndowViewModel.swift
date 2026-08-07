@@ -69,6 +69,7 @@ final class EndowViewModel {
     func clearApplied() { store.dispatch(intent: EndowIntentClearApplied.shared) }
     func consumeError() { store.dispatch(intent: EndowIntentConsumeError.shared) }
 
+
     private func handleSettle(_ state: EndowState) {
         if state.isValidating {
             sawValidating = true
@@ -78,5 +79,7 @@ final class EndowViewModel {
         settleCompletion = nil
         sawValidating = false
         completion(state)
+        // Xoá sau khi đã giao cho nơi gọi, để lỗi cũ không dính sang vòng validate sau.
+        if state.errorCode != nil { consumeError() }
     }
 }

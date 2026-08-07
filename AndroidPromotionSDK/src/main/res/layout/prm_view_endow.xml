@@ -10,11 +10,11 @@
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtTitleEndow"
-            style="@style/fontPRMSfDisplayBold18"
+            style="@style/PRMFontSfDisplayBold18"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/prm_endow"
-            android:textColor="@color/color_222_cep"
+            android:textColor="@color/prm_color_222_cep"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -23,8 +23,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_12sdp"
-            app:shimmer_duration="@integer/shimmer_duration"
-            app:shimmer_repeat_delay="@integer/shimmer_repeat_delay"
+            app:shimmer_duration="@integer/prm_shimmer_duration"
+            app:shimmer_repeat_delay="@integer/prm_shimmer_repeat_delay"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/txtTitleEndow">
@@ -52,14 +52,14 @@
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtNumberEndow"
-            style="@style/fontPRMSfDisplayMedium16"
+            style="@style/PRMFontSfDisplayMedium16"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="@dimen/_10sdp"
             android:ellipsize="end"
             android:lines="1"
             android:maxLines="1"
-            android:textColor="@color/color_222_cep"
+            android:textColor="@color/prm_color_222_cep"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="@id/txtStatusEndow"
             app:layout_constraintEnd_toStartOf="@id/txtStatusEndow"
@@ -79,15 +79,15 @@
             app:layout_constraintEnd_toStartOf="@+id/txtStatusEndow"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@id/txtStatusEndow"
-            tools:listitem="@layout/item_list_promotion_apply" />
+            tools:listitem="@layout/prm_item_list_promotion_apply" />
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/txtStatusEndow"
-            style="@style/fontPRMSfDisplayMedium16"
+            style="@style/PRMFontSfDisplayMedium16"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_12sdp"
-            android:textColor="@color/color_EE0033"
+            android:textColor="@color/prm_color_EE0033"
             android:visibility="invisible"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/txtTitleEndow"

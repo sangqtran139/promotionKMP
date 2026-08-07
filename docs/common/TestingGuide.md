@@ -74,18 +74,18 @@ compile và test map-xuống vẫn xanh, nhưng **server nhận thiếu field**.
 
 ## 4. Test storage
 
-Đừng dùng `SharedPreferences` hay `NSUserDefaults` thật trong `commonTest` — dùng fake:
+Đừng dùng `SharedPreferences` hay `NSUserDefaults` thật trong `commonTest`. Cũng **đừng viết fake tay**
+— dùng `MapSettings` (module `multiplatform-settings-test`) làm delegate cho chính `SettingsPreferences`
+mà production dùng:
 
 ```kotlin
-private class InMemoryStorage : KeyValueStorage {
-    private val map = mutableMapOf<String, Boolean>()
-    override fun putBoolean(key: String, value: Boolean) { map[key] = value }
-    override fun getBoolean(key: String, default: Boolean) = map[key] ?: default
-    override fun contains(key: String) = map.containsKey(key)
-    override fun remove(key: String) { map.remove(key) }
-    override fun clear() = map.clear()
-}
+private fun testPreferences(): PromotionPreferences = SettingsPreferences(MapSettings())
 ```
+
+Cách này hơn fake tay ở chỗ test đi qua **đúng đường code của app thật** — fake tự viết dễ có ngữ nghĩa
+lệch (vd trả `""` thay vì `null` khi thiếu key) rồi giấu bug thay vì bắt nó.
+
+Bản thân `SettingsPreferences` có test riêng ở `PromotionPreferencesTest.kt`.
 
 ---
 
@@ -153,8 +153,13 @@ thật. Cũng có **nhánh chết thật sự**: `ChoosePromotionStore` có `it.
 mà không intent nào bật được `isMultiSelection` — đó là code chết, không phải thiếu test.
 
 **Loại trừ khỏi phép đo** (`reports.filters.excludes`): DTO thuần dữ liệu (`*Dto`, `*Request`,
-`*Response`, `$serializer`) và cầu nền tảng (`SdkLockKt`, `PromotionClockKt` — thân hàm nằm ở
-`androidMain`/`iosMain`, không thuộc `commonMain`). Đo chúng chỉ làm nhiễu con số.
+`*Response`, `$serializer`) và cầu nền tảng `SdkLockKt` — thân hàm nằm ở `androidMain`/`iosMain`,
+không thuộc `commonMain`. Đo chúng chỉ làm nhiễu con số.
+
+> `PromotionClockKt` **từng nằm trong danh sách này và đó là sai**: ngoài `currentEpochMillis()` thì
+> file còn `isoDateToEpochMillis`, `daysUntil`, `daysFromCivil` — logic commonMain thật, bị che khỏi
+> coverage. Đã gỡ. Bài học: chỉ exclude theo *class chỉ chứa* cầu nền tảng, đừng exclude cả file vì
+> nó **có** một hàm `expect`.
 
 > ⚠️ Kover **0.9.1 không chạy được** với plugin `androidLibrary` kiểu mới của KMP
 > (`com.android.kotlin.multiplatform.library`): `Could not get unknown property 'compileJavaTaskProvider'`.

@@ -2,12 +2,12 @@ package com.ttcn.prm.ui.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.ttcn.promotionsdk.core.config.PromotionRequestContextProvider
-import com.ttcn.promotionsdk.core.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.GetCustomerVoucherDetailUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.config.PromotionRequestContextProvider
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
+import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.prm.ui.feature.promotion.choosepromotion.ChoosePromotionViewModel
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyPromotionViewModel
 import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailViewModel

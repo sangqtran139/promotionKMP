@@ -1,9 +1,9 @@
 package com.ttcn.prm.ui.feature.promotion.mypromotion
 
-import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
+import com.ttcn.promotionsdk.domain.model.voucher.ApplicableProduct
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherItem
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherTabItem
 
 internal data class MyPromotionUiState(
     val hasLoadedInitial: Boolean = false,

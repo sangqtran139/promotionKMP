@@ -1,12 +1,15 @@
 package com.ttcn.prm.ui.feature.promotion.endowview
 
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.prm.entry.AppliedDiscount
 
 internal data class PRMEndowUiState(
     /** Ưu đãi từ `findEligible`, truyền thẳng sang màn "Chọn ưu đãi" để khỏi gọi API hai lần. */
     val myVouchers: List<EligibleOffer> = emptyList(),
     val otherVouchers: List<EligibleOffer> = emptyList(),
+    /** Cờ phân trang của lần `findEligible` đã nạp — màn "Chọn ưu đãi" nhận lại qua `forEndowView`. */
+    val myIsLastPage: Boolean = true,
+    val otherIsLastPage: Boolean = true,
     val discountDetails: List<AppliedDiscount> = emptyList(),
     val discountUnavailable: Boolean = false,
     val totalVoucherCount: Int = 0,

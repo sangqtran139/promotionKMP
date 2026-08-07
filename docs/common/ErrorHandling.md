@@ -7,7 +7,7 @@ Phân loại, lan truyền và hiển thị lỗi trong TTCN Promotion SDK. Mụ
 
 ## 1. Phân loại exception
 
-Đặt ở `core/domain/exception/`:
+Đặt ở `domain/exception/`:
 
 | Class | Dùng cho |
 |------|----------|
@@ -120,8 +120,20 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
   (đối ứng `uiEffect` bên Android). VC map `code` → chuỗi bằng `PromotionUIStrings.errorMessage`
-  rồi gọi **`PromotionToast.show(...)`**; state không giữ lại lỗi. (Toast là idiom **dùng chung 2 nền
-  tảng** — `PRMConfirmationDialog` không còn được dùng ở luồng lỗi nào.)
+  rồi gọi **`PromotionToast.show(...)`**; state không giữ lại lỗi. Toast là idiom **dùng chung 2 nền
+  tảng** cho hầu hết luồng lỗi.
+
+> **Ngoại lệ — validate hỏng lúc bấm "Áp dụng" ở màn "Chọn ưu đãi".** Toast thường đi qua cổng
+> `isEnabled` (mặc định **TẮT**, xem dưới) nên lỗi bị nuốt: user vừa chủ động bấm và đang chờ kết
+> quả mà màn đứng im, không một thông báo. Nhánh này phải **luôn hiện**:
+>
+> | | Cách hiện | Ở lại màn chọn |
+> |---|---|---|
+> | iOS | `PRMConfirmationDialog.showError(...)` — **popup**, buộc bấm "Đóng" | ✅ |
+> | Android | `PromotionToastGate.showAlways(...)` — toast bỏ qua cổng (**tạm thời**) | ✅ |
+>
+> Đây là chỗ **duy nhất** `PRMConfirmationDialog` còn được dùng. Android dùng toast là giải pháp tạm;
+> khi chốt UI thì cân nhắc popup cho đồng bộ.
 - ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
 
 ### Cổng bật/tắt toast (cả hai nền tảng)

@@ -1,13 +1,13 @@
 package com.ttcn.prm.ui.feature.promotion.ext
 
-import com.ttcn.promotionsdk.core.config.AvailableService
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.model.redemption.CreateRedemptionRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.DiscountItemRequest
-import com.ttcn.promotionsdk.core.domain.model.redemption.RedemptionItemRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsRequest
-import com.ttcn.promotionsdk.core.domain.model.stackablediscount.ValidateDiscountsResult
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.config.AvailableService
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.redemption.CreateRedemptionRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
+import com.ttcn.promotionsdk.domain.model.redemption.RedemptionItemRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
+import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
 import com.ttcn.prm.entry.AppliedDiscount
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.feature.promotion.mypromotion.ServiceSelectorUiItem
@@ -144,7 +144,7 @@ internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherL
 )
 
 /**
- * `"50000"` → `"Giảm giá 50.000đ"`; `null`/`"0"`/chuỗi không có số → `null`.
+ * `"50000"` → `"Giảm 50.000đ"`; `null`/`"0"`/chuỗi không có số → `null`.
  *
  * Chuỗi lặp lại `R.string.prm_discount_amount_format` vì ViewModel không giữ `Context`;
  * sửa một chỗ thì sửa cả hai.
@@ -153,7 +153,7 @@ private fun formatEstimatedDiscount(raw: String?): String? {
     val digits = raw?.filter { it.isDigit() }.orEmpty()
     val value = digits.toLongOrNull() ?: return null
     if (value <= 0) return null
-    return "Giảm giá ${value.groupedByThousands()}đ"
+    return "Giảm ${value.groupedByThousands()}đ"
 }
 
 private fun Long.groupedByThousands(): String =

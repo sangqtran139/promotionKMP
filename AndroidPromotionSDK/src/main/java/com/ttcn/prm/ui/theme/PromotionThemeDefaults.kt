@@ -22,54 +22,54 @@ internal object PromotionThemeDefaults {
 
     /**
      * Defaults aligned with [PRMButton] PRIMARY (common CTA in promotion screens).
-     * Background is gradient in SDK; token stores gradient end color [R.color.tokenRainbowRedEnd].
-     * Corner radius follows foundation button drawables ([R.dimen.tokenBorderRadius24] → _19sdp).
+     * Background is gradient in SDK; token stores gradient end color [R.color.prm_tokenRainbowRedEnd].
+     * Corner radius follows foundation button drawables ([R.dimen.prm_tokenBorderRadius24] → _19sdp).
      * Note: sdp scales on device (e.g. ~25dp on a wide screen); that is the physical radius to apply via [ButtonToken].
      */
     fun button(context: Context) = ButtonToken(
-        backgroundColor = context.retrieveColor(R.color.tokenRainbowRedEnd),
+        backgroundColor = context.retrieveColor(R.color.prm_tokenRainbowRedEnd),
         textColor = context.retrieveColor(PRMCoreButtonType.PRIMARY.textColorRes),
-        shadowColor = context.retrieveColor(R.color.tokenShadowsButtonColor),
-        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.tokenBorderRadius24))
+        shadowColor = context.retrieveColor(R.color.prm_tokenShadowsButtonColor),
+        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_tokenBorderRadius24))
     )
 
     fun searchBar(context: Context) = SearchBarToken(
-        borderColor = context.retrieveColor(R.color.tokenDark10),
+        borderColor = context.retrieveColor(R.color.prm_tokenDark10),
         hintTextColor = context.retrieveColor(PRMSearchType.BASIC.hintColorRes),
         textColor = context.retrieveColor(PRMSearchType.BASIC.textColorRes),
-        iconColor = context.retrieveColor(R.color.tokenDark40),
-        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.tokenBorderRadius08)),
+        iconColor = context.retrieveColor(R.color.prm_tokenDark40),
+        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_tokenBorderRadius08)),
     )
 
     fun listItem(context: Context) = ListItemToken(
-        linkTextColor = context.retrieveColor(R.color.color_EE0033),
-        usedBadgeTextColor = context.retrieveColor(R.color.tokenDark100),
-        usedBadgeBackgroundColor = context.retrieveColor(R.color.color_f4f4f4),
-        radioButtonStrokeColor = context.retrieveColor(R.color.tokenDark40),
-        radioButtonSelectedStrokeColor = context.retrieveColor(R.color.color_EE0033),
+        linkTextColor = context.retrieveColor(R.color.prm_color_EE0033),
+        usedBadgeTextColor = context.retrieveColor(R.color.prm_tokenDark100),
+        usedBadgeBackgroundColor = context.retrieveColor(R.color.prm_color_f4f4f4),
+        radioButtonStrokeColor = context.retrieveColor(R.color.prm_tokenDark40),
+        radioButtonSelectedStrokeColor = context.retrieveColor(R.color.prm_color_EE0033),
     )
 
     fun tabChip(context: Context) = TabChipToken(
-        activeBackgroundColor = context.retrieveColor(R.color.color_4e4e4e),
-        inactiveBackgroundColor = context.retrieveColor(R.color.color_f4f4f4),
-        activeTextColor = context.retrieveColor(R.color.white),
-        inactiveTextColor = context.retrieveColor(R.color.color_7A7A7A),
-        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.view_size_7)),
+        activeBackgroundColor = context.retrieveColor(R.color.prm_color_4e4e4e),
+        inactiveBackgroundColor = context.retrieveColor(R.color.prm_color_f4f4f4),
+        activeTextColor = context.retrieveColor(R.color.prm_white),
+        inactiveTextColor = context.retrieveColor(R.color.prm_color_7A7A7A),
+        cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_view_size_7)),
     )
 
     fun tabUnderline(context: Context) = TabUnderlineToken(
-        indicatorColor = context.retrieveColor(R.color.color_red_EE0033),
-        activeTextColor = context.retrieveColor(R.color.black),
-        inactiveTextColor = context.retrieveColor(R.color.color_7a7a7a),
-        backgroundColor = context.retrieveColor(R.color.color_FBFBFB),
+        indicatorColor = context.retrieveColor(R.color.prm_color_red_EE0033),
+        activeTextColor = context.retrieveColor(R.color.prm_black),
+        inactiveTextColor = context.retrieveColor(R.color.prm_color_7a7a7a),
+        backgroundColor = context.retrieveColor(R.color.prm_color_FBFBFB),
     )
 
     fun discountBadge(context: Context) = DiscountBadgeToken(
-        availableTextColor = context.retrieveColor(R.color.tokenPineBlue100),
-        unavailableTextColor = context.retrieveColor(R.color.color_7A7A7A),
-        availableBackgroundColor = context.retrieveColor(R.color.tokenPineBlue10),
-        unavailableBackgroundColor = context.retrieveColor(R.color.color_f4f4f4),
-        actionTextColor = context.retrieveColor(R.color.color_EE0033),
+        availableTextColor = context.retrieveColor(R.color.prm_tokenPineBlue100),
+        unavailableTextColor = context.retrieveColor(R.color.prm_color_7A7A7A),
+        availableBackgroundColor = context.retrieveColor(R.color.prm_tokenPineBlue10),
+        unavailableBackgroundColor = context.retrieveColor(R.color.prm_color_f4f4f4),
+        actionTextColor = context.retrieveColor(R.color.prm_color_EE0033),
     )
 
     fun theme(context: Context) = PromotionSDKTheme(

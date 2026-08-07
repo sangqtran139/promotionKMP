@@ -349,12 +349,12 @@ constructor(
             val defaultOuter =
                 ContextCompat.getColor(
                     this.context,
-                    R.color.color_EE0033,
+                    R.color.prm_color_EE0033,
                 )
             val defaultWhite =
                 ContextCompat.getColor(
                     this.context,
-                    R.color.white,
+                    R.color.prm_white,
                 )
 
             with(attrs) {
@@ -384,7 +384,7 @@ constructor(
                 typeFace = getInt(R.styleable.PRMSlideButton_prmTextStyle, 0)
                 mTextSize = getDimensionPixelSize(
                     R.styleable.PRMSlideButton_prmTextSize,
-                    resources.getDimensionPixelSize(R.dimen.text_size_16),
+                    resources.getDimensionPixelSize(R.dimen.prm_text_size_16),
                 )
                 textColor = actualTextColor
 
@@ -409,7 +409,7 @@ constructor(
 
                 mOriginAreaMargin = getDimensionPixelSize(
                     R.styleable.PRMSlideButton_prmAreaMargin,
-                    resources.getDimensionPixelSize(R.dimen.view_size_8),
+                    resources.getDimensionPixelSize(R.dimen.prm_view_size_8),
                 )
                 mActualAreaMargin = mOriginAreaMargin
 
@@ -436,7 +436,7 @@ constructor(
 
                 mIconMargin = getDimensionPixelSize(
                     R.styleable.PRMSlideButton_prmIconMargin,
-                    resources.getDimensionPixelSize(R.dimen.view_size_16),
+                    resources.getDimensionPixelSize(R.dimen.prm_view_size_16),
                 )
 
                 mArrowMargin = mIconMargin

@@ -2,7 +2,7 @@ package com.ttcn.prm.ui.theme.applier
 
 import com.ttcn.prm.ui.theme.token.ListItemToken
 
-import com.ttcn.prm.databinding.ItemChoosePromotionBinding
+import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
 import com.ttcn.prm.databinding.PrmItemPromotionBinding
 import com.ttcn.prm.ui.utils.applyBackgroundColorIfSet
 import com.ttcn.prm.ui.utils.applyImageTintIfSet
@@ -11,7 +11,7 @@ import com.ttcn.prm.ui.utils.applyTextColorIfSet
 
 internal object PromotionListItemApplier {
 
-    fun apply(binding: ItemChoosePromotionBinding, token: ListItemToken?) {
+    fun apply(binding: PrmItemChoosePromotionBinding, token: ListItemToken?) {
         token?.linkTextColor?.let {
             binding.tvDetail.applyTextColorIfSet(it)
             binding.tvArrowDetail.applyImageTintIfSet(it)

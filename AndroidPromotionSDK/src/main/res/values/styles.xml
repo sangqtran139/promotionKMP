@@ -16,38 +16,38 @@
     <style name="PRMForceLight" parent="Theme.Material3.Light.NoActionBar" />
 
     <style name="prm_specific_rounded_corner">
-        <item name="cornerSizeTopLeft">@dimen/view_size_16</item>
-        <item name="cornerSizeTopRight">@dimen/view_size_16</item>
+        <item name="cornerSizeTopLeft">@dimen/prm_view_size_16</item>
+        <item name="cornerSizeTopRight">@dimen/prm_view_size_16</item>
         <item name="cornerFamilyTopLeft">rounded</item>
         <item name="cornerFamilyTopRight">rounded</item>
     </style>
 
-    <style name="fontPRMRegular18">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontRegular18">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_14sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayRegular16">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontSfDisplayRegular16">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_12sdp</item>
         <item name="lineHeight">@dimen/_21sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayBold22">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontSfDisplayBold22">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_18sdp</item>
         <item name="lineHeight">@dimen/_21sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayBold32">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontSfDisplayBold32">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_26sdp</item>
         <item name="lineHeight">@dimen/_30sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayBold18">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontSfDisplayBold18">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_14sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
@@ -57,11 +57,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:navigationBarColor">@android:color/white</item>
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
-        <item name="recyclerViewDividerSize">@dimen/_1sdp</item>
-        <item name="recyclerViewDividerTint">@color/tokenDark10</item>
-        <item name="recyclerViewDividerAsSpace">false</item>
-        <item name="recyclerViewDividerDrawable">@color/tokenWhite</item>
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
+        <item name="prmRecyclerViewDividerSize">@dimen/_1sdp</item>
+        <item name="prmRecyclerViewDividerTint">@color/prm_tokenDark10</item>
+        <item name="prmRecyclerViewDividerAsSpace">false</item>
+        <item name="prmRecyclerViewDividerDrawable">@color/prm_tokenWhite</item>
     </style>
 
     <style name="PRMBaseTheme.Dialog">
@@ -71,62 +71,62 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <style name="fontPRMRegular10">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontRegular10">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_8sdp</item>
         <item name="lineHeight">@dimen/_10sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayRegular10">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontSfDisplayRegular10">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_8sdp</item>
         <item name="lineHeight">@dimen/_10sdp</item>
     </style>
 
-    <style name="fontPRMRegular12">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontRegular12">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_10sdp</item>
         <item name="lineHeight">@dimen/_11sdp</item>
     </style>
 
-    <style name="fontPRMRegular14">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontRegular14">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_11sdp</item>
         <item name="lineHeight">@dimen/_14sdp</item>
     </style>
 
-    <style name="fontPRMBold18">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontBold18">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_14sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
 
-    <style name="fontPRMDisPlayRegular14">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontDisPlayRegular14">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_10sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
 
-    <style name="fontPRMBold14">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontBold14">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_11sdp</item>
         <item name="lineHeight">@dimen/_14sdp</item>
     </style>
 
-    <style name="fontPRMMedium16">
-        <item name="fontFamily">@font/sf_pro_display_medium</item>
+    <style name="PRMFontMedium16">
+        <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
         <item name="android:textSize">@dimen/_13sdp</item>
         <item name="lineHeight">@dimen/_16sdp</item>
     </style>
 
-    <style name="fontPRMMedium18">
-        <item name="fontFamily">@font/sf_pro_display_medium</item>
+    <style name="PRMFontMedium18">
+        <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
         <item name="android:textSize">@dimen/_14sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayMedium18">
-        <item name="fontFamily">@font/sf_pro_display_medium</item>
+    <style name="PRMFontSfDisplayMedium18">
+        <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
         <item name="android:textSize">@dimen/_14sdp</item>
         <item name="lineHeight">@dimen/_18sdp</item>
     </style>
@@ -141,88 +141,88 @@
 
     <style name="PRMSlideButton">
         <!--        <item name="text">PRMSlideButton</item>-->
-        <item name="prmTextSize">@dimen/text_size_16</item>
-        <item name="prmAreaMargin">@dimen/view_size_8</item>
+        <item name="prmTextSize">@dimen/prm_text_size_16</item>
+        <item name="prmAreaMargin">@dimen/prm_view_size_8</item>
         <item name="prmInnerColor">?android:colorBackground</item>
         <item name="prmOuterColor">?colorAccent</item>
         <item name="prmSliderLocked">false</item>
     </style>
 
     <style name="PRMSlideButtonTextAppreance" parent="android:TextAppearance">
-        <item name="android:textColor">@color/tokenWhite</item>
+        <item name="android:textColor">@color/prm_tokenWhite</item>
         <item name="android:textSize">@dimen/_15sdp</item>
-        <item name="android:fontFamily">@font/sf_pro_display_medium</item>
+        <item name="android:fontFamily">@font/prm_sf_pro_display_medium</item>
     </style>
 
     <style name="PRMBaseBottomSheetDialog" parent="@style/Theme.Design.Light.BottomSheetDialog">
         <item name="android:windowIsFloating">false</item>
         <item name="android:background">@android:color/transparent</item>
         <item name="bottomSheetStyle">@style/PRMCustomBottomSheetStyle</item>
-        <item name="android:statusBarColor">@color/tokenWhite</item>
-        <item name="android:navigationBarColor">@color/tokenWhite</item>
+        <item name="android:statusBarColor">@color/prm_tokenWhite</item>
+        <item name="android:navigationBarColor">@color/prm_tokenWhite</item>
         <item name="android:windowSoftInputMode">adjustResize|adjustPan</item>
     </style>
 
-    <style name="fontPRMBold32">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontBold32">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_26sdp</item>
         <item name="lineHeight">@dimen/_30sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayBold08">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontSfDisplayBold08">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_6sdp</item>
         <item name="lineHeight">@dimen/_7sdp</item>
     </style>
 
-    <style name="fontPRMRegular16">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontRegular16">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_13sdp</item>
         <item name="lineHeight">@dimen/_16sdp</item>
     </style>
 
-    <style name="fontPRMBold22">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontBold22">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_18sdp</item>
         <item name="lineHeight">@dimen/_21sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayRegular14">
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+    <style name="PRMFontSfDisplayRegular14">
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textSize">@dimen/_11sdp</item>
         <item name="lineHeight">@dimen/_14sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayMedium14">
-        <item name="fontFamily">@font/sf_pro_display_medium</item>
+    <style name="PRMFontSfDisplayMedium14">
+        <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
         <item name="android:textSize">@dimen/_11sdp</item>
         <item name="lineHeight">@dimen/_14sdp</item>
     </style>
 
-    <style name="fontPRMSfDisplayMedium16">
-        <item name="android:fontFamily">@font/sf_pro_display_medium</item>
+    <style name="PRMFontSfDisplayMedium16">
+        <item name="android:fontFamily">@font/prm_sf_pro_display_medium</item>
         <item name="android:textSize">@dimen/_13sdp</item>
         <item name="lineHeight">@dimen/_16sdp</item>
     </style>
 
-    <style name="fontPRMBold16">
-        <item name="fontFamily">@font/sf_pro_display_bold</item>
+    <style name="PRMFontBold16">
+        <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
         <item name="android:textSize">@dimen/_13sdp</item>
         <item name="lineHeight">@dimen/_16sdp</item>
     </style>
 
     <style name="PRMTabLayOutNew" parent="TextAppearance.Design.Tab">
-        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textSize">@dimen/prm_text_size_14</item>
         <item name="android:textStyle">bold</item>
         <item name="textAllCaps">false</item>
         <item name="android:textAllCaps">false</item>
-        <item name="fontFamily">@font/sf_pro_display_regular</item>
+        <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
     </style>
 
-    <style name="button_gradient_prm" parent="@style/Widget.AppCompat.Button.Colored">
+    <style name="PRMButton_gradient_prm" parent="@style/Widget.AppCompat.Button.Colored">
         <item name="android:textSize">@dimen/_10sdp</item>
-        <item name="android:fontFamily">@font/sf_pro_display_regular</item>
-        <item name="android:textColor">@color/white</item>
+        <item name="android:fontFamily">@font/prm_sf_pro_display_regular</item>
+        <item name="android:textColor">@color/prm_white</item>
         <item name="android:background">@drawable/prm_button_gradient_background</item>
         <item name="android:gravity">center</item>
     </style>

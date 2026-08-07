@@ -1,15 +1,15 @@
 package com.ttcn.promotionsdk.presentation.mypromotion
 
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherItem
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherDisplayState
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.core.domain.model.voucher.VoucherTabItem
-import com.ttcn.promotionsdk.core.domain.model.voucher.displayState
-import com.ttcn.promotionsdk.core.domain.usecase.SearchCustomerVouchersUseCase
-import com.ttcn.promotionsdk.core.util.currentEpochMillis
-import com.ttcn.promotionsdk.core.util.daysUntil
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersRequest
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherItem
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherDisplayState
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherTabItem
+import com.ttcn.promotionsdk.domain.model.voucher.displayState
+import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.common.currentEpochMillis
+import com.ttcn.promotionsdk.common.daysUntil
 import com.ttcn.promotionsdk.presentation.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope

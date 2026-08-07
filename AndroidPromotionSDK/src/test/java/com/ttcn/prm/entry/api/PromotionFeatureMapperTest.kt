@@ -1,7 +1,7 @@
 package com.ttcn.prm.entry.api
 
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
-import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlags as CoreFeatureFlags
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
+import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlags as CoreFeatureFlags
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

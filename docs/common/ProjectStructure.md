@@ -35,23 +35,16 @@ MyApplication13/
 
 ```
 promotionLogic/src/
-├── commonMain/kotlin/com/ttcn/promotionsdk/core/
-│   ├── config/                  # PromotionSDKConfig, PromotionRequestContextProvider
-│   ├── di/                      # Custom DI
-│   │   ├── PromotionContainer.kt     # init / clear / requireConfig — nội bộ SDK, host KHÔNG thấy
-│   │   ├── NetworkModule.kt          # HttpClient, ApiService, RemoteDataSource
-│   │   ├── LocalModule.kt            # KeyValueStorage, FeatureFlagLocalDataSource
-│   │   ├── RepositoryModule.kt
-│   │   ├── UseCaseModule.kt
-│   │   ├── FeatureFlagModule.kt
-│   │   ├── PlatformState.kt          # expect clearPlatformState()
-│   │   └── internal/                 # SdkDi, ComponentRegistry, DiKey
+├── commonMain/kotlin/com/ttcn/promotionsdk/
+│   ├── config/                  # PromotionSDKConfig, PromotionRequestContextProvider,
+│   │                            #   SdkEnvironment, AvailableService
+│   ├── common/                  # PromotionClock (thuần common), SdkLock (expect), Uuid
 │   ├── data/
 │   │   ├── dto/                 # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
 │   │   │                        #   mỗi nhóm: Request + Response + Mapper
 │   │   ├── remote/              # ApiService (+ Ktor impl), RemoteDataSource,
 │   │   │                        #   PromotionHttpClient, ApiResponse (envelope)
-│   │   ├── local/               # KeyValueStorage (expect), FeatureFlagLocalDataSource
+│   │   ├── local/               # PromotionPreferences + SettingsPreferences, FeatureFlagLocalDataSource
 │   │   └── repository/          # PromotionRepositoryImpl, FeatureFlagRepositoryImpl
 │   ├── domain/
 │   │   ├── model/               # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
@@ -60,25 +53,48 @@ promotionLogic/src/
 │   │   ├── usecase/             # 5 use case + PromotionUseCases
 │   │   │                        #   4 use case flag + PromotionFeatureFlagUseCases
 │   │   └── exception/           # PromotionException, NetworkException, ErrorCodes
-│   └── util/                    # SdkLock (expect), Uuid
+│   ├── di/                      # Custom DI — composition root
+│   │   ├── PromotionContainer.kt     # init / clear / requireConfig — nội bộ SDK, host KHÔNG thấy
+│   │   ├── NetworkModule.kt          # HttpClient, ApiService, RemoteDataSource
+│   │   ├── LocalModule.kt            # PromotionPreferences, FeatureFlagLocalDataSource
+│   │   ├── RepositoryModule.kt
+│   │   ├── UseCaseModule.kt
+│   │   ├── FeatureFlagModule.kt
+│   │   ├── PlatformState.kt          # expect clearPlatformState()
+│   │   └── internal/                 # SdkDi, ComponentRegistry, DiKey
+│   └── presentation/            # Store dùng chung cho UI hai nền tảng
 │
-├── androidMain/kotlin/com/ttcn/promotionsdk/core/
-│   ├── di/PromotionContainerAndroid.kt        # init(context, config) — BẮT BUỘC trên Android
+├── androidMain/kotlin/com/ttcn/promotionsdk/
+│   ├── di/PromotionContainerAndroid.kt             # initialize(context, config) — BẮT BUỘC trên Android
 │   ├── di/PlatformState.android.kt
-│   ├── data/local/KeyValueStorage.android.kt  # SharedPrefStorage + AndroidContextHolder
-│   └── util/SdkLock.android.kt                # ReentrantLock
+│   ├── data/local/PromotionPreferences.android.kt  # AndroidContextHolder + dựng SharedPreferencesSettings
+│   └── common/SdkLock.android.kt                   # ReentrantLock
 │
-├── iosMain/kotlin/com/ttcn/promotionsdk/core/
+├── iosMain/kotlin/com/ttcn/promotionsdk/
 │   ├── di/PlatformState.ios.kt
-│   ├── data/local/KeyValueStorage.ios.kt      # UserDefaultsStorage
-│   └── util/SdkLock.ios.kt                    # NSRecursiveLock
+│   ├── data/local/PromotionPreferences.ios.kt      # dựng NSUserDefaultsSettings (suite riêng)
+│   └── common/SdkLock.ios.kt                       # NSRecursiveLock
 │
-└── commonTest/kotlin/com/ttcn/promotionsdk/core/
+└── commonTest/kotlin/com/ttcn/promotionsdk/        # 35 file, để phẳng
     ├── PromotionPipelineTest.kt
     ├── EligibleCampaignsTest.kt
     ├── FeatureFlagTest.kt
+    ├── PromotionPreferencesTest.kt
+    ├── PromotionClockTest.kt
     └── PromotionContainerTest.kt
 ```
+
+### 2.1. Vì sao chia như vậy
+
+- `data/`, `domain/`, `presentation/` — **ba tầng Clean Architecture**, ngang hàng nhau. Đọc cây
+  package là thấy ngay tầng nào có gì, không phải chui qua một lớp `core/` trung gian.
+- `di/` **không** nằm trong `common/`: nó là composition root, phụ thuộc vào *mọi* tầng
+  (`LocalModule` → data, `UseCaseModule` → domain). `common` nghĩa là thứ mọi tầng phụ thuộc *vào* —
+  đặt `di` trong đó là đảo ngược ý nghĩa của chính cái tên.
+- `config/` ở top-level vì **cả ba tầng đều đọc nó** (`data/remote` nhận `PromotionRequestContextProvider`,
+  `di` giữ `PromotionSDKConfig`, tầng UI dựng nó) và nó là **bề mặt hợp đồng** — `consumer-rules.pro`
+  giữ `config.**` khỏi R8. Nhét vào `common/` sẽ trộn hợp đồng public với plumbing nội bộ.
+- `common/` để **phẳng**, chỉ 3 tiện ích cross-cutting. `common/util/` là thừa một tầng.
 
 ---
 
@@ -86,11 +102,11 @@ promotionLogic/src/
 
 | Loại file | Đặt ở đâu |
 |-----------|-----------|
-| API endpoint mới | `core/data/remote/PromotionApiService.kt` (interface + Ktor impl) + `PromotionRemoteDataSource` |
-| DTO mới | `core/data/dto/<nhóm>/` kèm hàm mapping `toXxx()` |
-| Domain model mới | `core/domain/model/<nhóm>/` |
-| Use case mới | `core/domain/usecase/`, đăng ký ở `core/di/UseCaseModule.kt`, phơi qua `PromotionUseCases` |
-| Repository mới | interface ở `core/domain/repository/`, impl ở `core/data/repository/`, đăng ký ở `RepositoryModule` |
+| API endpoint mới | `data/remote/PromotionApiService.kt` (interface + Ktor impl) + `PromotionRemoteDataSource` |
+| DTO mới | `data/dto/<nhóm>/` kèm hàm mapping `toXxx()` |
+| Domain model mới | `domain/model/<nhóm>/` |
+| Use case mới | `domain/usecase/`, đăng ký ở `di/UseCaseModule.kt`, phơi qua `PromotionUseCases` |
+| Repository mới | interface ở `domain/repository/`, impl ở `data/repository/`, đăng ký ở `RepositoryModule` |
 | Cần API riêng nền tảng | `expect` ở `commonMain`, `actual` ở `androidMain` **và** `iosMain` |
 | Test | `commonTest/` — chạy trên cả hai nền tảng |
 | Màn hình Android mới | `:promotionSDK` — `feature/<tên>/` với Fragment + ViewModel + Contract |
@@ -100,7 +116,7 @@ promotionLogic/src/
 
 ## 4. Quy ước đặt tên
 
-- **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `KeyValueStorage`.
+- **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `PromotionPreferences`.
 - **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
 - **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
@@ -111,8 +127,8 @@ promotionLogic/src/
 
 ## 5. Nơi KHÔNG nên chạm nếu không cần
 
-- `core/di/internal/` — cơ chế DI lõi. Sửa thì phải cập nhật `DependencyInjection.md`.
-- `core/util/SdkLock.kt` — đổi sang khoá không reentrant sẽ deadlock lúc init.
+- `di/internal/` — cơ chế DI lõi. Sửa thì phải cập nhật `DependencyInjection.md`.
+- `common/SdkLock.kt` — đổi sang khoá không reentrant sẽ deadlock lúc init.
 - `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.

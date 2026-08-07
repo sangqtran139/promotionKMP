@@ -47,7 +47,7 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - **Không** thêm annotation processor (kapt/KSP) vào `:promotionLogic` — sẽ vỡ target iOS.
 
 ### 7. Không duplicate code
-Trước khi viết logic mới, kiểm tra `core/util`, các mapper, use case đã có. Tách phần dùng chung
+Trước khi viết logic mới, kiểm tra `common`, các mapper, use case đã có. Tách phần dùng chung
 thành hàm/extension/use case thay vì copy-paste.
 
 ### 8. Sửa API, storage, DI hoặc kiến trúc thì phải cập nhật docs trong cùng thay đổi

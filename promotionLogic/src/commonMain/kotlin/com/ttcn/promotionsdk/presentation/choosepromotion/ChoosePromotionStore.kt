@@ -1,12 +1,12 @@
 package com.ttcn.promotionsdk.presentation.choosepromotion
 
-import com.ttcn.promotionsdk.core.di.PromotionContainer
-import com.ttcn.promotionsdk.core.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleSection
-import com.ttcn.promotionsdk.core.domain.model.eligible.FindEligibleCampaignsRequest
-import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.core.util.daysUntil
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.domain.exception.toErrorCode
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleSection
+import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
+import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.common.daysUntil
 import com.ttcn.promotionsdk.presentation.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
@@ -69,7 +69,9 @@ class ChoosePromotionStore(
             ChoosePromotionIntent.Search -> { debounceJob?.cancel(); loadOffers(isRefresh = false) }
             ChoosePromotionIntent.ClearKeyword -> {
                 debounceJob?.cancel()
-                _state.update { it.copy(keyword = "") }
+                // `isLoading` bật ngay ở đây chứ không đợi `loadOffers` (nó chạy trong coroutine, hở
+                // một khung hình là list kết quả tìm kiếm cũ loé lên trước khi shimmer che).
+                _state.update { it.copy(keyword = "", isLoading = true) }
                 loadOffers(isRefresh = false)
             }
             ChoosePromotionIntent.LoadMoreMyVouchers -> loadMore(EligibleSection.MY_OFFERS)
@@ -113,7 +115,13 @@ class ChoosePromotionStore(
     /** Gõ mỗi ký tự → debounce rồi reload server-side (server lọc 2 nhóm); xoá trắng → reload ngay. */
     private fun onQueryChanged(keyword: String) {
         debounceJob?.cancel()
-        _state.update { it.copy(keyword = keyword) }
+        // Bật loading NGAY khi gõ (trước debounce) → shimmer che ngay, tránh nhấp nháy list CŨ trong
+        // ~400ms chờ. Cùng cách với `SearchMyPromotionStore.onQueryChanged`.
+        //
+        // Khác màn Tìm kiếm ở chỗ: bên đó gõ trắng thì `resetSearchResults()` xử lý cục bộ nên
+        // `isLoading = trimmed.isNotEmpty()`; bên này gõ trắng vẫn phải gọi lại API (lấy lại danh
+        // sách đầy đủ) nên bật `true` cho **cả hai** nhánh, không để hở khung hình nào.
+        _state.update { it.copy(keyword = keyword, isLoading = true) }
         if (keyword.trim().isEmpty()) {
             loadOffers(isRefresh = false)
         } else {
@@ -299,8 +307,15 @@ private const val DEBOUNCE_MS = 400L
 /** Trạng thái nút "Xem thêm/Thu gọn" nhóm của tôi — quy tắc dùng chung, native chỉ render. */
 enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
 
+/**
+ * - `HIDDEN` khi số item đã nạp không vượt [COLLAPSED_MY_COUNT]: lúc thu gọn đã thấy hết, nút không
+ *   có gì để mở thêm. **Không** xét [ChoosePromotionState.myIsLastPage] ở nhánh này — nhóm của tôi
+ *   nạp theo trang 10 item, nên ≤ [COLLAPSED_MY_COUNT] item nghĩa là server đã trả hết.
+ * - `COLLAPSE` khi đang mở hết và không còn trang.
+ * - `EXPAND` cho phần còn lại: hoặc còn item chưa hiện, hoặc còn trang để nạp.
+ */
 fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
-    myOffers.size <= COLLAPSED_MY_COUNT && myIsLastPage -> ChooseSeeMoreState.HIDDEN
+    myOffers.size <= COLLAPSED_MY_COUNT -> ChooseSeeMoreState.HIDDEN
     myExpanded && myIsLastPage -> ChooseSeeMoreState.COLLAPSE
     else -> ChooseSeeMoreState.EXPAND
 }

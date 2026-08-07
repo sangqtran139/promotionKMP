@@ -3,6 +3,6 @@
     android:shape="oval">
     <solid android:color="@color/prm_theme_primary" />
     <size
-        android:width="@dimen/view_size_20"
-        android:height="@dimen/view_size_20" />
+        android:width="@dimen/prm_view_size_20"
+        android:height="@dimen/prm_view_size_20" />
 </shape>

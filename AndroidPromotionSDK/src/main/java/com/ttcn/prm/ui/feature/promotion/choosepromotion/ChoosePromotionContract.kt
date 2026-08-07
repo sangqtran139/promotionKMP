@@ -1,6 +1,6 @@
 package com.ttcn.prm.ui.feature.promotion.choosepromotion
 
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
 import com.ttcn.prm.ui.feature.promotion.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.feature.promotion.mypromotion.TabItem
@@ -24,6 +24,11 @@ internal data class ChoosePromotionUiState(
     val otherSize: Int = 10,
     val isLastOtherPage: Boolean = true,
     val vouchers: List<MyVoucherListItem> = emptyList(),
+    /**
+     * Phần "Ưu đãi của tôi" đang thực sự hiển thị — đã cắt theo trạng thái mở/thu gọn bằng rule dùng
+     * chung `visibleMyOffers()` ở store. Fragment render thẳng, không cắt lại.
+     */
+    val visibleVouchers: List<MyVoucherListItem> = emptyList(),
     val otherVouchers: List<MyVoucherListItem> = emptyList(),
     /** Cho phép chọn nhiều voucher — do store quyết định. */
     val isMultiSelection: Boolean = false,
@@ -48,6 +53,8 @@ internal sealed interface ChoosePromotionAction {
     data class PreloadVouchers(
         val myOffers: List<EligibleOffer>,
         val otherOffers: List<EligibleOffer>,
+        val myIsLastPage: Boolean,
+        val otherIsLastPage: Boolean,
     ) : ChoosePromotionAction
 
     data object Refresh : ChoosePromotionAction

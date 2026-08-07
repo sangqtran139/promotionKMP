@@ -3,7 +3,7 @@
 Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném exception ra ngoài**.
 
 > **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionSDK` và `PromotionSDKUI` gọi vào đây.
-> Host không với tới được `com.ttcn.promotionsdk.core.*`: Android khai
+> Host không với tới được `com.ttcn.promotionsdk.*`: Android khai
 > `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PRMKotlinBridge`.
 >
 > Thứ host gọi là `PromotionSDK.api` (`PromotionSDKApi`), nó uỷ quyền xuống đây rồi map sang DTO.
@@ -207,7 +207,7 @@ Ba hành vi cần nhớ:
 2. **Chưa có cache → bật hết.** SDK không tự khoá tính năng khi chưa gọi được API lần nào.
 3. **`refresh()` không ném lỗi.** Gọi API thất bại thì giữ nguyên cờ đang cache.
 
-Cờ được ghi xuống `KeyValueStorage` nên lần mở app sau không phải chờ API.
+Cờ được ghi xuống `PromotionPreferences` nên lần mở app sau không phải chờ API.
 Xem [StorageGuide.md](./StorageGuide.md).
 
 > Đây là bề mặt **của lõi** — host không dùng nó (`promotionLogic` nằm ngoài compile classpath của
@@ -263,8 +263,8 @@ Lõi này là **hợp** của hai SDK gốc — cả hai bên đều không mấ
 ## 6. Quy tắc khi mở rộng API
 
 1. Thêm endpoint → `PromotionApiService` + `KtorPromotionApiService` + `PromotionRemoteDataSource`.
-2. Thêm DTO ở `core/data/dto/<nhóm>/` kèm mapper `toXxx()`; **không** để DTO lọt lên Domain.
-3. Thêm domain model ở `core/domain/model/<nhóm>/`, use case ở `core/domain/usecase/`.
+2. Thêm DTO ở `data/dto/<nhóm>/` kèm mapper `toXxx()`; **không** để DTO lọt lên Domain.
+3. Thêm domain model ở `domain/model/<nhóm>/`, use case ở `domain/usecase/`.
 4. Đăng ký use case trong `UseCaseModule`, phơi ra qua `PromotionUseCases`.
 5. Viết test `commonTest` bằng `MockEngine` — chạy trên **cả** Android lẫn iOS.
 6. Cập nhật file này + `NetworkingGuide.md` (AI_AGENT_RULES điều 8).

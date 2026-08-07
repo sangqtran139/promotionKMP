@@ -12,12 +12,12 @@ Toàn bộ DI nằm ở `:promotionLogic`, `commonMain`.
 
 | Thành phần | File | Vai trò |
 |------------|------|---------|
-| `SdkDi` | `core/di/internal/SdkDi.kt` | Container singleton + DSL (`module`, `single`, `factory`, `get`, `inject`) |
-| `ComponentRegistry` | `core/di/internal/ComponentRegistry.kt` | Lưu provider, singleton, factory; resolve thread-safe |
-| `DiKey` | `core/di/internal/DiKey.kt` | Khoá định danh `(KClass, qualifier)` |
-| `SdkLock` | `core/util/SdkLock.kt` | Khoá **reentrant** expect/actual — xem §3 |
-| `PromotionContainer` | `core/di/PromotionContainer.kt` | Public entry: khởi tạo container & nạp modules |
-| Các `*Module` | `core/di/` | Khai báo cách tạo dependency theo nhóm |
+| `SdkDi` | `di/internal/SdkDi.kt` | Container singleton + DSL (`module`, `single`, `factory`, `get`, `inject`) |
+| `ComponentRegistry` | `di/internal/ComponentRegistry.kt` | Lưu provider, singleton, factory; resolve thread-safe |
+| `DiKey` | `di/internal/DiKey.kt` | Khoá định danh `(KClass, qualifier)` |
+| `SdkLock` | `common/SdkLock.kt` | Khoá **reentrant** expect/actual — xem §3 |
+| `PromotionContainer` | `di/PromotionContainer.kt` | Public entry: khởi tạo container & nạp modules |
+| Các `*Module` | `di/` | Khai báo cách tạo dependency theo nhóm |
 
 ---
 
@@ -97,7 +97,7 @@ iOS/common:  PromotionContainer.init(config)
 | Module | Đăng ký gì |
 |--------|------------|
 | `NetworkModule` | `PromotionRequestContextProvider`, `HttpClient`, `PromotionApiService`, `PromotionRemoteDataSource` |
-| `LocalModule` | `KeyValueStorage`, `FeatureFlagLocalDataSource` |
+| `LocalModule` | `PromotionPreferences`, `FeatureFlagLocalDataSource` |
 | `RepositoryModule` | `PromotionRepository` → `PromotionRepositoryImpl` |
 | `UseCaseModule` | 5 use case nghiệp vụ + `PromotionUseCases` |
 | `FeatureFlagModule` | `FeatureFlagApiService`, `FeatureFlagRemoteDataSource`, `FeatureFlagRepository`, 4 use case, `PromotionFeatureFlagUseCases` |

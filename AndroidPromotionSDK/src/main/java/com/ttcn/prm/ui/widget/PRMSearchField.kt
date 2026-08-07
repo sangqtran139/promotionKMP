@@ -166,7 +166,7 @@ class PRMSearchField @JvmOverloads constructor(
                 setBackgroundResource(if (hasFocus()) focusBackground else searchBackground)
                 if (searchType == PRMSearchType.NAVIGATION) {
                     val currentBackground = background
-                    currentBackground.alpha = resources.getInteger(R.integer.tokenOpacity08)
+                    currentBackground.alpha = resources.getInteger(R.integer.prm_tokenOpacity08)
                     background = currentBackground
                 }
                 val leftPadding =

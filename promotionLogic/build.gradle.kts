@@ -137,7 +137,10 @@ kotlin {
     androidLibrary {
         // Nhường namespace `com.ttcn.promotionsdk` cho AndroidPromotionSDK, để `R` và
         // `databinding.*` của UI resolve đúng như trong SDK gốc, không phải sửa import.
-        namespace = "com.ttcn.promotionsdk.core"
+        //
+        // Hậu tố `.logic` khớp tên module. Namespace Android **độc lập** với package Kotlin — module
+        // này không có resource nên nó chỉ là package attribute của AAR, không sinh `R` cho ai.
+        namespace = "com.ttcn.promotionsdk.logic"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -155,6 +158,9 @@ kotlin {
             implementation(libs.ktor.client.contentNegotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinxJson)
+            // `implementation` chứ không `api`: kiểu `Settings` KHÔNG được lọt ra bề mặt public của
+            // SDK — host và SKIE bridge chỉ thấy `PromotionPreferences` do ta sở hữu.
+            implementation(libs.multiplatform.settings)
         }
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
@@ -166,6 +172,8 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.ktor.client.mock)
+            // MapSettings: bản Settings chạy trên RAM, thay cho InMemoryStorage viết tay trước đây.
+            implementation(libs.multiplatform.settings.test)
         }
     }
 }
@@ -191,7 +199,12 @@ kover {
                 annotatedBy("kotlinx.serialization.Serializable")
                 classes("*${'$'}serializer")
                 // Cầu sang nền tảng: thân hàm nằm ở androidMain/iosMain, không phải commonMain.
-                classes("*.SdkLockKt", "*.PromotionClockKt")
+                //
+                // `PromotionClockKt` ĐÃ ĐƯỢC GỠ khỏi danh sách này. Nó chưa bao giờ là cầu nền tảng
+                // thuần: ngoài `currentEpochMillis()` thì file còn `isoDateToEpochMillis`, `daysUntil`,
+                // `daysFromCivil` — logic commonMain thật, bị exclude che mất khỏi coverage. Và từ khi
+                // `currentEpochMillis()` chuyển sang `kotlin.time.Clock` thì file không còn `actual` nào.
+                classes("*.SdkLockKt")
             }
         }
         verify {

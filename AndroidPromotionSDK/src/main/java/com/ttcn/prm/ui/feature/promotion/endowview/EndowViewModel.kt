@@ -1,8 +1,8 @@
 package com.ttcn.prm.ui.feature.promotion.endowview
 
-import com.ttcn.promotionsdk.core.domain.model.eligible.EligibleOffer
-import com.ttcn.promotionsdk.core.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.core.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount
 import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowState
@@ -74,6 +74,20 @@ internal class EndowViewModel(
 
     fun consumeError() = store.dispatch(EndowIntent.ConsumeError)
 
+    /**
+     * Xoá lỗi — **trừ khi** đang chờ kết quả một vòng validate.
+     *
+     * `errorCode` là field dùng chung, có hai nơi quan sát: [handleSettle] (bắn completion cho màn
+     * "Chọn ưu đãi") và `PRMEndowView.renderState` (hiện lỗi rồi xoá). `store.state` là `StateFlow`
+     * nên **conflated**: widget xoá trước là [handleSettle] có thể nhảy qua luôn state mang lỗi và
+     * chỉ thấy bản đã xoá → completion nhận `errorCode = null` → màn chọn đóng như thành công dù
+     * validate hỏng. Giữ lỗi lại cho tới khi completion đọc xong; [handleSettle] tự xoá sau đó.
+     */
+    fun consumeErrorUnlessSettling() {
+        if (settleCompletion != null) return
+        store.dispatch(EndowIntent.ConsumeError)
+    }
+
     private fun handleSettle(state: EndowState) {
         if (state.isValidating) {
             sawValidating = true
@@ -84,6 +98,8 @@ internal class EndowViewModel(
         settleCompletion = null
         sawValidating = false
         completion(state)
+        // Đã giao lỗi cho nơi gọi → giờ mới xoá (widget bị chặn xoá trong lúc chờ).
+        if (state.errorCode != null) store.dispatch(EndowIntent.ConsumeError)
     }
 
     companion object {
@@ -105,6 +121,8 @@ internal class EndowViewModel(
 private fun EndowState.toUiState() = PRMEndowUiState(
     myVouchers = myOffers,
     otherVouchers = otherOffers,
+    myIsLastPage = myIsLastPage,
+    otherIsLastPage = otherIsLastPage,
     discountDetails = appliedDiscounts.map { it.toAppliedDiscount() },
     discountUnavailable = discountUnavailable,
     totalVoucherCount = totalVoucherCount,

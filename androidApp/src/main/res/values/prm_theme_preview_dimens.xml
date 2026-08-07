@@ -16,7 +16,7 @@
     <dimen name="prm_theme_scroll_bottom_padding">120dp</dimen>
     <!-- Pill-shaped buttons / previews -->
     <dimen name="prm_theme_radius_pill">999dp</dimen>
-    <dimen name="prm_theme_color_picker_preview_height">@dimen/view_size_120</dimen>
+    <dimen name="prm_theme_color_picker_preview_height">@dimen/prm_view_size_120</dimen>
     <dimen name="prm_theme_preview_button_stroke_width">1.5dp</dimen>
 
     <dimen name="prm_color_picker_sheet_radius_top">32dp</dimen>

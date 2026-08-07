@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.presentation.serviceselector
 
-import com.ttcn.promotionsdk.core.config.AvailableService
-import com.ttcn.promotionsdk.core.domain.model.voucher.ApplicableProduct
+import com.ttcn.promotionsdk.config.AvailableService
+import com.ttcn.promotionsdk.domain.model.voucher.ApplicableProduct
 
 /**
  * Dịch vụ khả dụng cho một voucher: **giao** giữa `applicableProducts.productId` và

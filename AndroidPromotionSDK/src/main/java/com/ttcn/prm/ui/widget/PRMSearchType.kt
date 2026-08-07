@@ -20,27 +20,27 @@ enum class PRMSearchType(
         iconRes = R.drawable.prm_foundations_icon_search_dark,
         searchBackground = R.drawable.prm_views_search_field_basic_background,
         focusBackground = R.drawable.prm_views_search_field_basic_focus_background,
-        fontStyle = R.style.fontPRMRegular16,
-        hintColorRes = R.color.tokenDark40,
-        textColorRes = R.color.tokenDark100
+        fontStyle = R.style.PRMFontRegular16,
+        hintColorRes = R.color.prm_tokenDark40,
+        textColorRes = R.color.prm_tokenDark100
     ),
     NAVIGATION(
         iconSizeRes = com.intuit.sdp.R.dimen._13sdp,
         iconRes = R.drawable.prm_foundations_icon_search_white,
         searchBackground = R.drawable.prm_views_search_field_navigation_background,
         focusBackground = R.drawable.prm_views_search_field_navigation_background,
-        fontStyle = R.style.fontPRMRegular16,
-        hintColorRes = R.color.tokenDark40,
-        textColorRes = R.color.tokenDark100
+        fontStyle = R.style.PRMFontRegular16,
+        hintColorRes = R.color.prm_tokenDark40,
+        textColorRes = R.color.prm_tokenDark100
     ),
     BASIC_TRANSPARENT(
         iconSizeRes = com.intuit.sdp.R.dimen._19sdp,
         iconRes = R.drawable.prm_foundations_icon_search_white,
         searchBackground = R.drawable.prm_views_search_field_basic_background_opacity,
         focusBackground = R.drawable.prm_views_search_field_basic_focus_background_opacity,
-        fontStyle = R.style.fontPRMRegular16,
-        hintColorRes = R.color.tokenViettelPayRed40,
-        textColorRes = R.color.tokenWhite
+        fontStyle = R.style.PRMFontRegular16,
+        hintColorRes = R.color.prm_tokenViettelPayRed40,
+        textColorRes = R.color.prm_tokenWhite
     ),
 }
 

@@ -1,6 +1,6 @@
 package com.ttcn.prm.ui.theme
 
-import com.ttcn.promotionsdk.core.di.PromotionContainer
+import com.ttcn.promotionsdk.di.PromotionContainer
 
 /**
  * Persist theme: serialize `PromotionSDKTheme` → JSON rồi lưu qua `PromotionContainer.putPreference`

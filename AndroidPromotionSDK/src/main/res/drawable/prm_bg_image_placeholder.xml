@@ -5,5 +5,5 @@
   nên cùng một voucher thiếu ảnh mà hai nền tảng ra hai màu xám khác nhau.
 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/tokenDark10" />
+    <solid android:color="@color/prm_tokenDark10" />
 </shape>

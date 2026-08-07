@@ -6,18 +6,18 @@ import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.ttcn.prm.databinding.FragmentContentDetailEndowPrmBinding
+import com.ttcn.prm.databinding.PrmFragmentContentDetailEndowPrmBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.promotionsdk.presentation.promotiondetail.wrapPromotionHtml
 
 class PrmContentDetailEndowFragment :
-    PRMBaseFragment<FragmentContentDetailEndowPrmBinding>() {
+    PRMBaseFragment<PrmFragmentContentDetailEndowPrmBinding>() {
 
     override fun inflateBinding(
         inflater: LayoutInflater,
         container: ViewGroup?,
-    ): FragmentContentDetailEndowPrmBinding {
-        return FragmentContentDetailEndowPrmBinding.inflate(inflater, container, false)
+    ): PrmFragmentContentDetailEndowPrmBinding {
+        return PrmFragmentContentDetailEndowPrmBinding.inflate(inflater, container, false)
     }
 
     override fun setupUI() {
