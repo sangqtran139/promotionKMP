@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bản của riêng app demo cho các color/dimen/style mà trước đây nó mượn thẳng của SDK
+  (`@color/prm_white`, `@dimen/prm_view_size_24`, `@style/PRMFontRegular14`…).
+
+  Kể từ khi `AndroidPromotionSDK/src/main/res/values/public.xml` đánh private toàn bộ resource của
+  SDK, mượn như vậy là lint `PrivateResource`. Mà đúng ra cũng không nên: app demo đóng vai HOST, nó
+  phải dựng được UI của mình mà không cần biết bên trong SDK có resource gì.
+-->
+<resources>
+
+    <color name="demo_colorPrimary">#EE0033</color>
+    <color name="demo_tokenDark100">#222222</color>
+    <color name="demo_tokenDark60">#7A7A7A</color>
+    <color name="demo_tokenRed10">#FFF0EF</color>
+    <color name="demo_tokenWhite">#FFFFFFFF</color>
+    <color name="demo_white">#FFFFFF</color>
+
+    <dimen name="demo_dimen_56dp">56dp</dimen>
+
+    <dimen name="demo_text_size_12">12sp</dimen>
+    <dimen name="demo_text_size_13">13sp</dimen>
+    <dimen name="demo_text_size_14">14sp</dimen>
+    <dimen name="demo_text_size_15">15sp</dimen>
+    <dimen name="demo_text_size_16">16sp</dimen>
+    <dimen name="demo_text_size_18">18sp</dimen>
+    <dimen name="demo_text_size_20">20sp</dimen>
+
+    <dimen name="demo_view_size_0">0dp</dimen>
+    <dimen name="demo_view_size_1">1dp</dimen>
+    <dimen name="demo_view_size_2">2dp</dimen>
+    <dimen name="demo_view_size_3">3dp</dimen>
+    <dimen name="demo_view_size_4">4dp</dimen>
+    <dimen name="demo_view_size_6">6dp</dimen>
+    <dimen name="demo_view_size_8">8dp</dimen>
+    <dimen name="demo_view_size_10">10dp</dimen>
+    <dimen name="demo_view_size_12">12dp</dimen>
+    <dimen name="demo_view_size_14">14dp</dimen>
+    <dimen name="demo_view_size_16">16dp</dimen>
+    <dimen name="demo_view_size_18">18dp</dimen>
+    <dimen name="demo_view_size_20">20dp</dimen>
+    <dimen name="demo_view_size_22">22dp</dimen>
+    <dimen name="demo_view_size_24">24dp</dimen>
+    <dimen name="demo_view_size_30">30dp</dimen>
+    <dimen name="demo_view_size_36">36dp</dimen>
+    <dimen name="demo_view_size_40">40dp</dimen>
+    <dimen name="demo_view_size_48">48dp</dimen>
+    <dimen name="demo_view_size_60">60dp</dimen>
+    <dimen name="demo_view_size_80">80dp</dimen>
+    <dimen name="demo_view_size_120">120dp</dimen>
+
+    <!--
+      Bản thay cho `@style/PRMFontRegular14`. Không sao chép nguyên: style gốc trỏ tới font
+      `prm_sf_pro_display_regular` và đơn vị `sdp` — cả hai đều là tài sản của SDK, app demo không
+      khai dependency `sdp-android` và cũng không cần font riêng cho một dòng chữ chờ token.
+    -->
+    <style name="DemoFontRegular14">
+        <item name="android:textSize">@dimen/demo_text_size_14</item>
+        <item name="android:textColor">@color/demo_tokenDark100</item>
+    </style>
+
+</resources>

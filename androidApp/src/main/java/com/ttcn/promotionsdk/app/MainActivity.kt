@@ -6,9 +6,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ttcn.promotionsdk.app.databinding.LayoutMainBinding
-import com.ttcn.prm.ui.base.PRMBaseActivity
+import com.ttcn.promotionsdk.app.base.AppBaseActivity
 
-class MainActivity : PRMBaseActivity<LayoutMainBinding>() {
+class MainActivity : AppBaseActivity<LayoutMainBinding>() {
 
     override fun inflateBinding(layoutInflater: LayoutInflater) =
         LayoutMainBinding.inflate(layoutInflater)

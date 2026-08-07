@@ -2,16 +2,10 @@ package com.ttcn.promotionsdk.presentation.mypromotion
 
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersRequest
-import com.ttcn.promotionsdk.domain.model.voucher.VoucherItem
-import com.ttcn.promotionsdk.domain.model.voucher.VoucherDisplayState
-import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.domain.model.voucher.VoucherTabItem
-import com.ttcn.promotionsdk.domain.model.voucher.displayState
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.common.currentEpochMillis
-import com.ttcn.promotionsdk.common.daysUntil
-import com.ttcn.promotionsdk.presentation.ExpiryWarning
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
+import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 
 /**
  * **Tầng UI-logic dùng chung** cho màn "Ưu đãi của tôi" — chạy trên cả Android & iOS.
@@ -45,7 +40,7 @@ class MyPromotionStore(
      * iOS/khác không truyền → store tự sở hữu scope, và gọi [clear] khi rời màn.
      */
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : PRMStore<MyPromotionState, MyPromotionIntent> {
 
     /**
      * iOS/Swift: khởi tạo không cần truyền `scope` (default param của Kotlin KHÔNG bridge sang Swift,
@@ -57,7 +52,7 @@ class MyPromotionStore(
     private val _state = MutableStateFlow(MyPromotionState())
 
     /** Android collect trực tiếp + đọc `.value` đồng bộ. */
-    val state: StateFlow<MyPromotionState> = _state.asStateFlow()
+    override val state: StateFlow<MyPromotionState> = _state.asStateFlow()
 
     /** State hiện tại (đồng bộ) cho iOS đọc nhanh khi cần (vd seed trước khi observe). */
     fun currentState(): MyPromotionState = _state.value
@@ -94,6 +89,10 @@ class MyPromotionStore(
     private fun TabCache.isFresh(now: Long = currentEpochMillis()): Boolean =
         now - fetchedAt < TAB_CACHE_TTL_MS
 
+    /**
+     * Chỉ có nghĩa khi server trả `tabs[]`. Host không cấu hình tab → `selectedTabCode` là `null`
+     * suốt vòng đời màn, map này rỗng và **không ai đọc tới** (không có tab để bấm qua lại).
+     */
     private val tabCaches = mutableMapOf<String, TabCache>()
 
     /** Tab đang prefetch dở — chống bắn trùng khi user bấm qua lại lúc request chưa về. */
@@ -101,7 +100,11 @@ class MyPromotionStore(
 
     private var latestTabRequestId = 0L
 
-    fun dispatch(intent: MyPromotionIntent) {
+    override fun errorOf(state: MyPromotionState): String? = state.errorCode
+
+    override val consumeErrorIntent: MyPromotionIntent = MyPromotionIntent.ConsumeError
+
+    override fun dispatch(intent: MyPromotionIntent) {
         when (intent) {
             MyPromotionIntent.LoadInitialIfNeeded -> {
                 if (!_state.value.hasLoadedInitial) {
@@ -238,9 +241,15 @@ class MyPromotionStore(
                     ?.sortedBy { it.order }
                     .orEmpty()
                 val tabs = incomingTabs.takeIf { it.isNotEmpty() } ?: _state.value.tabs
-                // Quy tắc chọn tab active dùng chung (domain): resolveActiveTab.
-                val selected = response?.resolveActiveTab(requestTabCode)
-                    ?: requestTabCode
+                // Client đã chỉ định tab (user vừa bấm) → tab ĐÓ thắng, không để response ghi đè.
+                // `selectedTab`/`defaultTab` trong response là ý server về tab **đáp xuống**, chỉ có
+                // nghĩa khi client chưa có ý kiến (lần load đầu). Server echo lệch — trả
+                // `selectedTab = "all"` cho request `tab=used` — mà nghe theo thì tab sáng nhảy về
+                // "Tất cả" ngay dưới ngón tay user, trong khi list hiện ra lại là của "Đã dùng".
+                // Vì vậy chỉ hỏi `resolveActiveTab` khi KHÔNG có tab được yêu cầu; rule domain
+                // (selectedTab → defaultTab → tab đầu theo order) giữ nguyên cho đúng vai trò đó.
+                val selected = requestTabCode
+                    ?: response?.resolveActiveTab()
                     ?: tabs.firstOrNull()?.code
                 val incoming = response?.content.orEmpty()
                     .map { it.toMyPromotionVoucher(response?.expireWarningDate) }
@@ -287,25 +296,32 @@ class MyPromotionStore(
                 if (!shouldApplyResponse(requestId, requestTabCode, reset)) return@onFailure
 
                 val errorCode = throwable.toErrorCode()
-                val hasCache = requestTabCode?.let { tabCaches[it] } != null
                 _state.update {
                     when {
-                        reset && hasCache -> it.copy(
-                            isLoading = false, isRefreshing = false, isRefreshingTab = false,
-                            isLoadingMore = false, hasLoadedInitial = true, errorCode = errorCode,
-                        )
-
-                        // Không có cache cho tab vừa yêu cầu → danh sách đang hiển thị KHÔNG phải của
-                        // tab này: `onTabSelected` cố tình giữ tạm list tab cũ trong lúc load cho đỡ
-                        // nháy (`keepCurrentListWhileLoading`). Gọi hỏng thì phải xoá, nếu không user
+                        // Danh sách đang hiển thị KHÔNG phải của tab vừa yêu cầu: `onTabSelected`
+                        // cố tình giữ tạm list tab cũ trong lúc load cho đỡ nháy
+                        // (`keepCurrentListWhileLoading`). Gọi hỏng thì phải xoá, nếu không user
                         // thấy nguyên list của tab bên cạnh nằm dưới tab vừa bấm.
-                        reset -> it.copy(
+                        //
+                        // Điều kiện là **chính cái cờ đã gây ra list lệch tab**, chứ không phải
+                        // "tab này có cache không" như trước: hai chuyện đó không đồng nghĩa. Server
+                        // không trả `tabs[]` thì [tabCaches] rỗng suốt → mọi lần `reset` hỏng đều rơi
+                        // vào nhánh xoá, tức kéo-làm-mới ngay trên tab đang đứng mà rớt mạng là
+                        // danh sách bị xoá trắng.
+                        reset && keepCurrentListWhileLoading -> it.copy(
                             isLoading = false, isRefreshing = false, isRefreshingTab = false,
                             isLoadingMore = false,
                             vouchers = emptyList(),
                             page = 0,
                             isLastPage = true,
                             isEmpty = true,
+                            hasLoadedInitial = true, errorCode = errorCode,
+                        )
+
+                        // Làm mới / load lại chính tab đang đứng: đã có gì thì GIỮ NGUYÊN, chỉ báo lỗi.
+                        reset -> it.copy(
+                            isLoading = false, isRefreshing = false, isRefreshingTab = false,
+                            isLoadingMore = false, isEmpty = it.vouchers.isEmpty(),
                             hasLoadedInitial = true, errorCode = errorCode,
                         )
 
@@ -404,113 +420,3 @@ class MyPromotionStore(
         private const val TAB_CACHE_TTL_MS = 60_000L
     }
 }
-
-// ─── State / Intent / Models (cấu trúc, KHÔNG chuỗi hiển thị) ──────────────────
-
-data class MyPromotionState(
-    val hasLoadedInitial: Boolean = false,
-    val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false,
-    val isRefreshingTab: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val isEmpty: Boolean = false,
-    val tabs: List<MyPromotionTab> = emptyList(),
-    val selectedTabCode: String? = null,
-    val keyword: String = "",
-    val page: Int = 0,
-    val size: Int = 10,
-    val isLastPage: Boolean = true,
-    val vouchers: List<MyPromotionVoucher> = emptyList(),
-    /** Mã lỗi một-lần; native hiển thị rồi `dispatch(ConsumeError)` để xoá. */
-    val errorCode: String? = null,
-)
-
-/** Nhãn trạng thái đã QUYẾT ĐỊNH ở store — native chỉ tra chuỗi tương ứng, không tự suy. */
-enum class MyPromotionBadge {
-    /** Không hiện badge (voucher dùng được, chưa sắp hết hạn). */
-    NONE,
-    /** Sắp hết hạn — native hiển thị "Còn {expiringInDays} ngày". */
-    EXPIRING_SOON,
-    USED,
-    EXPIRED,
-    INELIGIBLE,
-}
-
-/** Nút thao tác đã QUYẾT ĐỊNH ở store — native map sang chuỗi + hiện/ẩn. */
-enum class MyPromotionAction {
-    /** Hiện nút "Sử dụng". */
-    USE,
-    /** Không hiện nút. */
-    NONE,
-}
-
-sealed interface MyPromotionIntent {
-    data object LoadInitialIfNeeded : MyPromotionIntent
-    data object Refresh : MyPromotionIntent
-    data class SelectTab(val tabCode: String) : MyPromotionIntent
-    data class Search(val keyword: String) : MyPromotionIntent
-    data object LoadMore : MyPromotionIntent
-    data object ConsumeError : MyPromotionIntent
-}
-
-data class MyPromotionTab(
-    val code: String,
-    val label: String,
-    val count: Int,
-    val order: Int,
-    val isDefault: Boolean = false,
-)
-
-/**
- * View-model cho 1 voucher: **bọc** domain [VoucherItem] ([source]) + các **quyết định hiển thị đã tính**
- * ([isEnabled]/[expiringInDays]/[badge]/[action]). Không chép lại field của domain (tránh trùng model),
- * không chứa chuỗi hiển thị — native đọc `source.*` cho dữ liệu thô và enum/số cho phần đã quyết định.
- */
-data class MyPromotionVoucher(
-    /** Dữ liệu thô tái dùng từ domain (merchantName/title/logo/expirationDate/status...). */
-    val source: VoucherItem,
-    // ── Quyết định hiển thị (store tính, native chỉ dùng) ──
-    /** Voucher còn dùng được → mở màn/áp; false → hiển thị mờ, không cho thao tác. */
-    val isEnabled: Boolean,
-    /** Số ngày còn lại khi sắp hết hạn (khi [badge] == EXPIRING_SOON); null nếu không áp dụng. */
-    val expiringInDays: Int?,
-    val badge: MyPromotionBadge,
-    val action: MyPromotionAction,
-)
-
-/** [expireWarningDate]: ngưỡng cảnh báo (ngày) từ server — quyết định badge "sắp hết hạn". */
-internal fun VoucherItem.toMyPromotionVoucher(expireWarningDate: Int?): MyPromotionVoucher {
-    // Ngưỡng chỉ có ở response danh sách; màn Chi tiết cũng cần (TLNV MOB_002 2.4) nên ghi nhớ lại.
-    // Idempotent, bỏ qua null — xem [ExpiryWarning].
-    ExpiryWarning.remember(expireWarningDate)
-    val display = VoucherStatus.from(status).displayState()
-    val enabled = display.isUsable
-    // "Còn X ngày" chỉ khi còn dùng được và trong ngưỡng [0, expireWarningDate].
-    val days = if (enabled && expireWarningDate != null) {
-        daysUntil(expirationDate)?.takeIf { it in 0..expireWarningDate }
-    } else null
-    val badge = when {
-        !enabled -> when (display) {
-            VoucherDisplayState.USED -> MyPromotionBadge.USED
-            VoucherDisplayState.EXPIRED -> MyPromotionBadge.EXPIRED
-            else -> MyPromotionBadge.INELIGIBLE
-        }
-        days != null -> MyPromotionBadge.EXPIRING_SOON
-        else -> MyPromotionBadge.NONE
-    }
-    return MyPromotionVoucher(
-        source = this,
-        isEnabled = enabled,
-        expiringInDays = days,
-        badge = badge,
-        action = if (enabled) MyPromotionAction.USE else MyPromotionAction.NONE,
-    )
-}
-
-internal fun VoucherTabItem.toMyPromotionTab() = MyPromotionTab(
-    code = code,
-    label = label,
-    count = count ?: 0,
-    order = order ?: Int.MAX_VALUE,
-    isDefault = isDefault,
-)

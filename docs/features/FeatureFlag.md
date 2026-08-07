@@ -6,7 +6,8 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
   `flagsOf(names)`, `all()`. Dựng thẳng sau `PromotionContainer.initialize(...)`.
 - **Hỗ trợ:** `FetchFeatureFlagsUseCase`, `IsFeatureEnabledUseCase`, `GetFeatureFlagsUseCase`,
   `GetPromotionFeatureFlagsUseCase`, `FeatureFlagRepository(Impl)`, `FeatureFlagApiService`,
-  `FeatureFlagLocalDataSource`, `di/FeatureFlagModule`, `FeatureFlagException`
+  `FeatureFlagLocalDataSource`, `FeatureFlagException` (binding DI nằm rải ở `NetworkModule` /
+  `LocalModule` / `RepositoryModule` / `UseCaseModule` — xem DependencyInjection.md §5)
 - **Gate (dùng chung):** `PromotionFeatureGate` trong `domain/usecase/` — **một object Kotlin duy
   nhất** cho cả hai nền tảng. Android gọi `PromotionFeatureGate.canOpenVoucherDetail()`, iOS gọi
   `PromotionFeatureGate.shared.canOpenVoucherDetail()`.
@@ -66,7 +67,7 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 | Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion()` | `PromotionSDK.openMyPromotion(from:)` |
 | Mở màn "Chi tiết ưu đãi" | `PRMBaseFragment.openPromotionDetail()` | `BaseRouter.canOpenVoucherDetail()` |
 | Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
-| Xác nhận thanh toán | `PromotionIntegrateManager.confirmRedemption()` | qua facade `PromotionSDKApi.createRedemption` |
+| Xác nhận thanh toán | `EndowStore.confirmRedemption()` — dùng chung 2 nền tảng | (như Android) |
 | Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
 Ngoài hai tầng trên còn **tầng thứ ba, tuỳ chọn**: host tự hỏi để ẩn entry point của chính mình — §3.
@@ -74,7 +75,7 @@ Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn h
 
 `isSdkEnabled()` có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
 
-`PromotionIntegrateManager.confirmRedemption` hỏi `canRedeemVoucher()`, `revalidateAndUpdate` hỏi
+`EndowStore.confirmRedemption` hỏi `canRedeemVoucher()`, `revalidateAfterBudgetError` hỏi
 `canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng. Gác nằm **sau** nhánh
 `discountDetails.isEmpty()`: đơn không có voucher nào thì `onSuccess` chạy bất kể cờ.
 

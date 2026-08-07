@@ -19,11 +19,11 @@
 import UIKit
 @_implementationOnly import PRMDesignKit
 
-public enum PromotionThemeDefaults {
+enum PromotionThemeDefaults {
 
     /// Nút chính. `backgroundColor` = màu cuối gradient; `cornerRadius` viên thuốc (`height/2` = 24 ở
     /// size lớn); `shadowColor` đỏ + opacity 25% = `#40EE0033` (khớp `tokenShadowsButtonColor`).
-    public static var button: ButtonToken {
+    static var button: ButtonToken {
         ButtonToken(
             backgroundColor: Colors.tokenViettelPayRed100,
             textColor: Colors.tokenWhite,
@@ -34,7 +34,7 @@ public enum PromotionThemeDefaults {
 
     /// Ô tìm kiếm. `iconColor` không có default thật (SDK render ảnh gốc); lấy `tokenDark40` cho khớp
     /// Android và để preview có gì đó hiển thị.
-    public static var searchBar: SearchBarToken {
+    static var searchBar: SearchBarToken {
         SearchBarToken(
             borderColor: Colors.tokenDark10,
             hintTextColor: Colors.tokenDark40,
@@ -46,7 +46,7 @@ public enum PromotionThemeDefaults {
 
     /// Item voucher. `linkTextColor` và hai màu radio bên iOS lấy từ ảnh asset; giá trị dưới đây khớp
     /// Android.
-    public static var listItem: ListItemToken {
+    static var listItem: ListItemToken {
         ListItemToken(
             linkTextColor: Colors.tokenViettelPayRed100,
             usedBadgeTextColor: Colors.tokenDark100,
@@ -57,7 +57,7 @@ public enum PromotionThemeDefaults {
     }
 
     /// Tab dạng chip.
-    public static var tabChip: TabChipToken {
+    static var tabChip: TabChipToken {
         TabChipToken(
             activeBackgroundColor: Colors.tokenDark80,
             inactiveBackgroundColor: Colors.tokenDark05,
@@ -68,7 +68,7 @@ public enum PromotionThemeDefaults {
     }
 
     /// Tab gạch chân.
-    public static var tabUnderline: TabUnderlineToken {
+    static var tabUnderline: TabUnderlineToken {
         TabUnderlineToken(
             indicatorColor: Colors.tokenViettelPayRed100,
             activeTextColor: Colors.tokenBlack,
@@ -78,7 +78,7 @@ public enum PromotionThemeDefaults {
     }
 
     /// Badge giảm giá.
-    public static var discountBadge: DiscountBadgeToken {
+    static var discountBadge: DiscountBadgeToken {
         DiscountBadgeToken(
             availableTextColor: Colors.tokenPineBlue100,
             unavailableTextColor: Colors.tokenDark60,
@@ -89,7 +89,7 @@ public enum PromotionThemeDefaults {
     }
 
     /// Theme mặc định đầy đủ. Đối ứng `PromotionThemeDefaults.theme(context)` bên Android.
-    public static var theme: PromotionSDKTheme {
+    static var theme: PromotionSDKTheme {
         PromotionSDKTheme(
             buttonToken: button,
             searchBarToken: searchBar,
@@ -101,5 +101,5 @@ public enum PromotionThemeDefaults {
     }
 
     /// `#AARRGGBB`, rút gọn `#RRGGBB` khi màu đục. Đối ứng `PromotionThemeDefaults.colorToHex`.
-    public static func colorToHex(_ color: UIColor) -> String { ThemeHex.format(color) ?? "#000000" }
+    static func colorToHex(_ color: UIColor) -> String { ThemeHex.format(color) ?? "#000000" }
 }

@@ -97,7 +97,7 @@ chưa dùng** — đừng tưởng là sót:
 | Chặng | Android | iOS |
 |---|---|---|
 | Widget giữ cờ | `EndowState` → `PRMEndowUiState` → `PRMEndowView.myIsLastPage` | `EndowState` (đọc thẳng qua `endowVM.state`) |
-| Truyền sang màn chọn | `ChoosePromotionFragment.forEndowView` → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
+| Truyền sang màn chọn | `PromotionSDK.createChoosePromotionFragment` → `ChoosePromotionFragment.forEndowView` (internal) → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
 
 Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`, không mở đường gọi trang kế.
 > - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);
@@ -157,7 +157,7 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
         → PRMEndowViewModel.validateAndApply(offers) { state -> onSettled(state.errorCode) }
         → EndowStore: isValidating=true → validateStackableDiscounts → isValidating=false
   errorCode != null → showToast(mapPromotionError(code)), **Ở LẠI** màn chọn (không áp)
-  errorCode == null → onBackFragment() (đóng màn; widget đã cập nhật qua state)
+  errorCode == null → goBack() (đóng màn; widget đã cập nhật qua state)
 ```
 
 > **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`

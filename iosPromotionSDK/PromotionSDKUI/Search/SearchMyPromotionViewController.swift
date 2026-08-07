@@ -9,6 +9,7 @@ import UIKit
 @_implementationOnly import PRMDesignKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
+@_implementationOnly import PRMKotlinBridge
 
 final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromotionViewModel> {
 
@@ -95,7 +96,7 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
     }
 
     @objc private func searchTextChanged(_ sender: UITextField) {
-        viewModel.handleAction(.queryChanged(sender.text ?? ""))
+        viewModel.dispatch(SearchMyPromotionIntentQueryChanged(keyword: sender.text ?? ""))
     }
 
     private func configShimmer() {
@@ -136,11 +137,18 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
     }
 
-    private func render(_ state: SearchMyPromotionViewModel.UiState) {
-        promotionItems = state.promotions
+    private func render(_ state: SearchMyPromotionState) {
+        // Map model của store → cell view model của iOS ngay tại chỗ dùng (đối ứng
+        // `state.vouchers.map { it.toMyVoucherListItem() }` bên Android).
+        promotionItems = state.vouchers.map {
+            MyPromotionCellViewModel(voucher: $0.source,
+                                     isEnabled: $0.isEnabled,
+                                     highlightKeyword: state.keyword,
+                                     expiringInDays: $0.expiringInDays?.intValue)
+        }
         tableView.reloadData()
         // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
-        resultSearchLabel.isHidden = state.promotions.isEmpty
+        resultSearchLabel.isHidden = promotionItems.isEmpty
 
         shimmerOverlay.isHidden = !state.isLoading
         if state.isLoading {
@@ -172,13 +180,10 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         }
     }
 
-    private func handle(_ effect: SearchMyPromotionViewModel.Effect) {
-        switch effect {
-        // Lỗi nghiệp vụ → toast (đồng nhất Android: Fragment map code → chuỗi rồi showToast).
-        case .showError(let code):
-            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
-        case .showServiceSelector(let voucherId, let services):
-            showServiceSelector(voucherId: voucherId, services: services)
+    /// Lỗi nghiệp vụ → toast (đồng nhất Android: view map code → chuỗi rồi show).
+    private func handle(_ effect: PRMEffect) {
+        if let error = effect as? PRMEffectShowError {
+            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
         }
     }
 
@@ -192,7 +197,6 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
                 serviceType: service.serviceType,
                 iconUrl: service.iconUrl
             ))
-            self?.viewModel.handleAction(.serviceSelected(service))
         }
     }
 
@@ -209,7 +213,7 @@ extension SearchMyPromotionViewController: UITableViewDelegate {
         let contentHeight = scrollView.contentSize.height
         let frameHeight = scrollView.frame.size.height
         if contentHeight > 0 && offsetY > contentHeight - frameHeight - 100 {
-            viewModel.handleAction(.loadMore)
+            viewModel.dispatch(SearchMyPromotionIntentLoadMore.shared)
         }
     }
 }
@@ -231,7 +235,7 @@ extension SearchMyPromotionViewController: UITableViewDataSource {
 // MARK: - UITextFieldDelegate (search action on return key)
 extension SearchMyPromotionViewController: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        viewModel.handleAction(.search)
+        viewModel.dispatch(SearchMyPromotionIntentSearch.shared)
         textField.resignFirstResponder()
         return true
     }
@@ -246,10 +250,10 @@ extension SearchMyPromotionViewController: UITextFieldDelegate {
 // MARK: - MyPromotionCellDelegate
 extension SearchMyPromotionViewController: MyPromotionCellDelegate {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String) {
-        viewModel.handleAction(.selectPromotion(id))
+        viewModel.openDetail(voucherId: id)
     }
 
     func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String) {
-        viewModel.handleAction(.openServiceSelector(voucherId))
+        showServiceSelector(voucherId: voucherId, services: viewModel.serviceOptions(voucherId: voucherId))
     }
 }

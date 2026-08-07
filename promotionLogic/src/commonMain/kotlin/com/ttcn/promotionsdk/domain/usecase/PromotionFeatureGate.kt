@@ -31,15 +31,16 @@ import kotlin.coroutines.cancellation.CancellationException
  *  - UI native dựng thẳng use case đơn lẻ nên **không** qua facade; nó gác ở điểm điều hướng bằng
  *    các hàm `canOpen…` / `canShow…` dưới đây.
  *
- * TODO(feature-flag): lõi Kotlin và bản iOS cũ parse **hai schema khác nhau** cho cùng endpoint
- * `POST api/v1/vtm/feature-flag/list`:
+ * **Schema `POST api/v1/vtm/feature-flag/list` — đã gọi thẳng server xác nhận (2026-08-08):**
  *
- *     iOS    → data.enableSdk + data.features[] { featureCode: "voucher_detail", allowed }
- *     Kotlin → data[] { flagName: "PROMOTION.VOUCHER_DETAIL", enabled }
+ *     "data": [ { "flagName": "PROMOTION.VOUCHER_DETAIL", "enabled": true }, … ]
  *
- * Nếu server dùng schema iOS thì Kotlin parse hỏng, [refresh] nuốt lỗi, cache giữ mặc định bật-hết
- * → gate cho qua (kill-switch **không hoạt động**, nhưng fail-open nên không ai thấy). Khi backend
- * xác nhận schema, sửa `FeatureFlagItemResponse`; file này không phải đổi.
+ * đúng như `FeatureFlagItemResponse` đang khai, nên kill-switch **có hoạt động**. (Trước đây nghi lõi
+ * Kotlin và bản iOS cũ đọc hai schema khác nhau; server thật chỉ trả dạng trên.) Server còn trả cả cờ
+ * ngoài danh mục của SDK (`PROMOTION.UUDAICUATOI.TIETKIEM`, `TEST`) — mapper bỏ qua, không sao.
+ *
+ * Nếu schema đổi, parse sẽ hỏng và `FeatureFlagRepositoryImpl.fetchFlags` **log cảnh báo** rồi giữ
+ * cache; đừng bỏ dòng log đó, nó là thứ duy nhất báo kill-switch đang chết lặng.
  */
 object PromotionFeatureGate {
 

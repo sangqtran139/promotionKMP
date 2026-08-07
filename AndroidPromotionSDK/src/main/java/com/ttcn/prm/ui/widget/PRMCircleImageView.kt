@@ -22,7 +22,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
 import com.ttcn.prm.R
 
-class PRMCircleImageView @JvmOverloads constructor(
+internal class PRMCircleImageView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyle: Int = 0
 ) : AppCompatImageView(context, attrs, defStyle) {
 

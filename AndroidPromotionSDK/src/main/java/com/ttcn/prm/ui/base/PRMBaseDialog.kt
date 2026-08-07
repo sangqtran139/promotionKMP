@@ -23,7 +23,7 @@ import com.ttcn.prm.ui.utils.extension.screenWidth
  * Base cho dialog dùng chung của SDK — song sinh của [PRMBaseFragment] nhưng cho [DialogFragment].
  * Tự set theme không tiêu đề, nền trong suốt, dim nền, và ép LIGHT như các màn SDK khác.
  */
-abstract class PRMBaseDialog<VB : ViewBinding> : DialogFragment() {
+internal abstract class PRMBaseDialog<VB : ViewBinding> : DialogFragment() {
 
     private var _binding: VB? = null
 

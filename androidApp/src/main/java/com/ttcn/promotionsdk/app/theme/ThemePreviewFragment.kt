@@ -25,28 +25,18 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.tabs.TabLayout
 import com.ttcn.promotionsdk.app.R
 import com.ttcn.promotionsdk.app.databinding.FragmentThemePreviewBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeColorTokenBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
-import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
+import com.ttcn.prm.ui.feature.endowview.PRMEndowView
 import com.ttcn.prm.entry.PromotionSDK
-import com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
-import com.ttcn.prm.ui.theme.applytoken.PromotionListItemTheme
 import com.ttcn.prm.ui.theme.PromotionThemeDisplay
 import com.ttcn.prm.ui.theme.PromotionThemeDisplay.Defaults
-import com.ttcn.prm.ui.theme.applytoken.TabUnderlineTheme
 import com.ttcn.prm.ui.theme.toToken
-import com.ttcn.prm.ui.widget.PRMSearchType
-import com.ttcn.prm.ui.theme.applytoken.TokenColorParser
-import com.ttcn.prm.ui.theme.applytoken.TokenDrawableFactory
-import com.ttcn.prm.ui.widget.PRMButton
-import com.ttcn.prm.ui.widget.PRMSearchField
 import kotlin.math.roundToInt
-import com.ttcn.prm.R as SdkR
 
 class ThemePreviewFragment : Fragment() {
 
@@ -252,13 +242,12 @@ class ThemePreviewFragment : Fragment() {
                 TokenField.Color("button.shadowColor", R.string.prm_theme_lbl_shadow_color),
                 TokenField.Slider("button.cornerRadius", R.string.prm_theme_lbl_corner_radius),
             ),
-            onPreview = { showButtonPreview() },
         )
 
         addCard(
             titleRes = R.string.prm_theme_section_search_bar,
             tokenCount = 5,
-            iconRes = SdkR.drawable.prm_ic_search_endow,
+            iconRes = R.drawable.prm_ic_theme_button,
             fields = listOf(
                 TokenField.Color("search.borderColor", R.string.prm_theme_lbl_border_color),
                 TokenField.Color("search.hintTextColor", R.string.prm_theme_lbl_hint_text_color),
@@ -266,7 +255,6 @@ class ThemePreviewFragment : Fragment() {
                 TokenField.Color("search.iconColor", R.string.prm_theme_lbl_icon_color),
                 TokenField.Slider("search.cornerRadius", R.string.prm_theme_lbl_corner_radius),
             ),
-            onPreview = { showSearchPreview() },
         )
 
         addCard(
@@ -292,7 +280,6 @@ class ThemePreviewFragment : Fragment() {
                     R.string.prm_theme_lbl_radio_selected_fill,
                 ),
             ),
-            onPreview = { showListItemPreview() },
         )
 
         addCard(
@@ -318,7 +305,6 @@ class ThemePreviewFragment : Fragment() {
                 ),
                 TokenField.Slider("tabChip.cornerRadius", R.string.prm_theme_lbl_corner_radius),
             ),
-            onPreview = { showTabChipPreview() },
         )
 
         addCard(
@@ -343,7 +329,6 @@ class ThemePreviewFragment : Fragment() {
                     R.string.prm_theme_lbl_background_tab
                 ),
             ),
-            onPreview = { showTabUnderlinePreview() },
         )
 
         addCard(
@@ -391,7 +376,8 @@ class ThemePreviewFragment : Fragment() {
         tokenCount: Int,
         iconRes: Int,
         fields: List<TokenField>,
-        onPreview: () -> Unit,
+        /** `null` = nhóm token này không có preview dựng được từ bề mặt public → ẩn nút. */
+        onPreview: (() -> Unit)? = null,
     ) {
         val inflater = LayoutInflater.from(requireContext())
         val cardBinding =
@@ -408,9 +394,10 @@ class ThemePreviewFragment : Fragment() {
             tokenCount,
         )
         cardBinding.imgGroupIcon.setImageResource(iconRes)
+        cardBinding.btnPreview.isVisible = onPreview != null
         cardBinding.btnPreview.setOnClickListener {
             syncFieldsFromViews()
-            onPreview()
+            onPreview?.invoke()
         }
 
         var expanded = initiallyExpanded
@@ -548,12 +535,12 @@ class ThemePreviewFragment : Fragment() {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return null
         val withHash = if (trimmed.startsWith("#")) trimmed else "#$trimmed"
-        if (TokenColorParser.parse(withHash) == null) return null
+        if (DemoHex.parse(withHash) == null) return null
         return withHash.uppercase()
     }
 
     private fun updatePaletteSwatch(swatch: View, paletteIcon: View, hex: String?) {
-        val color = hex?.let { TokenColorParser.parse(it) }
+        val color = hex?.let { DemoHex.parse(it) }
         if (color != null) {
             swatch.background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -598,7 +585,7 @@ class ThemePreviewFragment : Fragment() {
         var currentArgb = Color.BLACK
         val initial = normalizeHex(targetEditText.text.toString())
         if (initial != null) {
-            TokenColorParser.parse(initial)?.let { parsed ->
+            DemoHex.parse(initial)?.let { parsed ->
                 currentArgb = parsed
                 includeAlpha = initial.length == 9
             }
@@ -652,7 +639,7 @@ class ThemePreviewFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 normalizeHex(edtHex.text.toString())?.let { hex ->
                     includeAlpha = hex.length == 9
-                    TokenColorParser.parse(hex)?.let { refreshFromArgb(it) }
+                    DemoHex.parse(hex)?.let { refreshFromArgb(it) }
                 }
                 true
             } else {
@@ -725,7 +712,7 @@ class ThemePreviewFragment : Fragment() {
     private fun showBottomSheet(@StringRes titleRes: Int, content: View) {
         val sheet = BottomSheetDialog(requireContext())
         val container = FrameLayout(requireContext()).apply {
-            val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_16)
+            val pad = resources.getDimensionPixelSize(R.dimen.prm_theme_preview_sheet_padding)
             setPadding(pad, pad, pad, pad)
             addView(content)
         }
@@ -739,86 +726,14 @@ class ThemePreviewFragment : Fragment() {
         sheet.show()
     }
 
-    private fun showButtonPreview() {
-        syncFieldsFromViews()
-        val button = LayoutInflater.from(requireContext())
-            .inflate(R.layout.widget_preview_prm_button, null, false) as PRMButton
-        button.text = getString(R.string.prm_theme_demo_btn_continue)
-        val token = themeDisplay.button.toToken()
-        showBottomSheet(R.string.prm_theme_sheet_component_prm_button, button)
-        // Apply after attach so onAttachedToWindow does not overwrite with registry token.
-        button.post { button.applyToken(token) }
-    }
-
-    private fun showSearchPreview() {
-        syncFieldsFromViews()
-        val token = themeDisplay.searchBar.toToken()
-        val search = PRMSearchField(requireContext()).apply {
-            searchType = PRMSearchType.BASIC
-            hint = getString(SdkR.string.prm_search_hint)
-            applyToken(token)
-            viewBinding.searchInput.setText(getString(R.string.prm_theme_demo_search_text))
-        }
-        showBottomSheet(R.string.prm_theme_sheet_component_prm_search, search)
-        search.post { search.applyToken(token) }
-    }
-
-    private fun showTabChipPreview() {
-        syncFieldsFromViews()
-        val row = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.HORIZONTAL
-            val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_8)
-            setPadding(pad, pad, pad, pad)
-        }
-        listOf(
-            getString(R.string.prm_theme_demo_tab_all) to true,
-            getString(R.string.prm_theme_demo_tab_expiring) to false,
-        ).forEach { (title, selected) ->
-            val tv = TextView(requireContext()).apply {
-                text = title
-                val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_12)
-                setPadding(pad, pad, pad, pad)
-            }
-            val token = themeDisplay.tabChip
-            val radius = token.cornerRadius ?: 7f
-            val bg = if (selected) token.activeBackgroundColor else token.inactiveBackgroundColor
-            val fg = if (selected) token.activeTextColor else token.inactiveTextColor
-            val bgColor = bg?.let { TokenColorParser.parse(it) } ?: Color.GRAY
-            val fgColor = fg?.let { TokenColorParser.parse(it) } ?: Color.BLACK
-            tv.setTextColor(fgColor)
-            tv.background = TokenDrawableFactory.roundedRect(bgColor, radius, requireContext())
-            row.addView(tv)
-        }
-        showBottomSheet(R.string.prm_theme_sheet_component_rv_tabs, row)
-    }
-
-    private fun showTabUnderlinePreview() {
-        syncFieldsFromViews()
-        val indicatorHeight = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_3)
-        val vIndicator = View(requireContext()).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                indicatorHeight,
-            ).also { it.gravity = android.view.Gravity.BOTTOM }
-            setBackgroundColor(
-                themeDisplay.tabUnderline.backgroundColor
-                    ?.let { TokenColorParser.parse(it) }
-                    ?: ContextCompat.getColor(requireContext(), SdkR.color.prm_color_D3D3D3),
-            )
-        }
-        val tabs = TabLayout(requireContext()).apply {
-            addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_info)))
-            addTab(newTab().setText(getString(R.string.prm_theme_demo_detail_tab_guide)))
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-            TabUnderlineTheme.applyToken(this, themeDisplay.tabUnderline)
-        }
-        val container = FrameLayout(requireContext()).apply {
-            addView(vIndicator)
-            addView(tabs)
-        }
-        showBottomSheet(R.string.prm_theme_sheet_component_tabs, container)
-    }
-
+    /**
+     * Chỉ còn **một** preview: widget `PRMEndowView`.
+     *
+     * Các preview cũ (PRMButton, PRMSearchField, tab chip, tab gạch chân, item voucher) dựng bằng
+     * widget/applier/layout **nội bộ** của SDK. Từ khi bề mặt public gói gọn trong
+     * `com.ttcn.prm.entry`, host không với tới chúng nữa — và đó là chủ đích, không phải thiếu sót.
+     * Muốn xem token áp vào đâu thì bấm "Áp dụng" rồi mở màn SDK thật.
+     */
     private fun showEndowPreview() {
         syncFieldsFromViews()
         val token = themeDisplay.discountBadge.toToken()
@@ -830,58 +745,6 @@ class ThemePreviewFragment : Fragment() {
         }
         showBottomSheet(R.string.prm_theme_sheet_component_prm_endow, endow)
         endow.post { endow.applyToken(token) }
-    }
-
-    private fun showListItemPreview() {
-        syncFieldsFromViews()
-        val inflater = LayoutInflater.from(requireContext())
-        val pad = resources.getDimensionPixelSize(SdkR.dimen.prm_view_size_8)
-        val container = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, pad)
-        }
-        val token = themeDisplay.listItem
-
-        val activeBinding = PrmItemChoosePromotionBinding.inflate(inflater, container, false)
-        bindListItemPreviewState(activeBinding, showExpiredBadge = false)
-        PromotionListItemTheme.applyToken(activeBinding, token)
-        container.addView(activeBinding.root)
-
-        val expiredBinding = PrmItemChoosePromotionBinding.inflate(inflater, container, false)
-        bindListItemPreviewState(expiredBinding, showExpiredBadge = true)
-        PromotionListItemTheme.applyToken(expiredBinding, token)
-        val expiredLp = expiredBinding.root.layoutParams as LinearLayout.LayoutParams
-        expiredLp.topMargin = pad
-        expiredBinding.root.layoutParams = expiredLp
-        container.addView(expiredBinding.root)
-
-        showBottomSheet(R.string.prm_theme_sheet_component_promotion_item, container)
-    }
-
-    private fun bindListItemPreviewState(
-        binding: PrmItemChoosePromotionBinding,
-        showExpiredBadge: Boolean,
-    ) {
-        binding.apply {
-            txtVoucherName.text = getString(R.string.prm_theme_demo_list_voucher_name)
-            tvContent.text = getString(R.string.prm_theme_demo_list_discount)
-            tvEndDate.text = getString(R.string.prm_theme_demo_list_expiry)
-            ctlNotEnoughApplyVoucher.isVisible = false
-            imgCircleNotEnoughApplyVoucher.isVisible = false
-            if (showExpiredBadge) {
-                ctlTop.alpha = 0.6f
-                txtExpired.isVisible = true
-                txtExpired.text = getString(SdkR.string.prm_is_used)
-                lnDetail.isVisible = false
-                cbUseVoucher.isVisible = false
-            } else {
-                ctlTop.alpha = 1f
-                txtExpired.isVisible = false
-                lnDetail.isVisible = true
-                cbUseVoucher.isVisible = true
-                cbUseVoucher.isChecked = true
-            }
-        }
     }
 
     private fun onReset() {

@@ -6,8 +6,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingHorizontal="@dimen/prm_view_size_24"
-        android:paddingVertical="@dimen/prm_view_size_24">
+        android:paddingHorizontal="@dimen/demo_view_size_24"
+        android:paddingVertical="@dimen/demo_view_size_24">
 
         <!-- Header -->
         <LinearLayout
@@ -22,13 +22,13 @@
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@null"
-                android:padding="@dimen/prm_view_size_8"
+                android:padding="@dimen/demo_view_size_8"
                 android:src="@drawable/prm_ic_back_theme" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/prm_view_size_8"
+                android:layout_marginStart="@dimen/demo_view_size_8"
                 android:text="@string/demo_headless_title"
                 android:textAppearance="@style/TextAppearance.Material3.TitleMedium" />
         </LinearLayout>
@@ -38,19 +38,19 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/prm_view_size_16"
+            android:layout_marginTop="@dimen/demo_view_size_16"
             android:insetLeft="0dp"
             android:insetTop="0dp"
             android:insetRight="0dp"
             android:insetBottom="0dp"
             android:minHeight="@dimen/app_launcher_btn_min_height"
-            android:paddingVertical="@dimen/prm_view_size_14"
+            android:paddingVertical="@dimen/demo_view_size_14"
             android:text="@string/demo_btn_search_vouchers"
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="@android:color/white"
-            app:backgroundTint="@color/prm_colorPrimary"
+            app:backgroundTint="@color/demo_colorPrimary"
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
-            app:elevation="@dimen/prm_view_size_2"
+            app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
 
         <com.google.android.material.button.MaterialButton
@@ -58,19 +58,19 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/prm_view_size_16"
+            android:layout_marginTop="@dimen/demo_view_size_16"
             android:insetLeft="0dp"
             android:insetTop="0dp"
             android:insetRight="0dp"
             android:insetBottom="0dp"
             android:minHeight="@dimen/app_launcher_btn_min_height"
-            android:paddingVertical="@dimen/prm_view_size_14"
+            android:paddingVertical="@dimen/demo_view_size_14"
             android:text="@string/demo_btn_find_eligible"
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="@android:color/white"
-            app:backgroundTint="@color/prm_colorPrimary"
+            app:backgroundTint="@color/demo_colorPrimary"
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
-            app:elevation="@dimen/prm_view_size_2"
+            app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
 
         <com.google.android.material.button.MaterialButton
@@ -78,19 +78,19 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/prm_view_size_16"
+            android:layout_marginTop="@dimen/demo_view_size_16"
             android:insetLeft="0dp"
             android:insetTop="0dp"
             android:insetRight="0dp"
             android:insetBottom="0dp"
             android:minHeight="@dimen/app_launcher_btn_min_height"
-            android:paddingVertical="@dimen/prm_view_size_14"
+            android:paddingVertical="@dimen/demo_view_size_14"
             android:text="@string/demo_btn_get_detail"
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="@android:color/white"
-            app:backgroundTint="@color/prm_colorPrimary"
+            app:backgroundTint="@color/demo_colorPrimary"
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
-            app:elevation="@dimen/prm_view_size_2"
+            app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
 
         <com.google.android.material.button.MaterialButton
@@ -98,19 +98,19 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/prm_view_size_16"
+            android:layout_marginTop="@dimen/demo_view_size_16"
             android:insetLeft="0dp"
             android:insetTop="0dp"
             android:insetRight="0dp"
             android:insetBottom="0dp"
             android:minHeight="@dimen/app_launcher_btn_min_height"
-            android:paddingVertical="@dimen/prm_view_size_14"
+            android:paddingVertical="@dimen/demo_view_size_14"
             android:text="@string/demo_btn_validate"
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="@android:color/white"
-            app:backgroundTint="@color/prm_colorPrimary"
+            app:backgroundTint="@color/demo_colorPrimary"
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
-            app:elevation="@dimen/prm_view_size_2"
+            app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
 
         <com.google.android.material.button.MaterialButton
@@ -118,19 +118,19 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/prm_view_size_16"
+            android:layout_marginTop="@dimen/demo_view_size_16"
             android:insetLeft="0dp"
             android:insetTop="0dp"
             android:insetRight="0dp"
             android:insetBottom="0dp"
             android:minHeight="@dimen/app_launcher_btn_min_height"
-            android:paddingVertical="@dimen/prm_view_size_14"
+            android:paddingVertical="@dimen/demo_view_size_14"
             android:text="@string/demo_btn_create_redemption"
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="@android:color/white"
-            app:backgroundTint="@color/prm_colorPrimary"
+            app:backgroundTint="@color/demo_colorPrimary"
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
-            app:elevation="@dimen/prm_view_size_2"
+            app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
 
         <com.google.android.material.button.MaterialButton
@@ -139,7 +139,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
-            android:layout_marginTop="@dimen/prm_view_size_8"
+            android:layout_marginTop="@dimen/demo_view_size_8"
             android:text="@string/demo_btn_clear_log" />
 
         <!-- Log output -->
@@ -155,7 +155,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="monospace"
-                android:padding="@dimen/prm_view_size_12"
+                android:padding="@dimen/demo_view_size_12"
                 android:textSize="12sp" />
         </ScrollView>
 

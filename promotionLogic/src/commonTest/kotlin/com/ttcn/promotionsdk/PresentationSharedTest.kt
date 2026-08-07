@@ -9,7 +9,7 @@ import com.ttcn.promotionsdk.domain.exception.PromotionErrorCodes
 import com.ttcn.promotionsdk.domain.exception.PromotionException
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.voucher.ApplicableProduct
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableProducts
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -7,7 +7,7 @@ import android.content.res.Resources
  *
  * @return the status bar's height
  */
-fun statusBarHeight(): Int {
+internal fun statusBarHeight(): Int {
     val resources: Resources = Resources.getSystem()
     val resourceId: Int = resources.getIdentifier("status_bar_height", "dimen", "android")
     return resources.getDimensionPixelSize(resourceId)
@@ -18,7 +18,7 @@ fun statusBarHeight(): Int {
  *
  * @return the navigation bar's height
  */
-fun navBarHeight(): Int {
+internal fun navBarHeight(): Int {
     val res = Resources.getSystem()
     val resourceId = res.getIdentifier("navigation_bar_height", "dimen", "android")
     return if (resourceId != 0) {

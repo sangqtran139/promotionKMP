@@ -45,8 +45,9 @@ android {
     }
 
     publishing {
-        // Chỉ phát hành bản release. Kèm sources để host debug vào trong SDK được.
-        singleVariant("release") { withSourcesJar() }
+        // Chỉ phát hành bản release, **không** kèm sources.jar: gửi kèm là dâng nguyên văn tầng UI
+        // cho host đọc, đúng thứ `internal` đang che. Xem PublicApi.md §6.1.
+        singleVariant("release")
     }
 }
 

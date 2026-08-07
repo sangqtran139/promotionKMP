@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Không resource nào của SDK là public.
+
+  Cơ chế AAPT2: chỉ cần file này tồn tại, mọi resource KHÔNG được liệt kê ở đây bị đánh dấu private
+  trong `public.txt` của AAR, và host tham chiếu tới chúng sẽ ăn lint `PrivateResource`. Danh sách
+  rỗng = private toàn bộ 656 resource.
+
+  Bề mặt public của SDK là `com.ttcn.prm.entry.**` (Kotlin) — không có phần resource. `PRMEndowView`
+  là view duy nhất host đặt vào layout, và nó không khai `declare-styleable` nào, nên host không cần
+  attr hay style nào từ đây.
+
+  Muốn mở một resource ra cho host thì thêm dòng `<public type="..." name="..." />` — và cập nhật
+  docs/common/PublicApi.md cho khớp.
+-->
+<resources>
+    <public />
+</resources>

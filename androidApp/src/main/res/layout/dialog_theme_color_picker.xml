@@ -38,19 +38,19 @@
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/prm_theme_color_picker_title"
                         android:textColor="@color/prm_theme_title_text"
-                        android:textSize="@dimen/prm_text_size_20"
+                        android:textSize="@dimen/demo_text_size_20"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/txtPickerTokenLabel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/prm_view_size_4"
+                        android:layout_marginTop="@dimen/demo_view_size_4"
                         android:ellipsize="end"
                         android:fontFamily="sans-serif"
                         android:maxLines="1"
                         android:textColor="@color/prm_theme_label_text"
-                        android:textSize="@dimen/prm_text_size_13"
+                        android:textSize="@dimen/demo_text_size_13"
                         tools:text="backgroundColor" />
                 </LinearLayout>
 
@@ -60,20 +60,20 @@
                     android:layout_height="wrap_content"
                     android:background="@drawable/prm_bg_color_picker_mode_pill"
                     android:fontFamily="sans-serif-medium"
-                    android:paddingHorizontal="@dimen/prm_view_size_12"
-                    android:paddingVertical="@dimen/prm_view_size_6"
+                    android:paddingHorizontal="@dimen/demo_view_size_12"
+                    android:paddingVertical="@dimen/demo_view_size_6"
                     android:text="@string/prm_theme_color_picker_rgb_mode"
                     android:textColor="@color/prm_theme_title_text"
-                    android:textSize="@dimen/prm_text_size_12" />
+                    android:textSize="@dimen/demo_text_size_12" />
             </LinearLayout>
 
             <!-- Color preview (white frame) -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/prm_theme_color_picker_preview_height"
-                android:layout_marginTop="@dimen/prm_view_size_20"
+                android:layout_marginTop="@dimen/demo_view_size_20"
                 android:background="@android:color/white"
-                android:padding="@dimen/prm_view_size_2">
+                android:padding="@dimen/demo_view_size_2">
 
                 <View
                     android:id="@+id/viewPickerPreview"
@@ -85,18 +85,18 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/prm_view_size_16"
+                android:layout_marginTop="@dimen/demo_view_size_16"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/prm_view_size_12"
+                    android:layout_marginEnd="@dimen/demo_view_size_12"
                     android:fontFamily="sans-serif-medium"
                     android:text="@string/prm_theme_color_picker_section_hex"
                     android:textColor="@color/prm_theme_label_text"
-                    android:textSize="@dimen/prm_text_size_13" />
+                    android:textSize="@dimen/demo_text_size_13" />
 
                 <EditText
                     android:id="@+id/edtPickerHex"
@@ -110,19 +110,19 @@
                     android:importantForAutofill="no"
                     android:inputType="textCapCharacters"
                     android:maxLines="1"
-                    android:paddingHorizontal="@dimen/prm_view_size_12"
-                    android:paddingVertical="@dimen/prm_view_size_10"
+                    android:paddingHorizontal="@dimen/demo_view_size_12"
+                    android:paddingVertical="@dimen/demo_view_size_10"
                     android:singleLine="true"
                     android:textColor="@color/prm_theme_title_text"
                     android:textColorHint="@color/prm_theme_label_text"
-                    android:textSize="@dimen/prm_text_size_14" />
+                    android:textSize="@dimen/demo_text_size_14" />
             </LinearLayout>
 
             <!-- RGB sliders card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/prm_view_size_20"
+                android:layout_marginTop="@dimen/demo_view_size_20"
                 android:background="@drawable/prm_bg_color_picker_inner_card"
                 android:orientation="vertical"
                 android:padding="@dimen/prm_color_picker_inner_card_padding">
@@ -132,7 +132,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/prm_view_size_48"
+                    android:minHeight="@dimen/demo_view_size_48"
                     android:orientation="horizontal">
 
                     <TextView
@@ -143,19 +143,19 @@
                         android:gravity="center"
                         android:text="@string/prm_theme_channel_r"
                         android:textColor="@color/prm_channel_r_text"
-                        android:textSize="@dimen/prm_text_size_14"
+                        android:textSize="@dimen/demo_text_size_14"
                         android:textStyle="bold" />
 
                     <SeekBar
                         android:id="@+id/seekRed"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="@dimen/prm_view_size_8"
+                        android:layout_marginHorizontal="@dimen/demo_view_size_8"
                         android:layout_weight="1"
                         android:max="255"
-                        android:minHeight="@dimen/prm_view_size_48"
-                        android:paddingStart="@dimen/prm_view_size_0"
-                        android:paddingEnd="@dimen/prm_view_size_0"
+                        android:minHeight="@dimen/demo_view_size_48"
+                        android:paddingStart="@dimen/demo_view_size_0"
+                        android:paddingEnd="@dimen/demo_view_size_0"
                         android:progressDrawable="@drawable/prm_seekbar_channel_r"
                         android:splitTrack="false"
                         android:thumb="@drawable/prm_seekbar_rgb_thumb"
@@ -163,12 +163,12 @@
 
                     <TextView
                         android:id="@+id/txtRedCurrent"
-                        android:layout_width="@dimen/prm_view_size_40"
+                        android:layout_width="@dimen/demo_view_size_40"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="end"
                         android:textColor="@color/prm_theme_title_text"
-                        android:textSize="@dimen/prm_text_size_15"
+                        android:textSize="@dimen/demo_text_size_15"
                         tools:text="238" />
                 </LinearLayout>
 
@@ -176,9 +176,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/prm_view_size_12"
+                    android:layout_marginTop="@dimen/demo_view_size_12"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/prm_view_size_48"
+                    android:minHeight="@dimen/demo_view_size_48"
                     android:orientation="horizontal">
 
                     <TextView
@@ -189,19 +189,19 @@
                         android:gravity="center"
                         android:text="@string/prm_theme_channel_g"
                         android:textColor="@color/prm_channel_g_text"
-                        android:textSize="@dimen/prm_text_size_14"
+                        android:textSize="@dimen/demo_text_size_14"
                         android:textStyle="bold" />
 
                     <SeekBar
                         android:id="@+id/seekGreen"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="@dimen/prm_view_size_8"
+                        android:layout_marginHorizontal="@dimen/demo_view_size_8"
                         android:layout_weight="1"
                         android:max="255"
-                        android:minHeight="@dimen/prm_view_size_48"
-                        android:paddingStart="@dimen/prm_view_size_0"
-                        android:paddingEnd="@dimen/prm_view_size_0"
+                        android:minHeight="@dimen/demo_view_size_48"
+                        android:paddingStart="@dimen/demo_view_size_0"
+                        android:paddingEnd="@dimen/demo_view_size_0"
                         android:progressDrawable="@drawable/prm_seekbar_channel_g"
                         android:splitTrack="false"
                         android:thumb="@drawable/prm_seekbar_rgb_thumb"
@@ -209,12 +209,12 @@
 
                     <TextView
                         android:id="@+id/txtGreenCurrent"
-                        android:layout_width="@dimen/prm_view_size_40"
+                        android:layout_width="@dimen/demo_view_size_40"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="end"
                         android:textColor="@color/prm_theme_title_text"
-                        android:textSize="@dimen/prm_text_size_15"
+                        android:textSize="@dimen/demo_text_size_15"
                         tools:text="0" />
                 </LinearLayout>
 
@@ -222,9 +222,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/prm_view_size_12"
+                    android:layout_marginTop="@dimen/demo_view_size_12"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/prm_view_size_48"
+                    android:minHeight="@dimen/demo_view_size_48"
                     android:orientation="horizontal">
 
                     <TextView
@@ -235,19 +235,19 @@
                         android:gravity="center"
                         android:text="@string/prm_theme_channel_b"
                         android:textColor="@color/prm_channel_b_text"
-                        android:textSize="@dimen/prm_text_size_14"
+                        android:textSize="@dimen/demo_text_size_14"
                         android:textStyle="bold" />
 
                     <SeekBar
                         android:id="@+id/seekBlue"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginHorizontal="@dimen/prm_view_size_8"
+                        android:layout_marginHorizontal="@dimen/demo_view_size_8"
                         android:layout_weight="1"
                         android:max="255"
-                        android:minHeight="@dimen/prm_view_size_48"
-                        android:paddingStart="@dimen/prm_view_size_0"
-                        android:paddingEnd="@dimen/prm_view_size_0"
+                        android:minHeight="@dimen/demo_view_size_48"
+                        android:paddingStart="@dimen/demo_view_size_0"
+                        android:paddingEnd="@dimen/demo_view_size_0"
                         android:progressDrawable="@drawable/prm_seekbar_channel_b"
                         android:splitTrack="false"
                         android:thumb="@drawable/prm_seekbar_rgb_thumb"
@@ -255,12 +255,12 @@
 
                     <TextView
                         android:id="@+id/txtBlueCurrent"
-                        android:layout_width="@dimen/prm_view_size_40"
+                        android:layout_width="@dimen/demo_view_size_40"
                         android:layout_height="wrap_content"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="end"
                         android:textColor="@color/prm_theme_title_text"
-                        android:textSize="@dimen/prm_text_size_15"
+                        android:textSize="@dimen/demo_text_size_15"
                         tools:text="0" />
                 </LinearLayout>
             </LinearLayout>
@@ -269,7 +269,7 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="@dimen/prm_view_size_1"
+        android:layout_height="@dimen/demo_view_size_1"
         android:background="@color/prm_color_picker_footer_divider" />
 
     <LinearLayout
@@ -279,7 +279,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="@dimen/prm_color_picker_footer_padding_h"
-        android:paddingTop="@dimen/prm_view_size_12"
+        android:paddingTop="@dimen/demo_view_size_12"
         android:paddingBottom="@dimen/prm_color_picker_footer_padding_v">
 
         <TextView
@@ -291,16 +291,16 @@
             android:focusable="true"
             android:fontFamily="sans-serif-medium"
             android:gravity="center_vertical"
-            android:minHeight="@dimen/prm_view_size_48"
-            android:paddingHorizontal="@dimen/prm_view_size_8"
+            android:minHeight="@dimen/demo_view_size_48"
+            android:paddingHorizontal="@dimen/demo_view_size_8"
             android:text="@string/prm_theme_color_picker_cancel"
             android:textColor="@color/prm_theme_reset_text"
-            android:textSize="@dimen/prm_text_size_16"
+            android:textSize="@dimen/demo_text_size_16"
             android:textStyle="bold" />
 
         <View
             android:layout_width="0dp"
-            android:layout_height="@dimen/prm_view_size_48"
+            android:layout_height="@dimen/demo_view_size_48"
             android:layout_weight="1" />
 
         <TextView
@@ -312,13 +312,13 @@
             android:focusable="true"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:minHeight="@dimen/prm_view_size_48"
+            android:minHeight="@dimen/demo_view_size_48"
             android:minWidth="@dimen/prm_color_picker_ok_min_width"
-            android:paddingHorizontal="@dimen/prm_view_size_24"
+            android:paddingHorizontal="@dimen/demo_view_size_24"
             android:text="@string/prm_theme_color_picker_ok"
             android:textAllCaps="true"
             android:textColor="@android:color/white"
-            android:textSize="@dimen/prm_text_size_16"
+            android:textSize="@dimen/demo_text_size_16"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

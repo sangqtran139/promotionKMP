@@ -19,7 +19,7 @@ internal interface IPRMClickEffect {
 }
 
 @SuppressLint("ClickableViewAccessibility")
-fun View.applyClickEffect(
+internal fun View.applyClickEffect(
     isEnable: Boolean = true,
     @FloatRange(from = 0.0, to = 1.0) alpha: Float = 0.5f
 ) {

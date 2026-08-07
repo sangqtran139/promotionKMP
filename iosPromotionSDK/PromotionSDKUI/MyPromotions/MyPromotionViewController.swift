@@ -176,8 +176,8 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         // Bật infinite scroll: kéo tới đáy -> `.loadMore`.
         self.promotionsTableview.hasInfinityScrolling = true
         // Kéo-làm-mới / cuộn-tới-đáy → action, qua closure của PRMRefreshTableView (không Combine).
-        self.promotionsTableview.onRefresh = { [weak self] in self?.viewModel.handleAction(.refresh) }
-        self.promotionsTableview.onLoadMore = { [weak self] in self?.viewModel.handleAction(.loadMore) }
+        self.promotionsTableview.onRefresh = { [weak self] in self?.viewModel.dispatch(MyPromotionIntentRefresh.shared) }
+        self.promotionsTableview.onLoadMore = { [weak self] in self?.viewModel.dispatch(MyPromotionIntentLoadMore.shared) }
     }
     
     private func configHeaderView() {
@@ -227,7 +227,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
             for tab in tabs {
                 let tabView = PromotionTabView()
                 let code = tab.code
-                tabView.onTapped = { [weak self] in self?.viewModel.handleAction(.selectTab(code)) }
+                tabView.onTapped = { [weak self] in self?.viewModel.dispatch(MyPromotionIntentSelectTab(tabCode: code)) }
                 tabStackView.addArrangedSubview(tabView)
                 tabViewsByCode[code] = tabView
             }
@@ -251,13 +251,16 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         viewModel.onState = { [weak self] state in self?.render(state) }
         viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
 
-        viewModel.handleAction(.loadInitialIfNeeded)
+        viewModel.dispatch(MyPromotionIntentLoadInitialIfNeeded.shared)
     }
 
-    private func render(_ state: MyPromotionViewModel.UiState) {
+    private func render(_ state: MyPromotionState) {
+        // `isLoading` của store là "đang gọi API"; màn chỉ che shimmer khi CHƯA có gì để hiện —
+        // đối ứng `state.isLoading && state.vouchers.isEmpty` bên Android.
+        let showShimmer = state.isLoading && state.vouchers.isEmpty
         // Loading state — hiện shimmer (che cả tab + list), ẩn khi data về.
-        shimmerOverlay.isHidden = !state.isLoading
-        if state.isLoading {
+        shimmerOverlay.isHidden = !showShimmer
+        if showShimmer {
             shimmerView.startAnimating()
             tabShimmerChips.forEach { $0.startAnimating() }
         } else {
@@ -278,25 +281,27 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         }
 
         // Còn trang hay không -> infinite scroll dừng khi hết.
-        promotionsTableview.isHasMorePage = state.canLoadMore
+        promotionsTableview.isHasMorePage = !state.isLastPage
 
         // Render tabs động từ API (label + count) + focus theo tab đang chọn.
-        renderTabs(state.tabs, selectedCode: state.selectedTabCode, showCount: !state.isLoading)
+        renderTabs(state.tabs, selectedCode: state.selectedTabCode ?? "all", showCount: !state.isLoading)
 
-        promotionItems = state.promotions
+        // Map model của store → cell view model của iOS ngay tại chỗ dùng.
+        promotionItems = state.vouchers.map {
+            MyPromotionCellViewModel(voucher: $0.source,
+                                     isEnabled: $0.isEnabled,
+                                     expiringInDays: $0.expiringInDays?.intValue)
+        }
         promotionsTableview.reloadData()
 
         // Empty view khi list rỗng (đã tải xong) — khớp Android ctlNoResult.
-        emptyView.isHidden = !state.isEmpty
+        emptyView.isHidden = !(!state.isLoading && state.isEmpty)
     }
 
-    private func handle(_ effect: MyPromotionViewModel.Effect) {
-        switch effect {
-        // Lỗi nghiệp vụ → toast (đồng nhất Android `showToast`).
-        case .showError(let code):
-            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
-        case .showServiceSelector(let voucherId, let services):
-            showServiceSelector(voucherId: voucherId, services: services)
+    /// Lỗi nghiệp vụ → toast (đồng nhất Android `showToast`).
+    private func handle(_ effect: PRMEffect) {
+        if let error = effect as? PRMEffectShowError {
+            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
         }
     }
 
@@ -310,7 +315,6 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
                 serviceType: service.serviceType,
                 iconUrl: service.iconUrl
             ))
-            self?.viewModel.handleAction(.serviceSelected(service))
         }
     }
 }
@@ -342,10 +346,10 @@ extension MyPromotionViewController: PromotionHeaderViewDelegate {
 
 extension MyPromotionViewController: MyPromotionCellDelegate {
     func myPromotionCellDidTap(_ cell: MyPromotionCell, id: String) {
-        viewModel.handleAction(.selectPromotion(id))
+        viewModel.openDetail(voucherId: id)
     }
 
     func myPromotionCellDidTapUse(_ cell: MyPromotionCell, voucherId: String) {
-        viewModel.handleAction(.openServiceSelector(voucherId))
+        showServiceSelector(voucherId: voucherId, services: viewModel.serviceOptions(voucherId: voucherId))
     }
 }

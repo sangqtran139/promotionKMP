@@ -25,7 +25,7 @@ import kotlin.math.sign
  * tab — đúng yêu cầu "kéo hết ảnh mới sang tab kế". Chuẩn NestedScrollableHost của Google cho
  * ViewPager2 (RecyclerView ngang lồng trong ViewPager2 ngang), áp dụng lại cho `WebView`.
  */
-class PRMNestedScrollableWebViewHost @JvmOverloads constructor(
+internal class PRMNestedScrollableWebViewHost @JvmOverloads constructor(
     context: Context, attributeSet: AttributeSet? = null, defStyleInt: Int = 0
 ) : FrameLayout(context, attributeSet, defStyleInt) {
 

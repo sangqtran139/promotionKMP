@@ -23,18 +23,18 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
 
-fun Float.dpToPixel(): Int {
+internal fun Float.dpToPixel(): Int {
     val metrics = Resources.getSystem().displayMetrics
     return TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, this, metrics
     ).toInt()
 }
 
-fun Int.getString(context: Context): String {
+internal fun Int.getString(context: Context): String {
     return context.resources.getString(this)
 }
 
-inline fun <T> runSafely(block: () -> T?): T? {
+internal inline fun <T> runSafely(block: () -> T?): T? {
     return try {
         block()
     } catch (e: Exception) {
@@ -46,11 +46,11 @@ inline fun <T> runSafely(block: () -> T?): T? {
 /**
  * Prevent null string
  */
-fun String?.getText(): String {
+internal fun String?.getText(): String {
     return this ?: ""
 }
 
-inline fun <reified T> getJson(data: T?): String {
+internal inline fun <reified T> getJson(data: T?): String {
     return if (data == null) {
         ""
     } else {
@@ -68,13 +68,13 @@ inline fun <reified T> getJson(data: T?): String {
  *
  * `viewGroup.inflate(R.layout.foo)`
  */
-fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false): View {
+internal fun ViewGroup.inflate(@LayoutRes layout: Int, attachToRoot: Boolean = false): View {
     return LayoutInflater.from(context).inflate(layout, this, attachToRoot)
 }
 
 // defaultDisplay/getRealSize deprecated (API 30) nhưng chưa có thay thế tương thích minSdk 24.
 @Suppress("DEPRECATION")
-fun Context.screenWidth(): Int {
+internal fun Context.screenWidth(): Int {
     val windowManager = getSystemService(Context.WINDOW_SERVICE) as? WindowManager? ?: return -1
     val point = Point()
     windowManager.defaultDisplay.getRealSize(point)
@@ -104,7 +104,7 @@ private fun <T> findDelegate(fragment: Fragment, clazz: Class<T>): T? {
     }
 }
 
-fun getDeviceName(): String {
+internal fun getDeviceName(): String {
     val manufacturer: String = Build.MANUFACTURER
     val model: String = Build.MODEL
     val result = if (model.startsWith(manufacturer)) {
@@ -117,7 +117,7 @@ fun getDeviceName(): String {
     }
 }
 
-fun String.unAccent(): String {
+internal fun String.unAccent(): String {
     return try {
         val nfdNormalizedString: String = Normalizer.normalize(this, Normalizer.Form.NFD)
         val pattern: Pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+")
@@ -127,10 +127,10 @@ fun String.unAccent(): String {
     }
 }
 
-fun Fragment.isSafe() =
+internal fun Fragment.isSafe() =
     !(this.isRemoving || this.activity == null || this.isDetached || !this.isAdded || this.view == null)
 
-fun getCurrentTimeInMinutes(): Int {
+internal fun getCurrentTimeInMinutes(): Int {
     val cal = Calendar.getInstance()
     return cal.get(Calendar.HOUR_OF_DAY) * 3600 + cal.get(Calendar.MINUTE) * 60 + cal.get(Calendar.SECOND)
 }
@@ -146,7 +146,7 @@ fun getCurrentTimeInMinutes(): Int {
  * - "14:30:45" -> 52245 giây
  * - "9:15" -> 33300 giây (hỗ trợ single digit hour)
  */
-fun parseTimeToSeconds(timeString: String): Int? {
+internal fun parseTimeToSeconds(timeString: String): Int? {
     return try {
         if (timeString.isEmpty()) {
             Timber.tag("DisplayTimeFrames").w("Time string can not null")
@@ -196,7 +196,7 @@ fun parseTimeToSeconds(timeString: String): Int? {
     }
 }
 
-fun String.toVoucherDisplayDate(): String {
+internal fun String.toVoucherDisplayDate(): String {
     if (isBlank()) return ""
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         runCatching {
@@ -258,7 +258,7 @@ private var normalizeEn = arrayOf(
 /**
  * replace Accents
  */
-fun String.replaceAccents(): String {
+internal fun String.replaceAccents(): String {
     var s = this
     vn.forEachIndexed { index, v ->
         s = s.replace(v, en[index])
@@ -267,7 +267,7 @@ fun String.replaceAccents(): String {
     return s
 }
 
-inline fun <reified T : Parcelable> Bundle?.parcelable(
+internal inline fun <reified T : Parcelable> Bundle?.parcelable(
     key: String
 ): T? {
 
@@ -282,7 +282,7 @@ inline fun <reified T : Parcelable> Bundle?.parcelable(
     }
 }
 
-inline fun <reified T : Parcelable> Bundle?.parcelableArrayList(
+internal inline fun <reified T : Parcelable> Bundle?.parcelableArrayList(
     key: String
 ): ArrayList<T> {
 

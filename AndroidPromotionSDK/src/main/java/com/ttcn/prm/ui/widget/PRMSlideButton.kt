@@ -50,7 +50,7 @@ import com.ttcn.prm.ui.utils.PRMSlideButtonIconUtil.tintIconCompat
  *  PRMSlideButton is an elegant material designed slider, that enrich your app
  *  with a "Slide-to-unlock" like widget.
  */
-class PRMSlideButton
+internal class PRMSlideButton
 @JvmOverloads
 constructor(
     context: Context,

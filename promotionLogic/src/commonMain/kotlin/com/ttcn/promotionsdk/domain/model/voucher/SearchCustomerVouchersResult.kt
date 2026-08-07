@@ -19,6 +19,11 @@ data class SearchCustomerVouchersResult(
      * server chỉ định ([selectedTab]) → mặc định ([defaultTab]) → tab client vừa yêu cầu
      * ([requestedTab]) → tab đầu danh sách (theo [VoucherTabItem.order], không phụ thuộc
      * thứ tự list thô từ server).
+     *
+     * > Hàm này trả lời câu hỏi **"đáp xuống tab nào"** — chỉ có nghĩa khi client chưa có ý kiến.
+     * > `MyPromotionStore` vì vậy gọi nó **không kèm [requestedTab]**: khi user vừa bấm một tab thì
+     * > tab đó thắng thẳng, không đưa vào đây so bì. Nghe theo [selectedTab] trong tình huống ấy sẽ
+     * > làm tab sáng nhảy ngược ngay dưới ngón tay user nếu server echo lệch tab đã yêu cầu.
      */
     fun resolveActiveTab(requestedTab: String? = null): String? =
         selectedTab

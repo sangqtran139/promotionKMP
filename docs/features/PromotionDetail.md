@@ -18,9 +18,13 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 
 ---
 
-## 1. Contract (MVI)
+## 1. Contract
 
-### State — `PromotionDetailUiState`
+Màn này **không còn `UiState`/`Action`/`Effect` riêng** — nó đọc thẳng `PromotionDetailState` và phát
+thẳng `PromotionDetailIntent` của `PromotionDetailStore` (dùng chung với iOS). Xem
+[android/UIGuide.md §4](../android/UIGuide.md).
+
+### State — `PromotionDetailState` (`promotionLogic`)
 | Field | Ý nghĩa |
 |-------|---------|
 | `isLoading` | Đang tải chi tiết |
@@ -30,14 +34,14 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 | `actionEnabled` | Nút có cho bấm không |
 | `actionLabel` | Nhãn nút từ server (`VoucherDetail.displayStatusLabel`) — ⚠️ **native đang không đọc**, nút dùng chuỗi cứng "Sử dụng ngay" |
 
-### Action — `PromotionDetailAction`
+### Intent — `PromotionDetailIntent` (`promotionLogic`)
 - `LoadDetail(voucherId)` — tải chi tiết voucher.
-- `OpenServiceSelector` — bấm nút "Dùng ngay".
-- `ServiceSelected(service)` — đã chọn dịch vụ trong bottom sheet.
+- `ConsumeError` — xoá lỗi sau khi đã báo (Fragment không gọi tay: `viewModel.errors` tự lo).
 
-### Effect — `PromotionDetailEffect`
-- `ShowError(errorCode)`.
-- `ShowServiceSelector(services)`.
+### Phần thuần Android
+- Lỗi: `collectFlow(viewModel.errors) { showToast(mapPromotionError(it)) }`.
+- Bottom sheet "Chọn dịch vụ": `viewModel.serviceOptions()` trả thẳng list, Fragment tự mở sheet —
+  không đi vòng qua effect.
 
 ---
 
@@ -85,6 +89,17 @@ Fragment: render thông tin + cấu hình nút theo state
   - **"Hướng dẫn sử dụng"** ← `VoucherDetail.guideline` ← `voucher.guideline`.
   Test khoá: `VoucherDetailFieldBranchTest.detail_fullVoucher_*` / `detail_guidelineMissing_isNull`.
 
+**Vòng đời pager — ba ràng buộc, đừng phá (sửa 2026-08-07):**
+
+| Ràng buộc | Vì sao |
+|---|---|
+| Adapter nhận **`Fragment`** (`PrmCustomFragmentPagerAdapter(this)`), không phải `requireActivity()` | Truyền Activity thì tab rơi vào FM của Activity host: tab là `PRMBaseFragment` nên tự đăng ký lớp chặn back của host dù không phải "màn", và còn sót lại sau khi màn chi tiết đóng |
+| Adapter dựng **một lần / một view** (`setupDetailTabs`), nội dung đổi qua `setTabs` | Gán adapter mới vào cùng `ViewPager2` + cùng `childFragmentManager` thì adapter mới không biết state adapter cũ đã lưu |
+| `createFragment()` **dựng instance mới**, adapter chỉ giữ `PrmPagerTab` (nhãn + `contentKey` + lambda dựng) | Giữ sẵn `List<Fragment>` rồi trả lại chính nó là sai hợp đồng `FragmentStateAdapter`: sau khi khôi phục từ saved state, pager gọi `createFragment` cho vị trí đã có fragment → `IllegalStateException: Fragment already added` |
+
+`contentKey` chính là HTML của tab: đổi nội dung thì `getItemId` đổi theo nên pager tự dựng lại tab;
+nội dung y nguyên thì tab được dùng lại, không nạp lại WebView.
+
 ---
 
 ## 4. API backend
@@ -117,7 +132,7 @@ Fragment: render thông tin + cấu hình nút theo state
 
 Ai đóng màn sau khi "Áp dụng" do `hostHandlesDismiss` quyết (mặc định `false` = SDK tự pop). Bật `true`
 thì SDK báo xong **để nguyên màn**, host tự đóng — Android `PromotionDetailFragment.onActionClick`
-bỏ `onBackFragment()`, iOS `PromotionDetailViewController.didTapApplyButton` bỏ `routeToParent()`.
+bỏ `goBack()`, iOS `PromotionDetailViewController.didTapApplyButton` bỏ `routeToParent()`.
 Callback chạy **trước** bước pop ở cả hai bên, chính là điều kiện để chế độ này dùng được.
 
 Cờ đi kèm navigation là **một boolean duy nhất, không có enum ở nền tảng nào**:
@@ -172,6 +187,31 @@ cuộn trong lưới.
 > **Lệch TLNV.** MOB_002 item #6 ghi "danh sách hiển thị trên 1 dòng, tối đa 3 dịch vụ, vuốt trái/phải
 > để xem thêm". Bản hiện tại đổi sang **lưới cuộn dọc** theo yêu cầu sản phẩm (2026-08-04): nhiều dịch
 > vụ thì vuốt ngang khó thấy hết. Cần chốt lại với BA nếu TLNV không được cập nhật theo.
+
+### Back khi host dùng Navigation Component (bug đã sửa 2026-08-07)
+
+**Triệu chứng:** host mở màn chi tiết bằng `PromotionSDK.openPromotionDetail(...)` từ một màn nằm
+trong `NavHostFragment`; bấm back thì **màn chi tiết ở lại**, còn màn host phía dưới lùi một nấc.
+
+**Gốc** ở `PRMBaseFragment.closeTopSdkScreen()` (trước tên là `popOwnBackStack`):
+`FragmentManager.popBackStackImmediate()` bản **không tham số** không pop stack của chính nó trước —
+nó uỷ quyền xuống primary navigation fragment:
+
+```java
+if (mPrimaryNav != null && id < 0 && name == null) {
+    if (mPrimaryNav.getChildFragmentManager().popBackStackImmediate()) return true;
+}
+```
+
+`NavHostFragment` tự đặt mình làm primary nav fragment, nên lời gọi đó pop **destination của host**
+rồi trả `true`. SDK tưởng đã đóng màn của mình nên nuốt luôn phím back.
+
+**Sửa:** pop đích danh entry trên cùng — `popBackStackImmediate(topEntryId, POP_BACK_STACK_INCLUSIVE)`.
+Truyền `id` thì điều kiện uỷ quyền (`id < 0 && name == null`) không còn đúng. Thiếu cờ
+`POP_BACK_STACK_INCLUSIVE` thì nó chỉ pop những entry nằm *trên* entry đó, tức không pop gì.
+
+Kiểm chứng: mở màn chi tiết từ một màn trong NavHost rồi bấm back — phải đóng đúng màn chi tiết, màn
+host giữ nguyên nấc.
 
 ## 5. Lưu ý khi sửa
 

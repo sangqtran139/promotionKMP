@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.ColorInt
 
-object TokenDrawableFactory {
+internal object TokenDrawableFactory {
 
     fun roundedRect(
         @ColorInt color: Int,

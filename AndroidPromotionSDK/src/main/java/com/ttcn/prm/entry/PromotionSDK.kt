@@ -2,6 +2,8 @@ package com.ttcn.prm.entry
 
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
@@ -22,9 +24,11 @@ import com.ttcn.prm.entry.api.PromotionVoucherDetail
 import com.ttcn.prm.entry.api.toPublicDetail
 import com.ttcn.prm.entry.api.flagName
 import com.ttcn.prm.entry.api.toSnapshot
+import com.ttcn.prm.ui.feature.endowview.PRMEndowView
 import com.ttcn.prm.ui.base.PromotionToastGate
-import com.ttcn.prm.ui.feature.promotion.mypromotion.MyPromotionFragment
-import com.ttcn.prm.ui.feature.promotion.promotiondetail.PromotionDetailFragment
+import com.ttcn.prm.ui.feature.choosepromotion.ChoosePromotionFragment
+import com.ttcn.prm.ui.feature.mypromotion.MyPromotionFragment
+import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.theme.PromotionThemeStore
@@ -442,8 +446,10 @@ object PromotionSDK {
         val scope = sdkScope
         if (scope == null) {
             // Chưa init → không có gì để nạp. Trả mặc định fail-open ngay, vẫn trên main thread.
+            // Post thẳng lên main looper thay vì dựng một CoroutineScope rời: scope đó không ai giữ,
+            // không ai huỷ, và ở đây chỉ để chạy đúng một lambda.
             onComplete?.let { done ->
-                CoroutineScope(Dispatchers.Main).launch { done(PromotionFeatureFlagsSnapshot.AllEnabled) }
+                Handler(Looper.getMainLooper()).post { done(PromotionFeatureFlagsSnapshot.AllEnabled) }
             }
             return
         }
@@ -600,6 +606,27 @@ object PromotionSDK {
             "[PromotionSDK.openPromotionDetail] commit() called (async), fragment=${System.identityHashCode(fragment).toString(16)}"
         )
     }
+
+    /**
+     * Dựng màn "Chọn ưu đãi" nối sẵn với widget [PRMEndowView] ở màn thanh toán, rồi trả về dạng
+     * [Fragment] để host tự add/replace vào container của mình.
+     *
+     * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang áp, và
+     * đẩy kết quả ngược về widget khi user bấm "Áp dụng" — host không phải chạm `EligibleOffer`,
+     * một type của lõi.
+     *
+     * ```kotlin
+     * binding.endowView.onOpenVoucherSelection = {
+     *     addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
+     * }
+     * ```
+     *
+     * Trả kiểu [Fragment] chứ không phải class thật: màn "Chọn ưu đãi" là UI nội bộ của SDK, host
+     * không cần và không nên biết tới nó.
+     */
+    @JvmStatic
+    fun createChoosePromotionFragment(endowView: PRMEndowView): Fragment =
+        ChoosePromotionFragment.forEndowView(endowView)
 
 
     /**

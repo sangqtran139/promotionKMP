@@ -6,10 +6,8 @@ import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleSection
 import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
-import com.ttcn.promotionsdk.common.daysUntil
-import com.ttcn.promotionsdk.presentation.ExpiryWarning
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
-import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
+import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionTab
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 
 /**
  * **Tầng UI-logic dùng chung** cho màn "Chọn ưu đãi" (checkout) — chạy trên cả Android & iOS.
@@ -39,13 +38,13 @@ import kotlinx.coroutines.launch
 class ChoosePromotionStore(
     private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : PRMStore<ChoosePromotionState, ChoosePromotionIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
     constructor(findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase) :
         this(findEligibleCampaignsUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(ChoosePromotionState())
-    val state: StateFlow<ChoosePromotionState> = _state.asStateFlow()
+    override val state: StateFlow<ChoosePromotionState> = _state.asStateFlow()
 
     fun currentState(): ChoosePromotionState = _state.value
 
@@ -60,7 +59,11 @@ class ChoosePromotionStore(
 
     private var debounceJob: Job? = null
 
-    fun dispatch(intent: ChoosePromotionIntent) {
+    override fun errorOf(state: ChoosePromotionState): String? = state.errorCode
+
+    override val consumeErrorIntent: ChoosePromotionIntent = ChoosePromotionIntent.ConsumeError
+
+    override fun dispatch(intent: ChoosePromotionIntent) {
         when (intent) {
             ChoosePromotionIntent.LoadInitial -> loadOffers(isRefresh = false)
             is ChoosePromotionIntent.Preload -> preload(intent.myOffers, intent.otherOffers, intent.myIsLastPage, intent.otherIsLastPage)
@@ -246,99 +249,5 @@ class ChoosePromotionStore(
     }
 }
 
-// ─── State / Intent / Models ──────────────────────────────────────────────────
-
-data class ChoosePromotionState(
-    val hasLoadedInitial: Boolean = false,
-    val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val isLoadingMoreOther: Boolean = false,
-    val isEmpty: Boolean = false,
-    val tabs: List<MyPromotionTab> = emptyList(),
-    val selectedTabCode: String? = null,
-    val keyword: String = "",
-    val myPage: Int = 0,
-    val mySize: Int = 10,
-    val myIsLastPage: Boolean = false,
-    val otherPage: Int = 0,
-    val otherSize: Int = 10,
-    val otherIsLastPage: Boolean = true,
-    val myOffers: List<ChooseOffer> = emptyList(),
-    val otherOffers: List<ChooseOffer> = emptyList(),
-    val expireWarningDate: Int? = null,
-    /** Cho phép chọn nhiều ưu đãi (mặc định chọn đơn — khớp Fragment/VC hiện tại). */
-    val isMultiSelection: Boolean = false,
-    /** id các ưu đãi đang chọn — **selection do store quản** (dùng chung 2 nền tảng). */
-    val selectedIds: List<String> = emptyList(),
-    /** Nhóm "Ưu đãi của tôi" đang mở hết hay thu gọn — do store quản (state-machine `SeeMoreMy`). */
-    val myExpanded: Boolean = false,
-    val errorCode: String? = null,
-)
-
-sealed interface ChoosePromotionIntent {
-    data object LoadInitial : ChoosePromotionIntent
-    data class Preload(
-        val myOffers: List<EligibleOffer>,
-        val otherOffers: List<EligibleOffer>,
-        val myIsLastPage: Boolean,
-        val otherIsLastPage: Boolean,
-    ) : ChoosePromotionIntent
-    data object Refresh : ChoosePromotionIntent
-    data class QueryChanged(val keyword: String) : ChoosePromotionIntent
-    data object Search : ChoosePromotionIntent
-    data object ClearKeyword : ChoosePromotionIntent
-    data object LoadMoreMyVouchers : ChoosePromotionIntent
-    data object LoadMoreOtherVouchers : ChoosePromotionIntent
-    /** Seed các voucher pre-select (từ discount đang áp trước đó). */
-    data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
-    /** Chọn/bỏ chọn 1 ưu đãi theo id. */
-    data class ToggleSelection(val id: String) : ChoosePromotionIntent
-    /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
-    data object SeeMoreMy : ChoosePromotionIntent
-    data object ConsumeError : ChoosePromotionIntent
-}
-
-/** Số item "Ưu đãi của tôi" hiện khi thu gọn — dùng chung 2 nền tảng. */
-const val COLLAPSED_MY_COUNT = 2
-
+/** Chờ gõ xong mới gọi API tìm kiếm — hằng nội bộ của điều phối, không thuộc contract. */
 private const val DEBOUNCE_MS = 400L
-
-/** Trạng thái nút "Xem thêm/Thu gọn" nhóm của tôi — quy tắc dùng chung, native chỉ render. */
-enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
-
-/**
- * - `HIDDEN` khi số item đã nạp không vượt [COLLAPSED_MY_COUNT]: lúc thu gọn đã thấy hết, nút không
- *   có gì để mở thêm. **Không** xét [ChoosePromotionState.myIsLastPage] ở nhánh này — nhóm của tôi
- *   nạp theo trang 10 item, nên ≤ [COLLAPSED_MY_COUNT] item nghĩa là server đã trả hết.
- * - `COLLAPSE` khi đang mở hết và không còn trang.
- * - `EXPAND` cho phần còn lại: hoặc còn item chưa hiện, hoặc còn trang để nạp.
- */
-fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
-    myOffers.size <= COLLAPSED_MY_COUNT -> ChooseSeeMoreState.HIDDEN
-    myExpanded && myIsLastPage -> ChooseSeeMoreState.COLLAPSE
-    else -> ChooseSeeMoreState.EXPAND
-}
-
-/** Danh sách "Ưu đãi của tôi" đang hiển thị theo trạng thái mở/thu gọn — dùng chung. */
-fun ChoosePromotionState.visibleMyOffers(): List<ChooseOffer> =
-    if (myExpanded) myOffers else myOffers.take(COLLAPSED_MY_COUNT)
-
-/**
- * View-model 1 ưu đãi eligible: **bọc** domain [EligibleOffer] ([source]) + quyết định hiển thị đã tính.
- * Native format chuỗi ("Giảm X đ" từ `source.estimatedDiscount`, "Còn X ngày" từ [expiringInDays]).
- */
-data class ChooseOffer(
-    val source: EligibleOffer,
-    val isUsable: Boolean,
-    val expiringInDays: Int?,
-)
-
-internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
-    // Xem chú thích cùng nội dung ở `VoucherItem.toMyPromotionVoucher`.
-    ExpiryWarning.remember(expireWarningDate)
-    val days = if (usable && expireWarningDate != null) {
-        daysUntil(expireDate)?.takeIf { it in 0..expireWarningDate }
-    } else null
-    return ChooseOffer(source = this, isUsable = usable, expiringInDays = days)
-}

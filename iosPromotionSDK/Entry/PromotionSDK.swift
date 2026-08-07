@@ -379,6 +379,32 @@ public final class PromotionSDK {
         return impl.makeEndowView(presentFrom: viewController, navigator: nav)
     }
 
+    /// Gọi khi user bấm nút thanh toán của **host**: tạo phiên redemption cho các ưu đãi đang áp
+    /// trên widget.
+    ///
+    /// ```swift
+    /// PromotionSDK.confirmRedemption(
+    ///     onSuccess: { self.proceedPayment() },
+    ///     onError: { code in self.showError(code) }
+    /// )
+    /// ```
+    ///
+    /// Không áp ưu đãi nào → `onSuccess` ngay, không gọi mạng. Hết ngân sách giữa chừng → SDK tự
+    /// validate lại, widget hiện giá mới, rồi `onError("INSUFFICIENT_BUDGET")`.
+    ///
+    /// Đối ứng `PRMEndowView.confirmRedemption(onSuccess:onError:)` bên Android; nghiệp vụ nằm ở
+    /// `EndowStore.confirmRedemption` nên hai nền tảng chạy một đường. Chưa `initialize` → `onError`.
+    public static func confirmRedemption(onSuccess: @escaping () -> Void,
+                                         onError: @escaping (String) -> Void = { _ in }) {
+        // Chuỗi mã lỗi viết thẳng: file Entry này KHÔNG import PRMKotlinBridge (type Kotlin lọt vào
+        // chữ ký public là app host không build được — xem PublicApi.md).
+        guard let impl = requireImpl("confirmRedemption(onSuccess:onError:)") else {
+            onError("error_general")
+            return
+        }
+        impl.confirmRedemption(onSuccess: onSuccess, onError: onError)
+    }
+
     /// Tạo widget cho luồng thanh toán kèm thông tin đơn hàng.
     ///
     /// Dùng khi giữ **một** phiên SDK từ lúc login (chưa biết đơn) rồi bơm `orderId`/`orderValue` tại

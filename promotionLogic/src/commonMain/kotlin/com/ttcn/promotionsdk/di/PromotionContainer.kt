@@ -2,9 +2,13 @@ package com.ttcn.promotionsdk.di
 
 import com.ttcn.promotionsdk.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import com.ttcn.promotionsdk.data.local.LocalModule
 import com.ttcn.promotionsdk.data.local.PromotionPreferences
+import com.ttcn.promotionsdk.data.remote.NetworkModule
+import com.ttcn.promotionsdk.data.repository.RepositoryModule
 import com.ttcn.promotionsdk.di.internal.SdkDi
 import com.ttcn.promotionsdk.di.internal.get
+import com.ttcn.promotionsdk.domain.usecase.UseCaseModule
 import io.ktor.client.HttpClient
 import kotlin.concurrent.Volatile
 
@@ -29,6 +33,13 @@ object PromotionContainer {
     @Volatile
     private var config: PromotionSDKConfig? = null
 
+    /**
+     * Điểm gom duy nhất của đồ thị DI. Mỗi module **nằm cùng package với lớp nó dựng**
+     * (`data.remote`, `data.local`, `data.repository`, `domain.usecase`) chứ không dồn vào `di/`;
+     * ở đây chỉ liệt kê theo đúng thứ tự lớp.
+     *
+     * Không còn `FeatureFlagModule` cắt ngang bốn lớp — mỗi binding của nó về đúng tầng của mình.
+     */
     fun initialize(config: PromotionSDKConfig) {
         this.config = config
         SdkDi.getInstance().start(
@@ -37,7 +48,6 @@ object PromotionContainer {
             LocalModule.module,
             RepositoryModule.module,
             UseCaseModule.module,
-            FeatureFlagModule.module,
         )
     }
 

@@ -12,21 +12,21 @@
             android:id="@+id/headerContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:minHeight="@dimen/prm_dimen_56dp"
-            android:paddingTop="@dimen/prm_view_size_8"
-            android:paddingBottom="@dimen/prm_view_size_8"
+            android:minHeight="@dimen/demo_dimen_56dp"
+            android:paddingTop="@dimen/demo_view_size_8"
+            android:paddingBottom="@dimen/demo_view_size_8"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageButton
                 android:id="@+id/btnBack"
-                android:layout_width="@dimen/prm_view_size_48"
-                android:layout_height="@dimen/prm_view_size_48"
+                android:layout_width="@dimen/demo_view_size_48"
+                android:layout_height="@dimen/demo_view_size_48"
                 android:layout_marginStart="@dimen/prm_theme_header_side_margin"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@null"
-                android:padding="@dimen/prm_view_size_10"
+                android:padding="@dimen/demo_view_size_10"
                 android:scaleType="centerInside"
                 android:src="@drawable/prm_ic_back_theme"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -51,7 +51,7 @@
         <View
             android:id="@+id/footerDividerTop"
             android:layout_width="0dp"
-            android:layout_height="@dimen/prm_view_size_1"
+            android:layout_height="@dimen/demo_view_size_1"
             android:background="@color/prm_theme_divider"
             app:layout_constraintBottom_toTopOf="@id/footer"
             app:layout_constraintEnd_toEndOf="parent"
@@ -63,9 +63,9 @@
             android:layout_height="wrap_content"
             android:background="@color/prm_theme_footer_bg"
             android:orientation="vertical"
-            android:paddingStart="@dimen/prm_view_size_18"
-            android:paddingTop="@dimen/prm_view_size_20"
-            android:paddingEnd="@dimen/prm_view_size_18"
+            android:paddingStart="@dimen/demo_view_size_18"
+            android:paddingTop="@dimen/demo_view_size_20"
+            android:paddingEnd="@dimen/demo_view_size_18"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent">
@@ -73,14 +73,14 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/prm_view_size_8"
+                android:layout_marginBottom="@dimen/demo_view_size_8"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/btnLoadJsonFile"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/prm_theme_footer_btn_height"
-                    android:layout_marginEnd="@dimen/prm_view_size_8"
+                    android:layout_marginEnd="@dimen/demo_view_size_8"
                     android:layout_weight="1"
                     android:background="@drawable/prm_bg_theme_reset_button"
                     android:clickable="true"
@@ -90,7 +90,7 @@
                     android:text="@string/prm_theme_load_json_file"
                     android:textAllCaps="false"
                     android:textColor="@color/prm_theme_reset_text"
-                    android:textSize="@dimen/prm_text_size_16" />
+                    android:textSize="@dimen/demo_text_size_16" />
 
                 <TextView
                     android:id="@+id/btnApplyObject"
@@ -105,7 +105,7 @@
                     android:text="@string/prm_theme_apply_object"
                     android:textAllCaps="false"
                     android:textColor="@color/prm_theme_reset_text"
-                    android:textSize="@dimen/prm_text_size_16" />
+                    android:textSize="@dimen/demo_text_size_16" />
             </LinearLayout>
 
             <LinearLayout
@@ -117,7 +117,7 @@
                     android:id="@+id/btnReset"
                     android:layout_width="0dp"
                     android:layout_height="@dimen/prm_theme_footer_btn_height"
-                    android:layout_marginEnd="@dimen/prm_view_size_8"
+                    android:layout_marginEnd="@dimen/demo_view_size_8"
                     android:layout_weight="1"
                     android:background="@drawable/prm_bg_theme_reset_button"
                     android:clickable="true"
@@ -127,7 +127,7 @@
                     android:text="@string/prm_theme_reset"
                     android:textAllCaps="false"
                     android:textColor="@color/prm_theme_reset_text"
-                    android:textSize="@dimen/prm_text_size_18" />
+                    android:textSize="@dimen/demo_text_size_18" />
 
                 <TextView
                     android:id="@+id/btnApply"
@@ -141,8 +141,8 @@
                     android:gravity="center"
                     android:text="@string/prm_theme_apply"
                     android:textAllCaps="false"
-                    android:textColor="@color/prm_tokenWhite"
-                    android:textSize="@dimen/prm_text_size_18" />
+                    android:textColor="@color/demo_tokenWhite"
+                    android:textSize="@dimen/demo_text_size_18" />
             </LinearLayout>
         </LinearLayout>
 
@@ -170,7 +170,7 @@
                     android:layout_height="wrap_content"
                     android:textFontWeight="600"
                     android:layout_marginStart="@dimen/prm_theme_content_horizontal_margin"
-                    android:layout_marginTop="@dimen/prm_view_size_14"
+                    android:layout_marginTop="@dimen/demo_view_size_14"
                     android:layout_marginEnd="@dimen/prm_theme_content_horizontal_margin"
                     android:fontFamily="sans-serif"
                     android:text="@string/prm_theme_config_subtitle"
@@ -182,7 +182,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/prm_theme_content_horizontal_margin"
-                    android:layout_marginTop="@dimen/prm_view_size_8"
+                    android:layout_marginTop="@dimen/demo_view_size_8"
                     android:layout_marginEnd="@dimen/prm_theme_content_horizontal_margin"
                     android:orientation="vertical" />
             </LinearLayout>

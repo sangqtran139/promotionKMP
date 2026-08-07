@@ -15,7 +15,7 @@ import androidx.core.widget.TextViewCompat
  *
  * @param resId font style resource id
  */
-fun TextView.setFont(@StyleRes resId: Int) {
+internal fun TextView.setFont(@StyleRes resId: Int) {
     TextViewCompat.setTextAppearance(this, resId)
 }
 
@@ -26,7 +26,7 @@ fun TextView.setFont(@StyleRes resId: Int) {
  * @return color
  */
 @ColorInt
-fun Context.retrieveColor(@ColorRes colorRes: Int): Int {
+internal fun Context.retrieveColor(@ColorRes colorRes: Int): Int {
     return ContextCompat.getColor(this, colorRes)
 }
 
@@ -36,6 +36,6 @@ fun Context.retrieveColor(@ColorRes colorRes: Int): Int {
  * @param drawableRes drawable resource id
  * @return drawable
  */
-fun Context.retrieveDrawable(@DrawableRes drawableRes: Int): Drawable? {
+internal fun Context.retrieveDrawable(@DrawableRes drawableRes: Int): Drawable? {
     return ContextCompat.getDrawable(this, drawableRes)
 }

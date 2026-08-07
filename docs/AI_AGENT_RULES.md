@@ -33,6 +33,15 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - UI **không** gọi thẳng Repository/DataSource; luôn đi qua use case.
 - Domain **không** biết DTO. Data map DTO ↔ domain model trước khi trả lên.
 
+### 4b. Chỉ `Entry` mới public — mọi thứ khác `internal`
+- Bề mặt host là **`com.ttcn.prm.entry.**`** (Android) và **`iosPromotionSDK/Entry/**`** (iOS).
+  Ngoài đó, mọi khai báo top-level phải `internal` (Kotlin) / không có `public` (Swift).
+- Host cần dùng thêm thứ gì → **dời file đó vào `entry`**, KHÔNG nới `public` tại chỗ. Kiểu trả về
+  nên là type chung khi được (vd `PromotionSDK.createChoosePromotionFragment` trả `Fragment` trần)
+  để class thật vẫn ẩn.
+- Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng —
+  [PublicApi.md](./common/PublicApi.md) có sẵn hai lệnh `grep` để kiểm, cả hai phải **không in ra gì**.
+
 ### 5. Không tự ý đổi kiến trúc
 - Giữ Clean Architecture (Data / Domain / Presentation).
 - Android UI giữ **MVI** (`PRMBaseViewModel<S, A, E>`); iOS UI giữ **MVVM + Builder/Router**, ràng buộc
@@ -100,6 +109,8 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 - [ ] Code tuân thủ `CodingStandards.md`.
 - [ ] Lỗi được xử lý theo `ErrorHandling.md`.
 - [ ] Đã cập nhật docs nếu chạm tới API/storage/DI/architecture (điều 8).
+- [ ] **Không có khai báo public nào lọt ra ngoài `entry`** (điều 4b) — chạy hai lệnh `grep` ở đầu
+      [PublicApi.md](./common/PublicApi.md), cả hai phải không in ra gì.
 - [ ] Không còn code trùng lặp.
 - [ ] **Build và test xanh trên cả hai nền tảng**:
       `./gradlew :promotionLogic:testAndroidHostTest :promotionLogic:iosSimulatorArm64Test`

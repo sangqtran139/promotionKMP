@@ -7,7 +7,7 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import java.util.Locale
 
-fun CharSequence.toHighlightedSpannable(
+internal fun CharSequence.toHighlightedSpannable(
     keyword: String,
     highlightColor: Int? = null,
     isBold: Boolean = true,

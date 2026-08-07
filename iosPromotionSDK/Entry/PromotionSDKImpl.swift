@@ -498,6 +498,17 @@ final class PromotionSDKImpl: NSObject {
     weak var _host: UIViewController?
     weak var _navigator: UINavigationController?
 
+    /// Bấm "Thanh toán" của host — uỷ thẳng xuống `EndowStore.confirmRedemption` (dùng chung Android).
+    func confirmRedemption(onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
+        endowVM.confirmRedemption { result in
+            if let failure = result as? EndowConfirmResultFailure {
+                onError(failure.errorCode)
+            } else {
+                onSuccess()
+            }
+        }
+    }
+
     /// Map `EndowState` (store) → widget-state — **reactive**, mirror Android `PRMEndowView.renderState`.
     /// Quyết định 4 trạng thái khớp `EndowStore.widgetState`; phát callback host đúng một lần theo transition.
     private func render(_ state: EndowState, on view: PRMEndowView) {
@@ -552,7 +563,8 @@ final class PromotionSDKImpl: NSObject {
 
         // Preload từ EndowStore (offers đã nạp) để tránh gọi API hai lần — giống Android
         // (`forEndowView` lấy `myVouchers`/`otherVouchers` + cờ phân trang từ state).
-        let endowState = endowVM.state
+        // `currentState` (đồng bộ) chứ không phải `state`: đọc ngay lúc user bấm, phải là bản mới nhất.
+        let endowState = endowVM.currentState
         let vc = ChoosePromotionBuilder.build(
             with: .init(
                 orderItems: context.getOrderItems(),

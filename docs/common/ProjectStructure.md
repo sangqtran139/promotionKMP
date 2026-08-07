@@ -43,23 +43,20 @@ promotionLogic/src/
 │   │   ├── dto/                 # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
 │   │   │                        #   mỗi nhóm: Request + Response + Mapper
 │   │   ├── remote/              # ApiService (+ Ktor impl), RemoteDataSource,
-│   │   │                        #   PromotionHttpClient, ApiResponse (envelope)
-│   │   ├── local/               # PromotionPreferences + SettingsPreferences, FeatureFlagLocalDataSource
-│   │   └── repository/          # PromotionRepositoryImpl, FeatureFlagRepositoryImpl
+│   │   │                        #   PromotionHttpClient, ApiResponse (envelope), NetworkModule
+│   │   ├── local/               # PromotionPreferences + SettingsPreferences,
+│   │   │                        #   FeatureFlagLocalDataSource, LocalModule
+│   │   └── repository/          # PromotionRepositoryImpl, FeatureFlagRepositoryImpl, RepositoryModule
 │   ├── domain/
 │   │   ├── model/               # voucher/ redemption/ stackablediscount/ eligible/ featureflag/
 │   │   │                        #   + PromotionResult
 │   │   ├── repository/          # PromotionRepository, FeatureFlagRepository (interface)
 │   │   ├── usecase/             # 5 use case + PromotionUseCases
-│   │   │                        #   4 use case flag + PromotionFeatureFlagUseCases
+│   │   │                        #   4 use case flag + PromotionFeatureFlagUseCases, UseCaseModule
 │   │   └── exception/           # PromotionException, NetworkException, ErrorCodes
-│   ├── di/                      # Custom DI — composition root
+│   ├── di/                      # Custom DI — CHỈ composition root + engine.
+│   │   │                        #   Các *Module nằm cùng package với lớp nó dựng (xem data/, domain/)
 │   │   ├── PromotionContainer.kt     # init / clear / requireConfig — nội bộ SDK, host KHÔNG thấy
-│   │   ├── NetworkModule.kt          # HttpClient, ApiService, RemoteDataSource
-│   │   ├── LocalModule.kt            # PromotionPreferences, FeatureFlagLocalDataSource
-│   │   ├── RepositoryModule.kt
-│   │   ├── UseCaseModule.kt
-│   │   ├── FeatureFlagModule.kt
 │   │   ├── PlatformState.kt          # expect clearPlatformState()
 │   │   └── internal/                 # SdkDi, ComponentRegistry, DiKey
 │   └── presentation/            # Store dùng chung cho UI hai nền tảng
@@ -117,7 +114,9 @@ promotionLogic/src/
 ## 4. Quy ước đặt tên
 
 - **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `PromotionPreferences`.
-- **UI Android**: base class và nhiều public class dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
+- **UI Android**: base class và widget dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
+  Tiền tố **không** đồng nghĩa với "public": chỉ `PRMEndowView` ở `entry/endowview/` là bề mặt host,
+  còn `PRMBaseFragment`, `PRMButton`… đều `internal`.
 - **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
 - Module DI kết thúc bằng `Module`. Bản Ktor của ApiService bắt đầu bằng `Ktor`.
@@ -132,9 +131,10 @@ promotionLogic/src/
 - `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
-- `ui/entry/` và `ui/entry/api/` của `AndroidPromotionSDK` — **public API thật sự**; thay đổi =
-  breaking cho host app, và phải sửa đối ứng bên `PromotionSDKUI/Entry/API/` của iOS.
-  Xem [PublicApi.md](./PublicApi.md).
+- `com.ttcn.prm.entry.**` của `AndroidPromotionSDK` (`entry/`, `entry/api/`, `entry/theme/`,
+  `entry/endowview/`) — **public API thật sự**, và là **package public duy nhất**: mọi thứ ngoài nó
+  đều `internal`. Thay đổi = breaking cho host app, và phải sửa đối ứng bên `iosPromotionSDK/Entry/`
+  của iOS. Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
 - `sharedLogic/`, `sharedUI/` — scaffold template, không phải nơi đặt logic Promotion.
 

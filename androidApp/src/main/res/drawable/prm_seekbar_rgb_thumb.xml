@@ -3,9 +3,9 @@
     <!-- soft shadow -->
     <item
         android:bottom="0dp"
-        android:left="@dimen/prm_view_size_2"
-        android:right="@dimen/prm_view_size_2"
-        android:top="@dimen/prm_view_size_3">
+        android:left="@dimen/demo_view_size_2"
+        android:right="@dimen/demo_view_size_2"
+        android:top="@dimen/demo_view_size_3">
         <shape android:shape="oval">
             <solid android:color="@color/prm_color_picker_thumb_shadow" />
             <size
@@ -15,14 +15,14 @@
     </item>
     <!-- thumb face -->
     <item
-        android:bottom="@dimen/prm_view_size_2"
+        android:bottom="@dimen/demo_view_size_2"
         android:left="0dp"
         android:right="0dp"
         android:top="0dp">
         <shape android:shape="oval">
             <solid android:color="@color/prm_theme_primary" />
             <stroke
-                android:width="@dimen/prm_view_size_1"
+                android:width="@dimen/demo_view_size_1"
                 android:color="@color/prm_color_picker_thumb_stroke" />
             <size
                 android:width="@dimen/prm_color_picker_thumb_size"

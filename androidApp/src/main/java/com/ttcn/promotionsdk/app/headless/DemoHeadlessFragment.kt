@@ -6,14 +6,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.ttcn.promotionsdk.app.databinding.FragmentHeadlessDemoBinding
-import com.ttcn.prm.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.app.base.AppBaseFragment
 import kotlinx.coroutines.launch
 
 /**
  * Màn demo headless — soi gương `DemoHeadlessViewController.swift` bên iOS: cùng 5 nút, cùng thứ tự,
  * cùng chuỗi log. Sửa một bên thì sửa cả hai.
  */
-class DemoHeadlessFragment : PRMBaseFragment<FragmentHeadlessDemoBinding>() {
+class DemoHeadlessFragment : AppBaseFragment<FragmentHeadlessDemoBinding>() {
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentHeadlessDemoBinding.inflate(inflater, container, false)

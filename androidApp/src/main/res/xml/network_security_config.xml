@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App demo gọi server test qua HTTP trần (chưa có HTTPS). Thay vì mở `usesCleartextTraffic="true"`
+  cho **mọi** domain, chỉ mở đúng host đó: phần còn lại của app vẫn bị Android chặn cleartext như mặc
+  định, nên một URL http:// lọt vào sau này sẽ lỗi ngay thay vì âm thầm gửi token đi trần.
+
+  Host thật của đối tác chạy HTTPS thì file này không cần tồn tại.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">125.235.38.229</domain>
+    </domain-config>
+</network-security-config>

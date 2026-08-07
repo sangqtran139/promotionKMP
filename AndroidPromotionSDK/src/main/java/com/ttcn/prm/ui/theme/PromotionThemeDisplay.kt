@@ -8,6 +8,7 @@ import com.ttcn.prm.ui.theme.token.TabChipToken
 import com.ttcn.prm.ui.theme.token.TabUnderlineToken
 
 import android.content.Context
+import androidx.annotation.ColorInt
 import com.ttcn.prm.ui.theme.applytoken.TokenColorParser
 
 /**
@@ -115,7 +116,7 @@ object PromotionThemeDisplay {
     }
 
     private fun fromConfig(config: PromotionSDKTheme, context: Context?): Defaults {
-        fun hex(@androidx.annotation.ColorInt color: Int?) =
+        fun hex(@ColorInt color: Int?) =
             color?.let { PromotionThemeDefaults.colorToHex(it) }
 
         return Defaults(

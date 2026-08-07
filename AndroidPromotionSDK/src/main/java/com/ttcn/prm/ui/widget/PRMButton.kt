@@ -29,7 +29,7 @@ import com.ttcn.prm.ui.utils.extension.retrieveColor
  * Main theme button with two type [PRMCoreButtonType.PRIMARY] and [PRMCoreButtonType.OUTLINE]
  * By default, [PRMCoreButtonType.PRIMARY] has margin of value [R.dimen.prm_tokenSpacing16] because of shadow layer
  */
-class PRMButton : PRMAbstractButton {
+internal class PRMButton : PRMAbstractButton {
 
     private var viewBinding: PrmViewsCoreButtonPrmBinding? = null
     private var lastAppliedToken: ButtonToken? = null

@@ -17,6 +17,9 @@ import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRes
 import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.domain.model.redemption.RedemptionValidationError
+import com.ttcn.promotionsdk.presentation.endow.EndowConfirmResult
+import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount
@@ -50,12 +53,21 @@ class EndowStoreTest {
         var lastEligibleRequest: FindEligibleCampaignsRequest? = null
         var lastValidateRequest: ValidateDiscountsRequest? = null
         var eligibleCallCount = 0
+        var validateCallCount = 0
 
         override suspend fun searchCustomerVouchers(keyword: String?, serviceCode: String?, tab: String?, page: Int?, size: Int?): SearchCustomerVouchersResult? = null
         override suspend fun getCustomerVoucherDetail(voucherId: String, service: String?): VoucherDetail? = null
-        override suspend fun createRedemptionSession(request: CreateRedemptionRequest): CreateRedemptionResult? = null
+        var lastRedemptionRequest: CreateRedemptionRequest? = null
+        var redemption: () -> CreateRedemptionResult? = {
+            CreateRedemptionResult(sessionId = "S-1", totalDiscount = "0", finalAmount = "0", validationErrors = emptyList())
+        }
+        override suspend fun createRedemptionSession(request: CreateRedemptionRequest): CreateRedemptionResult? {
+            lastRedemptionRequest = request
+            return redemption()
+        }
         override suspend fun validateStackableDiscounts(request: ValidateDiscountsRequest): ValidateDiscountsResult? {
             lastValidateRequest = request
+            validateCallCount++
             return validate()
         }
         override suspend fun findEligibleCampaigns(request: FindEligibleCampaignsRequest): EligibleOffersResult? {
@@ -81,8 +93,26 @@ class EndowStoreTest {
     private fun store(repo: FakeRepo) = EndowStore(
         findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(repo),
         validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(repo),
+        createRedemptionSessionUseCase = CreateRedemptionSessionUseCase(repo),
         scope = CoroutineScope(UnconfinedTestDispatcher()),
     )
+
+    private fun redemptionOk(errors: List<RedemptionValidationError> = emptyList()) = CreateRedemptionResult(
+        sessionId = "S-1", totalDiscount = "0", finalAmount = "0", validationErrors = errors,
+    )
+
+    private fun validateOk(id: String, discount: String, valid: Boolean = true, type: String = "CAMPAIGN") =
+        ValidateDiscountsResult(
+            overallValid = valid,
+            totalDiscountAmount = discount,
+            finalAmount = "0",
+            items = listOf(
+                DiscountItemResult(
+                    objectId = id, objectType = type, valid = valid,
+                    calculatedDiscount = discount, eligibilityStatus = "OK",
+                )
+            ),
+        )
 
     private fun offer(id: String, usable: Boolean = true, type: String = "CAMPAIGN") =
         EligibleOffer(id = id, objectType = type, usable = usable)
@@ -387,5 +417,95 @@ class EndowStoreTest {
         c.cancel()
         s.dispatch(EndowIntent.SetApplied(listOf(applied("a")), unavailable = false))
         assertEquals(atCancel, count)
+    }
+
+    // ─── confirmRedemption (luồng checkout — trước đây chỉ có ở Android) ────────
+
+    /** Đơn không áp ưu đãi nào → cho đi tiếp NGAY, không gọi mạng, không phụ thuộc cờ. */
+    @Test
+    fun confirm_noAppliedDiscount_succeedsWithoutNetwork() = runTest {
+        val repo = FakeRepo()
+        val s = store(repo)
+
+        assertEquals(EndowConfirmResult.Success, s.confirmRedemption())
+        assertNull(repo.lastRedemptionRequest)
+    }
+
+    /** Có ưu đãi, redemption sạch → cho đi tiếp; request mang đúng objectId + expectedDiscount. */
+    @Test
+    fun confirm_cleanRedemption_succeeds_andSendsAppliedItems() = runTest {
+        val repo = FakeRepo(validate = { validateOk("a", discount = "1000") })
+        val s = store(repo)
+        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+
+        assertEquals(EndowConfirmResult.Success, s.confirmRedemption())
+
+        val req = repo.lastRedemptionRequest!!
+        assertEquals("ORD-1", req.orderId)
+        assertEquals(listOf("a"), req.items.map { it.objectId })
+        assertEquals(listOf("1000"), req.items.map { it.expectedDiscount })
+    }
+
+    /**
+     * Hết ngân sách báo trong **body**: phải validate lại rồi cập nhật state trước khi báo lỗi —
+     * widget hiện giá mới chứ không giữ giá đã sai.
+     */
+    @Test
+    fun confirm_budgetErrorInBody_revalidates_updatesState_andFails() = runTest {
+        val repo = FakeRepo(validate = { validateOk("a", discount = "1000") })
+        val s = store(repo)
+        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+
+        repo.redemption = { redemptionOk(errors = listOf(RedemptionValidationError(code = "INSUFFICIENT_BUDGET", message = "het"))) }
+        repo.validate = { validateOk("a", discount = "0", valid = false) }
+
+        val result = s.confirmRedemption()
+
+        assertEquals(EndowConfirmResult.Failure("INSUFFICIENT_BUDGET"), result)
+        val st = s.currentState()
+        assertEquals("0", st.appliedDiscounts.single().calculatedDiscount)
+        assertTrue(st.discountUnavailable)   // item không còn valid → widget về UNAVAILABLE
+    }
+
+    /** Hết ngân sách báo bằng **HTTP 422** thay vì body — cùng nhánh xử lý. */
+    @Test
+    fun confirm_budgetErrorAsHttp422_revalidates_andFails() = runTest {
+        val repo = FakeRepo(validate = { validateOk("a", discount = "1000") })
+        val s = store(repo)
+        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+
+        repo.redemption = { throw PromotionException(errorCode = "INSUFFICIENT_BUDGET", message = "het", httpStatus = 422) }
+        repo.validate = { validateOk("a", discount = "500") }
+
+        assertEquals(EndowConfirmResult.Failure("INSUFFICIENT_BUDGET"), s.confirmRedemption())
+        assertEquals("500", s.currentState().appliedDiscounts.single().calculatedDiscount)
+    }
+
+    /** Lỗi khác (không phải hết ngân sách) → báo thẳng mã lỗi, KHÔNG validate lại. */
+    @Test
+    fun confirm_otherFailure_reportsErrorCode_withoutRevalidate() = runTest {
+        val repo = FakeRepo(validate = { validateOk("a", discount = "1000") })
+        val s = store(repo)
+        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+        val validateCallsBefore = repo.validateCallCount
+
+        repo.redemption = { throw PromotionException(errorCode = "SERVER_ERROR", message = "toang", httpStatus = 500) }
+
+        assertEquals(EndowConfirmResult.Failure("SERVER_ERROR"), s.confirmRedemption())
+        assertEquals(validateCallsBefore, repo.validateCallCount)
+    }
+
+    /** Revalidate không có kết quả → vẫn báo hết ngân sách, và KHÔNG ghi đè giá đang hiện. */
+    @Test
+    fun confirm_revalidateReturnsNull_keepsPreviousDiscounts() = runTest {
+        val repo = FakeRepo(validate = { validateOk("a", discount = "1000") })
+        val s = store(repo)
+        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+
+        repo.redemption = { redemptionOk(errors = listOf(RedemptionValidationError(code = "INSUFFICIENT_BUDGET", message = "het"))) }
+        repo.validate = { null }
+
+        assertEquals(EndowConfirmResult.Failure("INSUFFICIENT_BUDGET"), s.confirmRedemption())
+        assertEquals("1000", s.currentState().appliedDiscounts.single().calculatedDiscount)
     }
 }

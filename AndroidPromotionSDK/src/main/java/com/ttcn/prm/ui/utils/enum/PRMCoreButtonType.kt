@@ -12,7 +12,7 @@ import com.ttcn.prm.R
  * @property paddingRes surround padding, main purpose for shadow layer
  * @property loadingColorRes color resource of loading indicator
  */
-enum class PRMCoreButtonType(
+internal enum class PRMCoreButtonType(
     @DrawableRes val backgroundRes: Int,
     @ColorRes val textColorRes: Int,
     @DimenRes var paddingRes: Int,

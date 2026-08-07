@@ -32,8 +32,7 @@ PromotionSDK.initialize(context, options)
    └─ PromotionContainer.init(context, config)    // androidMain của :promotionLogic
         ├─ AndroidContextHolder.set(applicationContext)
         ├─ isDebug ← ApplicationInfo.FLAG_DEBUGGABLE
-        └─ dựng DI
-   └─ ensureUiDiLoaded()                          // nạp ViewModelModule một lần
+        └─ dựng DI (module nằm cùng package với lớp nó dựng — DependencyInjection.md §5)
 ```
 
 - Luôn dùng `applicationContext`; **không** giữ tham chiếu Activity tĩnh.
@@ -49,103 +48,47 @@ và SDK tự map. Bề mặt đầy đủ: [PublicApi.md](../common/PublicApi.md
 ## 3. Activity / Fragment
 
 - Kế thừa base có sẵn: `PRMBaseActivity`, `PRMBaseFragment`. Không tạo base mới khi base hiện tại đủ dùng.
-- ViewModel lấy qua `PromotionViewModelFactory` / `ViewModelModule` (DI), không `new` thủ công.
+  Cả hai là **`internal`** — dùng cho màn của SDK, host **không** kế thừa được (app demo `androidApp`
+  có base riêng ở `app/base/`).
+- ViewModel lấy qua factory **của chính màn đó** (`MyPromotionViewModel.factory()`), không `new` thủ công.
 - Quan sát state/effect trong vòng đời an toàn: `viewLifecycleOwner` + `repeatOnLifecycle(STARTED)`.
 - Fragment **chỉ** render state và gửi `Action`; không chứa business logic.
 
 ---
 
-## 4. MVI — State / Action / Effect
+## 4. Bọc store — `PRMStoreViewModel<S, I>`
 
-`PRMBaseViewModel<S, A, E>`:
-
-- `uiState: StateFlow<S>` — nguồn sự thật duy nhất cho UI; cập nhật qua `setState { copy(...) }`.
-- `uiEffect: SharedFlow<E>` — sự kiện một lần (điều hướng, toast, lỗi); phát qua `sendEffect(...)`.
-- `handleAction(action: A)` — điểm vào duy nhất. UI **không** gọi business logic trực tiếp.
-- `launch { }` — coroutine có sẵn `CoroutineExceptionHandler` → gọi `onError(throwable)`.
+Màn **không** khai `UiState`/`Action`/`Effect` riêng: đọc thẳng `State` và phát thẳng `Intent` của
+store dùng chung. `PRMBaseViewModel<S, A, E>` cũ đã bị xoá, cả bốn màn dùng chung khuôn này.
 
 ```kotlin
-// Quan sát state
-viewLifecycleOwner.lifecycleScope.launch {
-    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        viewModel.uiState.collect { state -> render(state) }
-    }
-}
-
-// Quan sát effect (one-shot)
-viewLifecycleOwner.lifecycleScope.launch {
-    viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-        viewModel.uiEffect.collect { effect -> handleEffect(effect) }
-    }
-}
-
-// Gửi action
-binding.swipeRefresh.setOnRefreshListener {
-    viewModel.handleAction(MyPromotionAction.Refresh)
+internal class PromotionDetailViewModel(
+    getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
+    private val config: PromotionSDKConfig,
+) : PRMStoreViewModel<PromotionDetailState, PromotionDetailIntent>(
+    { scope -> PromotionDetailStore(getCustomerVoucherDetailUseCase, scope) },
+) {
+    // chỉ còn phần THUẦN ANDROID (bottom sheet, resource…) mới cần method riêng
+    fun serviceOptions(): List<ServiceSelectorUiItem> = ...
 }
 ```
 
-### ViewModel gọi lõi KMP
-
-ViewModel dựng **thẳng use case đơn lẻ** (giống ViewModel bên iOS), không đi qua facade
-`PromotionUseCases`. Use case **ném** `PromotionException` / `NetworkException`, nên bắt bằng
-`runCatching` rồi map sang `errorCode`:
-
 ```kotlin
-fun loadVouchers() = launch {
-    setState { copy(isLoading = true) }
-    runCatching { searchCustomerVouchersUseCase(request) }
-        .onSuccess { r -> setState { copy(isLoading = false, vouchers = r?.content.orEmpty()) } }
-        .onFailure { e ->
-            setState { copy(isLoading = false) }
-            sendEffect(MyPromotionEffect.ShowError(e.toErrorCode()))
-        }
-}
+// Fragment
+collectFlow(viewModel.state) { state -> render(state) }
+collectFlow(viewModel.errors) { code -> showToast(mapPromotionError(code)) }
+viewModel.dispatch(PromotionDetailIntent.LoadDetail(voucherId))
 ```
 
-Use case được cấp qua `PromotionViewModelFactory` (xem `ui/di/`), lấy repository từ đồ thị mà
-`PromotionContainer.initialize(...)` đã dựng.
+- `state: StateFlow<S>` — thẳng từ store.
+- `errors: Flow<String>` — `errorCode` thành **sự kiện một lần** (tự `ConsumeError` sau khi phát).
+  Chỉ tiêu thụ khi có người collect, nên màn đang `STOPPED` thì lỗi nằm lại và báo lúc sống lại.
+- `dispatch(intent: I)` — thẳng xuống store.
 
-> Chỉ facade `PromotionUseCases()` mới trả `PromotionResult` và **không ném**. Nó là type của
-> `:promotionLogic`, **không** dành cho host: host chỉ tích hợp `AndroidPromotionSDK` nên không có
-> `core.*` trên compile classpath. Host tự dựng UI thì gọi `PromotionSDK.api` — xem
-> [PublicApi.md](../common/PublicApi.md). Trong module này, UI dựng thẳng use case đơn lẻ và tự `runCatching`.
-
-### Luồng checkout dùng `findEligible`, không phải `searchVouchers`
-
-`ChoosePromotionViewModel` và `PRMEndowViewModel` gọi `FindEligibleCampaignsUseCase` — trả hai nhóm
-`myOffers` (đã sở hữu) + `otherOffers` (campaign công khai). `searchVouchers` chỉ có nhóm đầu, dùng
-cho màn "Ưu đãi của tôi" và màn Tìm kiếm.
-
-Hai hệ quả:
-
-- `findEligible` **chưa trả `isAutoApplied`** → voucher tự-áp-dụng không chạy ở checkout.
-  Xem `TODO(auto-apply)` trong `PromotionUiMapper.kt`.
-- `findEligible` **không nhận `keyword`** → ô tìm kiếm màn "Chọn ưu đãi" **chưa chạy**.
-
-Khung tìm kiếm đã dựng theo đúng khuôn `SearchMyPromotionViewModel` (gõ mỗi ký tự → `QueryChanged` →
-debounce 400ms → `search()`; `Search` chạy ngay; `ClearKeyword` reset), nhưng `search()` còn để trống:
-xem `TODO(search)`. Cố tình **không** lọc trong bộ nhớ — lọc client chỉ đúng trên trang đầu (10 mục),
-nên nó im lặng trả sai kết quả khi danh sách dài hơn một trang. Khi backend chốt trường `keyword`,
-điền vào `search()` là xong; phần còn lại đã sẵn.
-
-### Feature flag
-
-Điều hướng phải đi qua `PromotionFeatureGate` — **object Kotlin trong `promotionLogic`**, dùng chung
-với iOS, không phải một bản riêng của Android:
-
-- `PromotionSDK.openMyPromotion()` gác bởi `canOpenVoucherList()`.
-- `PRMBaseFragment.openPromotionDetail(voucherId)` gác bởi `canOpenVoucherDetail()` — dùng hàm này
-  thay cho `addFragment(PromotionDetailFragment.newInstance(...))` để không màn nào quên gác.
-- `PRMEndowView` tự ẩn nếu `canShowVoucherSelection()` trả `false`.
-
-Cờ TẮT → hiện `R.string.prm_feature_disabled` (PRM_MOB_021) và không điều hướng.
-**Không** gọi thẳng `PromotionFeatureFlagUseCases()` từ tầng UI; thêm màn mới thì thêm một hàm
-`canOpen…` vào gate.
-
-Host **hỏi trước được** để ẩn entry point của chính mình — `PromotionSDK.featureFlags()` /
-`isFeatureEnabled(feature)` / `isSdkEnabled()` / `refreshFeatureFlags(onComplete)`. Đó là tầng
-**tuỳ chọn**, không thay cho việc gác ở trên; xem [features/FeatureFlag.md §3](../features/FeatureFlag.md).
+⚠️ **Luôn là `abstract` + subclass riêng cho từng màn**, đừng dùng chung một class generic:
+`by viewModels()` khoá theo *tên class*, generic thì erase → hai màn đè khoá nhau, trả nhầm instance,
+nổ `ClassCastException` lúc chạy. `promotionViewModelFactory()` cũng đánh khoá theo `T::class` nên
+hỏng y vậy.
 
 ---
 
@@ -216,9 +159,17 @@ Không thêm thư viện UI mới nếu chưa được yêu cầu (AI_AGENT_RULE
 
 ## 9. Custom View
 
-- Đặt trong `utils/view/`, tiền tố `PRM` (vd `PRMEditText`, `PRMButton`, `PRMEndowView`).
+- Đặt trong `ui/widget/`, tiền tố `PRM` (vd `PRMEditText`, `PRMButton`) và khai **`internal`**.
 - Attribute tùy biến qua `res/values/attrs.xml`.
 - Tái sử dụng trước khi tạo mới.
+
+> **`internal` không cản việc inflate từ XML**: Kotlin dịch `internal class` thành class **public**
+> trong bytecode (chỉ *hàm* internal mới bị mangle tên), nên `LayoutInflater` vẫn dựng được và
+> AAPT2 vẫn tự sinh keep-rule cho R8.
+>
+> Ngoại lệ duy nhất là `PRMEndowView` — host đặt nó vào layout của **chính host**, nên nó nằm ở
+> `entry/endowview/` và là `public`. Cần thêm một widget nữa cho host thì **dời vào `entry`**, đừng
+> nới `public` tại chỗ ([PublicApi.md §5](../common/PublicApi.md)).
 
 ---
 

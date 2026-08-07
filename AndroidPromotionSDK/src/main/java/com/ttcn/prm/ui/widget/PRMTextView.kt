@@ -16,7 +16,7 @@ import com.ttcn.prm.ui.utils.extension.getString
  * Base TextView class for ViettelPay app to replace default [AppCompatTextView]
  */
 @Suppress("LeakingThis")
-open class PRMTextView : AppCompatTextView, IPRMClickEffect {
+internal open class PRMTextView : AppCompatTextView, IPRMClickEffect {
 
     /**
      * Should we prevent clicking too fast

@@ -10,6 +10,7 @@ import WebKit
 @_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMDesignKit
+@_implementationOnly import PRMKotlinBridge
 
 final class PromotionDetailViewController: PRMBaseViewController<PromotionDetailViewModel> {
     // MARK: - UI Components
@@ -31,6 +32,9 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     /// khác trình duyệt nên hai nền tảng lệch.
     private let detailWebView = PromotionDetailViewController.makeContentWebView()
     private let guideWebView = PromotionDetailViewController.makeContentWebView()
+
+    /// `navigationDelegate` là `weak` — phải có ai đó giữ, nếu không nó rụng ngay và hết chặn.
+    private let webViewNavigationBlocker = PromotionContentWebViewNavigationBlocker()
 
     /// Shimmer phủ toàn màn lúc gọi API chi tiết.
     private lazy var shimmerView: PromotionDetailShimmerView = {
@@ -80,6 +84,9 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         stack.distribution = .fillEqually
         stack.translatesAutoresizingMaskIntoConstraints = false
         contentScrollView.addSubview(stack)
+
+        detailWebView.navigationDelegate = webViewNavigationBlocker
+        guideWebView.navigationDelegate = webViewNavigationBlocker
 
         let detailPage = makeContentPage(webView: detailWebView)
         let guidePage = makeContentPage(webView: guideWebView)
@@ -145,8 +152,19 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
 
     /// WebView 1 tab: nền trong suốt (card trắng phía sau lo nền), cuộn dọc trong card, **không**
     /// bounce/cuộn ngang để không tranh cử chỉ với pager vuốt ngang ở ngoài.
+    ///
+    /// **JavaScript tắt.** Nội dung là HTML do backend trả (mô tả / hướng dẫn campaign), chỉ cần
+    /// render text + ảnh; bật JS là cho script của bên thứ ba chạy trong app host mà chẳng để làm gì.
+    /// Đối ứng `javaScriptEnabled = false` ở `PrmContentDetailEndowFragment` bên Android — sửa một
+    /// bên thì sửa cả hai.
     private static func makeContentWebView() -> WKWebView {
-        let webView = WKWebView()
+        let configuration = WKWebViewConfiguration()
+        if #available(iOS 14.0, *) {
+            configuration.defaultWebpagePreferences.allowsContentJavaScript = false
+        } else {
+            configuration.preferences.javaScriptEnabled = false
+        }
+        let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.translatesAutoresizingMaskIntoConstraints = false
         webView.backgroundColor = .clear
         webView.isOpaque = false
@@ -173,13 +191,13 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     override func bindViewModel() {
         super.bindViewModel()
 
-        viewModel.onState = { [weak self] state in self?.render(state) }
+        viewModel.onDisplay = { [weak self] display in self?.render(display) }
         viewModel.onEffect = { [weak self] effect in self?.handle(effect) }
 
-        viewModel.handleAction(.loadDetail)
+        viewModel.loadDetailIfNeeded()
     }
 
-    private func render(_ state: PromotionDetailViewModel.UiState) {
+    private func render(_ state: PromotionDetailViewModel.Display) {
         configVoucherCardView(voucherCardViewModel: state.card)
         bannerImageView.setImage(urlString: state.banner)
 
@@ -201,13 +219,10 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
         }
     }
 
-    private func handle(_ effect: PromotionDetailViewModel.Effect) {
-        switch effect {
-        // Lỗi nghiệp vụ → toast (đồng nhất Android/MyPromotion).
-        case .showError(let code):
-            PromotionToast.show(PromotionUIStrings.errorMessage(code), in: view)
-        case .showServiceSelector(let items):
-            showServiceSelector(items)
+    /// Lỗi nghiệp vụ → toast (đồng nhất Android/MyPromotion).
+    private func handle(_ effect: PRMEffect) {
+        if let error = effect as? PRMEffectShowError {
+            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
         }
     }
 
@@ -230,7 +245,6 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
             serviceType: service.serviceType,
             iconUrl: service.iconUrl
         ))
-        viewModel.handleAction(.serviceSelected(service))
     }
 
     /// Nạp trang HTML đã bọc sẵn (dùng chung với Android) vào WebView. Rỗng → trang trắng.
@@ -255,7 +269,7 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
             if !viewModel.hostHandlesDismiss { viewModel.routeToParent() }
             return
         }
-        viewModel.handleAction(.openServiceSelector)
+        showServiceSelector(viewModel.serviceOptions())
     }
 }
 
@@ -275,5 +289,24 @@ extension PromotionDetailViewController: UIScrollViewDelegate {
         guard scrollView == contentScrollView, scrollView.frame.width > 0 else { return }
         let page = Int(round(scrollView.contentOffset.x / scrollView.frame.width))
         underlinedSegmentControlView.selectItem(at: page)
+    }
+}
+
+//MARK: - Chặn điều hướng trong WebView nội dung
+/// Cho **đúng** lần nạp HTML ban đầu (`loadHTMLString` → `about:blank`), chặn mọi thứ còn lại: link
+/// trong nội dung ưu đãi không được điều hướng WebView đi đâu cả.
+///
+/// Nội dung là HTML do backend/merchant nhập, nên không chặn thì một thẻ `<a>` là đủ để render trang
+/// bất kỳ **bên trong UI của SDK** — người dùng vẫn tưởng đang ở màn ưu đãi. Android chặn sẵn bằng
+/// `shouldOverrideUrlLoading` trả `true`; đây là phần đối ứng, trước giờ iOS thiếu.
+final class PromotionContentWebViewNavigationBlocker: NSObject, WKNavigationDelegate {
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
+    ) {
+        let url = navigationAction.request.url
+        let isInitialHtmlLoad = url == nil || url?.absoluteString == "about:blank"
+        decisionHandler(isInitialHtmlLoad ? .allow : .cancel)
     }
 }

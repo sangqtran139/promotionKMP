@@ -2,15 +2,19 @@ package com.ttcn.promotionsdk.presentation.endow
 
 import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.exception.ErrorCodes
+import com.ttcn.promotionsdk.domain.exception.PromotionException
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
+import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
+import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 
 /**
  * **Tầng UI-logic dùng chung** cho widget "Ưu đãi" ở màn thanh toán (`PRMEndowView`) — chạy trên cả
@@ -33,20 +38,23 @@ import kotlinx.coroutines.launch
 class EndowStore(
     private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
     private val validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
+    private val createRedemptionSessionUseCase: CreateRedemptionSessionUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : PRMStore<EndowState, EndowIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
     constructor(
         findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
         validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
+        createRedemptionSessionUseCase: CreateRedemptionSessionUseCase,
     ) : this(
         findEligibleCampaignsUseCase,
         validateStackableDiscountsUseCase,
+        createRedemptionSessionUseCase,
         CoroutineScope(SupervisorJob() + Dispatchers.Default),
     )
 
     private val _state = MutableStateFlow(EndowState())
-    val state: StateFlow<EndowState> = _state.asStateFlow()
+    override val state: StateFlow<EndowState> = _state.asStateFlow()
 
     fun currentState(): EndowState = _state.value
 
@@ -59,7 +67,11 @@ class EndowStore(
         scope.cancel()
     }
 
-    fun dispatch(intent: EndowIntent) {
+    override fun errorOf(state: EndowState): String? = state.errorCode
+
+    override val consumeErrorIntent: EndowIntent = EndowIntent.ConsumeError
+
+    override fun dispatch(intent: EndowIntent) {
         when (intent) {
             EndowIntent.LoadInitial -> loadInitial()
             is EndowIntent.ValidateAndApply -> validateAndApply(intent.offers)
@@ -72,6 +84,87 @@ class EndowStore(
             }
             EndowIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
         }
+    }
+
+
+    /**
+     * User bấm "Thanh toán": tạo phiên redemption cho các ưu đãi đang áp.
+     *
+     * Trước đây nằm ở `PromotionIntegrateManager` **chỉ bên Android** — nghĩa là luồng đụng tiền
+     * này chưa từng dùng chung, và iOS không có. Nay ở đây, hai nền tảng chạy một đường.
+     *
+     * Thứ tự có ý nghĩa, đừng đảo:
+     *  1. Không áp ưu đãi nào → [EndowConfirmResult.Success] **bất kể cờ**. Đơn không dính khuyến
+     *     mãi thì kill-switch không có lý do chặn thanh toán.
+     *  2. Cờ `VOUCHER_REDEEM` tắt → [EndowConfirmResult.Failure] `PRM_MOB_021`, **không gọi mạng**.
+     *  3. `INSUFFICIENT_BUDGET` (trong body **hoặc** HTTP 422) → validate lại để lấy giá mới, cập
+     *     nhật [state] rồi báo lỗi. Widget tự re-render vì đọc [state].
+     *
+     * `suspend` chứ không phải intent: đây là câu hỏi có câu trả lời một-lần ("cho đi tiếp không?"),
+     * nhét vào [EndowState] thì native lại phải dựng máy trạng thái để bắt đúng một lần.
+     */
+    suspend fun confirmRedemption(): EndowConfirmResult {
+        val applied = _state.value.appliedDiscounts
+        if (applied.isEmpty()) return EndowConfirmResult.Success
+        if (!PromotionFeatureGate.canRedeemVoucher()) {
+            return EndowConfirmResult.Failure(ErrorCodes.FEATURE_DISABLED)
+        }
+
+        val ctx = PromotionContainer.requestContextProvider
+        val request = applied.toCreateRedemptionRequest(
+            orderId = ctx.getOrderId().orEmpty(),
+            orderValue = ctx.getOrderValue().orEmpty(),
+        )
+
+        return runCatching { createRedemptionSessionUseCase(request) }
+            .fold(
+                onSuccess = { response ->
+                    val hasBudgetError = response?.validationErrors
+                        ?.any { it.code == ErrorCodes.INSUFFICIENT_BUDGET } ?: false
+                    if (hasBudgetError) revalidateAfterBudgetError() else EndowConfirmResult.Success
+                },
+                onFailure = { throwable ->
+                    val e = throwable as? PromotionException
+                    if (e?.httpStatus == HTTP_UNPROCESSABLE && e.errorCode == ErrorCodes.INSUFFICIENT_BUDGET) {
+                        revalidateAfterBudgetError()
+                    } else {
+                        EndowConfirmResult.Failure(throwable.toErrorCode())
+                    }
+                },
+            )
+    }
+
+    /**
+     * Ngân sách hết giữa chừng: validate lại để lấy giá đúng rồi mới báo lỗi, nhờ vậy widget hiện số
+     * mới thay vì số đã sai.
+     *
+     * Gác riêng bằng `VOUCHER_APPLY` — đây là lời gọi mạng **thứ hai**, mang cờ khác (chỉ rơi vào
+     * đây khi `VOUCHER_REDEEM` bật mà `VOUCHER_APPLY` tắt). Cờ tắt thì không lấy được giá mới, nên
+     * **không đụng** [state]: để giá cũ còn hơn ghi đè bằng dữ liệu không có.
+     */
+    private suspend fun revalidateAfterBudgetError(): EndowConfirmResult {
+        if (!PromotionFeatureGate.canApplyVoucher()) {
+            return EndowConfirmResult.Failure(ErrorCodes.FEATURE_DISABLED)
+        }
+        val current = _state.value.appliedDiscounts
+        val ctx = PromotionContainer.requestContextProvider
+        val request = current.toValidateDiscountsRequest(
+            orderId = ctx.getOrderId().orEmpty(),
+            orderValue = ctx.getOrderValue().orEmpty(),
+        )
+        return runCatching { validateStackableDiscountsUseCase(request) }
+            .fold(
+                onSuccess = { result ->
+                    if (result != null) {
+                        val details = current.map { result.toEndowAppliedDiscount(it.objectId, it.objectType) }
+                        _state.update {
+                            it.copy(appliedDiscounts = details, discountUnavailable = details.any { d -> !d.valid })
+                        }
+                    }
+                    EndowConfirmResult.Failure(ErrorCodes.INSUFFICIENT_BUDGET)
+                },
+                onFailure = { EndowConfirmResult.Failure(it.toErrorCode()) },
+            )
     }
 
     private fun loadInitial() {
@@ -163,76 +256,11 @@ class EndowStore(
         /** Trùng `pageSize` màn chọn (COLLAPSED không liên quan) — giữ như PRMEndowViewModel cũ. */
         private const val PAGE_SIZE = 10
 
+        /** 422 — server báo hết ngân sách bằng HTTP status thay vì trong body. */
+        private const val HTTP_UNPROCESSABLE = 422
+
         /** `total` từ server nếu có (> 0); không thì lùi về số phần tử đã nạp. */
         private fun totalOrSize(total: Long?, size: Int): Int =
             if (total != null && total > 0) total.toInt() else size
     }
-}
-
-// ─── State / Intent / Models ──────────────────────────────────────────────────
-
-data class EndowState(
-    val hasLoadedInitial: Boolean = false,
-    val isLoading: Boolean = false,
-    /** Ưu đãi từ `findEligible` — truyền thẳng sang màn "Chọn ưu đãi" để khỏi gọi API hai lần. */
-    val myOffers: List<EligibleOffer> = emptyList(),
-    val otherOffers: List<EligibleOffer> = emptyList(),
-    /**
-     * Cờ phân trang của chính lần `findEligible` này — màn "Chọn ưu đãi" nhận qua
-     * `ChoosePromotionIntent.Preload` để biết còn trang nào không.
-     */
-    val myIsLastPage: Boolean = true,
-    val otherIsLastPage: Boolean = true,
-    val totalVoucherCount: Int = 0,
-    val appliedDiscounts: List<EndowAppliedDiscount> = emptyList(),
-    val discountUnavailable: Boolean = false,
-    val isValidating: Boolean = false,
-    /** Mã lỗi một-lần; native hiển thị rồi `dispatch(ConsumeError)`. */
-    val errorCode: String? = null,
-)
-
-/** Trạng thái hiển thị widget — **quyết định dùng chung** (rule cũ ở `PRMEndowView.renderState`). */
-enum class EndowWidgetState { EMPTY, NOT_APPLIED, APPLIED, UNAVAILABLE }
-
-val EndowState.widgetState: EndowWidgetState
-    get() = when {
-        discountUnavailable && appliedDiscounts.isNotEmpty() -> EndowWidgetState.UNAVAILABLE
-        appliedDiscounts.isNotEmpty() -> EndowWidgetState.APPLIED
-        totalVoucherCount > 0 -> EndowWidgetState.NOT_APPLIED
-        else -> EndowWidgetState.EMPTY
-    }
-
-/**
- * Kết quả validate cho 1 ưu đãi — model **shared** (đối xứng `AppliedDiscount` public của Android /
- * kiểu tương ứng iOS). Mỗi nền tảng map sang model public riêng cho callback/host.
- */
-data class EndowAppliedDiscount(
-    val objectId: String,
-    val objectType: String,
-    val valid: Boolean,
-    val calculatedDiscount: String,
-    val eligibilityStatus: String,
-)
-
-internal fun ValidateDiscountsResult.toEndowAppliedDiscount(objectId: String, objectType: String) =
-    EndowAppliedDiscount(
-        objectId = objectId,
-        objectType = objectType,
-        valid = isValidFor(objectId),
-        calculatedDiscount = discountFor(objectId),
-        eligibilityStatus = itemFor(objectId)?.eligibilityStatus.orEmpty(),
-    )
-
-sealed interface EndowIntent {
-    /** Nạp ưu đãi widget (findEligible) — idempotent, chỉ chạy lần đầu. */
-    data object LoadInitial : EndowIntent
-    /** Validate + áp danh sách ưu đãi đã chọn (từ màn Chọn). */
-    data class ValidateAndApply(val offers: List<EligibleOffer>) : EndowIntent
-    /** Áp trực tiếp kết quả đã validate sẵn (host tự validate rồi đưa vào). */
-    data class SetApplied(val discounts: List<EndowAppliedDiscount>, val unavailable: Boolean) : EndowIntent
-    /** Đánh dấu ưu đãi đang áp không còn khả dụng (không đổi danh sách). */
-    data object MarkUnavailable : EndowIntent
-    /** Xoá toàn bộ ưu đãi đã áp → quay về NOT_APPLIED. */
-    data object ClearApplied : EndowIntent
-    data object ConsumeError : EndowIntent
 }

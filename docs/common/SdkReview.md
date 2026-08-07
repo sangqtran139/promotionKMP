@@ -75,7 +75,7 @@ dẫn chứng bảo vệ:
   `AppliedDiscount`, `PromotionApiResult` (`Entry/API/PromotionApiModels.swift`).
 - **Android:** thành viên mang type Logic để `internal` — vd `PRMEndowView.myVouchers/otherVouchers:
   List<EligibleOffer>` và `ChoosePromotionFragment.onApplySelectedOffers` đều `internal`. **Public API** chỉ
-  dùng DTO ở `ui/entry`: `PromotionVoucher`, `PromotionVoucherDetail`, `PromotionEligibleOffer`,
+  dùng DTO ở `entry`: `PromotionVoucher`, `PromotionVoucherDetail`, `PromotionEligibleOffer`,
   `AppliedDiscount`, `PromotionApiResult`.
 - Việc **map Logic → DTO UI** nằm ở tầng UI (`toUiState()`/`buildOutput()` và facade `PromotionSDKApi`), nên
   ranh giới rõ: **Logic không rò lên host**.
@@ -184,7 +184,7 @@ Host Android khai `implementation("com.ttcn.promotion:promotionSDK:<SDK_VERSION>
 | # | Nơi kiểm chứng |
 |---|---|
 | 1 | `@_implementationOnly import` trong `iosPromotionSDK/PromotionSDKUI/**`; `iosPromotionSDK/scripts/build-xcframework.sh:111`; `iosApp/iosApp/*.swift` |
-| 2 | `promotionLogic/presentation/*Store.kt`; `ui/entry/*` (Android) & `Entry/API/PromotionApiModels.swift` (iOS); `PRMEndowView.myVouchers` (internal) |
+| 2 | `promotionLogic/presentation/*Store.kt`; `entry/*` (Android) & `Entry/API/PromotionApiModels.swift` (iOS); `PRMEndowView.myVouchers` (internal) |
 | 3 | [CodingStandards.md](./CodingStandards.md), [ProjectStructure.md](./ProjectStructure.md) |
 | 4 | [Architecture.md](./Architecture.md); `di/PromotionContainer.kt`; 5 `*Store.kt` |
 | 5 | `gradle.properties:19`; `*/build.gradle.kts`; `PRM.xcodeproj` (`MARKETING_VERSION`); `CHANGELOG.md` |

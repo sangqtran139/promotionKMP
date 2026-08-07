@@ -1,5 +1,5 @@
 package com.ttcn.prm.ui.utils
 
-object ViewGlobalConst {
+internal object ViewGlobalConst {
     const val EMPTY_STRING: String = ""
 }

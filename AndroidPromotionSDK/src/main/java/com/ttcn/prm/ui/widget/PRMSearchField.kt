@@ -26,7 +26,7 @@ import com.ttcn.prm.ui.widget.itf.IPRMInput
 /**
  * Search field
  */
-class PRMSearchField @JvmOverloads constructor(
+internal class PRMSearchField @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs), View.OnFocusChangeListener, IPRMInput {
 

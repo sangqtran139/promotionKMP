@@ -3,7 +3,8 @@ package com.ttcn.promotionsdk.presentation.searchmypromotion
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersRequest
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
+import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionVoucher
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionVoucher
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+
 /**
  * **Tầng UI-logic dùng chung** cho màn "Tìm ưu đãi của tôi" — chạy trên cả Android & iOS.
  *
@@ -28,13 +30,13 @@ import kotlinx.coroutines.launch
 class SearchMyPromotionStore(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : PRMStore<SearchMyPromotionState, SearchMyPromotionIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
     constructor(searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase) :
         this(searchCustomerVouchersUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(SearchMyPromotionState())
-    val state: StateFlow<SearchMyPromotionState> = _state.asStateFlow()
+    override val state: StateFlow<SearchMyPromotionState> = _state.asStateFlow()
 
     fun currentState(): SearchMyPromotionState = _state.value
 
@@ -49,7 +51,11 @@ class SearchMyPromotionStore(
 
     private var debounceJob: Job? = null
 
-    fun dispatch(intent: SearchMyPromotionIntent) {
+    override fun errorOf(state: SearchMyPromotionState): String? = state.errorCode
+
+    override val consumeErrorIntent: SearchMyPromotionIntent = SearchMyPromotionIntent.ConsumeError
+
+    override fun dispatch(intent: SearchMyPromotionIntent) {
         when (intent) {
             is SearchMyPromotionIntent.QueryChanged -> onQueryChanged(intent.keyword)
             SearchMyPromotionIntent.Search -> performSearch(immediate = true)
@@ -169,27 +175,4 @@ class SearchMyPromotionStore(
         private const val TAB_ALL = "all"
         private const val DEBOUNCE_MS = 400L
     }
-}
-
-// ─── State / Intent (cấu trúc, không chuỗi hiển thị) ──────────────────────────
-
-data class SearchMyPromotionState(
-    val keyword: String = "",
-    val isLoading: Boolean = false,
-    val isLoadingMore: Boolean = false,
-    val isEmpty: Boolean = false,
-    val isLastPage: Boolean = true,
-    val page: Int = 0,
-    val pageSize: Int = 10,
-    val vouchers: List<MyPromotionVoucher> = emptyList(),
-    val errorCode: String? = null,
-)
-
-sealed interface SearchMyPromotionIntent {
-    data class QueryChanged(val keyword: String) : SearchMyPromotionIntent
-    data object Search : SearchMyPromotionIntent
-    data object LoadMore : SearchMyPromotionIntent
-    data object ClearKeyword : SearchMyPromotionIntent
-    data object Retry : SearchMyPromotionIntent
-    data object ConsumeError : SearchMyPromotionIntent
 }

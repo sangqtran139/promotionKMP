@@ -25,7 +25,7 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 @Suppress("MemberVisibilityCanBePrivate", "unused")
-open class PRMShadowView : FrameLayout {
+internal open class PRMShadowView : FrameLayout {
 
     private val defaultShadowArea = TypedValue.applyDimension(
         TypedValue.COMPLEX_UNIT_DIP, 8f, resources.displayMetrics

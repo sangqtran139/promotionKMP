@@ -5,7 +5,7 @@ import android.util.AttributeSet
 import android.view.View
 import com.ttcn.prm.R
 
-abstract class PRMAbstractButton : PRMCardView, IPRMClickEffect {
+internal abstract class PRMAbstractButton : PRMCardView, IPRMClickEffect {
 
     /**
      * Holding the state of button [ButtonState]
@@ -76,4 +76,4 @@ abstract class PRMAbstractButton : PRMCardView, IPRMClickEffect {
     }
 }
 
-enum class ButtonState { IDLE, LOADING, DISABLE }
+internal enum class ButtonState { IDLE, LOADING, DISABLE }

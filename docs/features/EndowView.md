@@ -1,10 +1,13 @@
 # Feature: Endow View (điểm tích hợp vào màn thanh toán)
 
 Đây là feature **tích hợp quan trọng nhất** cho host app: một **custom View** (`PRMEndowView`) cùng
-**`PromotionIntegrateManager`** để nhúng phần "ưu đãi/voucher" trực tiếp vào màn hình thanh toán của đối tác.
+**`PRMEndowView.confirmRedemption`** để nhúng phần "ưu đãi/voucher" trực tiếp vào màn hình thanh toán của đối tác.
 
-- **Package:** `ui/feature/promotion/endowview` (+ `ui/feature/promotion/PromotionIntegrateManager.kt`)
-- **Thành phần:** `PRMEndowView`, `PRMEndowViewModel`, `PRMEndowUiState`, `PromotionIntegrateManager`
+- **Package public:** `entry/endowview/` — `PRMEndowView`, `AppliedDiscount`. Trạng thái widget dùng
+  `EndowWidgetState` của `promotionLogic` (không còn bản sao `EndowViewState` bên Android).
+  Đây là **bề mặt host**, nên nó ở trong `entry` như mọi thứ host chạm tới (xem [PublicApi.md](../common/PublicApi.md)).
+- **Package nội bộ:** `ui/feature/promotion/endowview/` — `EndowViewModel`, `PRMEndowUiState` (`internal`,
+  mang type của lõi).
 
 > **Cập nhật (tầng UI-logic dùng chung):** Toàn bộ nghiệp vụ widget — `findEligible`, **validate & apply**,
 > và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
@@ -34,7 +37,7 @@
 
 `internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.
 Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; host lấy chúng gián tiếp
-qua `ChoosePromotionFragment.forEndowView(endowView)`.
+qua `PromotionSDK.createChoosePromotionFragment(endowView)`.
 
 | Field | Ý nghĩa |
 |-------|---------|
@@ -59,7 +62,7 @@ nên voucher tự-áp-dụng **không chạy** ở luồng checkout — trên c�
 `validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
 Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
-### `EndowViewState` (trạng thái hiển thị)
+### `EndowWidgetState` (trạng thái hiển thị — dùng chung 2 nền tảng)
 - `EMPTY` — chưa có voucher.
 - `NOT_APPLIED` — có voucher nhưng chưa áp dụng.
 - `APPLIED` — đã áp dụng.
@@ -67,32 +70,37 @@ Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
 ---
 
-## 2. `PromotionIntegrateManager` — SDK manager cho đối tác
-
-Đối tác **khởi tạo 1 lần** và gọi `confirmRedemption()` khi user bấm thanh toán. Toàn bộ logic
-createRedemption / revalidate / cập nhật UI được ẩn bên trong; DI resolve tự động (`PromotionIntegrateManager.create(...)`).
+## 2. `confirmRedemption` — nút thanh toán của host
 
 ```kotlin
-// Khởi tạo (trong Fragment.setupUI)
-val promotionManager = PromotionIntegrateManager.create(binding.endowView)
-
-// Khi bấm thanh toán
+// Android — gọi thẳng trên widget
 btnConfirmPayment.setOnClickListener {
-    promotionManager.confirmRedemption(
+    binding.endowView.confirmRedemption(
         onSuccess = { proceedPayment() },
         onError   = { errorCode -> showError(errorCode) },
     )
 }
-
-// Giải phóng khi Fragment destroy
-override fun onDestroyView() {
-    super.onDestroyView()
-    promotionManager.clear()
-}
+```
+```swift
+// iOS — qua facade, vì widget trả về UIView trần
+PromotionSDK.confirmRedemption(
+    onSuccess: { self.proceedPayment() },
+    onError: { code in self.showError(code) }
+)
 ```
 
-Phụ thuộc bên trong (resolve qua DI): `CreateRedemptionSessionUseCase`, `ValidateStackableDiscountsUseCase`,
-`PromotionRequestContextProvider`; chạy trên scope riêng (`SupervisorJob + Dispatchers.Main.immediate`).
+Nghiệp vụ nằm ở **`EndowStore.confirmRedemption`** (`promotionLogic`) nên hai nền tảng chạy một
+đường. Thứ tự xử lý:
+
+1. Không áp ưu đãi nào → `onSuccess` ngay, **không gọi mạng**, không phụ thuộc cờ.
+2. Cờ `VOUCHER_REDEEM` tắt → `onError("PRM_MOB_021")`, không gọi mạng.
+3. `INSUFFICIENT_BUDGET` (trong body **hoặc** HTTP 422) → validate lại (gác riêng bằng
+   `VOUCHER_APPLY`) → cập nhật state → widget hiện giá mới → `onError("INSUFFICIENT_BUDGET")`.
+
+> **Trước đây:** Android có class `PromotionIntegrateManager` giữ nguyên luồng này — nghĩa là logic
+> đụng tiền **chưa từng dùng chung**, iOS không hề có. Nó còn bắt host nhớ gọi `clear()` (quên là rò
+> scope) và tự nhân bản phép map kết quả validate. Đã bỏ; luồng về `EndowStore`, có 6 test ở
+> `EndowStoreTest`.
 
 ---
 
@@ -102,11 +110,12 @@ Phụ thuộc bên trong (resolve qua DI): `CreateRedemptionSessionUseCase`, `Va
 Host nhúng <PRMEndowView/> vào layout thanh toán
    → PRMEndowView nạp voucher (myVouchers/otherVouchers)
    → User mở Choose Promotion (nhận PreloadVouchers từ Endow để tránh double API)
-   → chọn & validate → ApplyValidatedVouchers → Endow cập nhật discountDetails + EndowViewState.APPLIED
+   → chọn & validate → ApplyValidatedVouchers → Endow cập nhật discountDetails + EndowWidgetState.APPLIED
 Host bấm thanh toán
-   → PromotionIntegrateManager.confirmRedemption()
-        → validateStackableDiscounts (revalidate)
-        → createRedemptionSession
+   → PRMEndowView.confirmRedemption() / PromotionSDK.confirmRedemption()
+        → EndowStore.confirmRedemption()
+             → createRedemptionSession
+             → nếu INSUFFICIENT_BUDGET: validateStackableDiscounts (revalidate) + cập nhật state
         → onSuccess(proceed) / onError(errorCode)
 ```
 
@@ -114,8 +123,7 @@ Host bấm thanh toán
 
 ## 4. Lưu ý khi sửa (quan trọng — đây là public-facing)
 
-- `PromotionIntegrateManager` và `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) §6.2 + [`PublicApi.md`](../common/PublicApi.md) (AI_AGENT_RULES điều 7). `INTEGRATION.md` ở gốc repo chỉ là trang điện, **đừng** viết nội dung vào đó.
-- **Luôn** gọi `clear()` khi view/Fragment huỷ để giải phóng scope (tránh leak).
+- `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) §6.2 + [`PublicApi.md`](../common/PublicApi.md) (AI_AGENT_RULES điều 7). `INTEGRATION.md` ở gốc repo chỉ là trang điện, **đừng** viết nội dung vào đó.
 - Giữ tối ưu `PreloadVouchers` để không gọi API trùng giữa Endow và Choose Promotion.
 - Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionException` (xem `../ErrorHandling.md`).
 - Liên quan: [ChoosePromotion.md](./ChoosePromotion.md).

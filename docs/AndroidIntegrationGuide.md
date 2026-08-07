@@ -12,8 +12,11 @@
 
 - Thêm **một** dòng dependency Maven `com.ttcn.promotion:promotionSDK` — Gradle tự kéo `promotionLogic`,
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
-- Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.*` (`PromotionSDK`, `PromotionSDKApi`,
-  `PromotionSDKTheme`, `PromotionSDKCallback`…).
+- Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.**` — và **chỉ** ở đó:
+  `entry` (`PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKOptions`, `PromotionSessionConfig`…),
+  `entry.api` (headless), `entry.theme` (+ `entry.theme.token`), `entry.endowview` (widget checkout:
+  `PRMEndowView`, `AppliedDiscount`).
+  Mọi class khác của SDK là `internal` — IDE không gợi ý, và import vào là lỗi compile.
 - Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
 
@@ -243,12 +246,12 @@ PromotionSDK.openPromotionDetail(
 khác `PromotionSDKCallback` (singleton, set một lần lúc `initialize`, không biết màn nào đã gọi).
 Màn gọi **không cần** là màn thanh toán.
 
-### 6.2. Widget checkout — `PRMEndowView` + `PromotionIntegrateManager`
+### 6.2. Widget checkout — `PRMEndowView`
 
-Đặt `PRMEndowView` vào layout XML, rồi tạo `PromotionIntegrateManager` để lo createRedemption/revalidate:
+Đặt `PRMEndowView` vào layout XML; nút thanh toán của host gọi `confirmRedemption` trên chính widget:
 
 ```xml
-<com.ttcn.prm.ui.feature.promotion.endowview.PRMEndowView
+<com.ttcn.prm.ui.feature.endowview.PRMEndowView
     android:id="@+id/endowView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
@@ -256,19 +259,24 @@ Màn gọi **không cần** là màn thanh toán.
 
 ```kotlin
 // Trong Fragment.setupUI — nhớ updateContext(orderId, orderValue) trước khi màn dựng widget
-val promotionManager = PromotionIntegrateManager.create(binding.endowView)
+
+// User bấm vào widget → mở màn "Chọn ưu đãi". SDK dựng sẵn fragment đã nối với widget;
+// host chỉ add vào container của mình. Kiểu trả về là `androidx.fragment.app.Fragment` trần —
+// class thật là UI nội bộ của SDK, host không cần biết tên.
+binding.endowView.onOpenVoucherSelection = {
+    parentFragmentManager.beginTransaction()
+        .add(R.id.container, PromotionSDK.createChoosePromotionFragment(binding.endowView))
+        .addToBackStack(null)
+        .commit()
+}
 
 btnConfirmPayment.setOnClickListener {
-    promotionManager.confirmRedemption(
+    binding.endowView.confirmRedemption(
         onSuccess = { proceedPayment() },
         onError = { errorCode -> showError(errorCode) },   // có thể là PRM_MOB_021, xem dưới
     )
 }
 
-override fun onDestroyView() {
-    super.onDestroyView()
-    promotionManager.clear()   // giải phóng coroutine scope
-}
 ```
 
 > **`confirmRedemption` cũng bị feature flag gác.** Cờ `VOUCHER_REDEEM` (hoặc công tắc tổng
@@ -398,6 +406,9 @@ Mỗi case có sẵn `message` tiếng Việt để hiển thị. `NetworkFailur
 ## 10. Theming
 
 ```kotlin
+import com.ttcn.prm.ui.theme.PromotionSDKTheme
+import com.ttcn.prm.ui.theme.token.ButtonToken
+
 PromotionSDK.configure(
     PromotionSDKTheme(
         buttonToken = ButtonToken(/* ... */),
@@ -422,7 +433,6 @@ PromotionSDK.configure(
 | Login lại nhưng đổi luôn baseUrl/environment | Gọi lại `initialize(...)` — field cố định giữ nguyên; đổi thật thì `release()` trước |
 | Import `com.ttcn.promotionsdk.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
-| Quên `PromotionIntegrateManager.clear()` trong `onDestroyView` | Luôn `clear()` để huỷ coroutine scope |
 | Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled)` |
 | Tưởng phải tự viết wrapper `PromotionManager` | Gọi thẳng `PromotionSDK` — SDK đã tự lo token/context/callback |
 
@@ -433,7 +443,7 @@ PromotionSDK.configure(
 ```
 login thành công        → PromotionSDK.initialize(context, accessToken, baseUrl)
 vào màn có voucher       → PromotionSDK.updateContext(orderId, orderValue, ...)
-mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView + PromotionIntegrateManager
+mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
 refresh token giữa phiên → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
@@ -448,7 +458,7 @@ logout                   → PromotionSDK.release()
 | Phân phối | AAR qua Maven | dynamic `Promotion.xcframework` |
 | `initialize` | cần `context` | không cần |
 | Headless async | `suspend` + `PromotionApiResult` (sealed) | closure + `Result` |
-| Widget checkout | `PRMEndowView` (View trong layout) + `PromotionIntegrateManager` | `createEndowView(from:)` factory |
+| Widget checkout | `PRMEndowView` (View trong layout) + `confirmRedemption` | `createEndowView(from:)` + `PromotionSDK.confirmRedemption` |
 | Mở màn | `Fragment` + `containerViewId?` | push/present `UIViewController` |
 | Ẩn deps | `core.*` giấu; **nhưng** Ktor/coroutines lọt classpath host | giấu tuyệt đối trong 1 framework |
 | Enum môi trường | `PROD` / `STAGING` | `.prod` / `.staging` |

@@ -72,7 +72,7 @@ hưởng như nhau, native không phải sửa gì.
 
 | Thành phần | Vai trò |
 |---|---|
-| `tabCaches: Map<tabCode, TabCache>` | RAM, sống cùng store (= vòng đời màn). Giữ `vouchers` + `page` + `isLastPage` + `fetchedAt` |
+| `tabCaches: Map<tabCode, TabCache>` | RAM, sống cùng store (= vòng đời màn). Giữ `vouchers` + `page` + `isLastPage` + `fetchedAt`. **Rỗng suốt** nếu server không trả `tabs[]` — không có tab thì không có gì để cache |
 | `TAB_CACHE_TTL_MS` | **60s**. Trong TTL → dùng cache thẳng; hết TTL → hiện cache ngay rồi refresh ngầm |
 | `prefetchOtherTabs()` | Sau mỗi lần load `reset = true`, nạp trước trang đầu của **các tab chưa xem** |
 | `markAllCachesStale()` | Kéo làm mới ép mọi tab thành ôi (giữ dữ liệu, chỉ hạ cờ tươi) |
@@ -93,15 +93,27 @@ phí N-1; đổi lại đổi tab thành miễn phí.
 - Đổi tham số tìm kiếm/phân trang → đồng bộ qua use case `SearchCustomerVouchersUseCase`, **không** gọi thẳng repository.
 - Thêm trạng thái UI → thêm field vào `MyPromotionUiState` (immutable, có default).
 - Click voucher → phát `Effect.OpenVoucherDetail`, không tự điều hướng trong ViewModel.
-- Tab active xác định qua `SearchCustomerVouchersResult.resolveActiveTab(requestedTab)` — rule **dùng chung Android & iOS** (`selectedTab` → `defaultTab` → tab client yêu cầu → tab đầu theo `order`); UI chỉ đọc, không hardcode "all".
+- **Tab user vừa bấm luôn thắng.** Store lấy tab active theo thứ tự: tab client vừa yêu cầu
+  (`requestTabCode`) → `SearchCustomerVouchersResult.resolveActiveTab()` → tab đầu danh sách.
+  `resolveActiveTab` (rule dùng chung Android & iOS: `selectedTab` → `defaultTab` → `requestedTab` →
+  tab đầu theo `order`) chỉ trả lời câu **"đáp xuống tab nào"**, nên store chỉ hỏi nó ở lần load đầu
+  và **không** truyền `requestedTab` vào. Trước đây store truyền vào, tức để `selectedTab` của
+  response đè lên tab user vừa bấm: server echo lệch (`tab=used` mà trả `selectedTab=all`) là tab
+  sáng nhảy về "Tất cả" trong khi list hiện ra lại là của "Đã dùng". UI chỉ đọc, không hardcode "all".
 - **Đổi tab mà API hỏng → phải về empty, KHÔNG giữ list tab cũ.** `onTabSelected` cố tình giữ tạm
   danh sách tab trước trong lúc load (`keepCurrentListWhileLoading`) cho đỡ nháy, nên nhánh
-  `onFailure` phải phân biệt theo cache của **tab được yêu cầu**:
-  - có cache (refresh lại chính tab đó) → giữ list cũ, chỉ set `errorCode`;
-  - không có cache (vừa đổi sang tab mới) → xoá `vouchers`, `isEmpty = true`, reset `page`/`isLastPage`.
+  `onFailure` phân biệt bằng **chính cờ đó**:
+  - `keepCurrentListWhileLoading` (vừa đổi sang tab chưa có cache) → xoá `vouchers`, `isEmpty = true`,
+    reset `page`/`isLastPage`;
+  - còn lại (kéo làm mới / nạp lại chính tab đang đứng) → giữ list cũ, chỉ set `errorCode`.
 
-  Sửa nhánh này nhớ chạy `MyPromotionStoreTest.selectTab_apiFails_clearsList_insteadOfKeepingPreviousTab`
-  và `refreshTab_apiFails_keepsCachedListOfSameTab` — hai test khoá đúng cặp hành vi đối lập này.
+  ⚠️ **Đừng quay lại dùng "tab này có cache không" làm điều kiện.** Hai chuyện đó không đồng nghĩa:
+  server không trả `tabs[]` thì `tabCaches` rỗng suốt vòng đời màn → mọi lần `reset` hỏng đều rơi
+  vào nhánh xoá, tức kéo-làm-mới ngay trên tab đang đứng mà rớt mạng là **danh sách bị xoá trắng**.
+
+  Sửa nhánh này nhớ chạy `MyPromotionStoreTest.selectTab_apiFails_clearsList_insteadOfKeepingPreviousTab`,
+  `refreshTab_apiFails_keepsCachedListOfSameTab` và
+  `StoreEdgeBranchTest.failureAfterCacheExists_keepsListAndReportsError`.
 - **Badge trạng thái (`txtExpired` / `stateText`)** — ĐÃ DÙNG và HẾT HẠN **luôn dùng chuỗi của SDK**
   ("Đã sử dụng" / "Đã hết hạn"), **không** lấy `displayStatusLabel`: field đó map thẳng
   `metadata.disabledReason` của server, tức mã enum (`REDEEMED`, `EXPIRED`) chứ không phải chuỗi

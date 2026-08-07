@@ -14,11 +14,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import com.ttcn.prm.R
 
-fun TextView.applyTextColorIfSet(@ColorInt color: Int?) {
+internal fun TextView.applyTextColorIfSet(@ColorInt color: Int?) {
     color?.let { setTextColor(it) }
 }
 
-fun View.applyBackgroundColorIfSet(@ColorInt color: Int?) {
+internal fun View.applyBackgroundColorIfSet(@ColorInt color: Int?) {
     color?.let {
         val drawable = (background as? GradientDrawable)?.mutate() as? GradientDrawable
             ?: GradientDrawable().also { bg -> background = bg }
@@ -27,7 +27,7 @@ fun View.applyBackgroundColorIfSet(@ColorInt color: Int?) {
 }
 
 /** Tints a vector/shape background while keeping its original silhouette (e.g. voucher badge). */
-fun View.applyDrawableBackgroundTintIfSet(
+internal fun View.applyDrawableBackgroundTintIfSet(
     @ColorInt color: Int?,
     @DrawableRes drawableRes: Int,
 ) {
@@ -37,7 +37,7 @@ fun View.applyDrawableBackgroundTintIfSet(
     background = drawable
 }
 
-fun View.applyCornerRadiusDp(radiusDp: Float?) {
+internal fun View.applyCornerRadiusDp(radiusDp: Float?) {
     radiusDp ?: return
     val radiusPx = radiusDp * resources.displayMetrics.density
     when (val bg = background) {
@@ -58,7 +58,7 @@ fun View.applyCornerRadiusDp(radiusDp: Float?) {
     }
 }
 
-fun ImageView.applyImageTintIfSet(@ColorInt color: Int?) {
+internal fun ImageView.applyImageTintIfSet(@ColorInt color: Int?) {
     color?.let { tint ->
         drawable?.let { d ->
             val wrapped = DrawableCompat.wrap(d.mutate())
@@ -68,7 +68,7 @@ fun ImageView.applyImageTintIfSet(@ColorInt color: Int?) {
     }
 }
 
-fun View.applyStrokeColorIfSet(@ColorInt strokeColor: Int?, strokeWidthDp: Float = 1f) {
+internal fun View.applyStrokeColorIfSet(@ColorInt strokeColor: Int?, strokeWidthDp: Float = 1f) {
     strokeColor ?: return
     val strokeWidthPx = (strokeWidthDp * resources.displayMetrics.density).toInt()
     val drawable = (background as? GradientDrawable)?.mutate() as? GradientDrawable
@@ -80,7 +80,7 @@ fun View.applyStrokeColorIfSet(@ColorInt strokeColor: Int?, strokeWidthDp: Float
  * Applies list-item checkbox tokens while preserving [R.drawable.prm_bg_checkbox_use_voucher] layout:
  * checked = oval fill + white tick; unchecked = oval stroke only.
  */
-fun AppCompatRadioButton.applyRadioStrokeColors(
+internal fun AppCompatRadioButton.applyRadioStrokeColors(
     @ColorInt unselectedStroke: Int?,
     @ColorInt selectedFill: Int?,
 ) {

@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.data.repository
 
+import com.ttcn.promotionsdk.common.promotionWarn
 import com.ttcn.promotionsdk.data.dto.featureflag.toPromotionFeatureFlags
 import com.ttcn.promotionsdk.data.local.FeatureFlagLocalDataSource
 import com.ttcn.promotionsdk.data.remote.FeatureFlagRemoteDataSource
@@ -16,7 +17,10 @@ internal class FeatureFlagRepositoryImpl(
     private var cachedFlags: PromotionFeatureFlags = localDataSource.load()
 
     /**
-     * Lỗi gọi API bị nuốt có chủ đích: giữ nguyên cờ đang cache thay vì khoá tính năng.
+     * Lỗi gọi API bị nuốt có chủ đích: giữ nguyên cờ đang cache thay vì khoá tính năng. Nuốt nhưng
+     * **có log** ([promotionWarn]) — bản trước im hoàn toàn, mà đây lại là đường duy nhất nạp
+     * kill-switch: parse hỏng hay mạng chết thì mọi cờ lặng lẽ về mặc định bật-hết, không ai có manh
+     * mối nào để lần. Một dòng log là đủ để người tích hợp biết chỗ mà nhìn.
      *
      * Request **không mang định danh khách** (`userId`/`sessionId` đã bỏ khỏi `FeatureFlagRequest`
      * cùng lúc với `customerId` ở bề mặt public) — server lấy từ JWT `sub`. Hệ quả: Unleash không
@@ -24,9 +28,10 @@ internal class FeatureFlagRepositoryImpl(
      * thì nối lại ở đây.
      */
     override suspend fun fetchFlags() {
-        runCatching {
-            remoteDataSource.getFeatureFlags()
-        }
+        runCatching { remoteDataSource.getFeatureFlags() }
+            .onFailure {
+                promotionWarn("Nạp feature flag thất bại (${it::class.simpleName}) — giữ cờ đang cache.")
+            }
             .getOrNull()
             ?.let { response ->
                 val flags = response.toPromotionFeatureFlags()

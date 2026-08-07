@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.viewbinding.ViewBinding
 
-abstract class PRMBaseActivity<VB : ViewBinding> : AppCompatActivity() {
+internal abstract class PRMBaseActivity<VB : ViewBinding> : AppCompatActivity() {
 
     private var _binding: VB? = null
 
@@ -36,23 +36,32 @@ abstract class PRMBaseActivity<VB : ViewBinding> : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * Thay nội dung [containerId] bằng [fragment], trong FragmentManager của Activity.
+     *
+     * Khác [PRMBaseFragment.replaceFragment]: ở đây Activity **là** chủ container nên dùng thẳng
+     * `supportFragmentManager`; bên Fragment phải bám `parentFragmentManager` của chính nó.
+     */
     protected fun replaceFragment(
         fragment: Fragment,
         @IdRes containerId: Int,
         addToBackStack: Boolean = true
     ) {
-        supportFragmentManager
-            .beginTransaction()
-            .replace(containerId, fragment)
-            .apply {
-                if (addToBackStack) {
-                    addToBackStack(fragment::class.java.simpleName)
-                }
-            }
+        val tag = fragment::class.java.simpleName
+        supportFragmentManager.beginTransaction()
+            .replace(containerId, fragment, tag)
+            .apply { if (addToBackStack) addToBackStack(tag) }
             .commit()
     }
 
-    protected fun removeFragment() {
+    /**
+     * Lùi một màn; hết màn thì đóng Activity.
+     *
+     * `finish()` ở đây là hợp lệ vì đây là Activity của **chính subclass gọi hàm này**, khác hẳn
+     * `PRMBaseFragment.goBack()` — fragment SDK nằm trong Activity của host nên tuyệt đối không được
+     * `finish()`, nó chỉ trả sự kiện về `onBackPressedDispatcher`.
+     */
+    protected fun goBackOrFinish() {
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStack()
         } else {

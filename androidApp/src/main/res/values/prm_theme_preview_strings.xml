@@ -53,26 +53,12 @@
     <string name="prm_theme_lbl_unavailable_background_color">unavailableBackgroundColor</string>
     <string name="prm_theme_lbl_action_text_color">actionTextColor</string>
 
-    <string name="prm_theme_sheet_component_prm_button">PRMButton</string>
-    <string name="prm_theme_sheet_component_prm_search">PRMSearchField</string>
-    <string name="prm_theme_sheet_component_rv_tabs">rvTabs</string>
-    <string name="prm_theme_sheet_component_tabs">tabs</string>
     <string name="prm_theme_sheet_component_prm_endow">PRMEndowView</string>
-    <string name="prm_theme_sheet_component_promotion_item">PromotionItem</string>
 
-    <string name="prm_theme_demo_btn_continue">Tiếp tục</string>
-    <string name="prm_theme_demo_search_text">Preview</string>
-    <string name="prm_theme_demo_tab_all">Tất cả</string>
-    <string name="prm_theme_demo_tab_expiring">Sắp hết hạn</string>
-    <string name="prm_theme_demo_detail_tab_info">Thông tin chi tiết</string>
-    <string name="prm_theme_demo_detail_tab_guide">Hướng dẫn sử dụng</string>
     <string name="prm_theme_demo_voucher_available_name">Ưu đãi khả dụng</string>
     <string name="prm_theme_demo_voucher_available_discount">Giảm 50.000đ</string>
     <string name="prm_theme_demo_voucher_unavailable_name">Ưu đãi không khả dụng</string>
     <string name="prm_theme_demo_voucher_unavailable_discount">Giảm 30.000đ</string>
-    <string name="prm_theme_demo_list_voucher_name">Ưu đãi mẫu</string>
-    <string name="prm_theme_demo_list_discount">Giảm giá 50.000đ</string>
-    <string name="prm_theme_demo_list_expiry">HSD 15/05/2025</string>
 
     <string name="prm_theme_color_picker_red">Red</string>
     <string name="prm_theme_color_picker_green">Green</string>

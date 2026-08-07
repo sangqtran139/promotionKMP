@@ -6,7 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StyleRes
 import com.ttcn.prm.R
 
-enum class PRMSearchType(
+internal enum class PRMSearchType(
     @DimenRes val iconSizeRes: Int,
     @DrawableRes val iconRes: Int,
     @DrawableRes val searchBackground: Int,

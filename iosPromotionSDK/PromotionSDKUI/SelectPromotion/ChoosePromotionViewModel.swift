@@ -2,13 +2,10 @@
 //  ChoosePromotionViewModel.swift
 //  PromotionSDK
 //
-//  Lớp bọc mỏng quanh ChoosePromotionStore (tầng UI-logic dùng chung ở promotionLogic).
-//  ĐỒNG NHẤT với `ChoosePromotionViewModel` bên Android — cùng `store` / `bindStore` /
-//  `handleAction` / `render` / `handleError`, cùng thứ tự. Load/paging/search/selection và rule
-//  "Xem thêm" nằm ở store; VM chỉ dựng sections để VC render.
-//
-//  KHÔNG dùng Combine: store đã phơi callback (`watchState`), nên VM cũng phơi callback
-//  (`onState` / `onEffect`) — đối ứng 1-1 `uiState: StateFlow` / `uiEffect: Flow` bên Android.
+//  Bọc ChoosePromotionStore — phần dùng chung (giữ store, observe state, effect) nằm ở
+//  `PRMStoreViewModel`. Load/paging/search/selection và rule "Xem thêm" nằm ở store; ở đây chỉ còn
+//  việc dựng sections cho VC render. Bên Android việc dựng list này nằm trong
+//  `ChoosePromotionFragment.rebuildList`.
 //
 
 import Foundation
@@ -16,7 +13,8 @@ import UIKit
 @_implementationOnly import PRMFoundation   // UIImage.sdk(_:) cho ảnh checkbox của cell
 @_implementationOnly import PRMKotlinBridge
 
-final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
+final class ChoosePromotionViewModel:
+    PRMScreenViewModel<ChoosePromotionRouter, ChoosePromotionStore> {
 
     enum SectionType: String {
         case myPromotions = "myPromotions"
@@ -33,8 +31,10 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
         let seeMoreState: SeeMoreState
     }
 
-    /// Bề mặt view (đã format) — đối ứng `ChoosePromotionUiState` bên Android.
-    struct UiState {
+    /// **View model đã dựng sẵn** cho table: sections + trạng thái nút. KHÔNG phải state của store
+    /// — state gốc là `ChoosePromotionState` (dùng chung với Android). Bên Android việc dựng section
+    /// này nằm thẳng trong `ChoosePromotionFragment.rebuildList`; iOS gom vào VM cho VC mỏng.
+    struct Display {
         var sections: [PromotionSection] = []
         var isLoading = false
         /// Thanh "Đã chọn N voucher" — chỉ hiện ở chế độ multi-select và đang có item được chọn.
@@ -43,134 +43,73 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
         var selectedCount = 0
     }
 
-    /// Đối ứng `ChoosePromotionAction` bên Android — chỉ những gì màn thật sự phát.
-    enum Action {
-        case loadInitial
-        case queryChanged(String)
-        case search
-        case toggleSelection(String)
-        /// Từ màn Chi tiết bấm "Áp dụng" → tick đúng voucher này (TLNV MOB_002 control #5).
-        /// Dùng `setPreSelected` chứ không phải toggle: kết quả phải là "voucher này được chọn",
-        /// không phụ thuộc trạng thái tick trước đó. Đối ứng Android `SetPreSelected`.
-        case selectFromDetail(String)
-        case seeMoreMy
-        case loadMoreOtherVouchers
-        case openDetail(String)
-        case validateAndApply
-    }
-
-    /// Sự kiện một-lần — đối ứng `ChoosePromotionEffect` bên Android.
-    enum Effect {
-        case showError(String)
-        case applySelectedOffers([EligibleOffer])
-    }
-
     let data: ChoosePromotionBuilder.DataModel
 
     /// State hiện tại + kênh phát. Gán `onState` là **nhận ngay** state hiện tại — mô phỏng đúng
     /// hành vi replay của `StateFlow` bên Android.
-    private(set) var uiState = UiState() {
-        didSet { onState?(uiState) }
+    /// Kênh phát **view model đã dựng**. State thô + effect do [PRMStoreViewModel] lo; ở đây thêm
+    /// một tầng dựng section vì table cần cấu trúc sẵn.
+    private(set) var display = Display() {
+        didSet { onDisplay?(display) }
     }
-    var onState: ((UiState) -> Void)? {
-        didSet { onState?(uiState) }
+    var onDisplay: ((Display) -> Void)? {
+        didSet { onDisplay?(display) }
     }
-    /// Một-lần, KHÔNG replay (giống effect bên Android).
-    var onEffect: ((Effect) -> Void)?
 
-    // ─── Store ────────────────────────────────────────────────────────────────
     // Selection (`selectedIds`) + mở/thu gọn (`myExpanded`) nay do store quản — VC chỉ render.
-    private let store: ChoosePromotionStore
-    private var storeCancellable: PromotionCancellable?
     private var didStart = false
 
     init(router: ChoosePromotionRouter,
          data: ChoosePromotionBuilder.DataModel,
          findEligibleUseCase: FindEligibleCampaignsUseCase = FindEligibleCampaignsUseCase()) {
         self.data = data
-        self.store = ChoosePromotionStore(findEligibleCampaignsUseCase: findEligibleUseCase)
-        super.init(router: router)
-        bindStore()   // đối ứng `init { bindStore() }` bên Android
+        super.init(router: router,
+                   store: ChoosePromotionStore(findEligibleCampaignsUseCase: findEligibleUseCase))
+        // Base phát state thô; màn này còn phải dựng section nên bắc thêm một nhịp sang `display`.
+        onState = { [weak self] state in self?.render(state) }
     }
 
-    deinit {
-        storeCancellable?.cancel()
-        store.clear()
+    /// Seed pre-select rồi preload/fetch — đối ứng `ChoosePromotionFragment.observeData`
+    /// (SetPreSelected → Preload). `didStart` chặn chạy lại khi màn được bind lại.
+    func loadInitialIfNeeded() {
+        guard !didStart else { return }
+        didStart = true
+        dispatch(ChoosePromotionIntentSetPreSelected(ids: data.preSelectedVoucherIds))
+        dispatch(ChoosePromotionIntentPreload(
+            myOffers: data.preloadedMy,
+            otherOffers: data.preloadedOther,
+            myIsLastPage: data.myIsLastPage,
+            otherIsLastPage: data.otherIsLastPage
+        ))
     }
 
-    // ─── Store observation (đối ứng Android.bindStore) ──────────────────────────
-    private func bindStore() {
-        storeCancellable = observeStore(watch: { [store] in store.watchState(onEach: $0) }) { [weak self] state in
-            guard let self = self else { return }
-            self.render(state)
-            self.handleError(state)
+    /// Xoá trắng → `ClearKeyword` (reload ngay, không chờ debounce) — khớp Fragment Android.
+    func query(_ keyword: String) {
+        if keyword.isEmpty {
+            dispatch(ChoosePromotionIntentClearKeyword.shared)
+        } else {
+            dispatch(ChoosePromotionIntentQueryChanged(keyword: keyword))
         }
     }
 
-    // ─── Intent forwarding (đối ứng Android.handleAction) ───────────────────────
-    func handleAction(_ action: Action) {
-        switch action {
-        case .loadInitial:
-            // Seed pre-select rồi preload/fetch — đối ứng `ChoosePromotionFragment.observeData`
-            // (SetPreSelected → PreloadVouchers). `didStart` chặn chạy lại khi màn được bind lại.
-            guard !didStart else { return }
-            didStart = true
-            store.dispatch(intent: ChoosePromotionIntentSetPreSelected(ids: data.preSelectedVoucherIds))
-            store.dispatch(intent: ChoosePromotionIntentPreload(
-                myOffers: data.preloadedMy,
-                otherOffers: data.preloadedOther,
-                myIsLastPage: data.myIsLastPage,
-                otherIsLastPage: data.otherIsLastPage
-            ))
-        case .queryChanged(let keyword):
-            // Xoá trắng → `ClearKeyword` (reload ngay, không chờ debounce) — khớp Fragment Android.
-            if keyword.isEmpty {
-                store.dispatch(intent: ChoosePromotionIntentClearKeyword.shared)
-            } else {
-                store.dispatch(intent: ChoosePromotionIntentQueryChanged(keyword: keyword))
-            }
-        case .search:
-            store.dispatch(intent: ChoosePromotionIntentSearch.shared)
-        case .toggleSelection(let id):
-            // Rule single/multi do store quyết định — dùng chung Android.
-            store.dispatch(intent: ChoosePromotionIntentToggleSelection(id: id))
-        case .selectFromDetail(let id):
-            store.dispatch(intent: ChoosePromotionIntentSetPreSelected(ids: [id]))
-        case .seeMoreMy:
-            // Store chạy state-machine "mở hết → tải trang kế → thu gọn".
-            store.dispatch(intent: ChoosePromotionIntentSeeMoreMy.shared)
-        case .loadMoreOtherVouchers:
-            // Store tự bỏ nếu hết trang/đang tải.
-            store.dispatch(intent: ChoosePromotionIntentLoadMoreOtherVouchers.shared)
-        case .openDetail(let id):
-            guard let promotion = Self.allLoaded(store.currentState()).first(where: { $0.id == id })
-            else { return }
-            router.routeToDetail(promotion: promotion)
-        case .validateAndApply:
-            applySelected()
-        }
+    /// Điều hướng — không nằm ở store.
+    func openDetail(voucherId: String) {
+        guard let promotion = Self.allLoaded(store.currentState()).first(where: { $0.id == voucherId })
+        else { return }
+        router.routeToDetail(promotion: promotion)
     }
 
     // ─── State → View ─────────────────────────────────────────────────────────
     private func render(_ state: ChoosePromotionState) {
-        uiState = state.toUiState()
+        display = state.toDisplay()
     }
 
-    // ─── Error ──────────────────────────────────────────────────────────────────
-    private func handleError(_ state: ChoosePromotionState) {
-        guard let code = state.errorCode else { return }
-        onEffect?(.showError(code))   // view map code → chuỗi
-        store.dispatch(intent: ChoosePromotionIntentConsumeError.shared)
-    }
-
-    // ─── Áp dụng: chỉ trả offers đang chọn cho widget (EndowStore validate) ──────
-    // Selection do store giữ (`selectedIds`); resolve về EligibleOffer đang chọn.
-    /// Đối ứng `ChoosePromotionViewModel.applySelected()` bên Android.
-    private func applySelected() {
+    /// Ưu đãi user đang chọn, để bấm "Áp dụng" trả về widget — validate & áp do `EndowStore` lo.
+    /// Là **hàm gọi lúc bấm** chứ không phải effect: chỉ đọc selection hiện tại, không có gì bất
+    /// đồng bộ để chờ. Đối ứng `ChoosePromotionViewModel.selectedOffers()` bên Android.
+    func selectedOffers() -> [EligibleOffer] {
         let state = store.currentState()
-        let selectedOffers = Self.allLoaded(state).filter { state.selectedIds.contains($0.id) }
-        guard !selectedOffers.isEmpty else { return }
-        onEffect?(.applySelectedOffers(selectedOffers))
+        return Self.allLoaded(state).filter { state.selectedIds.contains($0.id) }
     }
 
     fileprivate static func allLoaded(_ state: ChoosePromotionState) -> [EligibleOffer] {
@@ -180,12 +119,11 @@ final class ChoosePromotionViewModel: PRMBaseViewModel<ChoosePromotionRouter> {
 
 // ─── Map state dùng chung (store) → model UI iOS ──────────────────────────────
 
-/// Chiếu state dùng chung ([ChoosePromotionState]) → **bề mặt view iOS** (`UiState`).
-/// Đối ứng 1-1 `private fun ChoosePromotionState.toUiState()` bên Android (cũng là hàm mức file).
+/// Chiếu state dùng chung ([ChoosePromotionState]) → **view model đã dựng** (`Display`).
 private extension ChoosePromotionState {
 
-    func toUiState() -> ChoosePromotionViewModel.UiState {
-        ChoosePromotionViewModel.UiState(
+    func toDisplay() -> ChoosePromotionViewModel.Display {
+        ChoosePromotionViewModel.Display(
             sections: buildSections(),
             isLoading: isLoading,
             showsSelectedCount: isMultiSelection && !selectedIds.isEmpty,

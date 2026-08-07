@@ -13,6 +13,7 @@ import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRes
 import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.domain.repository.PromotionRepository
+import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
@@ -189,6 +190,7 @@ class NullResponseBranchTest {
         val repo = NullRepo()
         val s = EndowStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
+            CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         s.dispatch(EndowIntent.LoadInitial)
@@ -207,6 +209,7 @@ class NullResponseBranchTest {
         val repo = NullRepo()
         val s = EndowStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
+            CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         s.dispatch(EndowIntent.ValidateAndApply(listOf(com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer(id = "a"))))

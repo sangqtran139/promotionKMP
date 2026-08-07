@@ -10,10 +10,10 @@ import com.ttcn.promotionsdk.app.headless.DemoHeadlessFragment
 import com.ttcn.promotionsdk.app.theme.ThemePreviewFragment
 import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.entry.api.PromotionApiResult
-import com.ttcn.prm.ui.base.PRMBaseFragment
+import com.ttcn.promotionsdk.app.base.AppBaseFragment
 import kotlinx.coroutines.launch
 
-class MainLauncherFragment : PRMBaseFragment<FragmentMainLauncherBinding>() {
+class MainLauncherFragment : AppBaseFragment<FragmentMainLauncherBinding>() {
 
     override fun inflateBinding(inflater: LayoutInflater, container: ViewGroup?) =
         FragmentMainLauncherBinding.inflate(inflater, container, false)

@@ -100,6 +100,8 @@ publishing {
 }
 
 kotlin {
+    withSourcesJar(publish = false)
+
     compilerOptions {
         // SdkLock là expect/actual class; cảnh báo Beta không có giá trị ở đây.
         freeCompilerArgs.add("-Xexpect-actual-classes")

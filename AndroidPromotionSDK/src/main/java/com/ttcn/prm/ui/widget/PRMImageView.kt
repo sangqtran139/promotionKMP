@@ -11,7 +11,7 @@ import com.ttcn.prm.ui.utils.PRMClick
 /**
  * Custom class to handle everything with image view
  */
-class PRMImageView : AppCompatImageView, IPRMClickEffect {
+internal class PRMImageView : AppCompatImageView, IPRMClickEffect {
 
     /**
      * Should we prevent clicking too fast

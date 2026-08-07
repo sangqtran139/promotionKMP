@@ -2,7 +2,7 @@ package com.ttcn.prm.ui.utils
 
 import android.os.SystemClock
 
-object PRMClick {
+internal object PRMClick {
     private var lastTime: Long = 0
     private var lastManualTime: Long = 0
 

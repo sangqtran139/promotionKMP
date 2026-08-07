@@ -19,13 +19,13 @@ import kotlin.math.abs
 /**
  * Show the soft input from view
  */
-fun View.showPRMSoftInput() {
+internal fun View.showPRMSoftInput() {
     showSoftInput(0)
 }
 
 private const val TAG_ON_GLOBAL_LAYOUT_LISTENER = -8
 
-fun Activity.showPRMSoftInput() {
+internal fun Activity.showPRMSoftInput() {
     if (!isSoftInputVisible()) {
         toggleSoftInput()
     }
@@ -36,7 +36,7 @@ fun Activity.showPRMSoftInput() {
  *
  * @param flags Provides additional operating flags.  Currently may be 0 or have the [InputMethodManager.SHOW_IMPLICIT] bit set.
  */
-fun View.showSoftInput(flags: Int) {
+internal fun View.showSoftInput(flags: Int) {
     (context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.let { manager ->
         isFocusable = true
         isFocusableInTouchMode = true
@@ -63,7 +63,7 @@ fun View.showSoftInput(flags: Int) {
 /**
  * Hide the soft input from view
  */
-fun View.hideSoftInput() {
+internal fun View.hideSoftInput() {
     (context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.let { manager ->
         manager.hideSoftInputFromWindow(windowToken, 0)
     }
@@ -72,7 +72,7 @@ fun View.hideSoftInput() {
 /**
  * Hide the soft input from window
  */
-fun Window.hideSoftInput() {
+internal fun Window.hideSoftInput() {
     currentFocus?.let {
         val focusView = decorView.findViewWithTag<View?>("keyboardTagView")
         val view = if (focusView == null) {
@@ -90,14 +90,14 @@ fun Window.hideSoftInput() {
 /**
  * Hide the soft input from activity
  */
-fun Activity.hideSoftInput() {
+internal fun Activity.hideSoftInput() {
     window.hideSoftInput()
 }
 
 /**
  * Toggle the soft input display or not.
  */
-fun Context.toggleSoftInput() {
+internal fun Context.toggleSoftInput() {
     (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)?.let { manager ->
         manager.toggleSoftInput(0, 0)
     }
@@ -117,7 +117,7 @@ private fun Window.decorViewInvisibleHeight(): Int {
     }
 }
 
-fun Activity.isSoftInputVisible(): Boolean {
+internal fun Activity.isSoftInputVisible(): Boolean {
     return window.decorViewInvisibleHeight() > 0
 }
 
@@ -126,7 +126,7 @@ fun Activity.isSoftInputVisible(): Boolean {
  *
  * @param onChanged The soft input changed listener.
  */
-fun Activity.registerSoftInputChanged(onChanged: (Int) -> Unit) {
+internal fun Activity.registerSoftInputChanged(onChanged: (Int) -> Unit) {
     window.registerSoftInputChanged(onChanged)
 }
 
@@ -135,7 +135,7 @@ fun Activity.registerSoftInputChanged(onChanged: (Int) -> Unit) {
  *
  * @param onChanged The soft input changed listener.
  */
-fun Window.registerSoftInputChanged(onChanged: (Int) -> Unit) {
+internal fun Window.registerSoftInputChanged(onChanged: (Int) -> Unit) {
     if (attributes.flags.and(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0) {
         clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
     }
@@ -152,7 +152,7 @@ fun Window.registerSoftInputChanged(onChanged: (Int) -> Unit) {
     contentView.setTag(TAG_ON_GLOBAL_LAYOUT_LISTENER, onGlobalLayoutListener)
 }
 
-fun Window.unregisterSoftInputChanged() {
+internal fun Window.unregisterSoftInputChanged() {
     val contentView = findViewById<FrameLayout>(android.R.id.content)
     val tag = contentView.getTag(TAG_ON_GLOBAL_LAYOUT_LISTENER)
     if (tag is OnGlobalLayoutListener) {

@@ -132,7 +132,9 @@ version = sdkVersion              // SDK_VERSION
 
 android {
     publishing {
-        singleVariant("release") { withSourcesJar() }   // sources jar: host debug dễ hơn
+        // KHÔNG `withSourcesJar()`: sources jar cho host mở nguyên văn cả 98 file, đúng thứ mà
+        // `internal` đang che. Xem PublicApi.md §6.1.
+        singleVariant("release")
     }
 }
 
@@ -162,6 +164,12 @@ plugins {
 
 group = sdkGroup
 version = sdkVersion
+
+kotlin {
+    // KMP mặc định publish kèm sources.jar. Đây là lõi nghiệp vụ, đẩy sources lên Artifactory là
+    // dâng nguyên source cho host đọc. Vẫn sinh sources.jar cho build nội bộ, chỉ không publish.
+    withSourcesJar(publish = false)
+}
 
 afterEvaluate {
     // Variant android lấy thẳng tên module (`promotionLogic`) — không có module trung gian.

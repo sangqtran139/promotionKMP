@@ -5,7 +5,7 @@ import androidx.annotation.StringRes
 import com.ttcn.prm.ui.utils.extension.getString
 import com.ttcn.prm.ui.widget.PRMEditText
 
-interface IPRMInput {
+internal interface IPRMInput {
 
   /**
    * Retrieve EditText from current edit field

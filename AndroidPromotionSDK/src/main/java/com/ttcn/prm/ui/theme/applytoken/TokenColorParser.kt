@@ -3,7 +3,7 @@ package com.ttcn.prm.ui.theme.applytoken
 import androidx.annotation.ColorInt
 import com.ttcn.prm.ui.theme.ThemeHex
 
-object TokenColorParser {
+internal object TokenColorParser {
 
     /**
      * Parse `#AARRGGBB` / `#RRGGBB` (có hoặc không có `#`). `null` nếu chuỗi không hợp lệ.

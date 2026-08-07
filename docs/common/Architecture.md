@@ -163,19 +163,28 @@ Ví dụ: tìm voucher của khách.
 
 ---
 
-## 4. Mô hình UI — Android (MVI)
+## 4. Mô hình UI — Android
 
-`PRMBaseViewModel<S, A, E>` với ba generic: **S**tate (immutable, nguồn sự thật duy nhất),
-**A**ction (ý định người dùng), **E**ffect (sự kiện một lần: điều hướng, toast, lỗi).
+`PRMStoreViewModel<S, I>` bọc store dùng chung. **Không** còn `UiState`/`Action`/`Effect` riêng cho
+từng màn: Fragment đọc thẳng `State` và phát thẳng `Intent` của store.
 
 ```
-User tương tác → handleAction(action)
-     ├─ launch { useCase(...) }        // gọi Domain
-     ├─ setState { copy(...) }         // StateFlow
-     └─ sendEffect(Effect.Xxx)         // SharedFlow, one-shot
-UI collect uiState  → render
-UI collect uiEffect → điều hướng / thông báo
+User tương tác → viewModel.dispatch(intent)   // Intent của store
+UI collect viewModel.state   → render         // State của store (nguồn sự thật, phát lại được)
+UI collect viewModel.effects → toast          // PRMEffect: sự kiện MỘT LẦN
 ```
+
+Vì sao bỏ lớp trung gian: `UiState`/`Action` gần như sao chép 1-1 `State`/`Intent` của store (màn chi
+tiết chép nguyên si sáu field, kể cả `detail = detail`), còn `bindStore`/`render`/`handleError` thì
+giống hệt nhau ở cả bốn màn. Chúng cũng **không** phải ranh giới layer — model UI vốn đã mang type
+của lõi (`VoucherDetail`, `VoucherStatus`, `ApplicableProduct`).
+
+Thứ **được giữ**: model hiển thị của Android (`MyVoucherListItem`, `TabItem` ở `*UiModels.kt`) — đó
+là cách RecyclerView muốn nhìn dữ liệu, Fragment map tại chỗ dùng.
+
+`PRMStoreViewModel` là **`abstract` + subclass ba dòng**, không phải một class generic dùng chung:
+`by viewModels()` lấy tên class làm khoá mà generic thì erase, dùng chung một class là hai màn đè
+khoá nhau và nổ `ClassCastException` lúc chạy.
 
 Chi tiết: [AndroidUIGuide.md](../android/UIGuide.md).
 
@@ -183,9 +192,17 @@ Chi tiết: [AndroidUIGuide.md](../android/UIGuide.md).
 
 - **Builder** (`PRMBaseBuilder`): lắp ráp VC + VM + Router, inject dependency.
 - **Router** (`PRMBaseRouter`): điều hướng (push/pop/present).
-- **ViewModel** (`PRMBaseViewModel`): bọc store dùng chung ở `promotionLogic`; phơi `onState` /
-  `onEffect` / `handleAction(_:)` bằng **callback thuần** — đối ứng 1-1 `uiState` / `uiEffect` /
-  `handleAction` bên Android. Không Combine, không RxSwift.
+- **ViewModel** (`PRMStoreViewModel<Store>` / `PRMScreenViewModel<R, Store>`): bọc store dùng chung
+  ở `promotionLogic`, **đối ứng 1-1 `PRMStoreViewModel<S, I>` bên Android** — phơi `state` /
+  `onEffect` / `dispatch(_:)` bằng **callback thuần**, không Combine, không RxSwift.
+  Bản không-router dùng cho widget `PRMEndowView`; bản có router cho ViewModel của màn.
+  Giống Android, **không** còn `UiState`/`Action`/`Effect` riêng từng màn.
+
+  > **Một điểm iOS buộc phải khác:** Android collect thẳng `store.effects`; Swift **không** collect
+  > được vì `effects` là default member của interface Kotlin, mà Kotlin/Native chỉ đặt default member
+  > lên *protocol* (và protocol thì bị erase generic), không lên class. Nên `PRMStoreViewModel` bên
+  > iOS tự suy effect từ `errorCode` trong state — cùng ngữ nghĩa "một lần rồi `ConsumeError`".
+  > Cùng lý do, `PRMStoreBridge` (protocol Swift) bám vào **class** store chứ không vào protocol Kotlin.
 - **ViewController** (`PRMBaseViewController`): bind UI qua **một** `render(state)`, load XIB theo tên class.
 
 Public facade `PromotionSDK` giữ một `_impl: NSObject` để app host không phải nạp module nội bộ

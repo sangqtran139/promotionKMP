@@ -5,7 +5,7 @@ import android.util.AttributeSet
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.utils.enum.PRMShadowType
 
-open class PRMCardView @JvmOverloads constructor(
+internal open class PRMCardView @JvmOverloads constructor(
     context: Context, attributeSet: AttributeSet? = null, defStyleInt: Int = 0
 ) : PRMShadowView(context, attributeSet, defStyleInt) {
 

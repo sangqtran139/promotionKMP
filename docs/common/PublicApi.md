@@ -2,6 +2,28 @@
 
 Đây là **toàn bộ** những gì đối tác nhìn thấy. Mọi thứ khác là nội bộ.
 
+> **Luật một dòng: chỉ `Entry` mới public.**
+>
+> | | Bề mặt public | Mọi thứ khác |
+> |---|---|---|
+> | Android | `com.ttcn.prm.entry.**` (gồm `entry.api`, `entry.theme`, `entry.endowview`) | `internal` |
+> | iOS | `iosPromotionSDK/Entry/**` trong module `PRM` | không có `public` |
+>
+> Không có ngoại lệ. Cần host dùng được cái gì thì **dời nó vào `entry`**, đừng nới `public` tại chỗ —
+> xem §5. Kiểm tra nhanh (phải **không** in ra gì):
+>
+> ```bash
+> # Android
+> grep -rEn '^(public )?(open |abstract |sealed |data |enum |annotation |value |inline |suspend |const |fun )*(class|interface|object|fun|val|var|typealias) ' \
+>   --include='*.kt' AndroidPromotionSDK/src/main/java/com/ttcn/prm | grep -v '/entry/'
+> # iOS
+> grep -rn '^\s*\(public\|open\)\s' --include='*.swift' iosPromotionSDK/PromotionSDKUI
+> ```
+>
+> `grep` ở trên chỉ soi **source**. `internal` của Kotlin không đi tới bytecode: nó biên dịch thành
+> `public final class`, nên host viết Java hoặc dùng reflection vẫn với tới được. Phần bịt thêm ở
+> tầng AAR — sources.jar và resource private — nằm ở §6.
+
 SDK có **hai bề mặt**, đừng lẫn:
 
 | | Ai gọi | Ở đâu | Type |
@@ -77,6 +99,8 @@ object PromotionSDK {
         hostHandlesDismiss: Boolean = false,
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
     )
+    // Màn "Chọn ưu đãi" nối sẵn với widget; trả Fragment trần (class thật là internal) — xem §4.
+    fun createChoosePromotionFragment(endowView: PRMEndowView): Fragment
 }
 ```
 
@@ -232,7 +256,7 @@ của lõi, dùng chung hai nền tảng. Lớp này làm đúng một việc: *
 Hai file dưới đây là **song ánh**. Cùng tên type, cùng tên field, cùng thứ tự khai báo, cùng tên
 tham số, cùng cách xử lý `NO_RESULT`. **Sửa một bên thì sửa cả hai.**
 
-| Android `ui/entry/api/` | iOS `PromotionSDKUI/Entry/API/` |
+| Android `entry/api/` | iOS `Entry/API/` |
 |---|---|
 | `PromotionSDKApi.kt` | `PromotionSDKApi.swift` |
 | `PromotionApiModels.kt` | `PromotionApiModels.swift` |
@@ -331,24 +355,25 @@ Hai quy ước đã chốt, đừng đảo lại:
 
 | Type | Dùng để |
 |---|---|
-| `PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
-| `ChoosePromotionFragment.forEndowView(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. |
-| `PromotionIntegrateManager.create(endowView)` | Gọi `confirmRedemption(onSuccess, onError)` khi bấm thanh toán. |
-| `AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
+| `com.ttcn.prm.ui.feature.endowview.PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
+| `PromotionSDK.createChoosePromotionFragment(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. Trả `androidx.fragment.app.Fragment` — class thật (`ChoosePromotionFragment`) là nội bộ. |
+| `PRMEndowView.confirmRedemption(onSuccess, onError)` | Gọi khi bấm nút thanh toán của host. iOS: `PromotionSDK.confirmRedemption(onSuccess:onError:)`. |
+| `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` | Trạng thái widget, đọc qua `PRMEndowView.getCurrentState()`. |
+| `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
 | `PromotionSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin
 binding.endowView.onOpenVoucherSelection = {
-    addFragment(ChoosePromotionFragment.forEndowView(binding.endowView))
+    addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
 }
 ```
 
-`forEndowView` lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher
-đang áp, và đẩy kết quả ngược về widget — host không phải chạm `EligibleOffer`, một type của lõi.
+`createChoosePromotionFragment` lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai),
+pre-select voucher đang áp, và đẩy kết quả ngược về widget — host không phải chạm `EligibleOffer`,
+một type của lõi. Nó chỉ trả `Fragment` trần: màn "Chọn ưu đãi" là UI nội bộ, host add vào container
+của mình chứ không đụng tới class.
 
-> **Đang hỏng:** `PRMEndowView.onVoucherItemClick` khai báo rồi nhưng **không được gọi ở đâu cả** trong
-> SDK. Wire vào cũng không bao giờ bắn. Bug có sẵn, chưa sửa.
 
 ---
 
@@ -358,9 +383,67 @@ binding.endowView.onOpenVoucherSelection = {
    lỗi lúc build SDK — lỗi chỉ nổ ở app host. Cách kiểm tra: thêm tạm một file vào `androidApp`
    import `com.ttcn.promotionsdk.*` và đổi `androidApp` sang `implementation(projects.androidPromotionUI)`;
    phải thấy `Unresolved reference`.
-2. **Model MVI, adapter, ViewModel đều `internal`.** Chúng mang `EligibleOffer`, `VoucherItem`,
-   `VoucherStatus` — type của lõi.
+2. **Mặc định là `internal`.** Không chỉ model MVI / adapter / ViewModel — mọi khai báo top-level
+   ngoài `entry` đều `internal`: widget (`PRMButton`, `PRMSearchField`…), base class
+   (`PRMBaseFragment`, `PRMBaseActivity`, `PRMBaseViewModel`), extension trong `ui/utils/`, cả năm
+   Fragment nghiệp vụ, và nhóm theme nội bộ (`PromotionThemeRegistry` / `Store` / `Defaults` /
+   `ThemeHex` / `applier` / `applytoken`). Bên iOS là "không viết `public`" ngoài `Entry/`.
+2b. **Host cần thêm thứ gì thì DỜI vào `entry`, đừng nới `public` tại chỗ.** Nới tại chỗ là cách
+   `ui/theme`, `ui/widget`, `ui/base` phình thành bề mặt công khai ngoài ý muốn trước đây. Dời file
+   thì `grep` ở đầu tài liệu này vẫn xanh, và người đọc code biết ngay ranh giới nằm ở đâu.
 3. Thêm/đổi DTO hoặc hàm ở `PromotionSDKApi` → **sửa cả Kotlin lẫn Swift trong cùng một commit**, giữ
    nguyên tên và thứ tự. Cập nhật file này.
 4. Đổi chữ ký public của iOS → app host phải `⇧⌘K` (Clean Build Folder). `build-xcframework.sh` đã tự
    dọn `SwiftExplicitPrecompiledModules`, nhưng cache của Xcode vẫn có thể nói dối nếu bạn build tay.
+
+---
+
+## 6. Bịt kín ở tầng AAR (Android)
+
+`internal` là hàng rào của **compiler Kotlin**, không phải của artifact. Trong bytecode nó vẫn là
+`public final class`; host viết Java gọi thẳng được, reflection gọi được, và Android Studio vẫn liệt
+kê đủ trong External Libraries. Hai lớp dưới đây bịt thêm phần còn lại.
+
+> **AAR phát hành KHÔNG obfuscate.** Từng thử bật R8 trên chính module SDK (`isMinifyEnabled = true`
+> + `proguard-rules.pro`) và đã gỡ bỏ (2026-08-08): nó rút gọn cả mapper Data Binding nên host crash
+> `AbstractMethodError` ngay khi mở màn SDK đầu tiên. Đổi lấy một AAR khó debug mà chẳng thêm được
+> hàng rào thật nào — `internal` + hai mục dưới đây đã đủ. Host nào muốn thu gọn thì bật R8 ở app
+> của họ; `consumer-rules.pro` (đóng gói sẵn trong AAR) đã lo phần giữ API.
+
+### 6.1. Không phát hành sources.jar
+
+`AndroidPromotionSDK/build.gradle.kts` → `singleVariant("release")` (bỏ `withSourcesJar()`).
+`promotionLogic/build.gradle.kts` → `withSourcesJar(publish = false)` (KMP mặc định publish sources).
+
+Trước đây bản phát hành kèm nguyên văn 98 file `.kt` của tầng UI cộng toàn bộ `commonMain` của lõi.
+Đổi lại: host **không step-into vào SDK khi debug** được nữa. Bù lại, vì AAR không obfuscate nên
+stacktrace đối tác gửi về vẫn đọc thẳng được tên class/hàm, không cần `mapping.txt`.
+
+### 6.2. Resource private toàn bộ
+
+`AndroidPromotionSDK/src/main/res/values/public.xml` chứa một `<public />` rỗng. AAPT2 hiểu là:
+không resource nào public → `public.txt` trong AAR rỗng → host tham chiếu `@dimen/prm_view_size_24`
+sẽ ăn lint `PrivateResource`.
+
+`androidApp` trước đây mượn 38 resource của SDK; chúng đã được tách sang bản riêng của app
+(`androidApp/src/main/res/values/demo_tokens.xml`, tiền tố `demo_`). App demo đóng vai host, nó phải
+dựng được UI của mình mà không cần biết bên trong SDK có resource gì.
+
+### 6.3. Dư địa đã biết
+
+Vì AAR không obfuscate, **mọi tên class trong `com.ttcn.prm.**` và `com.ttcn.promotionsdk.**` đều đọc
+được** nếu host decompile AAR. Đó là lựa chọn có ý thức, không phải sơ suất — hàng rào ở đây là
+*hợp đồng* (`internal` + không sources.jar + resource private), không phải chống dịch ngược:
+
+1. **`internal` chỉ chặn lúc compile.** Host viết Kotlin `import com.ttcn.prm.ui...` là lỗi compile;
+   host viết Java hoặc reflection thì vẫn gọi được. Không có cách nào bịt hẳn ở JVM.
+2. **`com.ttcn.prm.R` / `com.ttcn.prm.BR`** do AGP sinh ở phía consumer, luôn public. Với §6.2 thì
+   mọi entry trong đó đều private nên host tham chiếu sẽ ăn lint `PrivateResource`.
+3. **`promotionLogic` là artifact Maven riêng** (`com.ttcn.promotion:promotionLogic`). Nó ở scope
+   `runtime` nên **không** nằm trên compile classpath của host (import là lỗi compile), và sources.jar
+   đã gỡ ở §6.1 — nhưng tên class thì vẫn còn nguyên trong APK.
+
+Cần giấu thật sự (yêu cầu bảo mật, không phải yêu cầu hợp đồng API) thì phải tính lại từ đầu: gộp
+`promotionLogic` vào AAR (fat AAR) rồi R8 một lượt, kèm bộ keep list cho Data Binding / Gson /
+kotlinx.serialization. Đó là thay đổi **hợp đồng phát hành** với Artifactory nội bộ (POM viết tay ở
+`*/publishing/pom.xml` đang trỏ `vn.viettelpay.library:promotion-logic`), không làm lặng lẽ được.

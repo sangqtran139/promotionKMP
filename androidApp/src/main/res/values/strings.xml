@@ -13,4 +13,11 @@
     <string name="demo_btn_validate">4. Validate Discounts</string>
     <string name="demo_btn_create_redemption">5. Create Redemption</string>
     <string name="demo_btn_clear_log">Clear log</string>
+
+    <!-- Màn thanh toán demo. Chuỗi lỗi do HOST tự viết: SDK chỉ trả mã lỗi, không trả câu hiển thị. -->
+    <string name="demo_payment_confirm">Xác nhận</string>
+    <string name="demo_payment_done">Đến bước thanh toán</string>
+    <string name="demo_error_missing_customer">Không tìm thấy thông tin khách hàng</string>
+    <string name="demo_error_budget_insufficient">Khuyến mãi đã hết lượt</string>
+    <string name="demo_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
 </resources>

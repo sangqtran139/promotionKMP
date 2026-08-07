@@ -6,8 +6,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingTop="@dimen/prm_view_size_12"
-        android:paddingBottom="@dimen/prm_view_size_4">
+        android:paddingTop="@dimen/demo_view_size_12"
+        android:paddingBottom="@dimen/demo_view_size_4">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -27,14 +27,14 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/prm_theme_label_text"
-                    android:textSize="@dimen/prm_text_size_14"
+                    android:textSize="@dimen/demo_text_size_14"
                     tools:text="backgroundColor" />
 
                 <EditText
                     android:id="@+id/edtColorValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/prm_view_size_4"
+                    android:layout_marginTop="@dimen/demo_view_size_4"
                     android:background="@null"
                     android:fontFamily="sans-serif-medium"
                     android:imeOptions="actionDone"
@@ -42,7 +42,7 @@
                     android:maxLines="1"
                     android:singleLine="true"
                     android:textColor="@color/prm_theme_title_text"
-                    android:textSize="@dimen/prm_text_size_16"
+                    android:textSize="@dimen/demo_text_size_16"
                     tools:text="#EE0033" />
             </LinearLayout>
 
@@ -50,25 +50,25 @@
                 android:id="@+id/btnPalette"
                 android:layout_width="@dimen/prm_theme_palette_size"
                 android:layout_height="@dimen/prm_theme_palette_size"
-                android:layout_marginStart="@dimen/prm_view_size_12"
-                android:layout_marginEnd="@dimen/prm_view_size_12"
+                android:layout_marginStart="@dimen/demo_view_size_12"
+                android:layout_marginEnd="@dimen/demo_view_size_12"
                 android:background="@drawable/prm_bg_palette_circle"
                 android:clickable="true"
-                android:elevation="@dimen/prm_view_size_2"
+                android:elevation="@dimen/demo_view_size_2"
                 android:focusable="true">
 
                 <View
                     android:id="@+id/viewColorSwatch"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_margin="@dimen/prm_view_size_6"
+                    android:layout_margin="@dimen/demo_view_size_6"
                     android:visibility="gone"
                     tools:visibility="visible" />
 
                 <ImageView
                     android:id="@+id/imgPalette"
-                    android:layout_width="@dimen/prm_view_size_22"
-                    android:layout_height="@dimen/prm_view_size_22"
+                    android:layout_width="@dimen/demo_view_size_22"
+                    android:layout_height="@dimen/demo_view_size_22"
                     android:layout_gravity="center"
                     android:contentDescription="@null"
                     android:src="@drawable/prm_ic_palette" />
@@ -78,8 +78,8 @@
         <View
             android:id="@+id/viewDivider"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/prm_view_size_1"
-            android:layout_marginTop="@dimen/prm_view_size_12"
+            android:layout_height="@dimen/demo_view_size_1"
+            android:layout_marginTop="@dimen/demo_view_size_12"
             android:background="@color/prm_theme_divider" />
     </LinearLayout>
 </layout>

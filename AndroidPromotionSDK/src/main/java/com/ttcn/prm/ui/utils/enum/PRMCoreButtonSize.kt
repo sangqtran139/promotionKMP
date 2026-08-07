@@ -9,7 +9,7 @@ import com.ttcn.prm.R
  * @param paddingRes button padding left and right dimens resources
  * @param loadingSizeRes loading size dimens resources
  */
-enum class PRMCoreButtonSize(
+internal enum class PRMCoreButtonSize(
     @DimenRes val heightRes: Int,
     @DimenRes val textSizeRes: Int,
     @DimenRes val paddingRes: Int,

@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/prm_tokenWhite">
+    android:background="@color/demo_tokenWhite">
 
     <ImageView
         android:id="@+id/ivLogo"
@@ -29,24 +29,24 @@
         android:layout_marginTop="28dp"
         android:layout_marginEnd="48dp"
         android:indeterminate="true"
-        app:indicatorColor="@color/prm_colorPrimary"
+        app:indicatorColor="@color/demo_colorPrimary"
         app:layout_constraintBottom_toTopOf="@+id/tvStatus"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ivLogo"
-        app:trackColor="@color/prm_tokenRed10"
+        app:trackColor="@color/demo_tokenRed10"
         app:trackCornerRadius="4dp"
         app:trackThickness="4dp" />
 
     <TextView
         android:id="@+id/tvStatus"
-        style="@style/PRMFontRegular14"
+        style="@style/DemoFontRegular14"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:gravity="center"
         android:text="Đang lấy token đăng nhập...."
-        android:textColor="@color/prm_tokenDark60"
+        android:textColor="@color/demo_tokenDark60"
         app:layout_constraintBottom_toTopOf="@+id/btnRetry"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -57,11 +57,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:background="@drawable/prm_button_gradient_normal"
+        android:background="@drawable/demo_button_gradient_normal"
         android:paddingLeft="32dp"
         android:paddingRight="32dp"
         android:text="Thử lại"
-        android:textColor="@color/prm_tokenWhite"
+        android:textColor="@color/demo_tokenWhite"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

@@ -107,7 +107,7 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 
 Mục tiêu: **cùng số file, cùng tên khái niệm, cùng thứ tự khai báo** trong mỗi file.
 
-| Vai trò | Android (`.../ui/entry/`) | iOS (`.../PromotionSDKUI/Entry/`) |
+| Vai trò | Android (`.../entry/`) | iOS (`.../iosPromotionSDK/Entry/`) |
 |---|---|---|
 | Entry object/facade | `PromotionSDK.kt` | `PromotionSDK.swift` |
 | (impl box — N1) | — | `PromotionSDKImpl.swift` |

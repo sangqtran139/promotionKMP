@@ -129,7 +129,7 @@ private fun ImageView.loadWithCacheStrategy(
  * @param urlLogo     Remote URL of the logo.
  * @param preferCache See [loadWithCacheStrategy].
  */
-fun ImageView.loadPromotionVoucherLogo(urlLogo: String, preferCache: Boolean = false) =
+internal fun ImageView.loadPromotionVoucherLogo(urlLogo: String, preferCache: Boolean = false) =
     loadWithCacheStrategy(
         url = urlLogo,
         baseOptions = promotionVoucherLogoBaseOptions(context),
@@ -144,7 +144,7 @@ fun ImageView.loadPromotionVoucherLogo(urlLogo: String, preferCache: Boolean = f
  * @param urlBanner   Remote URL of the banner.
  * @param preferCache See [loadWithCacheStrategy].
  */
-fun ImageView.loadPromotionVoucherBanner(urlBanner: String, preferCache: Boolean = false) =
+internal fun ImageView.loadPromotionVoucherBanner(urlBanner: String, preferCache: Boolean = false) =
     loadWithCacheStrategy(
         url = urlBanner,
         baseOptions = promotionVoucherBannerBaseOptions(context),

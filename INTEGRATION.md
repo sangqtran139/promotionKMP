@@ -10,7 +10,7 @@ link cũ không chết.
 | Toàn bộ bề mặt public + song ánh Android↔iOS | [`docs/common/PublicApi.md`](./docs/common/PublicApi.md) |
 | **Headless** — tự dựng UI, gọi API qua `PromotionSDK.api` | [`docs/common/HeadlessAPI.md`](./docs/common/HeadlessAPI.md) |
 | Feature flag / kill-switch | [`docs/features/FeatureFlag.md`](./docs/features/FeatureFlag.md) |
-| Widget checkout `PRMEndowView` + `PromotionIntegrateManager` | [`docs/features/EndowView.md`](./docs/features/EndowView.md) |
+| Widget checkout `PRMEndowView` + `confirmRedemption` | [`docs/features/EndowView.md`](./docs/features/EndowView.md) |
 | Mã lỗi & cách hiển thị | [`docs/common/ErrorHandling.md`](./docs/common/ErrorHandling.md) |
 | Theme | [`docs/common/Theming.md`](./docs/common/Theming.md) |
 | Phát hành | [`docs/android/Distribution.md`](./docs/android/Distribution.md) · [`docs/ios/Distribution.md`](./docs/ios/Distribution.md) |

@@ -17,7 +17,7 @@ Toàn bộ DI nằm ở `:promotionLogic`, `commonMain`.
 | `DiKey` | `di/internal/DiKey.kt` | Khoá định danh `(KClass, qualifier)` |
 | `SdkLock` | `common/SdkLock.kt` | Khoá **reentrant** expect/actual — xem §3 |
 | `PromotionContainer` | `di/PromotionContainer.kt` | Public entry: khởi tạo container & nạp modules |
-| Các `*Module` | `di/` | Khai báo cách tạo dependency theo nhóm |
+| Các `*Module` | **cùng package với lớp nó dựng** (xem §5) | Khai báo cách tạo dependency của đúng tầng đó |
 
 ---
 
@@ -81,7 +81,7 @@ iOS/common:  PromotionContainer.init(config)
                          ├─ registry.single { config }      // đăng ký config TRƯỚC
                          └─ loadModules(
                               NetworkModule, LocalModule,
-                              RepositoryModule, UseCaseModule, FeatureFlagModule)
+                              RepositoryModule, UseCaseModule)
 ```
 
 `PromotionContainer.clear()`:
@@ -94,18 +94,37 @@ iOS/common:  PromotionContainer.init(config)
 
 ## 5. Tổ chức Module
 
-| Module | Đăng ký gì |
-|--------|------------|
-| `NetworkModule` | `PromotionRequestContextProvider`, `HttpClient`, `PromotionApiService`, `PromotionRemoteDataSource` |
-| `LocalModule` | `PromotionPreferences`, `FeatureFlagLocalDataSource` |
-| `RepositoryModule` | `PromotionRepository` → `PromotionRepositoryImpl` |
-| `UseCaseModule` | 5 use case nghiệp vụ + `PromotionUseCases` |
-| `FeatureFlagModule` | `FeatureFlagApiService`, `FeatureFlagRemoteDataSource`, `FeatureFlagRepository`, 4 use case, `PromotionFeatureFlagUseCases` |
+**Module nằm cùng package với class nó dựng, không dồn vào `di/`.** Sửa `PromotionApiService` thì chỗ
+khai nó nằm ngay bên cạnh; `di/` chỉ còn container + engine.
+
+| Module | File | Đăng ký gì |
+|--------|------|------------|
+| `NetworkModule` | `data/remote/NetworkModule.kt` | `PromotionRequestContextProvider`, `HttpClient`, `PromotionApiService`, `PromotionRemoteDataSource`, + `FeatureFlagApiService`, `FeatureFlagRemoteDataSource` |
+| `LocalModule` | `data/local/LocalModule.kt` | `PromotionPreferences`, `FeatureFlagLocalDataSource` |
+| `RepositoryModule` | `data/repository/RepositoryModule.kt` | `PromotionRepository`, `FeatureFlagRepository` → impl |
+| `UseCaseModule` | `domain/usecase/UseCaseModule.kt` | 5 use case nghiệp vụ + `PromotionUseCases`, + 4 use case feature flag + `PromotionFeatureFlagUseCases` |
 
 Bind interface → impl: `single<PromotionRepository> { PromotionRepositoryImpl(get()) }`.
 
-> `LocalModule` phải được nạp trước `FeatureFlagModule` trong thứ tự đọc, nhưng vì binding là lazy
-> nên thứ tự `loadModules(...)` không ảnh hưởng — chỉ `config` cần đăng ký trước.
+> **Không còn `FeatureFlagModule`.** Nó cắt ngang cả bốn tầng (remote → local → repository → use case)
+> nên chẳng thuộc package nào; mỗi binding nay về đúng tầng của mình, đánh dấu bằng một comment
+> `// ─── Feature flag ───` trong module tương ứng.
+
+Binding là **lazy** nên thứ tự `loadModules(...)` không ảnh hưởng — chỉ `config` cần đăng ký trước.
+Ở `PromotionContainer.initialize` vẫn liệt kê theo đúng thứ tự tầng cho dễ đọc.
+
+### 5.1. Tầng UI Android — mỗi màn tự dựng ViewModel của mình
+
+Không có module DI nào cho tầng UI. Mỗi ViewModel mang `companion object { fun factory() }` của chính
+nó (dùng `viewModelFactory { initializer { … } }` của androidx), đặt ngay trong file ViewModel:
+
+```kotlin
+private val viewModel: MyPromotionViewModel by viewModels { MyPromotionViewModel.factory() }
+```
+
+Trước đây cả bốn màn dùng chung `PromotionViewModelFactory` ở `ui/di/` — một `when(modelClass)`
+liệt kê mọi màn, nên thêm một màn là phải sửa file ở package khác, và factory giữ cả use case mà màn
+đang mở không cần. Package `ui/di/` đã bị xoá.
 
 ---
 

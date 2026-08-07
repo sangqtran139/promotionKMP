@@ -2,11 +2,10 @@ package com.ttcn.promotionsdk.presentation.promotiondetail
 
 import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
-import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
-import com.ttcn.promotionsdk.domain.model.voucher.displayState
 import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
-import com.ttcn.promotionsdk.presentation.PromotionCancellable
+import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 
 /**
  * **Tầng UI-logic dùng chung** cho màn "Chi tiết ưu đãi" — chạy trên cả Android & iOS.
@@ -27,13 +27,13 @@ import kotlinx.coroutines.launch
 class PromotionDetailStore(
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) {
+) : PRMStore<PromotionDetailState, PromotionDetailIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
     constructor(getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase) :
         this(getCustomerVoucherDetailUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(PromotionDetailState())
-    val state: StateFlow<PromotionDetailState> = _state.asStateFlow()
+    override val state: StateFlow<PromotionDetailState> = _state.asStateFlow()
 
     fun currentState(): PromotionDetailState = _state.value
 
@@ -46,7 +46,11 @@ class PromotionDetailStore(
         scope.cancel()
     }
 
-    fun dispatch(intent: PromotionDetailIntent) {
+    override fun errorOf(state: PromotionDetailState): String? = state.errorCode
+
+    override val consumeErrorIntent: PromotionDetailIntent = PromotionDetailIntent.ConsumeError
+
+    override fun dispatch(intent: PromotionDetailIntent) {
         when (intent) {
             is PromotionDetailIntent.LoadDetail -> loadDetail(intent.voucherId)
             PromotionDetailIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
@@ -83,32 +87,4 @@ class PromotionDetailStore(
             }
         }
     }
-}
-
-// ─── State / Intent (cấu trúc; label là dữ liệu server, không phải chuỗi ta dựng) ──
-
-data class PromotionDetailState(
-    val isLoading: Boolean = false,
-    val detail: VoucherDetail? = null,
-    val status: VoucherStatus = VoucherStatus.UNKNOWN,
-    val actionVisible: Boolean = true,
-    val actionEnabled: Boolean = false,
-    /**
-     * Nhãn nút do server trả (`VoucherDetail.displayStatusLabel`).
-     *
-     * ⚠️ **Hai màn chi tiết hiện KHÔNG đọc field này** — chốt dùng chuỗi cứng "Sử dụng ngay"
-     * (`prm_use_now` / `PromotionUIStrings.useNow`) vì BE trả "Sử dụng" cho mọi voucher. Giữ lại để
-     * bật lại nhãn server không phải sửa store; card ở màn danh sách thì vẫn theo nhãn server.
-     */
-    val actionLabel: String = "",
-    val errorCode: String? = null,
-)
-
-/**
- * **Không có intent seed từ ngoài**: màn chi tiết chỉ hiển thị khi `getCustomerVoucherDetail` trả về —
- * dữ liệu từ màn danh sách không được dùng để dựng card/nút (tránh hai nguồn sự thật lệch nhau).
- */
-sealed interface PromotionDetailIntent {
-    data class LoadDetail(val voucherId: String) : PromotionDetailIntent
-    data object ConsumeError : PromotionDetailIntent
 }

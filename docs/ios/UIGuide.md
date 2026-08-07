@@ -297,7 +297,7 @@ hai file là song ánh — xem [PublicApi.md](../common/PublicApi.md):
 Ràng buộc bên iOS **cứng hơn**: type Kotlin lọt vào chữ ký public bị ghi thẳng vào `.swiftinterface`,
 nên hỏng ngay cả khi host chưa dùng tới nó. Android chỉ hỏng ở đúng chỗ host chạm vào.
 
-Ba file API bên iOS đặt ở `PromotionSDKUI/Entry/API/`, đối ứng `ui/entry/api/` bên Android:
+Ba file API bên iOS đặt ở `iosPromotionSDK/Entry/API/`, đối ứng `entry/api/` bên Android:
 `PromotionSDKApi.swift`, `PromotionApiModels.swift`, `PromotionApiResult.swift`.
 
 > **Cache module của Xcode.** Đổi chữ ký public rồi dựng lại xcframework, app host có thể vẫn

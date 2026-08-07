@@ -1,5 +1,6 @@
-# Giữ public API của SDK — host app gọi qua các class này.
--keep public class com.ttcn.promotionsdk.ui.entry.** { public *; }
+# Giữ public API của SDK — host app gọi qua các class này. `com.ttcn.prm.entry.**` là bề mặt
+# DUY NHẤT: mọi thứ ngoài package đó đều `internal`, R8 rút gọn thoải mái.
+-keep public class com.ttcn.prm.entry.** { public *; }
 -keep public class com.ttcn.promotionsdk.di.PromotionContainer { public *; }
 -keep public class com.ttcn.promotionsdk.config.** { public *; }
 -keep public class com.ttcn.promotionsdk.domain.model.** { *; }

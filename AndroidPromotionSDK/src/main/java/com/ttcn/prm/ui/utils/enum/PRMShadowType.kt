@@ -7,7 +7,7 @@ import com.ttcn.prm.R
 import com.ttcn.prm.ui.widget.PRMCardView
 import com.ttcn.prm.ui.utils.extension.retrieveColor
 
-enum class PRMShadowType(
+internal enum class PRMShadowType(
     @ColorRes val colorRes: Int = 0,
     @DimenRes val yOffset: Int = 0,
     @DimenRes val blurRadius: Int = 0,

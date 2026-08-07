@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bản thay cho `@drawable/prm_button_gradient_normal` của SDK. Bản gốc là layer-list 6 lớp mô phỏng
+  đổ bóng bằng `sdp`; ở đây chỉ cần đúng cái nền gradient cho một nút trong màn demo, nên rút còn
+  một shape với màu của riêng app demo.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="0"
+        android:endColor="#EE0033"
+        android:startColor="#F11B53" />
+    <corners android:radius="25dp" />
+</shape>

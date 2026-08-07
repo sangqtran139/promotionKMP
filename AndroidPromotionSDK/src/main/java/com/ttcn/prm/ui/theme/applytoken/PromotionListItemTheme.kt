@@ -7,7 +7,7 @@ import com.ttcn.prm.databinding.PrmItemPromotionBinding
 import com.ttcn.prm.ui.theme.PromotionThemeDisplay
 import com.ttcn.prm.ui.theme.toToken
 
-object PromotionListItemTheme {
+internal object PromotionListItemTheme {
 
     fun applyToken(binding: PrmItemChoosePromotionBinding, values: PromotionThemeDisplay.ListItemValues) {
         PromotionListItemApplier.apply(binding, values.toToken())

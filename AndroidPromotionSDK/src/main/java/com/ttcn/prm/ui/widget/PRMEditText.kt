@@ -12,7 +12,7 @@ import com.ttcn.prm.R
  * Base EditText class for ViettelPay app to replace default [AppCompatEditText]
  *
  */
-class PRMEditText : AppCompatEditText {
+internal class PRMEditText : AppCompatEditText {
 
   var preventKeyboardDismiss = false
 

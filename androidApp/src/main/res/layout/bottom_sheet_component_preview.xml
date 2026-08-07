@@ -3,21 +3,21 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="@dimen/prm_view_size_24">
+    android:padding="@dimen/demo_view_size_24">
 
     <TextView
         android:id="@+id/txtPreviewTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/prm_view_size_16"
-        android:textColor="@color/prm_tokenDark100"
-        android:textSize="@dimen/prm_text_size_16"
+        android:layout_marginBottom="@dimen/demo_view_size_16"
+        android:textColor="@color/demo_tokenDark100"
+        android:textSize="@dimen/demo_text_size_16"
         android:textStyle="bold" />
 
     <FrameLayout
         android:id="@+id/previewContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="@dimen/prm_view_size_80" />
+        android:minHeight="@dimen/demo_view_size_80" />
 
 </LinearLayout>
