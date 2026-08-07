@@ -16,39 +16,39 @@
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/tvTitle"
-            style="@style/fontPRMSfDisplayBold18"
+            style="@style/PRMFontSfDisplayBold18"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/tokenSpacing16"
-            android:layout_marginTop="@dimen/tokenSpacing16"
-            android:layout_marginEnd="@dimen/tokenSpacing16"
+            android:layout_marginStart="@dimen/prm_tokenSpacing16"
+            android:layout_marginTop="@dimen/prm_tokenSpacing16"
+            android:layout_marginEnd="@dimen/prm_tokenSpacing16"
             android:gravity="center"
-            android:textColor="@color/tokenDark100"
+            android:textColor="@color/prm_tokenDark100"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Xác nhận" />
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/tvContent"
-            style="@style/fontPRMRegular16"
+            style="@style/PRMFontRegular16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/_13sdp"
             android:layout_marginTop="@dimen/_13sdp"
             android:layout_marginEnd="@dimen/_13sdp"
             android:gravity="center"
-            android:textColor="@color/tokenDark100"
+            android:textColor="@color/prm_tokenDark100"
             android:textColorHighlight="@android:color/transparent"
             app:layout_constraintTop_toBottomOf="@id/tvTitle"
             tools:text="Nội dung xác nhận" />
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/tvContentLink"
-            style="@style/fontPRMRegular14"
+            style="@style/PRMFontRegular14"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_13sdp"
             android:gravity="center"
-            android:textColor="@color/tokenDark100"
+            android:textColor="@color/prm_tokenDark100"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -76,10 +76,10 @@
 
             <com.ttcn.prm.ui.widget.PRMTextView
                 android:id="@+id/tvCheckBoxContent"
-                style="@style/fontPRMRegular14"
+                style="@style/PRMFontRegular14"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/tokenDark100"
+                android:textColor="@color/prm_tokenDark100"
                 tools:text="Không hiển thị lại thông báo này" />
         </LinearLayout>
 
@@ -88,16 +88,16 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1sdp"
             android:layout_marginTop="@dimen/_13sdp"
-            android:background="@color/tokenDark10"
+            android:background="@color/prm_tokenDark10"
             app:layout_constraintTop_toBottomOf="@id/layoutCheckBox" />
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/btnNegative"
-            style="@style/fontPRMRegular18"
+            style="@style/PRMFontRegular18"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:textColor="@color/tokenDark60"
+            android:textColor="@color/prm_tokenDark60"
             app:layout_constraintBottom_toBottomOf="@id/divider2"
             app:layout_constraintEnd_toStartOf="@id/btnPositive"
             app:layout_constraintStart_toStartOf="parent"
@@ -107,11 +107,11 @@
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/btnPositive"
-            style="@style/fontPRMBold18"
+            style="@style/PRMFontBold18"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
-            android:textColor="@color/tokenViettelPayRed100"
+            android:textColor="@color/prm_tokenViettelPayRed100"
             app:layout_constraintBottom_toBottomOf="@id/divider2"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/btnNegative"
@@ -123,7 +123,7 @@
             android:id="@+id/divider2"
             android:layout_width="@dimen/_1sdp"
             android:layout_height="@dimen/_50sdp"
-            android:background="@color/tokenDark10"
+            android:background="@color/prm_tokenDark10"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider1" />

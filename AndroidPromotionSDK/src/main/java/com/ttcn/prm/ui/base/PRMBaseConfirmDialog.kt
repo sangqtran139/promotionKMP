@@ -73,10 +73,10 @@ internal class PRMBaseConfirmDialog : PRMBaseDialog<PrmDialogConfirmBinding>() {
                 btnNegative.setTextColor(root.context.retrieveColor(negativeColor))
             }
             if (isBoldNegativeText) {
-                btnNegative.setFont(R.style.fontPRMBold18)
+                btnNegative.setFont(R.style.PRMFontBold18)
             }
             if (isDelete) {
-                btnPositive.setTextColor(root.context.retrieveColor(R.color.tokenRed100))
+                btnPositive.setTextColor(root.context.retrieveColor(R.color.prm_tokenRed100))
             }
         }
 

@@ -74,16 +74,18 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     private fun registerBackPressedCallback() {
         val tag = this::class.java.simpleName
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
-            val manager = requireActivity().supportFragmentManager
-            Timber.tag(TAG_SYSTEM_BACK).d("[$tag] OnBackPressedCallback fired, backStackEntryCount=${manager.backStackEntryCount}")
-            if (manager.backStackEntryCount > 0) {
-                manager.popBackStack()
-            } else {
-                // Tự tắt trước khi đẩy lên trên: nếu không, dispatcher chọn lại đúng callback này
-                // (vẫn đang enabled) -> đệ quy vô hạn.
-                isEnabled = false
-                requireActivity().onBackPressedDispatcher.onBackPressed()
-            }
+            Timber.tag(TAG_SYSTEM_BACK)
+                .d("[$tag] OnBackPressedCallback fired, ownBackStack=${if (isAdded) parentFragmentManager.backStackEntryCount else -1}")
+            if (popOwnBackStack()) return@addCallback
+
+            // Tự tắt trước khi đẩy lên trên: nếu không, dispatcher chọn lại đúng callback này (vẫn
+            // đang enabled) -> đệ quy vô hạn.
+            isEnabled = false
+            requireActivity().onBackPressedDispatcher.onBackPressed()
+            // BẬT LẠI. Bản cũ tắt vĩnh viễn: fragment SDK còn sống mà callback đã chết thì lần back
+            // sau rơi thẳng xuống NavController — host lùi màn trong khi màn SDK vẫn đang hiện.
+            // `onBackPressed()` chạy đồng bộ nên tới đây nó đã xong; chỉ bật lại nếu fragment còn sống.
+            if (isAdded) isEnabled = true
         }
     }
 
@@ -116,9 +118,14 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
             // Guard: nếu wrapper này lỡ còn sống sau khi fragment đã detach (vd bị 1 thư viện khác
             // ghi đè window.callback xen giữa, làm onPause() bên dưới không unwrap được), rơi qua
             // dispatchKeyEvent gốc thay vì gọi tiếp requireActivity() trên fragment đã chết.
-            if (isAdded) {
-                Timber.tag(TAG_SYSTEM_BACK).d("[${this::class.java.simpleName}] Window.Callback intercepted KEYCODE_BACK")
-                onBackFragment()
+            if (!isAdded) {
+                false
+            } else {
+                val handled = popOwnBackStack()
+                Timber.tag(TAG_SYSTEM_BACK)
+                    .d("[${this::class.java.simpleName}] Window.Callback saw KEYCODE_BACK, handled=$handled")
+                // handled=false -> KHÔNG nuốt, để event đi tiếp tới host/NavController.
+                handled
             }
         }
         installedWindowCallback = wrapper
@@ -140,14 +147,22 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
         super.onPause()
     }
 
+    /**
+     * [onBackKey] trả `true` = SDK đã xử lý xong, **nuốt** event. Trả `false` = SDK không có gì để
+     * xử lý, event **đi tiếp** xuống `delegate` như chưa hề bị chặn.
+     *
+     * Bản cũ luôn `return true`. Với host Navigation đó là hành vi phá hoại: wrapper gắn trên window
+     * của **Activity** nên nó nuốt sạch phím back kể cả khi màn SDK không còn gì để pop —
+     * `NavController` không bao giờ nhìn thấy sự kiện. Trả `false` để nhường thì tự nhiên hơn hẳn
+     * việc gọi ngược `dispatcher.onBackPressed()` (dễ đệ quy, và bỏ qua các callback đứng trên).
+     */
     private class PrmBackKeyWindowCallback(
         val delegate: Window.Callback,
-        private val onBackKey: () -> Unit,
+        private val onBackKey: () -> Boolean,
     ) : Window.Callback by delegate {
         override fun dispatchKeyEvent(event: KeyEvent): Boolean {
             if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-                onBackKey()
-                return true
+                if (onBackKey()) return true
             }
             return delegate.dispatchKeyEvent(event)
         }
@@ -219,8 +234,10 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
         }
         val tag = fragment::class.java.simpleName
 
-        requireActivity()
-            .supportFragmentManager
+        // `parentFragmentManager`: màn SDK mới phải nằm CÙNG FM với màn SDK đang mở nó, nếu không
+        // `popOwnBackStack()` đọc một stack mà entry lại nằm ở stack khác. Với host Navigation, FM
+        // đó là `childFragmentManager` của destination (xem `PromotionSDK.resolveFragmentManager`).
+        parentFragmentManager
             .beginTransaction()
             .add(containerId, fragment, tag)
             .apply { if (addToBackStack) addToBackStack(tag) }
@@ -234,8 +251,8 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     ) {
         val tag = fragment::class.java.simpleName
 
-        requireActivity()
-            .supportFragmentManager
+        // Cùng lý do với addFragment: bám FM sở hữu fragment này, không phải FM của Activity.
+        parentFragmentManager
             .beginTransaction()
             .replace(containerId, fragment, tag)
             .apply { if (addToBackStack) addToBackStack(tag) }
@@ -261,13 +278,36 @@ abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      * `FragmentManager` dùng chung nên vô can với việc đó, override cũng phải giữ tính chất này.
      */
     open fun onBackFragment() {
-        val activity = requireActivity()
-        val manager = activity.supportFragmentManager
-        if (manager.backStackEntryCount > 0) {
-            manager.popBackStack()
-        } else {
-            activity.onBackPressedDispatcher.onBackPressed()
+        if (!popOwnBackStack()) {
+            // Không còn gì của SDK để pop → trả quyền cho host (NavController, hoặc callback của họ).
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
+    }
+
+    /**
+     * Pop **một** entry trong back stack của chính SDK. Trả `true` nếu đã pop, `false` nếu không còn
+     * gì — nơi gọi dựa vào đó để quyết định có nhường sự kiện cho host hay không.
+     *
+     * Ba điểm khác bản cũ, mỗi điểm sửa một lỗi thật:
+     *
+     * 1. **`parentFragmentManager`, không phải `activity.supportFragmentManager`.** Đây là FM đang
+     *    thật sự chứa fragment này — với host Navigation nó là `childFragmentManager` của destination
+     *    (xem `PromotionSDK.resolveFragmentManager`), với host thường nó vẫn là FM của Activity. Bản
+     *    cũ đọc FM của Activity nên với host Navigation nó đếm nhầm stack: `backStackEntryCount` không
+     *    thấy destination nào của host, còn `popBackStack()` thì pop nhầm entry.
+     *
+     * 2. **`popBackStackImmediate()`, không phải `popBackStack()`.** Bản async chỉ *xếp hàng* giao
+     *    dịch, `backStackEntryCount` không giảm ngay — hai lần back liên tiếp cùng đọc số cũ rồi cùng
+     *    enqueue, pop **hai** entry cho một lần bấm.
+     *
+     * 3. **Chặn khi state đã lưu.** Pop sau `onSaveInstanceState` ném `IllegalStateException`.
+     */
+    protected fun popOwnBackStack(): Boolean {
+        if (!isAdded) return false
+        val manager = parentFragmentManager
+        if (manager.isStateSaved) return false
+        if (manager.backStackEntryCount == 0) return false
+        return manager.popBackStackImmediate()
     }
 
     override fun onDestroyView() {

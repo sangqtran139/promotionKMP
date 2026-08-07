@@ -185,11 +185,24 @@ class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBinding>() {
         }
     }
 
+    /**
+     * Mở màn Tìm kiếm **cùng FM và cùng container** với màn này.
+     *
+     * Bản cũ add vào `android.R.id.content` qua `activity.supportFragmentManager`. Hai vấn đề:
+     * - Với host dùng Navigation, entry rơi vào back stack của Activity trong khi `popOwnBackStack()`
+     *   đọc `parentFragmentManager` — back không pop được nó.
+     * - `android.R.id.content` **không** dùng được từ child FM: child FM chỉ tìm container bên trong
+     *   view của fragment cha, không thấy content view của Activity → fragment add xong không có
+     *   view, màn Tìm kiếm thành vô hình.
+     *
+     * Lấy container từ chính view của màn này nên đúng cho cả hai kiểu host.
+     */
     private fun openSearchMyPromotion() {
-        val fm = requireActivity().supportFragmentManager
+        val fm = parentFragmentManager
         if (fm.findFragmentByTag(TAG_SEARCH_MY_PROMOTION) != null) return
+        val containerId = (view?.parent as? ViewGroup)?.id ?: return
         fm.beginTransaction().setReorderingAllowed(true)
-            .add(android.R.id.content, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
+            .add(containerId, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
             .addToBackStack(TAG_SEARCH_MY_PROMOTION).commit()
     }
 

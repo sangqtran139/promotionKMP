@@ -6,22 +6,22 @@
         android:id="@+id/container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/color_FBFBFB"
-        app:layoutDescription="@xml/home_scene">
+        android:background="@color/prm_color_FBFBFB"
+        app:layoutDescription="@xml/prm_home_scene">
 
         <com.ttcn.prm.ui.widget.PRMCardView
             android:id="@+id/cardViewTop"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/color_FBFBFB"
+            android:background="@color/prm_color_FBFBFB"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:prmCvBottomLeftRadius="@dimen/view_size_16"
-            app:prmCvBottomRightRadius="@dimen/view_size_16"
-            app:prmCvTopLeftRadius="@dimen/view_size_16"
-            app:prmCvTopRightRadius="@dimen/view_size_16"
+            app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
+            app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvTopRightRadius="@dimen/prm_view_size_16"
             app:prmSvBackgroundType="fill_stroke"
-            app:prmSvStrokeColor="@color/color_D3D3D3"
+            app:prmSvStrokeColor="@color/prm_color_D3D3D3"
             app:prmSvStrokeWidth="0.5dp">
 
             <com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost
@@ -32,8 +32,8 @@
                     android:id="@+id/wvContent"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="@color/color_FBFBFB"
-                    android:paddingTop="@dimen/view_size_10" />
+                    android:background="@color/prm_color_FBFBFB"
+                    android:paddingTop="@dimen/prm_view_size_10" />
 
             </com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost>
 

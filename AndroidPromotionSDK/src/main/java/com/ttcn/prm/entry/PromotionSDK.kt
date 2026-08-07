@@ -3,10 +3,12 @@ package com.ttcn.prm.entry
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
 import android.util.Log
+import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
+import androidx.fragment.app.findFragment
 import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.di.initialize
 import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
@@ -490,7 +492,7 @@ object PromotionSDK {
             callback?.onAvailabilityChanged(false)
             return
         }
-        val fm = activity.supportFragmentManager
+        val fm = resolveFragmentManager(activity, containerViewId)
         if (fm.findFragmentByTag(TAG_MY_PROMOTION) != null) return
         val fragment = MyPromotionFragment()
         fm.beginTransaction()
@@ -569,7 +571,7 @@ object PromotionSDK {
             callback?.onAvailabilityChanged(false)
             return
         }
-        val fm = activity.supportFragmentManager
+        val fm = resolveFragmentManager(activity, containerViewId)
         // TEMP DEBUG: log ngay giá trị containerViewId THẬT SỰ nhận được từ host, trước khi làm gì khác.
         val resolvedView = containerViewId?.let { activity.findViewById<android.view.View>(it) }
         Log.d(
@@ -599,6 +601,43 @@ object PromotionSDK {
         )
     }
 
+
+    /**
+     * FragmentManager **sở hữu container** — không mặc định là của Activity.
+     *
+     * Host dùng Navigation: container nằm trong layout của một destination, mà destination lại là
+     * Fragment con của `NavHostFragment`. Add vào `activity.supportFragmentManager` thì fragment SDK
+     * và view container thuộc **hai vòng đời khác nhau** — NavController huỷ destination, view chết,
+     * nhưng fragment SDK vẫn nằm trong back stack của Activity. Nó thành **mồ côi**: vẫn `RESUMED`
+     * (nên `Window.Callback` wrapper vẫn gắn, vẫn nuốt phím back) và mỗi entry mồ côi ăn mất **một**
+     * lần bấm back. Mở 2 màn SDK rồi điều hướng đi = phải bấm back 3 lần mới lùi được 1 màn.
+     *
+     * Cách chữa: hỏi thẳng container xem Fragment nào sở hữu nó.
+     * - Có → dùng `childFragmentManager` của Fragment đó. Màn SDK thành con của destination, chết
+     *   theo destination, back stack không còn rác.
+     * - Không có (`containerViewId` null, hoặc container nằm thẳng trong layout Activity) → FM của
+     *   Activity, đúng y hành vi cũ.
+     *
+     * Một đường code chạy đúng cho **cả host dùng lẫn không dùng Navigation**, và host không phải
+     * sửa một dòng nào — chữ ký `openMyPromotion` / `openPromotionDetail` giữ nguyên.
+     */
+    private fun resolveFragmentManager(
+        activity: FragmentActivity,
+        containerViewId: Int?,
+    ): FragmentManager {
+        val container = containerViewId?.let { activity.findViewById<View>(it) }
+            ?: return activity.supportFragmentManager
+        // findFragment() ném IllegalStateException khi view không thuộc fragment nào — đó là trường
+        // hợp container cấp Activity, hoàn toàn hợp lệ, nên nuốt và rơi về FM của Activity.
+        val owner = runCatching { container.findFragment<Fragment>() }.getOrNull()
+        Log.d(
+            "PRMSystemBack",
+            "[resolveFragmentManager] container=0x${containerViewId.toString(16)} " +
+                "owner=${owner?.let { it::class.java.simpleName } ?: "none (Activity-level)"} " +
+                "-> ${if (owner != null) "childFragmentManager" else "activity.supportFragmentManager"}"
+        )
+        return owner?.childFragmentManager ?: activity.supportFragmentManager
+    }
 
     private fun FragmentTransaction.addOrHideThenAdd(
         fm: FragmentManager,
