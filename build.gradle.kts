@@ -1,4 +1,5 @@
 import org.gradle.api.publish.PublishingExtension
+import java.util.Properties
 
 plugins {
     // this is necessary to avoid the plugins to be loaded multiple times
@@ -40,26 +41,70 @@ val artifactoryRepoKey = if (sdkVersion.endsWith("SNAPSHOT")) {
     providers.gradleProperty("artifactoryReleasesRepo").getOrElse("libs-release-local")
 }
 
+// ─── Repo phát hành: Artifactory nội bộ Viettelmoney ──────────────────────────────────────────
+//
+// Đích RIÊNG, song song với repo "artifactory" ở trên — không thay thế. Publication đẩy vào đây là
+// `MavenPublication("viettelmoney")` khai thủ công ở từng module (toạ độ `vn.viettelpay.library:…`,
+// POM viết tay ở `<module>/publishing/pom.xml`), khác hẳn publication "release"/KMP mặc định
+// (toạ độ `com.ttcn.promotion:…`, POM Gradle tự sinh từ dependency graph) đẩy vào repo "artifactory".
+//
+// Credentials đọc từ `local.properties` (KHÔNG commit, đã gitignore) thay vì gradle property/env
+// như repo "artifactory" — theo đúng convention app host Viettelmoney đang dùng để RESOLVE
+// dependencies (đối chiếu snippet họ đưa), giữ nhất quán một chỗ đọc credentials cho cả hai chiều.
+//
+//   ./gradlew publishSdkToViettelmoney   (task gộp, định nghĩa cuối file)
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val viettelmoneyUrl = "https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney"
+val viettelmoneyUser = localProperties.getProperty("maven.username", "")
+val viettelmoneyPassword = localProperties.getProperty("maven.password", "")
+
 subprojects {
     pluginManager.withPlugin("maven-publish") {
-        // Không có URL → không đăng ký repo. Cố tình: máy dev chưa có credentials vẫn build và
-        // publishToMavenLocal bình thường, thay vì fail lúc cấu hình vì thiếu property.
-        val baseUrl = artifactoryUrl.orNull?.trimEnd('/') ?: return@withPlugin
-
         extensions.configure<PublishingExtension> {
             repositories {
+                // Không có URL → không đăng ký repo. Cố tình: máy dev chưa có credentials vẫn build và
+                // publishToMavenLocal bình thường, thay vì fail lúc cấu hình vì thiếu property.
+                val baseUrl = artifactoryUrl.orNull?.trimEnd('/')
+                if (baseUrl != null) {
+                    maven {
+                        name = "artifactory"   // → task publish…ToArtifactoryRepository
+                        url = uri("$baseUrl/$artifactoryRepoKey")
+                        // Artifactory nội bộ hay chạy http (như Bitbucket của team). Gradle 7+ chặn
+                        // http mặc định, chỉ mở đúng khi URL thật sự là http.
+                        isAllowInsecureProtocol = baseUrl.startsWith("http://")
+                        credentials {
+                            username = artifactoryUser.orNull
+                            password = artifactoryPassword.orNull
+                        }
+                    }
+                }
+
                 maven {
-                    name = "artifactory"   // → task publish…ToArtifactoryRepository
-                    url = uri("$baseUrl/$artifactoryRepoKey")
-                    // Artifactory nội bộ hay chạy http (như Bitbucket của team). Gradle 7+ chặn
-                    // http mặc định, chỉ mở đúng khi URL thật sự là http.
-                    isAllowInsecureProtocol = baseUrl.startsWith("http://")
+                    name = "viettelmoney"   // → task publish…ToViettelmoneyRepository
+                    url = uri(viettelmoneyUrl)
                     credentials {
-                        username = artifactoryUser.orNull
-                        password = artifactoryPassword.orNull
+                        username = viettelmoneyUser
+                        password = viettelmoneyPassword
                     }
                 }
             }
         }
     }
+}
+
+// Gộp cả hai module trong một lệnh — trùng tên đã seed sẵn trong local.properties.
+// Chỉ đụng tới publication "viettelmoney" của từng module, không đả động publication "release".
+tasks.register("publishSdkToViettelmoney") {
+    group = "publishing"
+    description = "Build và đẩy AndroidPromotionSDK + promotionLogic (toạ độ vn.viettelpay.library) " +
+        "lên Artifactory nội bộ Viettelmoney."
+    dependsOn(
+        ":AndroidPromotionSDK:publishViettelmoneyPublicationToViettelmoneyRepository",
+        ":promotionLogic:publishViettelmoneyPublicationToViettelmoneyRepository",
+    )
 }

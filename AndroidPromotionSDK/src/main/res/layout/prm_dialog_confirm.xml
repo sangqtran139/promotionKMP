@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/_13sdp"
+        android:background="@drawable/prm_bg_dialog_confirm"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/tvTitle"
+            style="@style/fontPRMSfDisplayBold18"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/tokenSpacing16"
+            android:layout_marginTop="@dimen/tokenSpacing16"
+            android:layout_marginEnd="@dimen/tokenSpacing16"
+            android:gravity="center"
+            android:textColor="@color/tokenDark100"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Xác nhận" />
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/tvContent"
+            style="@style/fontPRMRegular16"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_13sdp"
+            android:layout_marginTop="@dimen/_13sdp"
+            android:layout_marginEnd="@dimen/_13sdp"
+            android:gravity="center"
+            android:textColor="@color/tokenDark100"
+            android:textColorHighlight="@android:color/transparent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle"
+            tools:text="Nội dung xác nhận" />
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/tvContentLink"
+            style="@style/fontPRMRegular14"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/_13sdp"
+            android:gravity="center"
+            android:textColor="@color/tokenDark100"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvContent"
+            tools:text="Xem chi tiết" />
+
+        <LinearLayout
+            android:id="@+id/layoutCheckBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_13sdp"
+            android:layout_marginTop="@dimen/_13sdp"
+            android:layout_marginEnd="@dimen/_13sdp"
+            android:gravity="center"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvContentLink">
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cbContent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="false" />
+
+            <com.ttcn.prm.ui.widget.PRMTextView
+                android:id="@+id/tvCheckBoxContent"
+                style="@style/fontPRMRegular14"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/tokenDark100"
+                tools:text="Không hiển thị lại thông báo này" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/divider1"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/_1sdp"
+            android:layout_marginTop="@dimen/_13sdp"
+            android:background="@color/tokenDark10"
+            app:layout_constraintTop_toBottomOf="@id/layoutCheckBox" />
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/btnNegative"
+            style="@style/fontPRMRegular18"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:textColor="@color/tokenDark60"
+            app:layout_constraintBottom_toBottomOf="@id/divider2"
+            app:layout_constraintEnd_toStartOf="@id/btnPositive"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/divider2"
+            app:prmTvPreventFastClick="true"
+            tools:text="Bỏ qua" />
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/btnPositive"
+            style="@style/fontPRMBold18"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:textColor="@color/tokenViettelPayRed100"
+            app:layout_constraintBottom_toBottomOf="@id/divider2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btnNegative"
+            app:layout_constraintTop_toTopOf="@id/divider2"
+            app:prmTvPreventFastClick="true"
+            tools:text="Đồng ý" />
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="@dimen/_1sdp"
+            android:layout_height="@dimen/_50sdp"
+            android:background="@color/tokenDark10"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/divider1" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>

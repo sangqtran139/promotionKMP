@@ -76,6 +76,54 @@ publishing {
             afterEvaluate { from(components["release"]) }
             artifactId = "promotionSDK"
         }
+
+        /**
+         * Bản đẩy riêng cho Artifactory nội bộ Viettelmoney — toạ độ `vn.viettelpay.library:promotion`,
+         * KHÁC hẳn publication "release" ở trên (`com.ttcn.promotion:promotionSDK`, POM Gradle tự sinh
+         * từ dependency graph). Ở đây POM lấy nguyên văn từ `publishing/pom.xml` (viết tay, dependencies
+         * scope `runtime`, trỏ `vn.viettelpay.library:promotion-logic`) — [pom.withXml] xoá sạch nội
+         * dung Gradle tự sinh rồi ghép nguyên cây XML đọc từ file đó vào, KHÔNG suy từ
+         * `implementation(...)` bên dưới. Sửa dependency thật thì sửa ở `publishing/pom.xml`, sửa ở
+         * đây không có tác dụng.
+         *
+         * Artifact lấy thẳng file .aar đã build (`archivesName` = `AndroidPromotionSDK-$sdkVersion-release`)
+         * thay vì `from(components["release"])`, để không bị Gradle tự sinh lại POM đè lên [pom.withXml].
+         *
+         * Chạy gộp cả 2 module: `./gradlew publishSdkToViettelmoney` (task ở build.gradle.kts gốc).
+         * Repo "viettelmoney" (URL + credentials từ `local.properties`) khai ở đó.
+         */
+        create<MavenPublication>("viettelmoney") {
+            groupId = "vn.viettelpay.library"
+            artifactId = "promotion"
+            version = sdkVersion
+
+            // AGP tạo task `assembleRelease` sau giai đoạn cấu hình (giống lý do publication
+            // "release" ở trên cũng phải đợi `afterEvaluate` mới `from(components["release"])`).
+            afterEvaluate {
+                artifact(layout.buildDirectory.file("outputs/aar/AndroidPromotionSDK-$sdkVersion-release.aar")) {
+                    extension = "aar"
+                    builtBy(tasks.named("assembleRelease"))
+                }
+            }
+
+            // File plain + version plain (không phải `file(...)`/tham chiếu `sdkVersion` GỌI TRONG
+            // lambda) — `withXml` chạy lúc thực thi task, đóng gói tham chiếu `Project`/script object
+            // bên trong lambda phá configuration cache (`DefaultProject` không serialize được).
+            // `handWrittenPom`/`resolvedVersion` chỉ là `File`/`String`, serialize bình thường.
+            val handWrittenPom = file("$projectDir/publishing/pom.xml")
+            val resolvedVersion = sdkVersion
+            pom.withXml {
+                // `@sdkVersion@` trong publishing/pom.xml: version của "promotion" và của dependency
+                // "promotion-logic" (hai module bump song song) — thay bằng SDK_VERSION thật (`-PSDK_VERSION=x.y.z`,
+                // mặc định "1.0.0") để đường dẫn upload (groupId/artifactId/**version**) và nội dung
+                // POM khớp nhau, không lệch như hardcode cứng "1.0.0".
+                val xmlText = handWrittenPom.readText().replace("@sdkVersion@", resolvedVersion)
+                val handWritten = groovy.xml.XmlParser().parseText(xmlText)
+                val root = asNode()
+                root.children().toList().forEach { root.remove(it as groovy.util.Node) }
+                handWritten.children().forEach { root.append(it as groovy.util.Node) }
+            }
+        }
     }
 }
 

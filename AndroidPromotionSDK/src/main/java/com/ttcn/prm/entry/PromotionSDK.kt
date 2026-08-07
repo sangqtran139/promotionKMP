@@ -3,7 +3,10 @@ package com.ttcn.prm.entry
 // Extension ở androidMain của promotionLogic: nạp applicationContext + suy ra isDebug.
 import android.content.Context
 import android.util.Log
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentTransaction
 import com.ttcn.promotionsdk.core.di.PromotionContainer
 import com.ttcn.promotionsdk.core.di.initialize
 import com.ttcn.promotionsdk.core.domain.model.featureflag.PromotionFeatureFlag
@@ -479,8 +482,9 @@ object PromotionSDK {
      * mở màn, y như `PromotionSDK.openMyPromotion` bên iOS.
      *
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
-     * @param containerViewId Nếu khác null, dùng FragmentTransaction.replace trên container này;
-     * nếu null, fragment được add lên android.R.id.content.
+     * @param containerViewId Nếu khác null, fragment được **add** lên container này — fragment host
+     * đang add trong cùng container (nếu có và đang hiện) chỉ bị `hide()`, **không** bị remove/destroy
+     * view (xem [addOrHideThenAdd]); nếu null, fragment được add lên android.R.id.content.
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
@@ -499,13 +503,7 @@ object PromotionSDK {
         val fragment = MyPromotionFragment()
         fm.beginTransaction()
             .setReorderingAllowed(true)
-            .apply {
-                if (containerViewId != null) {
-                    replace(containerViewId, fragment, TAG_MY_PROMOTION)
-                } else {
-                    add(android.R.id.content, fragment, TAG_MY_PROMOTION)
-                }
-            }
+            .addOrHideThenAdd(fm, containerViewId, fragment, TAG_MY_PROMOTION)
             .addToBackStack(TAG_MY_PROMOTION)
             .commit()
     }
@@ -534,8 +532,9 @@ object PromotionSDK {
      *
      * @param voucherId Id voucher cần xem.
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
-     * @param containerViewId Khác null → `replace` trên container này; null → `add` lên
-     * `android.R.id.content`. Cùng quy ước với [openMyPromotion].
+     * @param containerViewId Khác null → **add** lên container này, chỉ `hide()` fragment host đang
+     * add trong cùng container (nếu có); null → `add` lên `android.R.id.content`. Cùng quy ước với
+     * [openMyPromotion] (xem [addOrHideThenAdd]).
      * @param returnVoucherOnApply `true` → trả voucher về [onVoucherApplied]; `false` → SDK tự điều
      * hướng sang chọn dịch vụ.
      * @param onVoucherApplied Chỉ dùng khi [returnVoucherOnApply] `true`. Nhận **cả object
@@ -562,6 +561,16 @@ object PromotionSDK {
             return
         }
         val fm = activity.supportFragmentManager
+        // TEMP DEBUG: log ngay giá trị containerViewId THẬT SỰ nhận được từ host, trước khi làm gì khác.
+        val resolvedView = containerViewId?.let { activity.findViewById<android.view.View>(it) }
+        Log.d(
+            "PRMSystemBack",
+            "[PromotionSDK.openPromotionDetail] voucherId=$voucherId " +
+                "containerViewId=${containerViewId?.let { "0x" + it.toString(16) } ?: "null"} " +
+                "resolvedView=${resolvedView?.let { it::class.java.name + "@" + System.identityHashCode(it).toString(16) } ?: "NOT FOUND"} " +
+                "fm=${System.identityHashCode(fm).toString(16)} " +
+                "existingTagFragment=${fm.findFragmentByTag(TAG_PROMOTION_DETAIL)}"
+        )
         if (fm.findFragmentByTag(TAG_PROMOTION_DETAIL) != null) return
         val fragment = PromotionDetailFragment.newInstance(voucherId, returnVoucherOnApply).apply {
             // Map domain -> DTO **ở đây**, ranh giới public. Fragment là tầng UI nội bộ, không
@@ -570,14 +579,34 @@ object PromotionSDK {
         }
         fm.beginTransaction()
             .setReorderingAllowed(true)
-            .apply {
-                if (containerViewId != null) {
-                    replace(containerViewId, fragment, TAG_PROMOTION_DETAIL)
-                } else {
-                    add(android.R.id.content, fragment, TAG_PROMOTION_DETAIL)
-                }
-            }
+            .addOrHideThenAdd(fm, containerViewId, fragment, TAG_PROMOTION_DETAIL)
             .addToBackStack(TAG_PROMOTION_DETAIL)
             .commit()
+        Log.d(
+            "PRMSystemBack",
+            "[PromotionSDK.openPromotionDetail] commit() called (async), fragment=${System.identityHashCode(fragment).toString(16)}"
+        )
+    }
+
+
+    private fun FragmentTransaction.addOrHideThenAdd(
+        fm: FragmentManager,
+        containerViewId: Int?,
+        fragment: Fragment,
+        tag: String,
+    ): FragmentTransaction = apply {
+        if (containerViewId != null) {
+            val existing = fm.findFragmentById(containerViewId)
+            Log.d(
+                "PRMSystemBack",
+                "[addOrHideThenAdd] containerViewId=0x${containerViewId.toString(16)} != null -> " +
+                    "existingFragmentInContainer=$existing -> add(0x${containerViewId.toString(16)}, ${tag})"
+            )
+            existing?.takeIf { it.isAdded && !it.isHidden }?.let { hide(it) }
+            add(containerViewId, fragment, tag)
+        } else {
+            Log.d("PRMSystemBack", "[addOrHideThenAdd] containerViewId == null -> add(android.R.id.content, $tag)")
+            add(android.R.id.content, fragment, tag)
+        }
     }
 }

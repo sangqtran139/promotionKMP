@@ -24,12 +24,18 @@
             app:prmSvStrokeColor="@color/color_D3D3D3"
             app:prmSvStrokeWidth="0.5dp">
 
-            <WebView
-                android:id="@+id/wvContent"
+            <com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/color_FBFBFB"
-                android:paddingTop="@dimen/view_size_10" />
+                android:layout_height="match_parent">
+
+                <WebView
+                    android:id="@+id/wvContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/color_FBFBFB"
+                    android:paddingTop="@dimen/view_size_10" />
+
+            </com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost>
 
         </com.ttcn.prm.ui.widget.PRMCardView>
     </androidx.constraintlayout.widget.ConstraintLayout>

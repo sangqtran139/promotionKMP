@@ -47,11 +47,55 @@ afterEvaluate {
         if (name == "android") artifactId = project.name
     }
 
-    // Tắt publication của các target còn lại (kotlinMultiplatform + 3 bản iOS).
+    // Tắt publication của các target còn lại (kotlinMultiplatform + 3 bản iOS). "viettelmoney" là
+    // publication khai TAY bên dưới (không phải KMP tự sinh) — phải giữ nguyên, không nằm trong diện
+    // bị tắt này.
     // Dùng `enabled` (đánh giá lúc cấu hình) chứ **không** `onlyIf { … }`: lambda của onlyIf giữ
     // tham chiếu tới script object, configuration cache không serialize được → build fail.
     tasks.withType<AbstractPublishToMaven>().configureEach {
-        enabled = publication.name == "android"
+        enabled = publication.name == "android" || publication.name == "viettelmoney"
+    }
+}
+
+/**
+ * Bản đẩy riêng cho Artifactory nội bộ Viettelmoney — toạ độ `vn.viettelpay.library:promotion-logic`,
+ * cặp đôi với `AndroidPromotionSDK/build.gradle.kts` (publication cùng tên ở đó, toạ độ `…:promotion`).
+ * Cùng cơ chế: [pom.withXml] thay nguyên cây XML bằng nội dung đọc từ `publishing/pom.xml` (viết tay,
+ * dependencies scope `runtime`, đủ cả Ktor + kotlinx-serialization mà target android thật sự cần —
+ * xem `sourceSets.commonMain`/`androidMain` ở trên) — KHÔNG suy tự động như publication "android" ở
+ * KMP. Artifact lấy thẳng AAR đã build (`bundleAndroidMainAar`), không qua `from(components[...])`.
+ *
+ * Chạy gộp cả 2 module: `./gradlew publishSdkToViettelmoney` (task ở build.gradle.kts gốc, repo
+ * "viettelmoney" + credentials từ `local.properties` cũng khai ở đó).
+ */
+publishing {
+    publications {
+        create<MavenPublication>("viettelmoney") {
+            groupId = "vn.viettelpay.library"
+            artifactId = "promotion-logic"
+            version = sdkVersion
+
+            // Plugin android-multiplatform-library tạo `bundleAndroidMainAar` sau giai đoạn cấu hình
+            // (cùng lý do khối `afterEvaluate` phía trên phải đợi mới sửa được `artifactId`/`enabled`).
+            afterEvaluate {
+                artifact(layout.buildDirectory.file("outputs/aar/promotionLogic.aar")) {
+                    extension = "aar"
+                    builtBy(tasks.named("bundleAndroidMainAar"))
+                }
+            }
+
+            // File plain + version plain — xem giải thích ở publication cùng tên trong
+            // AndroidPromotionSDK/build.gradle.kts (configuration cache + template `@sdkVersion@`).
+            val handWrittenPom = file("$projectDir/publishing/pom.xml")
+            val resolvedVersion = sdkVersion
+            pom.withXml {
+                val xmlText = handWrittenPom.readText().replace("@sdkVersion@", resolvedVersion)
+                val handWritten = groovy.xml.XmlParser().parseText(xmlText)
+                val root = asNode()
+                root.children().toList().forEach { root.remove(it as groovy.util.Node) }
+                handWritten.children().forEach { root.append(it as groovy.util.Node) }
+            }
+        }
     }
 }
 
