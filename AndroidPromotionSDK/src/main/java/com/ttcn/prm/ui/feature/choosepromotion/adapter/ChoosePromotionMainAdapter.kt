@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
+import com.ttcn.prm.databinding.PrmItemLoadingNotifyPrmBinding
 import com.ttcn.prm.databinding.PrmItemTitleMyEndowBinding
 import com.ttcn.prm.databinding.PrmItemSectionDividerBinding
 import com.ttcn.prm.databinding.PrmItemSeeMoreBinding
@@ -18,6 +19,7 @@ import com.ttcn.prm.ui.theme.applier.PromotionListItemApplier
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.utils.extension.toHighlightedSpannable
 import com.ttcn.prm.ui.utils.extension.toVoucherDisplayDate
+import com.ttcn.prm.ui.utils.loadPromotionVoucherLogo
 
 internal sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
@@ -38,6 +40,13 @@ internal sealed class ChoosePromotionListItem {
 
     /** Vạch ngăn giữa hai nhóm — chỉ chèn khi cả hai nhóm cùng có dữ liệu. */
     data object SectionDivider : ChoosePromotionListItem()
+
+    /**
+     * Hàng "Đang tải" ở đáy nhóm "Ưu đãi khác" khi cuộn tới cuối để lấy trang kế. Dùng chung layout
+     * với `MyPromotionListItem.Loading` của màn "Ưu đãi của tôi". Nhóm "Ưu đãi của tôi" ở màn này
+     * phân trang bằng nút "Xem thêm" nên không có hàng này.
+     */
+    data object Loading : ChoosePromotionListItem()
 }
 
 internal class ChoosePromotionMainAdapter(
@@ -52,6 +61,7 @@ internal class ChoosePromotionMainAdapter(
         private const val TYPE_VOUCHER = 1
         private const val TYPE_SEE_MORE = 2
         private const val TYPE_DIVIDER = 3
+        private const val TYPE_LOADING = 4
     }
 
     override fun getItemViewType(position: Int) = when (getItem(position)) {
@@ -59,6 +69,7 @@ internal class ChoosePromotionMainAdapter(
         is ChoosePromotionListItem.VoucherItem -> TYPE_VOUCHER
         is ChoosePromotionListItem.SeeMoreMyVoucher -> TYPE_SEE_MORE
         is ChoosePromotionListItem.SectionDivider -> TYPE_DIVIDER
+        is ChoosePromotionListItem.Loading -> TYPE_LOADING
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -88,6 +99,14 @@ internal class ChoosePromotionMainAdapter(
                 )
             )
 
+            TYPE_LOADING -> LoadingViewHolder(
+                PrmItemLoadingNotifyPrmBinding.inflate(
+                    inflater,
+                    parent,
+                    false
+                )
+            )
+
             else -> VoucherViewHolder(PrmItemChoosePromotionBinding.inflate(inflater, parent, false))
         }
     }
@@ -108,6 +127,8 @@ internal class ChoosePromotionMainAdapter(
                 )
 
             ChoosePromotionListItem.SectionDivider -> Unit
+
+            ChoosePromotionListItem.Loading -> Unit
         }
     }
 
@@ -121,6 +142,9 @@ internal class ChoosePromotionMainAdapter(
     }
 
     class DividerViewHolder(binding: PrmItemSectionDividerBinding) :
+        RecyclerView.ViewHolder(binding.root)
+
+    class LoadingViewHolder(binding: PrmItemLoadingNotifyPrmBinding) :
         RecyclerView.ViewHolder(binding.root)
 
     class FooterViewHolder(private val binding: PrmItemSeeMoreBinding) :
@@ -154,6 +178,11 @@ internal class ChoosePromotionMainAdapter(
                 // Quyết định "còn dùng được" lấy THẲNG từ store (`ChooseOffer.isUsable` → isEnabled) —
                 // không tự suy lại từ status ở đây (giữ 2 nền tảng đồng nhất rule; xem MyPromotionAdapter).
                 val canUse = voucher.isEnabled
+
+                // Cùng một cửa với card "Ưu đãi của tôi" (MyPromotionAdapter): Glide lo cả bo tròn
+                // (CircleCrop) lẫn ảnh rỗng 1×1 của BFF. Đối ứng `logoURLString` ở
+                // `ChoosePromotionItemCell` bên iOS.
+                imgVoucher.loadPromotionVoucherLogo(voucher.logo)
 
                 val highlightColor = ContextCompat.getColor(ctx, R.color.prm_color_EE0033)
                 txtVoucherName.text = voucher.merchantName.toHighlightedSpannable(
@@ -225,6 +254,7 @@ internal class ChoosePromotionMainAdapter(
                 old is ChoosePromotionListItem.VoucherItem && new is ChoosePromotionListItem.VoucherItem -> old.data.voucherId == new.data.voucherId
                 old is ChoosePromotionListItem.SeeMoreMyVoucher && new is ChoosePromotionListItem.SeeMoreMyVoucher -> true
                 old is ChoosePromotionListItem.SectionDivider && new is ChoosePromotionListItem.SectionDivider -> true
+                old is ChoosePromotionListItem.Loading && new is ChoosePromotionListItem.Loading -> true
                 else -> false
             }
 

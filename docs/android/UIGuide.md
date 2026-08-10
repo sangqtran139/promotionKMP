@@ -153,7 +153,6 @@ class MyPromotionFragment : PRMBaseFragment(...) {
 | `swiperefreshlayout` | Kéo làm mới |
 | `glide` | Tải ảnh |
 | `shimmer` (facebook) | Skeleton loading |
-| `shapeofview` | View bo góc/shape đặc biệt |
 | `sdp-android` | Kích thước responsive |
 
 Không thêm thư viện UI mới nếu chưa được yêu cầu (AI_AGENT_RULES điều 6).
@@ -218,7 +217,7 @@ Các ô ảnh hiện có và tình trạng GIF:
 |---|---|---|
 | `imgBanner` (chi tiết) | `PRMImageView` | ✅ |
 | `circleLogo` (chi tiết) | `PRMImageView` + `CircleCrop` | ✅ |
-| `imgVoucher` (card danh sách / chọn ưu đãi) | `PRMImageView` trong `CircleView` (shapeofview) | ✅ |
+| `imgVoucher` (card danh sách / chọn ưu đãi) | `PRMImageView` + `CircleCrop` | ✅ |
 | `imgServiceIcon` (bottom sheet chọn dịch vụ) | `AppCompatImageView` | ✅ |
 
 Phần đối chiếu với iOS (kích thước, placeholder, hạn mức RAM khi decode ảnh động, quy ước ảnh rỗng 1×1

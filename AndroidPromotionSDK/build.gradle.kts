@@ -147,7 +147,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.glide)
     implementation(libs.shimmer)
-    implementation(libs.shapeofview)
     implementation(libs.sdp.android)
     implementation(libs.timber)
     // Theme của host truyền vào dạng JSON và được parse ở tầng UI (PromotionThemeJson).

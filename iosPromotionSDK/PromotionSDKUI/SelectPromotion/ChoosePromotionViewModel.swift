@@ -37,6 +37,14 @@ final class ChoosePromotionViewModel:
     struct Display {
         var sections: [PromotionSection] = []
         var isLoading = false
+        /// Đang lấy trang kế của nhóm "Ưu đãi khác" (cuộn tới đáy) → spinner ở đáy list. Nhóm "Ưu đãi
+        /// của tôi" phân trang bằng nút "Xem thêm" nên không dùng cờ này.
+        /// Đối ứng `ChoosePromotionListItem.Loading` bên Android.
+        var isLoadingMoreOther = false
+        /// Gõ từ khoá mà không ra kết quả → view "không tìm thấy" thay cho list. List rỗng lúc KHÔNG
+        /// tìm kiếm thì không tính (đó là "chưa có ưu đãi nào").
+        /// Đối ứng `showNoResult` trong `ChoosePromotionFragment.observeData`.
+        var showsNoResult = false
         /// Thanh "Đã chọn N voucher" — chỉ hiện ở chế độ multi-select và đang có item được chọn.
         /// Đối ứng `ChoosePromotionFragment.updateApplyButtonState` bên Android.
         var showsSelectedCount = false
@@ -126,6 +134,9 @@ private extension ChoosePromotionState {
         ChoosePromotionViewModel.Display(
             sections: buildSections(),
             isLoading: isLoading,
+            isLoadingMoreOther: isLoadingMoreOther,
+            showsNoResult: !keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                && !isLoading && isEmpty,
             showsSelectedCount: isMultiSelection && !selectedIds.isEmpty,
             selectedCount: selectedIds.count
         )

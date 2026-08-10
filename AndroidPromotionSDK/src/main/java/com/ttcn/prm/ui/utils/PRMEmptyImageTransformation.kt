@@ -14,9 +14,7 @@ import java.security.MessageDigest
  *
  * BFF ảnh promotion trả `HTTP 200` + **PNG 1×1 trong suốt** (70 byte, RGBA 0,0,0,0) khi voucher không
  * có ảnh thật — chứ không phải 404. Glide decode "thành công" ảnh đó rồi `CircleCrop` phóng lên thành
- * một vòng tròn trong suốt; nằm trong `CircleView` (shapeofview mask bằng `PorterDuff.DST_IN`/
- * `DST_OUT`) thì vùng trong suốt hiện ra **màu ĐEN**, còn ở banner thì ra ô trắng. Cả hai đều lệch với
- * iOS (nền xám placeholder).
+ * một vòng tròn trong suốt, còn ở banner thì ra ô trắng. Cả hai đều lệch với iOS (nền xám placeholder).
  *
  * Chạy **trước** `CircleCrop`/scale nên vẫn thấy kích thước gốc 1×1 (sau khi crop thì ảnh đã bị phóng
  * to, không còn phân biệt được nữa). Trả về ô 1×1 màu placeholder → bước sau phóng lên thành đúng

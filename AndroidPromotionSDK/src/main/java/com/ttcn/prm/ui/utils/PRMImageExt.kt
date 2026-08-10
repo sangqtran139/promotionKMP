@@ -48,8 +48,8 @@ private fun promotionVoucherLogoBaseOptions(context: Context): RequestOptions =
 /**
  * Placeholder của logo phải là bản **TRÒN**: ảnh load xong bị `CircleCrop` thành tròn, mà Glide
  * **không** áp transformation lên placeholder/error. Dùng bản chữ nhật thì lúc chờ hiện ô xám vuông
- * rồi nhảy thành tròn — thấy rõ nhất ở icon service selector (view phẳng, không có mask `CircleView`
- * che giúp như card danh sách).
+ * rồi nhảy thành tròn. Áp cho **mọi** ô logo: `src` trong XML của card danh sách cũng phải là bản
+ * tròn, không còn view mask nào bo hộ nữa.
  */
 private fun promotionVoucherLogoUiOptions(context: Context): RequestOptions =
     promotionVoucherLogoBaseOptions(context)

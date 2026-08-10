@@ -73,6 +73,40 @@ cách nhóm trên và nhóm dưới 8dp**. Dùng `dp/pt` cứng (không `sdp`) �
 > đây **không có** `paddingBottom` → thiếu 6sdp khi nút hiện. Đã thêm `paddingBottom="@dimen/_6sdp"`
 > vào hàng "Xem thêm" cho bằng. Sửa padding của một trong hai file thì phải sửa file kia.
 
+### Loading khi tải thêm trang
+
+Chỉ nhóm **"Ưu đãi khác"** phân trang theo cuộn nên chỉ nhóm đó có chỉ báo; nhóm "Ưu đãi của tôi"
+lấy trang kế bằng nút "Xem thêm" (`isLoadingMore` không được render ở đâu cả).
+
+| | Android | iOS |
+|---|---|---|
+| Cờ state | `isLoadingMoreOther` | `isLoadingMoreOther` → `Display.isLoadingMoreOther` |
+| Dựng | `ChoosePromotionListItem.Loading` nối cuối list trong `rebuildList()` | `tableFooterView = loadMoreSpinner`, `renderLoadMore()` |
+| Giao diện | `prm_item_loading_notify_prm.xml` (ProgressBar 24sdp + chữ "Đang tải") — **dùng chung** với màn "Ưu đãi của tôi" | `UIActivityIndicatorView(.medium)` cao 44pt |
+
+> Ba màn có phân trang dùng **hai** cơ chế khác nhau bên iOS: "Ưu đãi của tôi" đi qua
+> `PRMRefreshTableView.startLoadingMore()` (table có sẵn refresh + infinite scroll), còn "Tìm ưu đãi"
+> và màn này là `UITableView` thường nên tự gắn spinner vào `tableFooterView`. Android thì cả ba đều
+> là một hàng cuối trong adapter.
+
+### Tìm không ra kết quả
+
+Dùng lại nguyên bộ mặt của màn "Tìm ưu đãi" (ảnh + "Không tìm thấy kết quả phù hợp" + "Khám phá
+thêm các đề xuất phù hợp với bạn nhé.").
+
+| | Android | iOS |
+|---|---|---|
+| Điều kiện | `state.keyword.isNotBlank() && !isLoading && isEmpty` (`ChoosePromotionFragment.observeData`) | `Display.showsNoResult`, cùng biểu thức trong `toDisplay()` |
+| Dựng | `ctlNoResult` trong `prm_fragment_choose_promotion.xml` — chép từ `prm_fragment_search_my_promotion.xml` | `PromotionSearchNoResultView` (`PRMPromotionUI`) — **cùng class** với màn Tìm ưu đãi |
+| Ảnh | `@drawable/prm_il_chua_co_giao_dich_mau` | asset `prm_ic_search_no_result` |
+| Khi hiện | ẩn `rcvVoucher` | ẩn `promotionsTableView` |
+
+> **List rỗng mà KHÔNG có từ khoá thì không hiện view này** — đó là "chưa có ưu đãi nào" chứ không
+> phải "tìm không ra". Thanh đáy (nút "Áp dụng") vẫn hiện ở cả hai nền tảng; bên iOS view này được
+> `insertSubview(_:belowSubview:)` dưới thanh đáy, cùng cách với shimmer.
+>
+> ⚠️ Ảnh hai bên **khác nhau** (nợ kỹ thuật có sẵn từ màn Tìm ưu đãi, không phải phát sinh ở đây).
+
 ### Field của `findEligible` mà SDK chưa đọc
 
 Spec: [`docs/api/3.5.4 API Find Eligible`](../api/). Đã map đủ `campaignId`, `voucherId`,

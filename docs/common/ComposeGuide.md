@@ -59,7 +59,7 @@ Trước khi viết màn hình Compose Multiplatform đầu tiên:
 ## Cái gì sẽ biến mất
 
 Khi một màn hình chuyển sang Compose Multiplatform, các thư viện Android-only sau không còn dùng cho
-màn đó: `sdp-android`, `shapeofview`, `shimmer` (Facebook), `material`, `recyclerview`,
+màn đó: `sdp-android`, `shimmer` (Facebook), `material`, `recyclerview`,
 `constraintlayout`, `glide`. Không có bản KMP cho chúng — phải thay bằng Composable tương đương.
 
 ---

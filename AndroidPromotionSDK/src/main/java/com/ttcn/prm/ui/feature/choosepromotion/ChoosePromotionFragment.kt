@@ -101,7 +101,13 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             // (`@color/prm_color_f4f4f4`) nên vẽ đè kín shimmer. Đối ứng `homeList.isVisible` ở
             // `MyPromotionFragment`.
             binding.shimmerProvider.root.isVisible = state.isLoading
-            binding.rcvVoucher.isVisible = !state.isLoading
+
+            // Gõ từ khoá mà không ra gì → view "không tìm thấy" thay cho list, giống màn "Tìm ưu đãi"
+            // (`SearchMyPromotionFragment.renderState`). Danh sách rỗng lúc KHÔNG tìm kiếm thì để
+            // nguyên list trống — đó là "chưa có ưu đãi nào", không phải "tìm không ra".
+            val showNoResult = state.keyword.isNotBlank() && !state.isLoading && state.isEmpty
+            binding.ctlNoResult.isVisible = showNoResult
+            binding.rcvVoucher.isVisible = !state.isLoading && !showNoResult
 
             updateApplyButtonState(state)
             rebuildList(state)
@@ -203,6 +209,11 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
                         highlightKeyword = highlightKeyword,
                     )
                 )
+            }
+            // Đang lấy trang kế của "Ưu đãi khác" → hàng "Đang tải" ở đáy, giống màn "Ưu đãi của tôi".
+            // Nhóm "Ưu đãi của tôi" ở màn này phân trang bằng nút "Xem thêm" nên không có hàng này.
+            if (state.isLoadingMoreOther) {
+                items.add(ChoosePromotionListItem.Loading)
             }
         }
 

@@ -80,6 +80,63 @@
             app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher"
             tools:listitem="@layout/prm_item_choose_promotion" />
 
+        <!--
+            Tìm không ra kết quả — cùng bố cục/chuỗi với màn "Tìm ưu đãi"
+            (prm_fragment_search_my_promotion.xml: ctlNoResult). Sửa bên nào thì sửa cả bên kia.
+        -->
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/ctlNoResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/prm_view_size_120"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lnEdtVoucher">
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgNoData"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/prm_il_chua_co_giao_dich_mau"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.ttcn.prm.ui.widget.PRMTextView
+                android:id="@+id/tvNoResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/prm_view_size_40"
+                android:layout_marginTop="@dimen/prm_view_size_10"
+                android:layout_marginEnd="@dimen/prm_view_size_40"
+                android:fontFamily="@font/prm_sf_pro_display_bold"
+                android:gravity="center"
+                android:lineHeight="@dimen/prm_view_size_22"
+                android:text="@string/prm_search_no_result"
+                android:textColor="@color/prm_black"
+                android:textSize="@dimen/prm_text_size_18"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/imgNoData" />
+
+            <com.ttcn.prm.ui.widget.PRMTextView
+                android:id="@+id/tvNoResultSubtext"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/prm_view_size_40"
+                android:layout_marginTop="@dimen/prm_view_size_50"
+                android:layout_marginEnd="@dimen/prm_view_size_40"
+                android:fontFamily="@font/prm_sf_pro_display_regular"
+                android:gravity="center"
+                android:lineHeight="@dimen/prm_view_size_22"
+                android:text="@string/prm_discover_voucher"
+                android:textSize="@dimen/prm_text_size_16"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/imgNoData" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <androidx.cardview.widget.CardView
             android:id="@+id/ctl_apply_voucher"
             android:layout_width="match_parent"
@@ -94,7 +151,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginHorizontal="@dimen/_12sdp"
-                android:paddingBottom="@dimen/_38sdp">
+                android:paddingTop="@dimen/_12sdp">
 
                 <com.ttcn.prm.ui.widget.PRMTextView
                     android:id="@+id/txtNumberChooseEndow"
@@ -115,7 +172,8 @@
                     android:layout_marginTop="@dimen/_8sdp"
                     android:textColor="@color/prm_color_222_cep"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@id/btnApply"
+                    android:layout_marginBottom="@dimen/_8sdp"
                     tools:text="-50.000đ" />
 
                 <androidx.constraintlayout.widget.Group
@@ -128,11 +186,9 @@
                     android:id="@+id/btnApply"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_marginTop="@dimen/_12sdp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/txtReducedPrice"
-                    app:layout_goneMarginTop="@dimen/_6sdp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:prmBtSize="large"
                     app:prmBtText="Áp dụng" />
 

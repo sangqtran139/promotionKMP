@@ -7,6 +7,7 @@
 
 import UIKit
 @_implementationOnly import PRMDesignKit
+@_implementationOnly import PRMPromotionUI
 @_implementationOnly import PRMFoundation
 @_implementationOnly import PRMKotlinBridge
 
@@ -21,7 +22,16 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     /// Nút "Áp dụng" — tìm bằng `wireApplyButton()` (không có outlet trong xib), giữ lại để
     /// `updateApplyButtonState` bật/tắt theo selection.
     private weak var applyButton: UIButton?
-    
+
+    /// Spinner "đang tải thêm" ở đáy list khi cuộn tới cuối nhóm "Ưu đãi khác" — đối ứng
+    /// `ChoosePromotionListItem.Loading` mà Android nối vào cuối danh sách. Giống hệt cách màn
+    /// "Tìm ưu đãi" làm (`SearchMyPromotionViewController.loadMoreSpinner`).
+    private let loadMoreSpinner: UIActivityIndicatorView = {
+        let v = UIActivityIndicatorView(style: .medium)
+        v.hidesWhenStopped = true
+        return v
+    }()
+
     // MARK: - Properties
     private var sections: [ChoosePromotionViewModel.PromotionSection] = []
 
@@ -55,6 +65,26 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         view.translatesAutoresizingMaskIntoConstraints = false
         view.isHidden = true
         return view
+    }()
+
+    /// Tìm không ra kết quả — **cùng component** với màn "Tìm ưu đãi"
+    /// (`SearchMyPromotionViewController.searchNoResultView`), kể cả ảnh và chuỗi mặc định.
+    /// Chèn dưới thanh đáy như shimmer để không che nút "Áp dụng".
+    private lazy var searchNoResultView: PromotionSearchNoResultView = {
+        let noResult = PromotionSearchNoResultView()
+        noResult.thumbnailImage = UIImage.sdk("prm_ic_search_no_result")
+        noResult.isHidden = true
+        if let bottomBar = totalVoucherView.superview {
+            view.insertSubview(noResult, belowSubview: bottomBar)
+        } else {
+            view.addSubview(noResult)
+        }
+        noResult.makeAnchor { make in
+            make.centerY(equalTo: self.view.centerYAnchor)
+                .centerX(equalTo: self.view.centerXAnchor)
+                .leading(equalTo: self.view.leadingAnchor, constant: 16)
+        }
+        return noResult
     }()
 
     private func configShimmer() {
@@ -186,6 +216,29 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
             shimmerView.startAnimating()
         } else {
             shimmerView.stopAnimating()
+        }
+
+        // Gõ từ khoá mà không ra gì → view "không tìm thấy" thay cho list (đối ứng `showNoResult`
+        // bên Android). List rỗng lúc không tìm kiếm thì để list trống như cũ.
+        searchNoResultView.isHidden = !state.showsNoResult
+        promotionsTableView.isHidden = state.showsNoResult
+
+        renderLoadMore(state.isLoadingMoreOther)
+    }
+
+    /// Gắn/gỡ spinner ở đáy list. Chỉ đụng `tableFooterView` khi trạng thái thật sự đổi để không
+    /// bắt table layout lại mỗi lần render. Giống `SearchMyPromotionViewController.renderLoadMore`.
+    private func renderLoadMore(_ isLoadingMore: Bool) {
+        let isShowing = promotionsTableView.tableFooterView === loadMoreSpinner
+        guard isShowing != isLoadingMore else { return }
+
+        if isLoadingMore {
+            loadMoreSpinner.frame = CGRect(x: 0, y: 0, width: promotionsTableView.bounds.width, height: 44)
+            promotionsTableView.tableFooterView = loadMoreSpinner
+            loadMoreSpinner.startAnimating()
+        } else {
+            loadMoreSpinner.stopAnimating()
+            promotionsTableView.tableFooterView = nil
         }
     }
 

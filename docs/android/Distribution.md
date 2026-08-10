@@ -213,6 +213,14 @@ Hai đích, **không** loại trừ nhau — chọn theo việc đang làm:
 |---|---|---|
 | `~/.m2/repository` | `./scripts/build-android.sh` | Vòng lặp dev: sửa SDK → build app demo ngay |
 | Artifactory | `./scripts/build-android.sh --remote` | Phát hành cho host/đối tác |
+| Artifactory (có hỏi version) | `./scripts/publish-android.sh` | Phát hành thật — xem bên dưới |
+
+Việc **phát hành** (khác vòng lặp dev) dùng `./scripts/publish-android.sh`: script hỏi version cần
+publish (mặc định lấy `SDK_VERSION` trong `gradle.properties`), kiểm tra định dạng + credentials,
+hỏi trước khi đẩy, và cảnh báo nếu version đó **đã có trên repo** — repo release bật "immutable" nên
+đẩy đè sẽ bị từ chối *sau khi* đã build xong. Đích chọn bằng `--target`:
+`viettelmoney` (mặc định, `vn.viettelpay.library:promotion`), `artifactory` (`$SDK_GROUP:promotionSDK`),
+`local` (~/.m2, để thử trước). `--help` liệt kê đủ tuỳ chọn.
 
 `~/.m2` không cần khai gì trong script Gradle: `publishToMavenLocal` là task **built-in** của
 `maven-publish`. Repo Artifactory khai **một lần ở `build.gradle.kts` gốc** cho cả hai module —

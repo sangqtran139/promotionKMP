@@ -337,7 +337,7 @@ xem §1.
 
 | Ảnh | Kích thước (cả 2 bên) | iOS | Android |
 |---|---|---|---|
-| Logo card danh sách (My/Choose) | **48** | `iconContainer` 48×48, radius 24, `scaleAspectFill` | `avatar_container`/`imgVoucher` `@dimen/view_size_48` trong `CircleView` + Glide `.circleCrop()` |
+| Logo card danh sách (My/Choose) | **48** | `iconContainer` 48×48, radius 24, `scaleAspectFill` | `imgVoucher` `@dimen/prm_view_size_48` + Glide `.circleCrop()` |
 | Banner màn chi tiết | **173** | XIB `bannerImageView` height 173, `scaleAspectFill` | `@dimen/prm_detail_banner_height` = 173dp, `centerCrop` |
 | Logo màn chi tiết | **44** | `logoImageView` radius 22, `scaleAspectFill` | `@dimen/view_size_44` + `.circleCrop()` |
 | Icon service selector | **48**, **tròn** | 48×48, `scaleAspectFill`, `cornerRadius = 24` | `@dimen/view_size_48` + `.circleCrop()` |
@@ -356,8 +356,8 @@ Hai luật rút ra từ lần lệch trước:
    `loadPromotionVoucherLogo`, còn iOS phải tự set `cornerRadius` — quên là Android tròn, iOS vuông.
 4. **Placeholder phải cùng HÌNH với ảnh load xong.** Glide **không** áp transformation lên
    `placeholder`/`error`, nên ô tròn phải dùng `prm_bg_image_placeholder_circle`; dùng bản chữ nhật thì
-   hiện ô xám vuông rồi nhảy thành tròn (rõ nhất ở service selector — view phẳng, không có `CircleView`
-   che giúp). Bên iOS `backgroundColor` tự bị `cornerRadius` bo nên không cần drawable riêng.
+   hiện ô xám vuông rồi nhảy thành tròn. Áp cho cả `android:src` khai trong XML — không còn view mask
+   nào bo hộ. Bên iOS `backgroundColor` tự bị `cornerRadius` bo nên không cần drawable riêng.
 5. **Không transition.** Fade 300 ms của `withCrossFade()` cộng vào thời gian tải khiến Android "lên
    chậm" hơn iOS thấy rõ. Muốn có fade thì thêm ở cả hai bên (`UIView.transition`), đừng bật một bên.
 
@@ -404,8 +404,8 @@ Decode "thành công" nhưng vẽ ra thì trong suốt → `prmIsRenderable` ch�
 placeholder, và **không** cache (để ảnh thật lên là hiện ngay).
 
 Android phải chặn **cùng luật đó**, bằng `PRMEmptyImageTransformation` (`ui/utils/`) chèn trước
-`CircleCrop`. Không chặn thì Glide vẫn vẽ ô trong suốt, và trong `CircleView` (shapeofview mask bằng
-`PorterDuff.DST_IN`/`DST_OUT`) vùng trong suốt hiện ra **màu ĐEN** — đúng lỗi "Android đen, iOS xám".
+`CircleCrop`. Không chặn thì Glide vẫn vẽ ô trong suốt: ở logo ra vòng tròn trong suốt, ở banner ra ô
+trắng — cả hai đều lệch với nền xám placeholder của iOS.
 Phải chèn *trước* `CircleCrop` vì sau khi crop thì ảnh 1×1 đã bị phóng lên bằng khung, không còn nhận
 ra được. Kèm theo đó `circleCrop()` phải viết tay lại thành
 `downsample(CENTER_INSIDE).transform(guard, CircleCrop())` — đúng những gì `circleCrop()` làm bên trong.

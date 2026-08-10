@@ -34,21 +34,20 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintWidth_percent="0.24">
 
-                    <io.github.florent37.shapeofview.shapes.CircleView
-                        android:id="@+id/avatar_container"
+                    <!--
+                        Không bọc view mask hình tròn: Glide đã `CircleCrop` từng frame
+                        (PRMImageExt.loadPromotionVoucherLogo) nên bitmap vào đây đã tròn sẵn.
+                        `src` phải là bản TRÒN — placeholder/error của Glide cũng là bản này.
+                    -->
+                    <com.ttcn.prm.ui.widget.PRMImageView
+                        android:id="@+id/imgVoucher"
                         android:layout_width="@dimen/prm_view_size_48"
                         android:layout_height="@dimen/prm_view_size_48"
+                        android:src="@drawable/prm_bg_image_placeholder_circle"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
-
-                        <com.ttcn.prm.ui.widget.PRMImageView
-                            android:id="@+id/imgVoucher"
-                            android:layout_width="@dimen/prm_view_size_48"
-                            android:layout_height="@dimen/prm_view_size_48"
-                            android:src="@drawable/prm_bg_image_placeholder" />
-                    </io.github.florent37.shapeofview.shapes.CircleView>
+                        app:layout_constraintTop_toTopOf="parent" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <com.ttcn.prm.ui.widget.PRMImageView

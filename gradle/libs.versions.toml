@@ -25,7 +25,6 @@ androidx-swiperefreshlayout = "1.1.0-alpha02"
 material = "1.13.0"
 glide = "5.0.5"
 shimmer = "0.5.0"
-shapeofview = "1.4.7"
 sdp = "1.0.6"
 timber = "4.7.1"
 lifecycle = "2.7.0"
@@ -68,7 +67,6 @@ androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtim
 material = { module = "com.google.android.material:material", version.ref = "material" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 shimmer = { module = "com.facebook.shimmer:shimmer", version.ref = "shimmer" }
-shapeofview = { module = "io.github.florent37:shapeofview", version.ref = "shapeofview" }
 sdp-android = { module = "com.intuit.sdp:sdp-android", version.ref = "sdp" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 # Chỉ dùng ở tầng UI (parse theme JSON của host). Lõi promotionLogic dùng kotlinx.serialization.
