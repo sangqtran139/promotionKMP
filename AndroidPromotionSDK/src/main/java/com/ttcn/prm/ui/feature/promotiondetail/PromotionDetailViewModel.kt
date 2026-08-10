@@ -3,12 +3,11 @@ package com.ttcn.prm.ui.feature.promotiondetail
 import com.ttcn.prm.ui.base.PRMStoreViewModel
 import com.ttcn.prm.ui.feature.ext.toServiceSelectorUiItem
 import com.ttcn.prm.ui.feature.mypromotion.ServiceSelectorUiItem
-import com.ttcn.promotionsdk.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailIntent
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailState
 import com.ttcn.promotionsdk.presentation.promotiondetail.PromotionDetailStore
-import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableProducts
+import com.ttcn.promotionsdk.presentation.serviceselector.configuredServicesFor
 
 /**
  * Màn "Chi tiết ưu đãi". Nghiệp vụ nằm trọn ở [PromotionDetailStore] (dùng chung với iOS); lớp này
@@ -21,22 +20,19 @@ import com.ttcn.promotionsdk.presentation.serviceselector.servicesForApplicableP
  */
 internal class PromotionDetailViewModel(
     getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
-    private val config: PromotionSDKConfig,
 ) : PRMStoreViewModel<PromotionDetailState, PromotionDetailIntent>(
     { scope -> PromotionDetailStore(getCustomerVoucherDetailUseCase, scope) },
 ) {
 
     /**
-     * Danh sách dịch vụ cho bottom sheet "Chọn dịch vụ" — phần **thuần Android** (sheet là UI native,
-     * `availableServices` nằm ở [config]). Luật lọc theo `applicableProducts` vẫn dùng chung với iOS
-     * qua [servicesForApplicableProducts].
+     * Danh sách dịch vụ cho bottom sheet "Chọn dịch vụ" — phần **thuần Android** ở đây chỉ là map
+     * sang model của sheet native; lấy config + luật lọc theo `applicableProducts` dùng chung với
+     * iOS qua [configuredServicesFor].
      *
      * Trả thẳng list thay vì bắn effect: Fragment gọi xong là mở sheet ngay tại chỗ, thêm một vòng
      * effect ở giữa chỉ để quay về đúng nơi vừa gọi.
      */
     fun serviceOptions(): List<ServiceSelectorUiItem> =
-        servicesForApplicableProducts(
-            state.value.detail?.applicableProducts.orEmpty(),
-            config.availableServices,
-        ).map { it.toServiceSelectorUiItem() }
+        configuredServicesFor(state.value.detail?.applicableProducts.orEmpty())
+            .map { it.toServiceSelectorUiItem() }
 }

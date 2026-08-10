@@ -7,8 +7,6 @@ import com.ttcn.prm.ui.feature.choosepromotion.ChoosePromotionViewModel
 import com.ttcn.prm.ui.feature.mypromotion.MyPromotionViewModel
 import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailViewModel
 import com.ttcn.prm.ui.feature.searchmypromotion.SearchMyPromotionViewModel
-import com.ttcn.promotionsdk.config.PromotionSDKConfig
-import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
@@ -25,9 +23,8 @@ import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
  * nhánh `else throw` như factory viết tay.
  *
  * Gom về đây thay vì mỗi VM một `companion object { fun factory() }`: bốn bản đó giống hệt nhau tới
- * từng dòng, và cách wiring dependency (`PromotionContainer.requireConfig()`, `XxxUseCase()`) bị
- * chép lại ở từng file — sửa cách lấy config là phải nhớ sửa đủ bốn chỗ. Thêm màn mới = thêm **một**
- * dòng [initializer] ở đây.
+ * từng dòng, và cách wiring dependency (`XxxUseCase()`) bị chép lại ở từng file. Thêm màn mới =
+ * thêm **một** dòng [initializer] ở đây.
  *
  * Use case khởi tạo **mỗi lần dựng VM** chứ không giữ lại: chúng là object không state, tự lấy
  * repository từ đồ thị DI đã init — giữ tham chiếu ở factory chỉ làm nó sống dai hơn cần thiết.
@@ -36,7 +33,6 @@ internal fun promotionViewModelFactory(): ViewModelProvider.Factory = viewModelF
     initializer {
         MyPromotionViewModel(
             searchCustomerVouchersUseCase = SearchCustomerVouchersUseCase(),
-            config = requireConfig(),
         )
     }
     initializer {
@@ -47,16 +43,11 @@ internal fun promotionViewModelFactory(): ViewModelProvider.Factory = viewModelF
     initializer {
         PromotionDetailViewModel(
             getCustomerVoucherDetailUseCase = GetCustomerVoucherDetailUseCase(),
-            config = requireConfig(),
         )
     }
     initializer {
         SearchMyPromotionViewModel(
             searchCustomerVouchersUseCase = SearchCustomerVouchersUseCase(),
-            config = requireConfig(),
         )
     }
 }
-
-/** Ném nếu chưa `PromotionSDK.initialize(...)` — VM không thể chạy mà thiếu cấu hình phiên. */
-private fun requireConfig(): PromotionSDKConfig = PromotionContainer.requireConfig()

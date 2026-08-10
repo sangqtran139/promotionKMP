@@ -64,7 +64,6 @@ store dùng chung. `PRMBaseViewModel<S, A, E>` cũ đã bị xoá, cả bốn m�
 ```kotlin
 internal class PromotionDetailViewModel(
     getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
-    private val config: PromotionSDKConfig,
 ) : PRMStoreViewModel<PromotionDetailState, PromotionDetailIntent>(
     { scope -> PromotionDetailStore(getCustomerVoucherDetailUseCase, scope) },
 ) {
@@ -72,6 +71,10 @@ internal class PromotionDetailViewModel(
     fun serviceOptions(): List<ServiceSelectorUiItem> = ...
 }
 ```
+
+> VM **không** nhận `PromotionSDKConfig` qua constructor. Cần config thì đọc tại chỗ dùng
+> (`configuredServicesFor(...)`, `isPromotionSdkDebug()`): `updateSession(...)` dựng lại config mới,
+> nên snapshot giữ từ lúc tạo VM sẽ cũ.
 
 ```kotlin
 // Fragment

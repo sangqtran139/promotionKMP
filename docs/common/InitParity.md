@@ -118,7 +118,8 @@ Mục tiêu: **cùng số file, cùng tên khái niệm, cùng thứ tự khai b
 `PromotionConfig` (cả 2 bên) gộp: `PromotionSessionConfig`, `PromotionEnvironment`, `PromotionAvailableService`,
 hàm map options→core, và `PromotionMutableContext` (nội bộ). `availableServices` đi vào **core config**
 (`toCoreConfig`) ở **cả hai** nền tảng → `ServiceSelectorBuilder`/`MyPromotionViewModel` đọc lại từ lõi
-(`PromotionContainer.requireConfig().availableServices`). Không còn holder Swift riêng
+qua **một** hàm dùng chung `configuredServicesFor(applicableProducts)` ở `promotionLogic`
+(nó tự gọi `PromotionContainer.requireConfig().availableServices`). Không còn holder Swift riêng
 (`PromotionSessionRuntime` đã xoá). File chỉ-iOS còn lại: `PromotionSDKImpl.swift` (box binary-interface, N1).
 
 > Ánh xạ mapping options→core: Android `PromotionSDKOptions.toCoreConfig(contextProvider)`, iOS

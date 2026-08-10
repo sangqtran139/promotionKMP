@@ -545,11 +545,16 @@ object PromotionSDK {
      * PromotionSDK.openPromotionDetail(
      *     voucherId, activity, hostHandlesDismiss = true,
      *     onVoucherApplied = { detail ->
-     *         activity.supportFragmentManager.popBackStack()   // host tự đóng
+     *         PromotionSDK.closePromotionDetail(activity)   // host tự đóng
      *         goToCheckout(detail)
      *     },
      * )
      * ```
+     *
+     * ⚠️ **Dùng [closePromotionDetail], KHÔNG tự gọi `activity.supportFragmentManager.popBackStack()`.**
+     * SDK chọn FragmentManager theo container (xem [resolveFragmentManager]) nên màn chi tiết có thể
+     * nằm ở FM của Activity **hoặc** ở `childFragmentManager` của fragment host. Pop nhầm FM sẽ pop
+     * entry của chính host — màn tụt xuống một nấc trong khi màn chi tiết vẫn còn.
      *
      * Chỉ có nghĩa khi [returnVoucherOnApply] bật — nhánh "Dùng ngay" không đóng màn bao giờ.
      * @param onVoucherApplied Chỉ dùng khi [returnVoucherOnApply] `true`. Nhận **cả object
@@ -628,6 +633,49 @@ object PromotionSDK {
     fun createChoosePromotionFragment(endowView: PRMEndowView): Fragment =
         ChoosePromotionFragment.forEndowView(endowView)
 
+
+    /**
+     * Đóng màn "Chi tiết ưu đãi" do SDK mở. Trả `true` nếu có màn để đóng.
+     *
+     * Cặp đôi với `hostHandlesDismiss = true`: host nhận voucher ở `onVoucherApplied`, xử lý xong thì
+     * gọi hàm này. **Host không cần biết SDK dùng FragmentManager nào** — đó chính là lý do hàm này
+     * tồn tại: [resolveFragmentManager] chọn FM theo container, nên màn chi tiết có thể nằm ở FM của
+     * Activity hoặc ở `childFragmentManager` của một fragment host. Hàm này dò cả cây FM theo tag rồi
+     * pop đúng chỗ.
+     *
+     * Dùng `POP_BACK_STACK_INCLUSIVE` với **tên entry** chứ không pop mù entry trên cùng: nếu host đã
+     * chồng màn của họ lên trên màn chi tiết, pop mù sẽ ăn nhầm màn host.
+     */
+    @JvmStatic
+    fun closePromotionDetail(activity: FragmentActivity): Boolean =
+        popSdkScreen(activity, TAG_PROMOTION_DETAIL)
+
+    /** Đối ứng [closePromotionDetail] cho màn "Ưu đãi của tôi". */
+    @JvmStatic
+    fun closeMyPromotion(activity: FragmentActivity): Boolean =
+        popSdkScreen(activity, TAG_MY_PROMOTION)
+
+    private fun popSdkScreen(activity: FragmentActivity, tag: String): Boolean {
+        val fm = findManagerHolding(activity.supportFragmentManager, tag) ?: run {
+            Log.d("PRMSystemBack", "[popSdkScreen] không tìm thấy fragment tag=$tag")
+            return false
+        }
+        if (fm.isStateSaved) {
+            Log.d("PRMSystemBack", "[popSdkScreen] tag=$tag nhưng FM đã lưu state -> bỏ qua")
+            return false
+        }
+        return fm.popBackStackImmediate(tag, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+    }
+
+    /** Dò theo chiều sâu cây FragmentManager để tìm FM đang giữ fragment mang [tag]. */
+    private fun findManagerHolding(root: FragmentManager, tag: String): FragmentManager? {
+        if (root.findFragmentByTag(tag) != null) return root
+        for (child in root.fragments) {
+            if (!child.isAdded) continue
+            findManagerHolding(child.childFragmentManager, tag)?.let { return it }
+        }
+        return null
+    }
 
     /**
      * FragmentManager **sở hữu container** — không mặc định là của Activity.
