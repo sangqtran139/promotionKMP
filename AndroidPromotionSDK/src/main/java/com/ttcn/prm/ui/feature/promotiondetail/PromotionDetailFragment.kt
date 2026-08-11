@@ -80,6 +80,9 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         get() = arguments?.getBoolean(KEY_HOST_HANDLES_DISMISS) ?: false
 
     override fun setupUI() {
+        // `tvUse` là `invisible` (không `gone`) ngay từ XML — có toạ độ thật từ layout pass đầu
+        // tiên này, không cần đợi data load hay bắt transition visibility nào về sau.
+        applyNavigationBarInset(binding.tvUse)
         binding.imgBack.setOnClickListener { goBack() }
         binding.tvUse.setOnClickListener { onActionClick() }
         setupDetailTabs()
@@ -132,13 +135,16 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
     private fun showDetailLoading() {
         binding.shimmerProvider.shimmerDetail.startShimmer()
         binding.shimmerProvider.root.isVisible = true
-        binding.contentContainer.isVisible = false
+        // `View.INVISIBLE`, KHÔNG `contentContainer.isVisible = false` (extension đó set `GONE`) —
+        // `tvUse` phải luôn được layout kể cả lúc đang tải, xem comment trong
+        // `prm_fragment_detail_promotion.xml`.
+        binding.contentContainer.visibility = View.INVISIBLE
     }
 
     private fun hideDetailLoading(showContent: Boolean = true) {
         binding.shimmerProvider.shimmerDetail.stopShimmer()
         binding.shimmerProvider.root.isVisible = false
-        binding.contentContainer.isVisible = showContent
+        binding.contentContainer.visibility = if (showContent) View.VISIBLE else View.INVISIBLE
     }
 
     private fun bindDetailContent(

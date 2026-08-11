@@ -51,6 +51,9 @@
     <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
     <!-- PRM_MOB_021. Giữ nguyên câu chữ của iOS (PromotionSDKError.featureDisabled). -->
     <string name="prm_feature_disabled">Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>
+    <!-- Title/nút mặc định cho dialog thông báo đơn của PromotionToastGate.showAlways. -->
+    <string name="prm_notification_title">Thông báo</string>
+    <string name="prm_notification_button_close">Đóng</string>
     <string name="prm_my_endow">Ưu đãi của tôi</string>
     <string name="prm_endow_different">Ưu đãi khác</string>
     <string name="prm_see_more">Xem thêm</string>

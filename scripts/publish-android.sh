@@ -7,7 +7,7 @@
 # (sai định dạng version, thiếu credentials, đè lên version đã phát hành).
 #
 #   ./scripts/publish-android.sh                    # hỏi cả 2 version rồi publish lên Viettelmoney
-#   ./scripts/publish-android.sh 1.2.0              # điền version promotionSDK, lõi vẫn hỏi
+#   ./scripts/publish-android.sh 1.2.0              # điền version promotion, lõi vẫn hỏi
 #   ./scripts/publish-android.sh -v 1.2.0 -l 2.0.0 --yes   # không hỏi gì (dùng cho CI)
 #   ./scripts/publish-android.sh --target artifactory   # đẩy lên repo Artifactory chung
 #   ./scripts/publish-android.sh --target local     # chỉ publish vào ~/.m2 (thử trước khi phát hành)
@@ -16,15 +16,15 @@
 #   ./scripts/publish-android.sh --dry-run          # in ra lệnh Gradle sẽ chạy, không chạy thật
 #
 # HAI version độc lập, mỗi module một số (gradle.properties):
-#   -v / --version        SDK_VERSION   → $SDK_GROUP:promotionSDK   (toạ độ host khai)
+#   -v / --version        SDK_VERSION   → $SDK_GROUP:promotion      (toạ độ host khai)
 #   -l / --logic-version  LOGIC_VERSION → $SDK_GROUP:promotionLogic (lõi KMP)
-# Cả hai luôn được publish cùng lượt: promotionSDK trỏ LOGIC_VERSION trong metadata, đẩy lệch một
+# Cả hai luôn được publish cùng lượt: `promotion` trỏ LOGIC_VERSION trong metadata, đẩy lệch một
 # bên là host resolve ra bản lõi không tồn tại.
 #
 # Đích phát hành (xem docs/android/Distribution.md §3.4):
-#   viettelmoney  $SDK_GROUP:promotionSDK / promotionLogic  ← mặc định
+#   viettelmoney  $SDK_GROUP:promotion / promotionLogic  ← mặc định
 #                 credentials: maven.username / maven.password trong local.properties
-#   artifactory   $SDK_GROUP:promotionSDK / promotionLogic
+#   artifactory   $SDK_GROUP:promotion / promotionLogic
 #                 credentials: artifactoryUrl/User/Password ở ~/.gradle/gradle.properties hoặc ARTIFACTORY_*
 #   local         ~/.m2/repository (không cần credentials)
 #
@@ -65,7 +65,7 @@ case "$TARGET" in
 esac
 
 # ─── Version ─────────────────────────────────────────────────────────────────────────────────
-# Hai số ĐỘC LẬP, mặc định lấy từ gradle.properties: SDK_VERSION (promotionSDK) và LOGIC_VERSION
+# Hai số ĐỘC LẬP, mặc định lấy từ gradle.properties: SDK_VERSION (promotion) và LOGIC_VERSION
 # (promotionLogic).
 
 read_gradle_property() {
@@ -77,7 +77,7 @@ CURRENT_VERSION="${CURRENT_VERSION:-1.0.0}"
 CURRENT_LOGIC_VERSION="$(read_gradle_property 'LOGIC_VERSION')"
 CURRENT_LOGIC_VERSION="${CURRENT_LOGIC_VERSION:-1.0.0}"
 SDK_GROUP="$(read_gradle_property 'SDK_GROUP')"
-SDK_GROUP="${SDK_GROUP:-com.ttcn.promotion}"
+SDK_GROUP="${SDK_GROUP:-vn.viettelpay.library}"
 
 # Hỏi từng số, mỗi số một default riêng. Enter suông = giữ nguyên số trong gradle.properties, nên
 # bump một module mà không đụng module kia là thao tác mặc định.
@@ -92,7 +92,7 @@ prompt_version() {   # $1 = nhãn, $2 = default, $3 = tên biến cần gán
     printf -v "$3" '%s' "${answer:-$2}"
 }
 
-[[ -z "$SDK_VERSION" ]] && prompt_version 'promotionSDK' "$CURRENT_VERSION" SDK_VERSION
+[[ -z "$SDK_VERSION" ]] && prompt_version 'promotion' "$CURRENT_VERSION" SDK_VERSION
 [[ -z "$LOGIC_VERSION" ]] && prompt_version 'promotionLogic' "$CURRENT_LOGIC_VERSION" LOGIC_VERSION
 
 # x.y.z, cho phép hậu tố -SNAPSHOT / -rc1 / .1. Chặn ở đây vì version sai định dạng vẫn publish
@@ -103,7 +103,7 @@ check_version_format() {   # $1 = nhãn, $2 = version
         exit 1
     fi
 }
-check_version_format 'promotionSDK' "$SDK_VERSION"
+check_version_format 'promotion' "$SDK_VERSION"
 check_version_format 'promotionLogic' "$LOGIC_VERSION"
 
 # ─── Điều kiện cần theo từng đích ────────────────────────────────────────────────────────────
@@ -130,7 +130,7 @@ MSG
         # Một dòng là đủ: POM/module.json auto-gen đã khai promotionLogic + Ktor + Glide… ở scope
         # runtime, Gradle tự kéo về. (Trước đây POM viết tay không khai gì nên phải dặn host khai
         # tay cả lõi — bỏ rồi.)
-        COORD_LINES=("implementation(\"$SDK_GROUP:promotionSDK:$SDK_VERSION\")")
+        COORD_LINES=("implementation(\"$SDK_GROUP:promotion:$SDK_VERSION\")")
         TARGET_LABEL="Artifactory Viettelmoney ($VIETTELMONEY_URL)"
         ;;
     artifactory)
@@ -155,12 +155,12 @@ MSG
             :promotionLogic:publishAllPublicationsToArtifactoryRepository
             :AndroidPromotionSDK:publishAllPublicationsToArtifactoryRepository
         )
-        COORD_LINES=("implementation(\"$SDK_GROUP:promotionSDK:$SDK_VERSION\")")
+        COORD_LINES=("implementation(\"$SDK_GROUP:promotion:$SDK_VERSION\")")
         TARGET_LABEL="Artifactory chung (${ARTIFACTORY_URL:-artifactoryUrl trong ~/.gradle})"
         ;;
     local)
         GRADLE_TASKS=(:promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal)
-        COORD_LINES=("implementation(\"$SDK_GROUP:promotionSDK:$SDK_VERSION\")  // từ mavenLocal(), cần -PuseMavenLocal=true")
+        COORD_LINES=("implementation(\"$SDK_GROUP:promotion:$SDK_VERSION\")  // từ mavenLocal(), cần -PuseMavenLocal=true")
         TARGET_LABEL="~/.m2/repository"
         ;;
 esac
@@ -171,7 +171,7 @@ esac
 # URL cố định; lỗi mạng/curl thiếu thì bỏ qua, không chặn phát hành.
 if [[ "$TARGET" == "viettelmoney" && "$SDK_VERSION" != *SNAPSHOT ]] && command -v curl >/dev/null 2>&1; then
     group_path="${SDK_GROUP//.//}"
-    probe_url="$VIETTELMONEY_URL/$group_path/promotionSDK/$SDK_VERSION/promotionSDK-$SDK_VERSION.pom"
+    probe_url="$VIETTELMONEY_URL/$group_path/promotion/$SDK_VERSION/promotion-$SDK_VERSION.pom"
     http_code="$(curl -s -o /dev/null -w '%{http_code}' -u "$MAVEN_USER:$MAVEN_PASS" \
         --max-time 15 -I "$probe_url" 2>/dev/null || echo "000")"
     if [[ "$http_code" == "200" ]]; then
@@ -184,7 +184,7 @@ fi
 
 echo
 echo "  Đích     : $TARGET_LABEL"
-echo "  promotionSDK   : $SDK_VERSION" "$([[ "$SDK_VERSION" != "$CURRENT_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_VERSION)")"
+echo "  promotion      : $SDK_VERSION" "$([[ "$SDK_VERSION" != "$CURRENT_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_VERSION)")"
 echo "  promotionLogic : $LOGIC_VERSION" "$([[ "$LOGIC_VERSION" != "$CURRENT_LOGIC_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_LOGIC_VERSION)")"
 echo "  Gradle   : ./gradlew ${GRADLE_TASKS[*]} -PSDK_VERSION=$SDK_VERSION -PLOGIC_VERSION=$LOGIC_VERSION"
 echo
@@ -211,7 +211,7 @@ if [[ "$DO_CLEAN" == true ]]; then
     ./gradlew clean -PSDK_VERSION="$SDK_VERSION" -PLOGIC_VERSION="$LOGIC_VERSION"
 fi
 
-echo "▸ Build + publish promotionSDK $SDK_VERSION + promotionLogic $LOGIC_VERSION → $TARGET"
+echo "▸ Build + publish promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION → $TARGET"
 ./gradlew "${GRADLE_TASKS[@]}" -PSDK_VERSION="$SDK_VERSION" -PLOGIC_VERSION="$LOGIC_VERSION"
 
 # ─── Ghi version vào gradle.properties (tuỳ chọn) ────────────────────────────────────────────

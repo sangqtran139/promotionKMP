@@ -14,7 +14,7 @@ kotlin {
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
-val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "vn.viettelpay.library"
 
 // Toạ độ Maven. Cần `group` + `version` để Gradle dịch `projects.promotionLogic` bên dưới thành
 // toạ độ thật trong metadata — không có thì publish hỏng. Xem docs/android/Distribution.md.
@@ -57,7 +57,7 @@ base {
 }
 
 /**
- * Phát hành `$SDK_GROUP:promotionSDK:<SDK_VERSION>` — cặp đôi với `promotionLogic`.
+ * Phát hành `$SDK_GROUP:promotion:<SDK_VERSION>` — cặp đôi với `promotionLogic`.
  *
  * Khác hẳn cách ship file AAR: artifact đi kèm POM + Gradle Module Metadata, nên host khai một dòng
  * và Gradle tự kéo `promotionLogic`, Ktor, Glide… đúng version. Các `implementation` dưới đây vào
@@ -82,7 +82,7 @@ publishing {
     publications {
         create<MavenPublication>("release") {
             afterEvaluate { from(components["release"]) }
-            artifactId = "promotionSDK"
+            artifactId = "promotion"
         }
     }
 }

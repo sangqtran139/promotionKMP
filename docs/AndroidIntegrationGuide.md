@@ -10,7 +10,7 @@
 
 ## 0. TL;DR
 
-- Thêm **một** dòng dependency Maven `com.ttcn.promotion:promotionSDK` — Gradle tự kéo `promotionLogic`,
+- Thêm **một** dòng dependency Maven `vn.viettelpay.library:promotion` — Gradle tự kéo `promotionLogic`,
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.**` — và **chỉ** ở đó:
   `entry` (`PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKOptions`, `PromotionSessionConfig`…),
@@ -46,7 +46,7 @@ Hệ quả cho host:
 
 | Mục | Giá trị |
 |---|---|
-| Artifact | Maven: `com.ttcn.promotion:promotionSDK:1.0.0` (AAR + POM/`.module`) |
+| Artifact | Maven: `vn.viettelpay.library:promotion:1.0.0` (AAR + POM/`.module`) |
 | Package public | `com.ttcn.prm.entry.*` |
 | minSdk | **24** |
 | Namespace SDK | `com.ttcn.promotionsdk` (dùng chung `R` / databinding) |
@@ -75,7 +75,7 @@ dependencyResolutionManagement {
             }
             // Chỉ mở cho group của SDK: repo nội bộ không nên tranh resolve androidx/kotlin
             // với google()/mavenCentral().
-            content { includeGroup("com.ttcn.promotion") }
+            content { includeGroup("vn.viettelpay.library") }
         }
         google()
         mavenCentral()
@@ -84,7 +84,7 @@ dependencyResolutionManagement {
 
 // build.gradle.kts (app module host)
 dependencies {
-    implementation("com.ttcn.promotion:promotionSDK:1.0.0")
+    implementation("vn.viettelpay.library:promotion:1.0.0")
 }
 ```
 

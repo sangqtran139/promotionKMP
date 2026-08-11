@@ -493,8 +493,8 @@ object PromotionSDK {
     fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null) {
         if (!requireInitialized("openMyPromotion()")) return
         if (!PromotionFeatureGate.canOpenVoucherList()) {
-            // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
-            PromotionToastGate.showFeatureDisabled(activity)
+            // Dialog PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
+            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
             callback?.onAvailabilityChanged(false)
             return
         }
@@ -577,8 +577,8 @@ object PromotionSDK {
     ) {
         if (!requireInitialized("openPromotionDetail()")) return
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            // Toast PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
-            PromotionToastGate.showFeatureDisabled(activity)
+            // Dialog PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
+            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
             callback?.onAvailabilityChanged(false)
             return
         }

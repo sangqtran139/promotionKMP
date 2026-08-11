@@ -53,7 +53,7 @@ Hệ quả cho host:
 > `Promotion.xcframework` + `Promotion.xcframework.zip` (tên **cố định**, mang đi tích hợp luôn). Đánh version bằng
 > `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh` — version nằm trong Info.plist (host đọc lại lúc
 > runtime qua `Bundle`), không lộ ra tên file. Đối xứng property `SDK_VERSION` bên Android (ở đó version
-> nằm trong toạ độ Maven `com.ttcn.promotion:promotionSDK:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
+> nằm trong toạ độ Maven `vn.viettelpay.library:promotion:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
 
 ---
 

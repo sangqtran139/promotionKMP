@@ -60,10 +60,20 @@ internal class PRMBaseConfirmDialog : PRMBaseDialog<PrmDialogConfirmBinding>() {
                 }
             }
 
-            btnNegative.text = negativeText
-            btnNegative.setOnClickListener {
-                onNegative?.invoke()
-                dismissAllowingStateLoss()
+            // Không có nút phụ (vd dialog thông báo đơn) → ẩn cả divider lẫn btnNegative. Chain
+            // ngang 0dp/0dp trong prm_dialog_confirm.xml tự giãn btnPositive full-width khi
+            // btnNegative GONE, không cần đổi constraint bằng tay.
+            if (negativeText != null) {
+                btnNegative.visibility = View.VISIBLE
+                divider2.visibility = View.VISIBLE
+                btnNegative.text = negativeText
+                btnNegative.setOnClickListener {
+                    onNegative?.invoke()
+                    dismissAllowingStateLoss()
+                }
+            } else {
+                btnNegative.visibility = View.GONE
+                divider2.visibility = View.GONE
             }
 
             if (positiveColor != 0) {

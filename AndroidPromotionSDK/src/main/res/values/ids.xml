@@ -8,4 +8,12 @@
         name="prm_item_promotion_id"
         type="id"/>
 
+    <item
+        name="prm_tag_nav_bar_inset_margin"
+        type="id"/>
+
+    <item
+        name="prm_tag_nav_bar_inset_padding"
+        type="id"/>
+
 </resources>

@@ -51,6 +51,7 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
         PrmFragmentMyPromotionBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
+        applyNavigationBarInsetAsScrollPadding(binding.homeList)
         binding.btnBack.setOnClickListener { goBack() }
         binding.imgSearch.setOnClickListener { openSearchMyPromotion() }
         binding.rvTabs.adapter = tabAdapter

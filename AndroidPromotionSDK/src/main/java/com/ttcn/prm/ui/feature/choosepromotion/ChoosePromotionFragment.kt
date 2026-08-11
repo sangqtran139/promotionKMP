@@ -239,7 +239,11 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             // Không có widget để áp (fragment bị FragmentManager tái tạo nên mất closure, hoặc host
             // tự dựng màn này không qua `forEndowView`). Báo lỗi rồi Ở LẠI — đóng màn ở đây là nói
             // dối user rằng đã áp xong.
-            PromotionToastGate.showAlways(requireContext(), mapPromotionError(ErrorCodes.GENERAL))
+            PromotionToastGate.showAlways(
+                requireContext(),
+                parentFragmentManager,
+                mapPromotionError(ErrorCodes.GENERAL),
+            )
             return
         }
         apply(offers) { errorCode ->
@@ -248,7 +252,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
                 // bị nuốt hoàn toàn: user bấm "Áp dụng", API hỏng, màn đứng im không một thông báo.
                 // Dùng `showAlways` như PRM_MOB_021: user vừa chủ động bấm và đang chờ kết quả, im
                 // lặng là không chấp nhận được. (iOS dùng popup `PRMConfirmationDialog`.)
-                PromotionToastGate.showAlways(requireContext(), mapPromotionError(errorCode))
+                PromotionToastGate.showAlways(requireContext(), parentFragmentManager, mapPromotionError(errorCode))
             } else {
                 goBack()
             }

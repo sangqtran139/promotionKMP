@@ -33,6 +33,42 @@
 - Dùng `ApplyPromotionAdapter` để hiển thị các voucher đã áp dụng.
 - Theme hoá qua `PromotionThemeRegistry` / `DiscountBadgeToken`.
 
+### Nền của widget — host quyết, SDK chỉ đỡ trường hợp trống
+
+`prm_view_endow.xml` không khai `android:background`, còn chữ bên trong thì cứng ở màu sáng
+(`prm_color_222_cep` = #222222). Trên host dùng theme **DayNight**, ở dark mode nền tối của host lộ
+ra sau widget và chữ #222222 nằm đè lên → nhìn như widget bị dark theme.
+
+`ContextThemeWrapper(R.style.PRMForceLight)` ở chỗ inflate **không** cứu được: nó chỉ đổi cách
+resolve *attribute* lúc inflate, mà ở đây không có attribute nền nào để resolve. Khác iOS —
+`overrideUserInterfaceStyle = .light` (`PRMEndowView.swift`) ép cả subtree gồm cả nền.
+
+Cách xử lý: `PRMEndowView` đặt nền `@color/prm_white` **chỉ khi host chưa đặt gì**.
+
+```kotlin
+private fun applyDefaultBackgroundIfHostDidNotSetOne() {
+    if (background == null) {
+        setBackgroundColor(ContextCompat.getColor(context, R.color.prm_white))
+    }
+}
+```
+
+`android:background` khai trong XML của host đã được constructor `View` đọc vào **trước** khối `init`
+này, nên `background != null` nghĩa là host đã có ý — SDK giữ nguyên, không đè. Host đặt nền bằng
+code sau khi view dựng xong thì lệnh của host chạy sau, cũng thắng.
+
+```xml
+<!-- host muốn nền khác / trong suốt: khai tường minh, SDK im lặng -->
+<com.ttcn.prm.ui.feature.endowview.PRMEndowView
+    android:id="@+id/endowView"
+    android:background="@android:color/transparent"
+    … />
+```
+
+> `applyTokenInternal()` **không** được đụng tới nền. Trước đây nó có `binding.root.background = null`
+> chạy lại mỗi lần render — vô tác dụng vì không ai đặt nền cho `viewContainer`, nhưng là cái bẫy
+> nếu sau này nền mặc định chuyển sang `binding.root`.
+
 ### State — `PRMEndowUiState` (`internal`)
 
 `internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.

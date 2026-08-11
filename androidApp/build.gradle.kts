@@ -48,7 +48,7 @@ android {
 }
 
 val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
-val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "vn.viettelpay.library"
 
 dependencies {
     // ─── SDK: nạp từ Artifactory Viettelmoney, ĐÚNG toạ độ host thật khai ─────────────────
@@ -62,7 +62,7 @@ dependencies {
     //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
     //     ./gradlew :androidApp:assembleDebug -PuseMavenLocal=true
     // (gọn hơn: `./scripts/build-android.sh`). Xem docs/android/Distribution.md §5.
-    implementation("$sdkGroup:promotionSDK:$sdkVersion")
+    implementation("$sdkGroup:promotion:$sdkVersion")
 
     // ─── androidx/material: HOST vẫn phải khai ───────────────────────────────────────────
     // Hai lý do khác nhau, đừng lẫn:

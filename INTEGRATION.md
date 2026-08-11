@@ -22,7 +22,7 @@ link cũ không chết.
 > (nay là `session = PromotionSessionConfig(…)`; `PromotionSDKConfig` thuộc `promotionLogic`, không nằm
 > trên compile classpath của host), callback `onVoucherApplied(List<AppliedDiscount>)` / `onError` /
 > `onSDKClosed` (nay là 6 sự kiện khác), và AAR `vds-promotion` (nay là Maven
-> `com.ttcn.promotion:promotionSDK`). Nó cũng không hề nhắc feature flag hay `openPromotionDetail`.
+> `vn.viettelpay.library:promotion`). Nó cũng không hề nhắc feature flag hay `openPromotionDetail`.
 >
 > Giữ hai bản hướng dẫn tích hợp song song là lý do khiến bản này trôi khỏi code mà không ai nhận ra —
 > nên từ nay **chỉ sửa `docs/`**, đừng viết lại nội dung vào file này.

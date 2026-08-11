@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.findViewTreeLifecycleOwner
@@ -97,9 +98,30 @@ class PRMEndowView @JvmOverloads constructor(
     // ─── Init ─────────────────────────────────────────────────────────────────
 
     init {
+        applyDefaultBackgroundIfHostDidNotSetOne()
         setupRecyclerView()
         setupClickListeners()
         applyToken(PromotionThemeRegistry.discountBadgeToken())
+    }
+
+    /**
+     * Widget vốn KHÔNG có nền: `prm_view_endow.xml` không khai `android:background` nào. Trên host
+     * dùng theme DayNight, ở dark mode cái lộ ra sau widget là nền tối của host, trong khi chữ bên
+     * trong cứng ở màu sáng (`prm_color_222_cep` = #222222) → nhìn như widget "bị dark theme".
+     *
+     * [ContextThemeWrapper] ở chỗ inflate KHÔNG cứu được: nó chỉ đổi cách resolve **attribute** lúc
+     * inflate, mà ở đây không có attribute nền nào để resolve. Khác iOS — `overrideUserInterfaceStyle`
+     * ép cả subtree gồm cả nền, nên `PRMEndowView.swift` không dính.
+     *
+     * **SDK không tự quyết nền của host.** Chỉ sơn khi host chưa đặt gì: `android:background` khai
+     * trong XML của host đã được constructor `View` đọc vào trước khi khối `init` này chạy, nên
+     * `background != null` nghĩa là host đã có ý — giữ nguyên, không đè. Host đặt nền bằng code sau
+     * khi view dựng xong thì lệnh của host chạy sau, cũng thắng.
+     */
+    private fun applyDefaultBackgroundIfHostDidNotSetOne() {
+        if (background == null) {
+            setBackgroundColor(ContextCompat.getColor(context, R.color.prm_white))
+        }
     }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
@@ -400,7 +422,10 @@ class PRMEndowView @JvmOverloads constructor(
     }
 
     private fun applyTokenInternal(token: DiscountBadgeToken?) {
-        binding.root.background = null
+        // KHÔNG đụng tới nền ở đây. Trước đây có `binding.root.background = null` chạy lại mỗi lần
+        // đổi trạng thái — không có gì đặt nền cho `viewContainer` nên nó vô tác dụng, nhưng để lại
+        // là cái bẫy: nền mặc định vừa đặt ở init sẽ bị xoá ngay lần render đầu nếu ai đó chuyển nó
+        // sang `this` mà quên dòng này.
         token?.actionTextColor?.let { binding.txtStatusEndow.applyTextColorIfSet(it) }
         applyPromotionAdapter.applyToken(token)
     }

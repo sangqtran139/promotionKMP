@@ -3,7 +3,7 @@
 # Build SDK Android + app demo trên một máy bất kỳ.
 #
 # Từ khi SDK phát hành qua Maven (docs/android/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR
-# trong libs/ nữa — nó khai toạ độ `$SDK_GROUP:promotionSDK` và mặc định kéo từ Artifactory
+# trong libs/ nữa — nó khai toạ độ `$SDK_GROUP:promotion` và mặc định kéo từ Artifactory
 # Viettelmoney. Script này chạy vòng lặp DEV: publish vào ~/.m2 rồi build app với `-PuseMavenLocal=true`
 # (không có cờ đó thì ~/.m2 không được đăng ký và app lấy bản trên server). Ép đúng thứ tự đó.
 #
@@ -13,7 +13,7 @@
 #   ./scripts/build-android.sh --clean         # dọn build cũ rồi làm lại từ đầu
 #   ./scripts/build-android.sh --install       # build xong cài luôn vào máy/emulator đang cắm
 #   ./scripts/build-android.sh --run           # build → cài → MỞ app trên máy/emulator đang cắm
-#   ./scripts/build-android.sh --version 1.2.0 # promotionSDK ở version khác (khỏi hỏi)
+#   ./scripts/build-android.sh --version 1.2.0 # promotion ở version khác (khỏi hỏi)
 #   ./scripts/build-android.sh --logic-version 2.0.0  # promotionLogic ở version khác (khỏi hỏi)
 #   ./scripts/build-android.sh --yes           # không hỏi gì, lấy y nguyên gradle.properties
 #
@@ -21,7 +21,7 @@
 # từng số trước khi publish, default là số đang có trong file — Enter suông là giữ nguyên. Số đã
 # truyền bằng cờ thì không hỏi lại; `--yes` (hoặc chạy không có TTY, ví dụ CI) thì bỏ qua cả hai câu.
 #
-# Cả hai module LUÔN publish cùng lượt, kể cả khi chỉ đổi một số: `promotionSDK` trỏ LOGIC_VERSION
+# Cả hai module LUÔN publish cùng lượt, kể cả khi chỉ đổi một số: `promotion` trỏ LOGIC_VERSION
 # trong metadata, đẩy lệch một bên là app resolve ra bản lõi không tồn tại.
 #
 set -euo pipefail
@@ -80,7 +80,7 @@ read_gradle_property() {
 }
 
 SDK_GROUP="$(read_gradle_property 'SDK_GROUP')"
-SDK_GROUP="${SDK_GROUP:-com.ttcn.promotion}"
+SDK_GROUP="${SDK_GROUP:-vn.viettelpay.library}"
 CURRENT_SDK_VERSION="$(read_gradle_property 'SDK_VERSION')"
 CURRENT_SDK_VERSION="${CURRENT_SDK_VERSION:-1.0.0}"
 CURRENT_LOGIC_VERSION="$(read_gradle_property 'LOGIC_VERSION')"
@@ -98,7 +98,7 @@ prompt_version() {   # $1 = nhãn, $2 = default, $3 = tên biến cần gán
 
 if [[ "$ASSUME_YES" != true ]] && [[ -z "$SDK_VERSION" || -z "$LOGIC_VERSION" ]]; then
     echo "Version cần publish (Enter = giữ nguyên):"
-    [[ -z "$SDK_VERSION" ]] && prompt_version 'promotionSDK' "$CURRENT_SDK_VERSION" SDK_VERSION
+    [[ -z "$SDK_VERSION" ]] && prompt_version 'promotion' "$CURRENT_SDK_VERSION" SDK_VERSION
     [[ -z "$LOGIC_VERSION" ]] && prompt_version 'promotionLogic' "$CURRENT_LOGIC_VERSION" LOGIC_VERSION
     echo
 fi
@@ -115,11 +115,11 @@ check_version_format() {   # $1 = nhãn, $2 = version
         exit 1
     fi
 }
-check_version_format 'promotionSDK' "$SDK_VERSION"
+check_version_format 'promotion' "$SDK_VERSION"
 check_version_format 'promotionLogic' "$LOGIC_VERSION"
 
 # Truyền cho MỌI lệnh gradle bên dưới, gồm cả bước build app demo: `:androidApp` khai
-# `$SDK_GROUP:promotionSDK:$SDK_VERSION`, thiếu cờ thì nó đi tìm số trong gradle.properties chứ
+# `$SDK_GROUP:promotion:$SDK_VERSION`, thiếu cờ thì nó đi tìm số trong gradle.properties chứ
 # không phải số vừa publish.
 GRADLE_ARGS=("-PSDK_VERSION=$SDK_VERSION" "-PLOGIC_VERSION=$LOGIC_VERSION")
 
@@ -168,14 +168,14 @@ MSG
         exit 1
     fi
 
-    echo "▸ Publish lên Artifactory: promotionSDK $SDK_VERSION + promotionLogic $LOGIC_VERSION"
+    echo "▸ Publish lên Artifactory: promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION"
     gradle :promotionLogic:publishAllPublicationsToArtifactoryRepository \
            :AndroidPromotionSDK:publishAllPublicationsToArtifactoryRepository
-    echo "✓ Xong. Host khai: implementation(\"$SDK_GROUP:promotionSDK:$SDK_VERSION\")"
+    echo "✓ Xong. Host khai: implementation(\"$SDK_GROUP:promotion:$SDK_VERSION\")"
     exit 0
 fi
 
-echo "▸ Publish vào ~/.m2: promotionSDK $SDK_VERSION + promotionLogic $LOGIC_VERSION"
+echo "▸ Publish vào ~/.m2: promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION"
 gradle :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 
 if [[ "$SKIP_APP" == true ]]; then

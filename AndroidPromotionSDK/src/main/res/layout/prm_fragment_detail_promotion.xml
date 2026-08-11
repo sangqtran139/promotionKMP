@@ -152,8 +152,8 @@
             android:layout_height="0dp"
             android:layout_marginStart="@dimen/prm_view_size_20"
             android:layout_marginEnd="@dimen/prm_view_size_20"
-            app:layout_constraintBottom_toTopOf="@+id/tvUse"
             android:layout_marginBottom="@dimen/prm_view_size_16"
+            app:layout_constraintBottom_toTopOf="@+id/tvUse"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/cardViewTop">
@@ -227,7 +227,7 @@
             android:id="@+id/contentContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:visibility="gone"
+            android:visibility="invisible"
             app:constraint_referenced_ids="ctlTop,cardViewTop,ctlContent,tvUse"
             tools:visibility="visible" />
 

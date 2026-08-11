@@ -17,8 +17,8 @@ pluginManagement {
 
 // Toạ độ SDK đọc từ gradle.properties — xem docs/android/Distribution.md §3.1. MỘT group duy nhất
 // cho mọi đích: ~/.m2, Artifactory chung, Artifactory Viettelmoney.
-val sdkGroup = providers.gradleProperty("SDK_GROUP").getOrElse("com.ttcn.promotion")
-// HAI version độc lập — `promotionSDK` theo SDK_VERSION, `promotionLogic` theo LOGIC_VERSION.
+val sdkGroup = providers.gradleProperty("SDK_GROUP").getOrElse("vn.viettelpay.library")
+// HAI version độc lập — `promotion` theo SDK_VERSION, `promotionLogic` theo LOGIC_VERSION.
 // Ở đây chúng chỉ dùng để chọn repo Artifactory (release hay snapshot); toạ độ thật thì
 // `:androidApp` khai SDK_VERSION còn lõi về theo metadata.
 val sdkVersion = providers.gradleProperty("SDK_VERSION").getOrElse("1.0.0")
@@ -28,16 +28,22 @@ val viettelmoneyUrl = "https://mobile-data.viettelmoney.vn/artifactory/gradle-vi
 
 dependencyResolutionManagement {
     repositories {
-        // ~/.m2 — CHỈ đăng ký khi `-PuseMavenLocal=true`.
+        // ~/.m2 — TUỲ CHỌN, bật bằng `useMavenLocal=true`.
+        //
+        // Bật thì `~/.m2` đứng ĐẦU danh sách nên được hỏi trước; **không tìm thấy thì Gradle tự đi
+        // tiếp** xuống Artifactory Viettelmoney rồi mới tới google()/mavenCentral(). Nghĩa là chỉ cần
+        // publish MỘT module vào ~/.m2 cũng chạy được: module đó lấy bản local, module còn lại vẫn về
+        // từ server. Chỉ khi repo có artifact nhưng SAI version/variant thì mới đứt hẳn, chứ "thiếu"
+        // thì luôn rơi xuống repo dưới.
+        //
+        // Hai cách bật, `providers.gradleProperty` đọc được cả hai:
+        //     ./gradlew :androidApp:assembleDebug -PuseMavenLocal=true     ← một lần
+        //     useMavenLocal=true trong gradle.properties                   ← bật lâu dài cho máy dev
+        // (gọn hơn cả: `./scripts/build-android.sh`, script tự truyền cờ này sau khi publish.)
         //
         // Mặc định TẮT là cố ý: bản local cũ trong ~/.m2 đứng trước sẽ CHE bản thật trên Artifactory
         // mà không báo gì, nên app demo "chạy được" bằng SDK cũ hàng tuần liền vẫn không ai biết.
         // Tắt đi thì `:androidApp` luôn lấy đúng thứ host thật lấy.
-        //
-        // Vòng lặp dev sửa SDK (không phải đợi đẩy lên server):
-        //     ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
-        //     ./gradlew :androidApp:assembleDebug -PuseMavenLocal=true
-        // (gọn hơn: `./scripts/build-android.sh`, script tự truyền cờ này).
         //
         // Giới hạn đúng group của SDK — mavenLocal() thả rông sẽ tranh resolve với mọi thư viện khác
         // và cho ra build không tái lập được.
@@ -55,7 +61,7 @@ dependencyResolutionManagement {
         // hai chiều resolve/publish, đúng convention app host Viettelmoney đang dùng:
         //     maven.username=<user>
         //     maven.password=<identity token>
-        // Thiếu credentials thì Gradle báo 401 khi resolve `$sdkGroup:promotionSDK`.
+        // Thiếu credentials thì Gradle báo 401 khi resolve `$sdkGroup:promotion`.
         val localProperties = java.util.Properties().apply {
             val file = rootDir.resolve("local.properties")
             if (file.exists()) file.inputStream().use { load(it) }

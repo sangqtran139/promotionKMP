@@ -15,7 +15,7 @@ plugins {
 // Version RIÊNG của lõi — KHÔNG dùng chung SDK_VERSION với :AndroidPromotionSDK (xem
 // gradle.properties). Sửa tầng UI không phải bump lõi và ngược lại.
 val logicVersion = (project.findProperty("LOGIC_VERSION") as String?) ?: "1.0.0"
-val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "com.ttcn.promotion"
+val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "vn.viettelpay.library"
 
 // Toạ độ Maven: `$SDK_GROUP:promotionLogic:<LOGIC_VERSION>` (cả hai từ gradle.properties).
 // KMP **tự sinh publication** cho mọi target khi có plugin maven-publish — không tạo tay
@@ -36,7 +36,7 @@ version = logicVersion
 // tên module.
 //
 // > **Artifact này phải giữ đúng tên module** — khác `:AndroidPromotionSDK` (publish dưới tên
-// > `promotionSDK`, đổi thoải mái vì host khai thẳng toạ độ đó). Lý do: `:AndroidPromotionSDK` khai
+// > `promotion`, đổi thoải mái vì host khai thẳng toạ độ đó). Lý do: `:AndroidPromotionSDK` khai
 // > `implementation(projects.promotionLogic)`, và Gradle ghi vào POM **và `module.json`** của nó
 // > toạ độ `group:<tên-module>` = `$SDK_GROUP:promotionLogic`. Rename ở publication **không** đổi
 // > được toạ độ đó → metadata trỏ một đằng, repo có một nẻo, host nhận

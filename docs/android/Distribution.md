@@ -1,6 +1,6 @@
 # Distribution (Android) — Maven
 
-SDK Android phát hành bằng **Maven**: publish `com.ttcn.promotion:promotionSDK` (kèm POM + Gradle
+SDK Android phát hành bằng **Maven**: publish `vn.viettelpay.library:promotion` (kèm POM + Gradle
 Module Metadata), host khai **một** dòng. Trước đây là file AAR — host chép hai file vào `libs/` rồi
 tự khai toàn bộ dependency; §1 giữ lại vì nó giải thích *vì sao* đổi.
 
@@ -26,7 +26,7 @@ Tài liệu này: cách phát hành, cách host tích hợp, và — phần quan
 
 Script hỏi version của **từng module** trước khi publish (Enter = giữ nguyên số trong
 `gradle.properties`), rồi ép đúng thứ tự **publish trước, build app sau** — bỏ bước publish thì
-Gradle báo `Could not find com.ttcn.promotion:promotionSDK`. Số vừa chọn được truyền tiếp sang bước
+Gradle báo `Could not find vn.viettelpay.library:promotion`. Số vừa chọn được truyền tiếp sang bước
 build app, nên `:androidApp` khai đúng bản vừa publish chứ không phải bản trong `gradle.properties`.
 Tương đương chạy tay:
 
@@ -76,7 +76,7 @@ chính xác hơn POM). File này khai đúng thứ SDK cần, kèm version. Host
 
 ```kotlin
 repositories { mavenLocal() }                                  // hoặc Nexus nội bộ
-dependencies { implementation("com.ttcn.promotion:promotionSDK:1.0.0") }
+dependencies { implementation("vn.viettelpay.library:promotion:1.0.0") }
 ```
 
 Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppCompat, Glide, Gson… đúng
@@ -101,14 +101,14 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 | Module | groupId | artifactId | version | Đổi tên được? |
 |---|---|---|---|---|
 | `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | `$LOGIC_VERSION` | **Không** — xem cảnh báo dưới |
-| `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotionSDK` | `$SDK_VERSION` | Được — host khai thẳng toạ độ này |
+| `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotion` | `$SDK_VERSION` | Được — host khai thẳng toạ độ này |
 
 **groupId dùng chung, version thì KHÔNG.** Một group cho cả hai module, nhưng mỗi module một số
 version riêng — sửa tầng UI không phải bump lõi và ngược lại:
 
 ```properties
-SDK_GROUP=com.ttcn.promotion
-SDK_VERSION=1.0.0     # → promotionSDK   (toạ độ host khai)
+SDK_GROUP=vn.viettelpay.library
+SDK_VERSION=1.0.0     # → promotion      (toạ độ host khai)
 LOGIC_VERSION=1.0.0   # → promotionLogic (lõi KMP)
 ```
 
@@ -117,29 +117,29 @@ Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=… -PLOGIC_VERSION=…`, ho�
 
 > **Chỗ nối hai version không phải khai tay.** `:AndroidPromotionSDK` khai
 > `implementation(projects.promotionLogic)`, Gradle tự ghi `$SDK_GROUP:promotionLogic:$LOGIC_VERSION`
-> vào POM + `module.json` của `promotionSDK`.
+> vào POM + `module.json` của `promotion`.
 >
 > Hệ quả: **bump lõi thì phải publish lại cả hai**. Đẩy mỗi `promotionLogic` bản mới lên repo thì
-> host vẫn kéo bản cũ — `promotionSDK` họ đang dùng trỏ đúng số cũ, không có cơ chế nào tự nhảy. Cả
+> host vẫn kéo bản cũ — `promotion` họ đang dùng trỏ đúng số cũ, không có cơ chế nào tự nhảy. Cả
 > hai script publish vì thế luôn đẩy cặp, không cho publish lẻ một module.
 >
 > Hậu tố `-SNAPSHOT` chọn repo Artifactory (release hay snapshot) **riêng cho từng module**, nên lõi
 > đang `-SNAPSHOT` trong khi UI đã release là hợp lệ — `settings.gradle.kts` đăng ký cả hai repo khi
 > hai số rơi vào hai loại khác nhau.
 
-> **Đổi `SDK_GROUP` là breaking.** Mọi host đang khai `com.ttcn.promotion:promotionSDK:x` sẽ nhận
+> **Đổi `SDK_GROUP` là breaking.** Mọi host đang khai `vn.viettelpay.library:promotion:x` sẽ nhận
 > `Could not find` — Gradle không có cơ chế "đổi tên có chuyển hướng" cho toạ độ Maven. Đổi thì phải
 > bump major, giữ bản group cũ trên Artifactory cho host chưa kịp chuyển, và báo đối tác.
 
 > **artifactId của lõi phải trùng tên module.** `:AndroidPromotionSDK` khai
 > `implementation(projects.promotionLogic)`, và Gradle ghi vào POM của nó toạ độ `group:<tên-module>`
-> = `com.ttcn.promotion:promotionLogic`. Rename ở publication (thành `promotion-logic` chẳng hạn)
+> = `vn.viettelpay.library:promotionLogic`. Rename ở publication (thành `promotion-logic` chẳng hạn)
 > **không** đổi được toạ độ trong POM đó: POM vẫn trỏ `promotionLogic`, mà trên repo chỉ có
-> `promotion-logic` → host nhận `Could not find com.ttcn.promotion:promotionLogic`. Đã dính thật, và
+> `promotion-logic` → host nhận `Could not find vn.viettelpay.library:promotionLogic`. Đã dính thật, và
 > configuration cache còn giấu lỗi một lượt (build "xanh" nhờ POM cũ trong cache).
 >
 > `:AndroidPromotionSDK` **không** dính ràng buộc này — không module nào trỏ vào nó bằng
-> `projects.…`, host gõ toạ độ bằng tay — nên nó publish dưới tên `promotionSDK` cho đối xứng với
+> `projects.…`, host gõ toạ độ bằng tay — nên nó publish dưới tên `promotion` cho đối xứng với
 > `promotionLogic`. Muốn đổi cả tên lõi thì phải đổi **tên module** trong `settings.gradle.kts`.
 
 ### 3.2. `:AndroidPromotionSDK` (thư viện Android thường)
@@ -165,7 +165,7 @@ publishing {
     publications {
         create<MavenPublication>("release") {
             afterEvaluate { from(components["release"]) }
-            artifactId = "promotionSDK"        // đổi tên ở đây an toàn — §3.1
+            artifactId = "promotion"           // đổi tên ở đây an toàn — §3.1
         }
     }
     // Không khai `repositories` ở đây: repo đích nằm ở build.gradle.kts gốc (§3.4), còn
@@ -217,9 +217,9 @@ target, nên module gốc chỉ là một lớp trỏ vô ích. Bỏ nó, cho an
 package, mỗi cái là một AAR thật**:
 
 ```
-com/ttcn/promotion/
-├── promotionSDK/1.0.0/promotionSDK-1.0.0-release.aar   ← host Android khai cái này
-└── promotionLogic/1.0.0/promotionLogic-1.0.0.aar     ← lõi, promotionSDK tự kéo về
+vn/viettelpay/library/
+├── promotion/1.0.0/promotion-1.0.0-release.aar       ← host Android khai cái này
+└── promotionLogic/1.0.0/promotionLogic-1.0.0.aar     ← lõi, `promotion` tự kéo về
 ```
 
 > Muốn publish cả iOS về sau (consumer Kotlin/Native) thì **bỏ** khối `afterEvaluate` này — KMP quay
@@ -240,7 +240,7 @@ Ba đích, **không** loại trừ nhau — chọn theo việc đang làm:
 | Bất kỳ (có hỏi version) | `./scripts/publish-android.sh` | Phát hành thật — xem bên dưới |
 
 > **Một publication cho cả ba đích.** `:AndroidPromotionSDK` publish publication `release`,
-> `:promotionLogic` publish publication `android` — cùng toạ độ `$SDK_GROUP:promotionSDK` /
+> `:promotionLogic` publish publication `android` — cùng toạ độ `$SDK_GROUP:promotion` /
 > `$SDK_GROUP:promotionLogic`, cùng POM + `module.json` **do Gradle sinh** từ dependency graph. Chỉ
 > khác repo nhận.
 >
@@ -259,7 +259,7 @@ publish (mặc định lấy `SDK_VERSION` trong `gradle.properties`), kiểm tr
 hỏi trước khi đẩy, và cảnh báo nếu version đó **đã có trên repo** — repo release bật "immutable" nên
 đẩy đè sẽ bị từ chối *sau khi* đã build xong. Đích chọn bằng `--target`:
 `viettelmoney` (mặc định), `artifactory`, `local` (~/.m2, để thử trước) — cả ba cùng đẩy toạ độ
-`$SDK_GROUP:promotionSDK`. `--help` liệt kê đủ tuỳ chọn.
+`$SDK_GROUP:promotion`. `--help` liệt kê đủ tuỳ chọn.
 
 `~/.m2` không cần khai gì trong script Gradle: `publishToMavenLocal` là task **built-in** của
 `maven-publish`. Repo Artifactory khai **một lần ở `build.gradle.kts` gốc** cho cả hai module —
@@ -357,7 +357,7 @@ dependencyResolutionManagement {
 ```kotlin
 // androidApp/build.gradle.kts
 dependencies {
-    implementation("$sdkGroup:promotionSDK:$sdkVersion")   // hết fileTree, 20 dòng còn 4
+    implementation("$sdkGroup:promotion:$sdkVersion")      // hết fileTree, 20 dòng còn 4
 
     // androidx/material vẫn phải khai — xem §5.1, đây KHÔNG phải thừa:
     implementation(libs.androidx.appcompat)
@@ -377,9 +377,9 @@ dependencies {
 **Đã kiểm chứng trên máy** (`./gradlew :androidApp:dependencies`):
 
 ```
-+--- com.ttcn.promotion:promotionSDK:1.0.0
-|    +--- com.ttcn.promotion:promotionLogic:1.0.0
-|    |    \--- com.ttcn.promotion:promotionLogic-android:1.0.0
++--- vn.viettelpay.library:promotion:1.0.0
+|    +--- vn.viettelpay.library:promotionLogic:1.0.0
+|    |    \--- vn.viettelpay.library:promotionLogic-android:1.0.0
 |    |         +--- io.ktor:ktor-client-core:3.3.0        ← tự kéo, host không khai
 |    +--- androidx.appcompat:appcompat:1.7.1
 |    +--- com.github.bumptech.glide:glide:4.16.0

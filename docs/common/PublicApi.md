@@ -439,7 +439,7 @@ Vì AAR không obfuscate, **mọi tên class trong `com.ttcn.prm.**` và `com.tt
    host viết Java hoặc reflection thì vẫn gọi được. Không có cách nào bịt hẳn ở JVM.
 2. **`com.ttcn.prm.R` / `com.ttcn.prm.BR`** do AGP sinh ở phía consumer, luôn public. Với §6.2 thì
    mọi entry trong đó đều private nên host tham chiếu sẽ ăn lint `PrivateResource`.
-3. **`promotionLogic` là artifact Maven riêng** (`com.ttcn.promotion:promotionLogic`). Nó ở scope
+3. **`promotionLogic` là artifact Maven riêng** (`vn.viettelpay.library:promotionLogic`). Nó ở scope
    `runtime` nên **không** nằm trên compile classpath của host (import là lỗi compile), và sources.jar
    đã gỡ ở §6.1 — nhưng tên class thì vẫn còn nguyên trong APK.
 
