@@ -137,6 +137,10 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         }
 
         let tabArea: UIView = tabContainer ?? containerView
+
+        let listTopFollowsTabArea = shimmerView.topAnchor.constraint(equalTo: tabArea.bottomAnchor, constant: 8)
+        listTopFollowsTabArea.priority = .defaultHigh
+
         NSLayoutConstraint.activate([
             // Phủ từ đỉnh tab chip xuống đáy table → che cả tab + list.
             shimmerOverlay.topAnchor.constraint(equalTo: tabArea.topAnchor),
@@ -144,16 +148,16 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
             shimmerOverlay.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             shimmerOverlay.bottomAnchor.constraint(equalTo: promotionsTableview.bottomAnchor),
 
-            // Hàng tab-chip skeleton — canh giữa theo vùng tab thật.
+            tabShimmerStack.topAnchor.constraint(equalTo: shimmerOverlay.topAnchor, constant: 9),
             tabShimmerStack.leadingAnchor.constraint(equalTo: shimmerOverlay.leadingAnchor, constant: 16),
-            tabShimmerStack.centerYAnchor.constraint(equalTo: tabArea.centerYAnchor),
 
-            // List skeleton bắt đầu DƯỚI hàng tab.
-            shimmerView.topAnchor.constraint(equalTo: tabArea.bottomAnchor, constant: 8),
+            shimmerView.topAnchor.constraint(greaterThanOrEqualTo: tabShimmerStack.bottomAnchor, constant: 8),
+            listTopFollowsTabArea,
             shimmerView.leadingAnchor.constraint(equalTo: shimmerOverlay.leadingAnchor),
             shimmerView.trailingAnchor.constraint(equalTo: shimmerOverlay.trailingAnchor),
             shimmerView.bottomAnchor.constraint(equalTo: shimmerOverlay.bottomAnchor)
         ])
+        shimmerOverlay.bringSubviewToFront(tabShimmerStack)
     }
 
     /// 1 chip skeleton (bo tròn) cho hàng tab — dùng PRMShimmerView để nhấp nháy như card skeleton.
@@ -212,6 +216,7 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
         if let parent = container.superview {
             constraints.append(container.trailingAnchor.constraint(equalTo: parent.trailingAnchor, constant: -20))
         }
+        constraints.append(container.heightAnchor.constraint(greaterThanOrEqualToConstant: tabChipHeight + 12))
         NSLayoutConstraint.activate(constraints)
     }
 

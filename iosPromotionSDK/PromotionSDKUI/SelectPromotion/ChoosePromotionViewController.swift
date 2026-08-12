@@ -309,10 +309,12 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
             }
             // "Ưu đãi của tôi": Xem thêm (lộ thêm/load page kế) hoặc Thu gọn (đã hiện hết).
             let isCollapse = sectionData.seeMoreState == .collapse
-            cell.button.setTitle(isCollapse ? "Thu gọn" : "Xem thêm", for: .normal)
             // Tên asset có tiền tố `prm_` (xem Assets.xcassets); thiếu tiền tố thì `UIImage.sdk` trả nil
-            // và nút mất hẳn icon.
-            cell.button.setImage(UIImage.sdk(isCollapse ? "prm_ic_up_arrow" : "prm_ic_down_arrow"), for: .normal)
+            // và hàng mất hẳn icon.
+            cell.configure(
+                title: isCollapse ? "Thu gọn" : "Xem thêm",
+                image: UIImage.sdk(isCollapse ? "prm_ic_up_arrow" : "prm_ic_down_arrow")
+            )
 
             cell.action = { [weak self] in
                 self?.viewModel.dispatch(ChoosePromotionIntentSeeMoreMy.shared)

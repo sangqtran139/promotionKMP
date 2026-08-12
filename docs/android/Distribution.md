@@ -10,25 +10,34 @@ Tài liệu này: cách phát hành, cách host tích hợp, và — phần quan
 > Phát hành **iOS** (XCFramework) là kênh riêng — xem [../ios/Distribution.md](../ios/Distribution.md).
 
 **Trạng thái:** `:promotionLogic` và `:AndroidPromotionSDK` đã có `maven-publish`, publish được vào
-**cả hai** đích: `~/.m2` (vòng lặp dev) và **JFrog Artifactory** nội bộ (phát hành thật) — §3.4.
-`:androidApp` tiêu thụ SDK bằng toạ độ Maven, ưu tiên `~/.m2` rồi mới tới Artifactory.
+`~/.m2` (vòng lặp dev), **Artifactory chung** và **Artifactory Viettelmoney** (phát hành thật) — §3.4.
+`:androidApp` tiêu thụ SDK bằng toạ độ Maven, **mặc định từ Artifactory Viettelmoney** như host thật;
+`~/.m2` chỉ được đăng ký khi truyền `-PuseMavenLocal=true`.
 
 **Máy mới thì chạy một lệnh:**
 
 ```bash
-./scripts/build-android.sh              # publish SDK vào ~/.m2 → build app demo
+./scripts/build-android.sh              # hỏi 2 version → publish ~/.m2 → build app demo
+./scripts/build-android.sh --yes        # khỏi hỏi, lấy y nguyên gradle.properties
 ./scripts/build-android.sh --skip-app   # chỉ publish SDK vào ~/.m2
 ./scripts/build-android.sh --remote     # publish LÊN Artifactory (phát hành)
-./scripts/build-android.sh --help       # các tuỳ chọn: --clean, --install, --version
+./scripts/build-android.sh --help       # các tuỳ chọn: --clean, --install, --version, --logic-version
 ```
 
-Script ép đúng thứ tự **publish trước, build app sau** — bỏ bước publish thì Gradle báo
-`Could not find com.ttcn.promotion:promotionSDK`. Tương đương chạy tay:
+Script hỏi version của **từng module** trước khi publish (Enter = giữ nguyên số trong
+`gradle.properties`), rồi ép đúng thứ tự **publish trước, build app sau** — bỏ bước publish thì
+Gradle báo `Could not find com.ttcn.promotion:promotionSDK`. Số vừa chọn được truyền tiếp sang bước
+build app, nên `:androidApp` khai đúng bản vừa publish chứ không phải bản trong `gradle.properties`.
+Tương đương chạy tay:
 
 ```bash
-./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
-./gradlew :androidApp:assembleDebug
+V="-PSDK_VERSION=1.0.1 -PLOGIC_VERSION=1.0.1"
+./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal $V
+./gradlew :androidApp:assembleDebug -PuseMavenLocal=true $V
 ```
+
+Thiếu `-PuseMavenLocal=true` thì `~/.m2` **không** được đăng ký và app kéo bản trên Artifactory
+Viettelmoney — không lỗi, chỉ là không thấy thay đổi vừa sửa.
 
 ## 1. Trước đây: file AAR — và ba chỗ đau
 
@@ -89,20 +98,34 @@ rò rỉ thứ đáng lẽ giấu.
 
 Hai module cần `group` + `version` để Gradle biết dịch `projects.promotionLogic` thành toạ độ Maven:
 
-| Module | groupId | artifactId | Đổi tên được? |
-|---|---|---|---|
-| `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | **Không** — xem cảnh báo dưới |
-| `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotionSDK` | Được — host khai thẳng toạ độ này |
+| Module | groupId | artifactId | version | Đổi tên được? |
+|---|---|---|---|---|
+| `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | `$LOGIC_VERSION` | **Không** — xem cảnh báo dưới |
+| `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotionSDK` | `$SDK_VERSION` | Được — host khai thẳng toạ độ này |
 
-Cả **groupId** và **version** đều là property trong `gradle.properties` — một nguồn cho bốn nơi đọc
-(hai module SDK, `settings.gradle.kts`, `:androidApp`):
+**groupId dùng chung, version thì KHÔNG.** Một group cho cả hai module, nhưng mỗi module một số
+version riêng — sửa tầng UI không phải bump lõi và ngược lại:
 
 ```properties
 SDK_GROUP=com.ttcn.promotion
-SDK_VERSION=1.0.0
+SDK_VERSION=1.0.0     # → promotionSDK   (toạ độ host khai)
+LOGIC_VERSION=1.0.0   # → promotionLogic (lõi KMP)
 ```
 
-Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=…`.
+Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=… -PLOGIC_VERSION=…`, hoặc
+`./scripts/publish-android.sh` (hỏi từng số, Enter suông = giữ nguyên số trong `gradle.properties`).
+
+> **Chỗ nối hai version không phải khai tay.** `:AndroidPromotionSDK` khai
+> `implementation(projects.promotionLogic)`, Gradle tự ghi `$SDK_GROUP:promotionLogic:$LOGIC_VERSION`
+> vào POM + `module.json` của `promotionSDK`.
+>
+> Hệ quả: **bump lõi thì phải publish lại cả hai**. Đẩy mỗi `promotionLogic` bản mới lên repo thì
+> host vẫn kéo bản cũ — `promotionSDK` họ đang dùng trỏ đúng số cũ, không có cơ chế nào tự nhảy. Cả
+> hai script publish vì thế luôn đẩy cặp, không cho publish lẻ một module.
+>
+> Hậu tố `-SNAPSHOT` chọn repo Artifactory (release hay snapshot) **riêng cho từng module**, nên lõi
+> đang `-SNAPSHOT` trong khi UI đã release là hợp lệ — `settings.gradle.kts` đăng ký cả hai repo khi
+> hai số rơi vào hai loại khác nhau.
 
 > **Đổi `SDK_GROUP` là breaking.** Mọi host đang khai `com.ttcn.promotion:promotionSDK:x` sẽ nhận
 > `Could not find` — Gradle không có cơ chế "đổi tên có chuyển hướng" cho toạ độ Maven. Đổi thì phải
@@ -128,7 +151,7 @@ plugins {
 }
 
 group = sdkGroup                  // SDK_GROUP, đọc từ gradle.properties
-version = sdkVersion              // SDK_VERSION
+version = sdkVersion              // SDK_VERSION — KHÔNG dùng chung với :promotionLogic
 
 android {
     publishing {
@@ -163,7 +186,7 @@ plugins {
 }
 
 group = sdkGroup
-version = sdkVersion
+version = logicVersion            // LOGIC_VERSION — độc lập với :AndroidPromotionSDK
 
 kotlin {
     // KMP mặc định publish kèm sources.jar. Đây là lõi nghiệp vụ, đẩy sources lên Artifactory là
@@ -207,20 +230,36 @@ com/ttcn/promotion/
 
 ### 3.4. Repo đích: `~/.m2` (dev) + JFrog Artifactory (phát hành)
 
-Hai đích, **không** loại trừ nhau — chọn theo việc đang làm:
+Ba đích, **không** loại trừ nhau — chọn theo việc đang làm:
 
 | Đích | Lệnh | Dùng khi |
 |---|---|---|
 | `~/.m2/repository` | `./scripts/build-android.sh` | Vòng lặp dev: sửa SDK → build app demo ngay |
-| Artifactory | `./scripts/build-android.sh --remote` | Phát hành cho host/đối tác |
-| Artifactory (có hỏi version) | `./scripts/publish-android.sh` | Phát hành thật — xem bên dưới |
+| Artifactory chung | `./scripts/build-android.sh --remote` | Phát hành cho host/đối tác |
+| Artifactory Viettelmoney | `./gradlew publishSdkToViettelmoney` | Phát hành cho app host Viettelmoney |
+| Bất kỳ (có hỏi version) | `./scripts/publish-android.sh` | Phát hành thật — xem bên dưới |
+
+> **Một publication cho cả ba đích.** `:AndroidPromotionSDK` publish publication `release`,
+> `:promotionLogic` publish publication `android` — cùng toạ độ `$SDK_GROUP:promotionSDK` /
+> `$SDK_GROUP:promotionLogic`, cùng POM + `module.json` **do Gradle sinh** từ dependency graph. Chỉ
+> khác repo nhận.
+>
+> Trước đây mỗi module còn một `MavenPublication("viettelmoney")` khai tay (toạ độ
+> `vn.viettelpay.library:promotion` / `promotion-logic`, POM đọc nguyên văn từ
+> `<module>/publishing/pom.xml`) — **đã bỏ**. Nó gắn AAR bằng `artifact(file)` nên không có
+> SoftwareComponent, Gradle không sinh nổi POM lẫn `module.json`, và POM tay thì trôi khỏi
+> dependency thật lúc nào không ai biết: bản `promotion` **không khai một dependency nào** (host
+> build xanh rồi chết `NoClassDefFoundError` ở Glide/Timber/lõi), bản `promotion-logic` thiếu
+> `multiplatform-settings` và ghi `kotlinx-serialization-json` 1.8.1 trong khi thực tế resolve ra
+> 1.9.0. Vá bằng `pom.withXml` cũng không cứu được — consumer Gradle đọc `module.json` trước, POM
+> chỉ là bản dự phòng.
 
 Việc **phát hành** (khác vòng lặp dev) dùng `./scripts/publish-android.sh`: script hỏi version cần
 publish (mặc định lấy `SDK_VERSION` trong `gradle.properties`), kiểm tra định dạng + credentials,
 hỏi trước khi đẩy, và cảnh báo nếu version đó **đã có trên repo** — repo release bật "immutable" nên
 đẩy đè sẽ bị từ chối *sau khi* đã build xong. Đích chọn bằng `--target`:
-`viettelmoney` (mặc định, `vn.viettelpay.library:promotion`), `artifactory` (`$SDK_GROUP:promotionSDK`),
-`local` (~/.m2, để thử trước). `--help` liệt kê đủ tuỳ chọn.
+`viettelmoney` (mặc định), `artifactory`, `local` (~/.m2, để thử trước) — cả ba cùng đẩy toạ độ
+`$SDK_GROUP:promotionSDK`. `--help` liệt kê đủ tuỳ chọn.
 
 `~/.m2` không cần khai gì trong script Gradle: `publishToMavenLocal` là task **built-in** của
 `maven-publish`. Repo Artifactory khai **một lần ở `build.gradle.kts` gốc** cho cả hai module —
@@ -292,10 +331,18 @@ cho một bản snapshot.
 // với mọi thư viện khác (repo nội bộ proxy thiếu một version androidx là build đứt).
 dependencyResolutionManagement {
     repositories {
-        // ~/.m2 đứng TRƯỚC: sửa SDK → publishToMavenLocal → build app, không phải đợi đẩy lên server.
-        // Mặt trái: bản local cũ CHE bản trên Artifactory. Nghi ngờ thì xoá thư mục group trong ~/.m2.
-        mavenLocal { content { includeGroup(sdkGroup) } }
-        // Chỉ đăng ký khi có artifactoryUrl — thiếu thì im lặng bỏ qua, build vẫn chạy bằng ~/.m2.
+        // ~/.m2 CHỈ đăng ký khi `-PuseMavenLocal=true`. Mặc định tắt: bản local cũ đứng trước sẽ
+        // CHE bản thật trên Artifactory mà không báo gì, app demo "chạy được" bằng SDK cũ hàng tuần.
+        if (useMavenLocal) mavenLocal { content { includeGroup(sdkGroup) } }
+        // Artifactory Viettelmoney — nguồn MẶC ĐỊNH của :androidApp. Credentials từ local.properties
+        // (maven.username / maven.password), cùng chỗ với chiều publish.
+        maven {
+            name = "viettelmoney"
+            url = uri("https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney")
+            credentials { … }
+            content { includeGroup(sdkGroup) }
+        }
+        // Chỉ đăng ký khi có artifactoryUrl — thiếu thì im lặng bỏ qua.
         maven {
             name = "artifactory"
             url = uri("$artifactoryUrl/$repoKey")

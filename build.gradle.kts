@@ -31,26 +31,37 @@ val artifactoryPassword = providers.gradleProperty("artifactoryPassword")
     .orElse(providers.environmentVariable("ARTIFACTORY_PASSWORD"))
 
 // Artifactory tách repo release/snapshot (repo release thường bật "immutable" — đẩy đè version cũ
-// sẽ bị từ chối). Chọn theo hậu tố version, đọc thẳng SDK_VERSION chứ KHÔNG dùng `project.version`:
-// callback `withPlugin` chạy lúc subproject áp plugin, tức TRƯỚC dòng `version = sdkVersion` trong
-// script của nó — lúc đó `project.version` vẫn là "unspecified" và sẽ chọn nhầm repo.
+// sẽ bị từ chối). Chọn theo hậu tố version, đọc thẳng property chứ KHÔNG dùng `project.version`:
+// callback `withPlugin` chạy lúc subproject áp plugin, tức TRƯỚC dòng `version = …` trong script của
+// nó — lúc đó `project.version` vẫn là "unspecified" và sẽ chọn nhầm repo.
+//
+// **Hai module hai version độc lập** (SDK_VERSION / LOGIC_VERSION — xem gradle.properties), nên repo
+// đích phải tính RIÊNG cho từng module: bump `:promotionLogic` lên -SNAPSHOT trong khi
+// `:AndroidPromotionSDK` vẫn là bản release là chuyện thường, mà một `artifactoryRepoKey` dùng chung
+// sẽ đẩy cả hai vào cùng một repo — bản snapshot lọt vào repo release rồi kẹt luôn ở đó.
 val sdkVersion = providers.gradleProperty("SDK_VERSION").getOrElse("1.0.0")
-val artifactoryRepoKey = if (sdkVersion.endsWith("SNAPSHOT")) {
-    providers.gradleProperty("artifactorySnapshotsRepo").getOrElse("libs-snapshot-local")
-} else {
-    providers.gradleProperty("artifactoryReleasesRepo").getOrElse("libs-release-local")
+val logicVersion = providers.gradleProperty("LOGIC_VERSION").getOrElse("1.0.0")
+val snapshotsRepo = providers.gradleProperty("artifactorySnapshotsRepo").getOrElse("libs-snapshot-local")
+val releasesRepo = providers.gradleProperty("artifactoryReleasesRepo").getOrElse("libs-release-local")
+
+fun artifactoryRepoKeyFor(moduleName: String): String {
+    val version = if (moduleName == "promotionLogic") logicVersion else sdkVersion
+    return if (version.endsWith("SNAPSHOT")) snapshotsRepo else releasesRepo
 }
 
 // ─── Repo phát hành: Artifactory nội bộ Viettelmoney ──────────────────────────────────────────
 //
-// Đích RIÊNG, song song với repo "artifactory" ở trên — không thay thế. Publication đẩy vào đây là
-// `MavenPublication("viettelmoney")` khai thủ công ở từng module (toạ độ `vn.viettelpay.library:…`,
-// POM viết tay ở `<module>/publishing/pom.xml`), khác hẳn publication "release"/KMP mặc định
-// (toạ độ `com.ttcn.promotion:…`, POM Gradle tự sinh từ dependency graph) đẩy vào repo "artifactory".
+// Đích RIÊNG, song song với repo "artifactory" ở trên — không thay thế. Cả hai nhận **cùng một**
+// publication ("release" ở `:AndroidPromotionSDK`, "android" ở `:promotionLogic`) với **cùng một** bộ
+// toạ độ `$SDK_GROUP:promotion` / `$SDK_GROUP:promotionLogic`, POM + `module.json` do Gradle sinh từ
+// dependency graph. Trước đây mỗi module còn một `MavenPublication("viettelmoney")` khai tay, toạ độ
+// riêng, POM đọc nguyên văn từ `<module>/publishing/pom.xml` — đã bỏ, xem ghi chú trong
+// `AndroidPromotionSDK/build.gradle.kts`.
 //
 // Credentials đọc từ `local.properties` (KHÔNG commit, đã gitignore) thay vì gradle property/env
 // như repo "artifactory" — theo đúng convention app host Viettelmoney đang dùng để RESOLVE
 // dependencies (đối chiếu snippet họ đưa), giữ nhất quán một chỗ đọc credentials cho cả hai chiều.
+// `settings.gradle.kts` đọc đúng hai key này cho chiều resolve của `:androidApp`.
 //
 //   ./gradlew publishSdkToViettelmoney   (task gộp, định nghĩa cuối file)
 val localProperties = Properties().apply {
@@ -64,6 +75,9 @@ val viettelmoneyUser = localProperties.getProperty("maven.username", "")
 val viettelmoneyPassword = localProperties.getProperty("maven.password", "")
 
 subprojects {
+    // Tên module, chốt ở đây rồi dùng bên trong: repo release/snapshot chọn theo version RIÊNG của
+    // từng module (SDK_VERSION hay LOGIC_VERSION).
+    val moduleName = name
     pluginManager.withPlugin("maven-publish") {
         extensions.configure<PublishingExtension> {
             repositories {
@@ -73,7 +87,7 @@ subprojects {
                 if (baseUrl != null) {
                     maven {
                         name = "artifactory"   // → task publish…ToArtifactoryRepository
-                        url = uri("$baseUrl/$artifactoryRepoKey")
+                        url = uri("$baseUrl/${artifactoryRepoKeyFor(moduleName)}")
                         // Artifactory nội bộ hay chạy http (như Bitbucket của team). Gradle 7+ chặn
                         // http mặc định, chỉ mở đúng khi URL thật sự là http.
                         isAllowInsecureProtocol = baseUrl.startsWith("http://")
@@ -97,14 +111,15 @@ subprojects {
     }
 }
 
-// Gộp cả hai module trong một lệnh — trùng tên đã seed sẵn trong local.properties.
-// Chỉ đụng tới publication "viettelmoney" của từng module, không đả động publication "release".
+// Gộp cả hai module trong một lệnh — credentials đã seed sẵn trong local.properties.
+// `:promotionLogic` dùng publication "android" (KMP tự sinh), `:AndroidPromotionSDK` dùng "release"
+// (AGP) — cùng bộ toạ độ, cùng POM auto-gen, chỉ khác repo đích so với lệnh publish Artifactory.
 tasks.register("publishSdkToViettelmoney") {
     group = "publishing"
-    description = "Build và đẩy AndroidPromotionSDK + promotionLogic (toạ độ vn.viettelpay.library) " +
+    description = "Build và đẩy AndroidPromotionSDK + promotionLogic (toạ độ \$SDK_GROUP) " +
         "lên Artifactory nội bộ Viettelmoney."
     dependsOn(
-        ":AndroidPromotionSDK:publishViettelmoneyPublicationToViettelmoneyRepository",
-        ":promotionLogic:publishViettelmoneyPublicationToViettelmoneyRepository",
+        ":AndroidPromotionSDK:publishReleasePublicationToViettelmoneyRepository",
+        ":promotionLogic:publishAndroidPublicationToViettelmoneyRepository",
     )
 }

@@ -3,8 +3,9 @@
 # Build SDK Android + app demo trên một máy bất kỳ.
 #
 # Từ khi SDK phát hành qua Maven (docs/android/Distribution.md), `:androidApp` KHÔNG còn đọc file AAR
-# trong libs/ nữa — nó khai toạ độ `$SDK_GROUP:promotionSDK`. Nghĩa là **phải publish SDK trước**,
-# nếu không Gradle báo "Could not find …:promotionSDK". Script này ép đúng thứ tự đó.
+# trong libs/ nữa — nó khai toạ độ `$SDK_GROUP:promotionSDK` và mặc định kéo từ Artifactory
+# Viettelmoney. Script này chạy vòng lặp DEV: publish vào ~/.m2 rồi build app với `-PuseMavenLocal=true`
+# (không có cờ đó thì ~/.m2 không được đăng ký và app lấy bản trên server). Ép đúng thứ tự đó.
 #
 #   ./scripts/build-android.sh                 # publish SDK → build app demo (APK debug)
 #   ./scripts/build-android.sh --skip-app      # chỉ publish SDK vào ~/.m2
@@ -12,7 +13,16 @@
 #   ./scripts/build-android.sh --clean         # dọn build cũ rồi làm lại từ đầu
 #   ./scripts/build-android.sh --install       # build xong cài luôn vào máy/emulator đang cắm
 #   ./scripts/build-android.sh --run           # build → cài → MỞ app trên máy/emulator đang cắm
-#   ./scripts/build-android.sh --version 1.2.0 # publish số version khác (mặc định 1.0.0)
+#   ./scripts/build-android.sh --version 1.2.0 # promotionSDK ở version khác (khỏi hỏi)
+#   ./scripts/build-android.sh --logic-version 2.0.0  # promotionLogic ở version khác (khỏi hỏi)
+#   ./scripts/build-android.sh --yes           # không hỏi gì, lấy y nguyên gradle.properties
+#
+# Hai module hai version ĐỘC LẬP (SDK_VERSION / LOGIC_VERSION trong gradle.properties). Script HỎI
+# từng số trước khi publish, default là số đang có trong file — Enter suông là giữ nguyên. Số đã
+# truyền bằng cờ thì không hỏi lại; `--yes` (hoặc chạy không có TTY, ví dụ CI) thì bỏ qua cả hai câu.
+#
+# Cả hai module LUÔN publish cùng lượt, kể cả khi chỉ đổi một số: `promotionSDK` trỏ LOGIC_VERSION
+# trong metadata, đẩy lệch một bên là app resolve ra bản lõi không tồn tại.
 #
 set -euo pipefail
 
@@ -23,7 +33,9 @@ DO_CLEAN=false
 DO_INSTALL=false
 DO_RUN=false
 DO_REMOTE=false
+ASSUME_YES=false
 SDK_VERSION=""
+LOGIC_VERSION=""
 
 APP_ID="com.ttcn.promotionsdk.app"
 LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
@@ -36,7 +48,9 @@ while [[ $# -gt 0 ]]; do
         --run)      DO_RUN=true; shift ;;   # --run bao gồm cả --install
         --remote)   DO_REMOTE=true; shift ;;
         --version)  SDK_VERSION="${2:-}"; shift 2 ;;
-        -h|--help)  sed -n '3,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --logic-version) LOGIC_VERSION="${2:-}"; shift 2 ;;
+        -y|--yes)   ASSUME_YES=true; shift ;;
+        -h|--help)  sed -n '3,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)          echo "Tham số lạ: $1 (xem --help)" >&2; exit 1 ;;
     esac
 done
@@ -58,12 +72,58 @@ resolve_adb() {
     [[ -n "$sdk" && -x "$sdk/platform-tools/adb" ]] && echo "$sdk/platform-tools/adb"
 }
 
-GRADLE_ARGS=()
-[[ -n "$SDK_VERSION" ]] && GRADLE_ARGS+=("-PSDK_VERSION=$SDK_VERSION")
+# ─── Chọn version cho CẢ HAI module ──────────────────────────────────────────────────────────
+# Toạ độ lấy từ gradle.properties (nguồn tập trung). Hai module hai số độc lập, hỏi riêng từng số.
 
-# bash 3.2 (mặc định trên macOS) coi mảng RỖNG là "unbound" dưới `set -u`, nên không thể viết
-# thẳng "${GRADLE_ARGS[@]}". Hàm này bung mảng an toàn khi nó rỗng.
-gradle() { ./gradlew "$@" ${GRADLE_ARGS[@]+"${GRADLE_ARGS[@]}"}; }
+read_gradle_property() {
+    grep -E "^$1=" gradle.properties | head -1 | cut -d= -f2-
+}
+
+SDK_GROUP="$(read_gradle_property 'SDK_GROUP')"
+SDK_GROUP="${SDK_GROUP:-com.ttcn.promotion}"
+CURRENT_SDK_VERSION="$(read_gradle_property 'SDK_VERSION')"
+CURRENT_SDK_VERSION="${CURRENT_SDK_VERSION:-1.0.0}"
+CURRENT_LOGIC_VERSION="$(read_gradle_property 'LOGIC_VERSION')"
+CURRENT_LOGIC_VERSION="${CURRENT_LOGIC_VERSION:-1.0.0}"
+
+# Không có TTY (CI, chạy qua pipe) thì không hỏi được — im lặng dùng số trong gradle.properties.
+[[ -t 0 ]] || ASSUME_YES=true
+
+prompt_version() {   # $1 = nhãn, $2 = default, $3 = tên biến cần gán
+    local answer
+    printf '  %-14s [%s]: ' "$1" "$2"
+    read -r answer
+    printf -v "$3" '%s' "${answer:-$2}"
+}
+
+if [[ "$ASSUME_YES" != true ]] && [[ -z "$SDK_VERSION" || -z "$LOGIC_VERSION" ]]; then
+    echo "Version cần publish (Enter = giữ nguyên):"
+    [[ -z "$SDK_VERSION" ]] && prompt_version 'promotionSDK' "$CURRENT_SDK_VERSION" SDK_VERSION
+    [[ -z "$LOGIC_VERSION" ]] && prompt_version 'promotionLogic' "$CURRENT_LOGIC_VERSION" LOGIC_VERSION
+    echo
+fi
+
+# Sau bước trên hai biến luôn có giá trị (trừ nhánh --yes) — điền nốt từ gradle.properties.
+SDK_VERSION="${SDK_VERSION:-$CURRENT_SDK_VERSION}"
+LOGIC_VERSION="${LOGIC_VERSION:-$CURRENT_LOGIC_VERSION}"
+
+# x.y.z, cho phép hậu tố -SNAPSHOT / -rc1. Chặn ở đây vì version sai định dạng vẫn publish được
+# (Maven không kén), chỉ vỡ ra sau lúc app resolve không thấy hoặc thấy sai thứ tự version.
+check_version_format() {   # $1 = nhãn, $2 = version
+    if ! printf '%s' "$2" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9]+)*$'; then
+        echo "Version $1 '$2' không đúng định dạng x.y.z (hậu tố -SNAPSHOT/-rc1 thì được)." >&2
+        exit 1
+    fi
+}
+check_version_format 'promotionSDK' "$SDK_VERSION"
+check_version_format 'promotionLogic' "$LOGIC_VERSION"
+
+# Truyền cho MỌI lệnh gradle bên dưới, gồm cả bước build app demo: `:androidApp` khai
+# `$SDK_GROUP:promotionSDK:$SDK_VERSION`, thiếu cờ thì nó đi tìm số trong gradle.properties chứ
+# không phải số vừa publish.
+GRADLE_ARGS=("-PSDK_VERSION=$SDK_VERSION" "-PLOGIC_VERSION=$LOGIC_VERSION")
+
+gradle() { ./gradlew "$@" "${GRADLE_ARGS[@]}"; }
 
 # ─── Điều kiện cần: JDK + Android SDK ────────────────────────────────────────────────────────
 # Gradle sẽ tự báo lỗi thiếu JDK, nhưng Android SDK thì thông báo khó hiểu — chặn sớm cho rõ.
@@ -89,15 +149,6 @@ fi
 # Bước bắt buộc, và là bước dễ quên nhất: sửa SDK xong mà không publish thì app vẫn build với bản
 # cũ trong ~/.m2 — im lặng, không cảnh báo (docs/Distribution.md §5).
 
-# Toạ độ SDK lấy từ gradle.properties (nguồn tập trung), chỉ để in ra cho người dùng —
-# Gradle tự đọc lại các property này, không phụ thuộc hai dòng dưới.
-SDK_GROUP="$(grep -E '^SDK_GROUP=' gradle.properties | head -1 | cut -d= -f2-)"
-SDK_GROUP="${SDK_GROUP:-com.ttcn.promotion}"
-PUBLISHED_VERSION="$SDK_VERSION"
-if [[ -z "$PUBLISHED_VERSION" ]]; then
-    PUBLISHED_VERSION="$(grep -E '^SDK_VERSION=' gradle.properties | head -1 | cut -d= -f2-)"
-fi
-
 if [[ "$DO_REMOTE" == true ]]; then
     # Cần artifactoryUrl + credentials ở ~/.gradle/gradle.properties hoặc env ARTIFACTORY_*
     # (docs/android/Distribution.md §3.4). Thiếu URL thì repo "artifactory" không được đăng ký và
@@ -117,14 +168,14 @@ MSG
         exit 1
     fi
 
-    echo "▸ Publish SDK lên Artifactory (promotionLogic + promotionSDK)"
+    echo "▸ Publish lên Artifactory: promotionSDK $SDK_VERSION + promotionLogic $LOGIC_VERSION"
     gradle :promotionLogic:publishAllPublicationsToArtifactoryRepository \
            :AndroidPromotionSDK:publishAllPublicationsToArtifactoryRepository
-    echo "✓ Xong. Host khai: implementation(\"$SDK_GROUP:promotionSDK:$PUBLISHED_VERSION\")"
+    echo "✓ Xong. Host khai: implementation(\"$SDK_GROUP:promotionSDK:$SDK_VERSION\")"
     exit 0
 fi
 
-echo "▸ Publish SDK vào ~/.m2 (promotionLogic + promotionSDK)"
+echo "▸ Publish vào ~/.m2: promotionSDK $SDK_VERSION + promotionLogic $LOGIC_VERSION"
 gradle :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 
 if [[ "$SKIP_APP" == true ]]; then
@@ -133,16 +184,19 @@ if [[ "$SKIP_APP" == true ]]; then
 fi
 
 # ─── 2. Build app demo (tiêu thụ SDK từ ~/.m2 như host thật) ──────────────────────────────────
+# `-PuseMavenLocal=true` là BẮT BUỘC ở đây: settings.gradle.kts mặc định KHÔNG đăng ký ~/.m2 (để bản
+# local cũ không âm thầm che bản trên Artifactory), nên thiếu cờ này app sẽ kéo bản trên server chứ
+# không phải bản vừa publish ở bước 1.
 
-echo "▸ Build app demo"
-gradle :androidApp:assembleDebug
+echo "▸ Build app demo (SDK lấy từ ~/.m2)"
+gradle :androidApp:assembleDebug -PuseMavenLocal=true
 
 APK="androidApp/build/outputs/apk/debug/androidApp-debug.apk"
 echo "✓ Xong: $APK"
 
 if [[ "$DO_INSTALL" == true ]]; then
     echo "▸ Cài vào thiết bị đang cắm"
-    gradle :androidApp:installDebug
+    gradle :androidApp:installDebug -PuseMavenLocal=true
     echo "✓ Đã cài."
 fi
 

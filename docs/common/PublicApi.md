@@ -445,5 +445,5 @@ Vì AAR không obfuscate, **mọi tên class trong `com.ttcn.prm.**` và `com.tt
 
 Cần giấu thật sự (yêu cầu bảo mật, không phải yêu cầu hợp đồng API) thì phải tính lại từ đầu: gộp
 `promotionLogic` vào AAR (fat AAR) rồi R8 một lượt, kèm bộ keep list cho Data Binding / Gson /
-kotlinx.serialization. Đó là thay đổi **hợp đồng phát hành** với Artifactory nội bộ (POM viết tay ở
-`*/publishing/pom.xml` đang trỏ `vn.viettelpay.library:promotion-logic`), không làm lặng lẽ được.
+kotlinx.serialization. Đó là thay đổi **hợp đồng phát hành**: POM + `module.json` do Gradle sinh sẽ
+đổi theo, host nhận bộ dependency khác — không làm lặng lẽ được.

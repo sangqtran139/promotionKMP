@@ -8,6 +8,20 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Fixed — iOS: skeleton hàng tab-chip bị skeleton danh sách đè trên màn hình nhỏ
+
+Hai phần skeleton của màn "Ưu đãi của tôi" đều neo vào **vùng tab thật** chứ không neo vào nhau: chip
+cao 32 canh giữa vùng tab, còn skeleton danh sách bắt đầu ở `tabArea.bottom + 8`. Vùng tab lại chỉ còn
+được giữ bởi constraint 50pt ở **priority 250** trong XIB — cặp constraint từng khoá cứng chiều cao nó
+chết theo hai `PromotionTabView` mà `configTabViews()` gỡ ra để thay bằng scroll view ngang. Vùng tab
+bị bóp xuống dưới 16pt là chip tràn xuống dưới mốc của danh sách, và danh sách nằm trên trong z-order
+nên che mất chip.
+
+Nay skeleton danh sách có **sàn cứng** `>= chipRow.bottom + 8` (ràng buộc bám vùng tab hạ xuống
+`.defaultHigh` để giữ nguyên khoảng cách trên máy layout bình thường), hàng chip bám đỉnh overlay thay
+vì canh giữa vùng tab, và vùng tab thật có sàn chiều cao required. Cách xếp dọc này khớp Android
+(`prm_shimmer_my_promotion.xml`).
+
 ### Changed — **BREAKING**: bỏ `PromotionIntegrateManager`, luồng thanh toán về lõi dùng chung
 
 Luồng `createRedemption → gặp INSUFFICIENT_BUDGET → validate lại → cập nhật widget` là **nghiệp vụ

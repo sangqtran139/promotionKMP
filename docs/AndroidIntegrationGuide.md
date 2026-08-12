@@ -51,7 +51,7 @@ Hệ quả cho host:
 | minSdk | **24** |
 | Namespace SDK | `com.ttcn.promotionsdk` (dùng chung `R` / databinding) |
 | UI | XML View + View/DataBinding (**không** Compose) — trả `Fragment` / custom `View` |
-| Repo | **JFrog Artifactory nội bộ** (cần tài khoản đọc); `mavenLocal()` khi dev trên máy team |
+| Repo | **JFrog Artifactory nội bộ** (cần tài khoản đọc) — Viettelmoney: `https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney` |
 
 ---
 
