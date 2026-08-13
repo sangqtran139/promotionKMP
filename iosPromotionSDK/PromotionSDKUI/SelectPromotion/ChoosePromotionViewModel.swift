@@ -155,6 +155,9 @@ private extension ChoosePromotionState {
                 buttonTitle: PromotionUIStrings.detail,
                 showsCheckbox: true,
                 isChecked: selected.contains(offer.source.id),
+                // Hết hạn có chuỗi riêng. Không truyền thì cell rơi vào nhánh mặc định
+                // `unmatchedRules.first ?? .ineligible` → hiện "Không đủ điều kiện", sai nghĩa.
+                stateText: offer.isExpired ? PromotionUIStrings.expired : nil,
                 checkedImage: UIImage.sdk("prm_ic_circle_check"),
                 uncheckedImage: UIImage.sdk("prm_ic_circle_uncheck"),
                 highlightKeyword: isSearching ? trimmed : nil,

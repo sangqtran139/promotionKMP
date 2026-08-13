@@ -210,10 +210,25 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 
 | Quyết định | Nguồn | Android | iOS |
 |---|---|---|---|
-| Còn dùng được | `ChooseOffer.isUsable` → `MyVoucherListItem.isEnabled` | mờ card + dải "Chưa đủ điều kiện áp dụng" + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText` |
+| Còn dùng được | `ChooseOffer.isUsable` = `usable` (server) **AND** chưa quá `expireDate` → `MyVoucherListItem.isEnabled` | mờ card + dải "Chưa đủ điều kiện áp dụng" + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText` |
 | Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
-| Sắp hết hạn | `ChooseOffer.expiringInDays` (theo `expireWarningDate` của server) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
+| Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
+
+> **Hai điểm từng sai, đừng làm lại:**
+>
+> 1. **Ngưỡng "sắp hết hạn" chỉ có ở response danh sách.** Luồng THƯỜNG của màn này là nhận preload
+>    từ widget — không có response, nên `state.expireWarningDate` vẫn là default `null` và
+>    `expiringInDays` ra `null` cho mọi item: dòng "HSD còn X ngày" **không bao giờ hiện**. Nay
+>    `EndowStore.loadInitial` gọi `ExpiryWarning.remember(...)` khi nạp widget, và `toChooseOffer`
+>    lùi về `ExpiryWarning.lastKnownDays`. Sửa một trong hai chỗ là chưa đủ.
+> 2. **Hết hạn ≠ `usable = false`.** `EligibleOffer.usable` chỉ phản ánh `displayMode = "DISABLED"`
+>    của server; ưu đãi quá hạn mà server chưa đánh cờ thì trước đây vẫn sáng và tick chọn được —
+>    lệch "Ưu đãi của tôi", nơi `VoucherStatus.EXPIRED` cho `isUsable = false`. Nay `toChooseOffer`
+>    tự đối chiếu `expireDate`. Mốc là `daysUntil < 0`, **không** `<= 0`: `daysUntil` làm tròn lên
+>    nên 0 = "hết hạn trong hôm nay", vẫn dùng được và là ngày đầu của dải "sắp hết hạn".
+>    `ChooseOffer.isExpired` mang **lý do** sang native để chọn nhãn "Đã hết hạn" thay vì câu
+>    `unmatchedRules` (Android) / "Không đủ điều kiện" (iOS).
 
 - **Không dùng `status` để suy trạng thái ở màn này**: `EligibleOffer.toMyVoucherListItem()` chỉ sinh
   `AVAILABLE` / `INELIGIBLE`, nên mọi nhánh theo `EXPIRED`/`REVOKED` sẽ **không bao giờ chạy**.

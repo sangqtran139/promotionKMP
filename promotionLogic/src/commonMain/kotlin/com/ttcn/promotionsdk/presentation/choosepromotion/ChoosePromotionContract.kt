@@ -93,13 +93,33 @@ data class ChooseOffer(
     val source: EligibleOffer,
     val isUsable: Boolean,
     val expiringInDays: Int?,
+    /**
+     * Quá hạn theo [EligibleOffer.expireDate]. Tách khỏi [isUsable] vì native cần **lý do** để chọn
+     * nhãn: hết hạn → "Đã hết hạn", còn `usable=false` từ server → câu trong `unmatchedRules`. Thiếu
+     * cờ này thì item hết hạn hiện badge RỖNG (nhãn bên Android bám `source.usable`, vẫn là true).
+     */
+    val isExpired: Boolean,
 )
 
 internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
     // Xem chú thích cùng nội dung ở `VoucherItem.toMyPromotionVoucher`.
     ExpiryWarning.remember(expireWarningDate)
-    val days = if (usable && expireWarningDate != null) {
-        daysUntil(expireDate)?.takeIf { it in 0..expireWarningDate }
-    } else null
-    return ChooseOffer(source = this, isUsable = usable, expiringInDays = days)
+
+    // **Hết hạn thì không dùng được**, kể cả khi server chưa đánh `displayMode = "DISABLED"`
+    // (`EligibleOffer.usable`). Trước đây màn này tin cờ server tuyệt đối nên ưu đãi quá hạn vẫn hiện
+    // sáng và tick chọn được — lệch hẳn "Ưu đãi của tôi", nơi `VoucherStatus.EXPIRED` cho `isUsable`
+    // = false (`VoucherItem.toMyPromotionVoucher`).
+    //
+    // Mốc là `< 0`, KHÔNG phải `<= 0`: `daysUntil` làm tròn lên nên 0 nghĩa là "hết hạn trong hôm
+    // nay" — vẫn dùng được, và đó cũng là ngày đầu của dải "sắp hết hạn" (`it in 0..warn`).
+    val expired = daysUntil(expireDate)?.let { it < 0 } == true
+    val enabled = usable && !expired
+
+    // Ngưỡng "sắp hết hạn": [ExpiryWarning] ưu tiên giá trị vừa `remember` ở trên, thiếu thì lùi về
+    // bản nhớ gần nhất. Cần cái lùi này vì luồng THƯỜNG của màn Chọn là nhận dữ liệu preload từ
+    // widget — không có response nào để lấy ngưỡng, nên trước đây `expireWarningDate` luôn null và
+    // dòng "HSD còn X ngày" không bao giờ hiện.
+    val days = ExpiryWarning.daysIfExpiringSoon(expireDate, enabled)
+
+    return ChooseOffer(source = this, isUsable = enabled, expiringInDays = days, isExpired = expired)
 }

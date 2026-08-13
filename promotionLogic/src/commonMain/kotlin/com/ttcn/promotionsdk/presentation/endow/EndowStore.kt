@@ -14,6 +14,7 @@ import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -184,6 +185,12 @@ class EndowStore(
                     )
                 )
             }.onSuccess { result ->
+                // Ngưỡng "sắp hết hạn" chỉ có ở response DANH SÁCH. Widget không tự hiển thị số ngày,
+                // nhưng nó là nơi DUY NHẤT gọi findEligible trước khi màn "Chọn ưu đãi" mở ra bằng dữ
+                // liệu preload — không nhớ ở đây thì `EligibleOffer.toChooseOffer` không có ngưỡng nào
+                // để dùng và dòng "HSD còn X ngày" bên màn Chọn im lặng biến mất. Idempotent, bỏ qua
+                // null — xem [ExpiryWarning].
+                ExpiryWarning.remember(result?.expireWarningDate)
                 val myOffers = result?.myOffers.orEmpty()
                 val otherOffers = result?.otherOffers.orEmpty()
                 // Đếm theo totalElements (tổng thật từ server), không theo length mảng đã phân trang.

@@ -7,6 +7,7 @@ import com.ttcn.promotionsdk.domain.model.eligible.EligibleSection
 import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.presentation.base.PRMStore
+import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionTab
 import kotlinx.coroutines.CoroutineScope
@@ -140,11 +141,16 @@ class ChoosePromotionStore(
             loadOffers(isRefresh = false)
             return
         }
-        val warn = _state.value.expireWarningDate
+        // Preload = dữ liệu widget đưa sang, KHÔNG có response nên không có ngưỡng "sắp hết hạn" đi
+        // kèm. `_state.value.expireWarningDate` lúc này vẫn là default null (màn này chưa gọi mạng
+        // lần nào) → lùi về bản nhớ gần nhất, do `EndowStore.loadInitial` ghi lại khi nạp widget.
+        // Ghi luôn vào state để `loadMore` sau đó map cùng một ngưỡng.
+        val warn = _state.value.expireWarningDate ?: ExpiryWarning.lastKnownDays
         _state.update {
             it.copy(
                 hasLoadedInitial = true,
                 isLoading = false,
+                expireWarningDate = warn,
                 myOffers = my.map { o -> o.toChooseOffer(warn) },
                 otherOffers = other.map { o -> o.toChooseOffer(warn) },
                 myIsLastPage = myIsLastPage,

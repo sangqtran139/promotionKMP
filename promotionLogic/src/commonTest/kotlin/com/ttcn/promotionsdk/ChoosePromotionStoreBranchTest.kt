@@ -30,6 +30,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -323,7 +324,7 @@ class ChoosePromotionStoreBranchTest {
         var st = ChoosePromotionState(myExpanded = expanded, myIsLastPage = lastPage)
         // Dựng qua Preload để dùng đúng mapper toChooseOffer.
         return st.copy(myOffers = (1..n).map { i ->
-            com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer(offer("o$i"), isUsable = true, expiringInDays = null)
+            com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer(offer("o$i"), isUsable = true, expiringInDays = null, isExpired = false)
         })
     }
 
@@ -375,14 +376,111 @@ class ChoosePromotionStoreBranchTest {
         assertNull(o.expiringInDays)
     }
 
+    /**
+     * Ngoài dải cảnh báo → không hiện "còn X ngày".
+     *
+     * Trước đây test này khai `expireWarningDate = null` để ép ra null. Không dùng được nữa: thiếu
+     * ngưỡng trong response thì [ExpiryWarning] lùi về bản nhớ gần nhất, mà object đó **toàn cục**
+     * nên giá trị do test khác seed sẽ rò sang. Nay tự seed ngưỡng NHỎ rồi lấy ngày rất xa — kết quả
+     * không phụ thuộc thứ tự chạy test.
+     */
     @Test
-    fun toChooseOffer_noWarningThreshold_leavesDaysNull() = runTest {
+    fun toChooseOffer_expiryOutsideWarningWindow_leavesDaysNull() = runTest {
         val repo = FakeRepo {
-            EligibleOffersResult(myOffers = listOf(offer("a", expire = "2099-01-01")), expireWarningDate = null)
+            EligibleOffersResult(myOffers = listOf(offer("a", expire = "2099-01-01")), expireWarningDate = 5)
         }
         val s = TestScopeStore(repo, testScheduler)
         s.dispatch(ChoosePromotionIntent.LoadInitial)
         testScheduler.advanceUntilIdle()
-        assertNull(s.currentState().myOffers.single().expiringInDays)
+
+        val o = s.currentState().myOffers.single()
+        assertTrue(o.isUsable)
+        assertNull(o.expiringInDays)
+    }
+
+    // ─── Hết hạn & ngưỡng "sắp hết hạn" (2 nhánh mới) ─────────────────────────
+    //
+    // `ExpiryWarning` là **object toàn cục**, ngưỡng dính lại giữa các test trong cùng tiến trình và
+    // không có API reset. Nên các test dưới KHÔNG dựa vào "chưa ai set ngưỡng"; chúng tự seed ngưỡng
+    // rồi dùng mốc ngày CỐ ĐỊNH (2000/2099) + ngưỡng rất lớn, để kết quả không đổi theo ngày chạy.
+
+    /** Ngưỡng đủ lớn để mọi ngày trong tương lai đều nằm trong dải "sắp hết hạn" (~26k ngày tới 2099). */
+    private val hugeWarning = 40_000
+
+    @Test
+    fun toChooseOffer_expiredDate_disablesEvenWhenServerSaysUsable() = runTest {
+        // Server nói dùng được (`usable = true`, tức displayMode != DISABLED) nhưng ngày đã qua.
+        val repo = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("a", usable = true, expire = "2000-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.LoadInitial)
+        testScheduler.advanceUntilIdle()
+
+        val o = s.currentState().myOffers.single()
+        assertFalse(o.isUsable, "hết hạn thì không được cho chọn, dù server chưa đánh DISABLED")
+        assertTrue(o.isExpired, "native cần cờ này để hiện nhãn 'Đã hết hạn' thay vì badge rỗng")
+        assertNull(o.expiringInDays, "đã hết hạn thì không còn là 'sắp hết hạn'")
+    }
+
+    @Test
+    fun toChooseOffer_futureDate_staysUsable() = runTest {
+        val repo = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("a", usable = true, expire = "2099-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.LoadInitial)
+        testScheduler.advanceUntilIdle()
+
+        val o = s.currentState().myOffers.single()
+        assertTrue(o.isUsable)
+        assertFalse(o.isExpired)
+        assertNotNull(o.expiringInDays, "trong ngưỡng thì phải ra số ngày")
+    }
+
+    /**
+     * Luồng THƯỜNG của màn này: widget đã gọi `findEligible` rồi đưa danh sách sang bằng `Preload` —
+     * không có response nào kèm theo nên `state.expireWarningDate` vẫn là default null.
+     *
+     * Trước khi sửa, `expiringInDays` ra null cho mọi item và dòng "HSD còn X ngày" không bao giờ
+     * hiện. Nay lùi về ngưỡng `EndowStore.loadInitial` đã ghi nhớ.
+     */
+    @Test
+    fun preload_fallsBackToRememberedWarningThreshold() = runTest {
+        // Seed ngưỡng đúng như EndowStore làm khi nạp widget (nó gọi ExpiryWarning.remember).
+        val seeding = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("seed", expire = "2099-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        TestScopeStore(seeding, testScheduler).let {
+            it.dispatch(ChoosePromotionIntent.LoadInitial)
+            testScheduler.advanceUntilIdle()
+        }
+
+        // Store MỚI, chỉ nhận preload — không gọi mạng lần nào.
+        val repo = FakeRepo { EligibleOffersResult() }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(
+            ChoosePromotionIntent.Preload(
+                myOffers = listOf(offer("a", expire = "2099-01-01")),
+                otherOffers = emptyList(),
+                myIsLastPage = true,
+                otherIsLastPage = true,
+            )
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(0, repo.calls, "preload có dữ liệu thì không được gọi API")
+        val st = s.currentState()
+        assertEquals(hugeWarning, st.expireWarningDate, "ngưỡng phải được ghi vào state cho loadMore dùng lại")
+        assertNotNull(st.myOffers.single().expiringInDays, "đây chính là dòng 'HSD còn X ngày' từng mất")
     }
 }

@@ -20,6 +20,7 @@ import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.utils.extension.toHighlightedSpannable
 import com.ttcn.prm.ui.utils.extension.toVoucherDisplayDate
 import com.ttcn.prm.ui.utils.loadPromotionVoucherLogo
+import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
 
 internal sealed class ChoosePromotionListItem {
     data class SectionHeader(val title: String) : ChoosePromotionListItem()
@@ -229,7 +230,13 @@ internal class ChoosePromotionMainAdapter(
                 ctlNotEnoughApplyVoucher.isVisible = !canUse
                 imgCircleNotEnoughApplyVoucher.isVisible = !canUse
                 txtExpired.isVisible = !canUse
-                txtExpired.text = voucher.displayStatusLabel
+                // Hết hạn có chuỗi riêng; các ca `usable=false` khác thì dùng câu server gửi kèm
+                // (`unmatchedRules`). Cùng cách phân giải với `MyPromotionAdapter`.
+                txtExpired.text = if (voucher.status == VoucherStatus.EXPIRED) {
+                    ctx.getString(R.string.prm_status_expired)
+                } else {
+                    voucher.displayStatusLabel
+                }
                     .ifBlank { ctx.getString(R.string.prm_status_ineligible) }
                 lnDetail.isVisible = canUse
                 cbUseVoucher.visibility = if (canUse) View.VISIBLE else View.INVISIBLE

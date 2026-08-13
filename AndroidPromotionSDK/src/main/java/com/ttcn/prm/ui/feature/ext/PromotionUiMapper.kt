@@ -125,5 +125,14 @@ private fun Long.groupedByThousands(): String =
  * `ChooseOffer` (store màn "Chọn ưu đãi") → model cell dùng chung.
  * Quyết định hiển thị (`isUsable`/`expiringInDays`) lấy thẳng từ store — không tự tính lại.
  */
-internal fun ChooseOffer.toVoucherListItem(): MyVoucherListItem =
-    source.toMyVoucherListItem().copy(isEnabled = isUsable, expiringInDays = expiringInDays)
+internal fun ChooseOffer.toVoucherListItem(): MyVoucherListItem {
+    val base = source.toMyVoucherListItem()
+    return base.copy(
+        isEnabled = isUsable,
+        expiringInDays = expiringInDays,
+        // Hết hạn thì đổi luôn `status` để adapter lấy đúng nhãn "Đã hết hạn". `source` vẫn mang
+        // `usable = true` (server chưa đánh DISABLED) nên `displayStatusLabel` của nó rỗng — giữ
+        // nguyên là badge đỏ trống trơn.
+        status = if (isExpired) VoucherStatus.EXPIRED else base.status,
+    )
+}
