@@ -24,67 +24,62 @@ val sdkGroup = providers.gradleProperty("SDK_GROUP").getOrElse("vn.viettelpay.li
 val sdkVersion = providers.gradleProperty("SDK_VERSION").getOrElse("1.0.0")
 val logicVersion = providers.gradleProperty("LOGIC_VERSION").getOrElse("1.0.0")
 
-// Giữ lại dù khối repo "viettelmoney" bên dưới đang comment — để bật lại chỉ phải bỏ comment
-// một chỗ, không phải đi tìm URL. Kotlin cảnh báo "never used", chấp nhận.
 val viettelmoneyUrl = "https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney"
+
+// ─── `:androidApp` lấy SDK từ đâu ─────────────────────────────────────────────────────────────
+//
+// MỘT field quyết định, khai ở gradle.properties (hoặc `-PuseMavenLocal=…` cho một lần chạy):
+//
+//     useMavenLocal=true    → ~/.m2                      (vòng lặp dev, mặc định)
+//     useMavenLocal=false   → Artifactory Viettelmoney   (nghiệm thu đúng thứ đối tác nhận)
+//
+// Trước đây phải comment/bỏ-comment cả khối repo trong file này — sai một dấu `//` là build đứt mà
+// không rõ vì sao, và không ai nhớ nổi trạng thái hiện tại là gì. Nay đọc một dòng trong
+// gradle.properties là biết.
+//
+// **Chỉ đăng ký MỘT repo cho `$sdkGroup`, không phải hai xếp chồng.** Có cả hai thì repo đứng trước
+// lặng lẽ che repo sau: bản `~/.m2` cũ vẫn build xanh trong khi bạn tưởng đang test bản trên server.
+// Thà thiếu hẳn và báo `Could not find` còn hơn đúng nhầm.
+//
+// Parse tay thay vì `String.toBoolean()`: hàm đó trả `false` cho MỌI thứ không phải "true", nên gõ
+// nhầm `useMavenLocal=yes` sẽ lặng lẽ chuyển sang lấy từ server — sai kiểu khó lần nhất.
+val useMavenLocalRaw = providers.gradleProperty("useMavenLocal").getOrElse("true").trim().lowercase()
+require(useMavenLocalRaw == "true" || useMavenLocalRaw == "false") {
+    "useMavenLocal phải là 'true' hoặc 'false' (nhận được: '$useMavenLocalRaw') — xem gradle.properties."
+}
+val useMavenLocal = useMavenLocalRaw == "true"
 
 dependencyResolutionManagement {
     repositories {
-        // ~/.m2 — NGUỒN SDK DUY NHẤT của app demo hiện nay, bật bằng `useMavenLocal=true`.
-        //
-        // Repo "viettelmoney" bên dưới đang comment (cố ý), nên đây là chỗ duy nhất khai `$sdkGroup`.
-        // Tắt cờ này là không còn repo nào nhận group đó → `Could not find $sdkGroup:promotion`.
-        // Nói cách khác: **phải `publishToMavenLocal` trước khi build app**, không có đường lùi ra
-        // server nữa. `./scripts/build-android.sh` ép sẵn đúng thứ tự publish → build.
-        //
-        // Hai cách bật, `providers.gradleProperty` đọc được cả hai:
-        //     useMavenLocal=true trong gradle.properties                   ← đang dùng
-        //     ./gradlew :androidApp:assembleDebug -PuseMavenLocal=true     ← một lần
-        //
-        // Vẫn để sau CỜ chứ không hardcode: mở lại repo server thì tắt cờ này là quay về mô hình
-        // "app demo lấy đúng thứ host thật lấy", không phải sửa cấu trúc.
-        //
-        // Giới hạn đúng group của SDK — mavenLocal() thả rông sẽ tranh resolve với mọi thư viện khác
-        // và cho ra build không tái lập được.
-        val useMavenLocal = providers.gradleProperty("useMavenLocal").getOrElse("false").toBoolean()
+        // Nguồn SDK — đúng MỘT trong hai, theo `useMavenLocal` (xem khối giải thích ở đầu file).
+        // Cả hai đều `content { includeGroup(sdkGroup) }`: repo chỉ nhận group của SDK, không được
+        // tranh resolve androidx/ktor với google()/mavenCentral().
         if (useMavenLocal) {
+            // Hệ quả: **phải publish vào ~/.m2 trước khi build app**, không có đường lùi ra server.
+            // `./scripts/android.sh local` ép sẵn đúng thứ tự publish → build.
             mavenLocal {
                 content { includeGroup(sdkGroup) }
             }
+        } else {
+            // Credentials đọc từ `local.properties` (KHÔNG commit, đã gitignore) — cùng một chỗ với
+            // chiều publish, đúng convention app host Viettelmoney đang dùng:
+            //     maven.username=<user>
+            //     maven.password=<identity token>
+            // Thiếu credentials thì Gradle báo 401 khi resolve `$sdkGroup:promotion`.
+            val localProperties = java.util.Properties().apply {
+                val file = rootDir.resolve("local.properties")
+                if (file.exists()) file.inputStream().use { load(it) }
+            }
+            maven {
+                name = "viettelmoney"
+                url = uri(viettelmoneyUrl)
+                credentials {
+                    username = localProperties.getProperty("maven.username", "")
+                    password = localProperties.getProperty("maven.password", "")
+                }
+                content { includeGroup(sdkGroup) }
+            }
         }
-
-        // ─── Artifactory nội bộ Viettelmoney — ĐANG TẮT ──────────────────────────────────────
-        //
-        // Cố ý comment: app demo chỉ lấy SDK từ `~/.m2`, không chạm server. Vòng lặp dev khỏi phụ
-        // thuộc mạng/credentials, và không có đường nào để bản trên server lặng lẽ thay chỗ bản
-        // mình vừa publish.
-        //
-        // **Đi kèm ràng buộc:** đây là nguồn dự phòng DUY NHẤT cho `$sdkGroup`, nên tắt nó rồi thì
-        // `useMavenLocal` (gradle.properties) BẮT BUỘC phải bật — không thì chẳng còn repo nào khai
-        // group này và Gradle báo `Could not find $sdkGroup:promotion`. Cũng nghĩa là **phải
-        // `publishToMavenLocal` trước khi build app** (`./scripts/build-android.sh` làm sẵn).
-        //
-        // Mở lại: bỏ comment khối dưới. Credentials đọc từ `local.properties` (KHÔNG commit, đã
-        // gitignore) — cùng một chỗ cho cả hai chiều resolve/publish, đúng convention app host
-        // Viettelmoney đang dùng:
-        //     maven.username=<user>
-        //     maven.password=<identity token>
-        // Thiếu credentials thì Gradle báo 401 khi resolve `$sdkGroup:promotion`.
-        //
-        // val localProperties = java.util.Properties().apply {
-        //     val file = rootDir.resolve("local.properties")
-        //     if (file.exists()) file.inputStream().use { load(it) }
-        // }
-        // maven {
-        //     name = "viettelmoney"
-        //     url = uri(viettelmoneyUrl)
-        //     credentials {
-        //         username = localProperties.getProperty("maven.username", "")
-        //         password = localProperties.getProperty("maven.password", "")
-        //     }
-        //     // Repo nội bộ KHÔNG được tranh resolve androidx/ktor với google()/mavenCentral().
-        //     content { includeGroup(sdkGroup) }
-        // }
         // Artifactory: nguồn thật cho host. Chỉ đăng ký khi có artifactoryUrl (~/.gradle/gradle.properties
         // hoặc env ARTIFACTORY_*) — thiếu thì im lặng bỏ qua, build vẫn chạy bằng ~/.m2.
         val artifactoryUrl = providers.gradleProperty("artifactoryUrl")

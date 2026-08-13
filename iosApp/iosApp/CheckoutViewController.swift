@@ -3,10 +3,28 @@
 //  PromotionSDKDemo
 //
 //  Màn "Thanh toán" của host: nhúng widget chọn ưu đãi (custom view của SDK) + nút
-//  "Thanh toán" gọi API redemption với voucher user đã áp trên widget.
+//  "Thanh toán" gọi `PromotionSDK.confirmRedemption`.
 //
-//  Luồng: user áp voucher trên widget → SDK phát `onVoucherApplied` → màn này lưu lại
-//  voucherId → bấm "Thanh toán" → `PromotionSDK.api.createRedemption`. Gọi THẲNG SDK, không wrapper.
+//  Luồng: user áp voucher trên widget → SDK giữ state → bấm "Thanh toán" →
+//  `PromotionSDK.confirmRedemption`. Đối ứng `binding.endowView.confirmRedemption(...)` bên Android
+//  (docs/features/EndowView.md §2).
+//
+//  **Đây là UI mode** — host nhúng widget thì SDK giữ danh sách ưu đãi đang áp, host KHÔNG tự nhớ.
+//  Trước đây màn này cache `appliedVoucherId` từ callback `onVoucherApplied` rồi gọi API headless
+//  `PromotionSDK.api.createRedemption`, tức trộn hai chế độ tích hợp. Bốn hệ quả, đều đã bỏ:
+//
+//    1. Callback chỉ bắn theo TRANSITION sang APPLIED. Màn này dựng lại trong khi store vẫn đang áp
+//       → cache `nil` mà callback không bắn lại → báo "Chưa áp dụng ưu đãi" trong khi widget hiện
+//       rành rành là đã áp. Đổi sang voucher khác lúc đang APPLIED cũng không có transition → cache
+//       giữ id CŨ → redeem nhầm voucher.
+//    2. Chưa áp ưu đãi nào thì spec bảo cho đi tiếp (`onSuccess` ngay, không gọi mạng) — bản cũ chặn
+//       bằng alert.
+//    3. `INSUFFICIENT_BUDGET`: `confirmRedemption` tự validate lại để widget hiện giá mới rồi mới
+//       báo lỗi. Đường headless không có bước đó, widget đứng im với giá cũ.
+//    4. Đơn nhiều voucher: bản cũ gửi đúng MỘT (`[voucherId]`), nay gửi hết những gì đang áp.
+//
+//  `PromotionSDK.api.*` (headless) là dành cho host **tự dựng UI**, không nhúng widget — xem
+//  DemoHeadlessViewController.
 //
 
 import UIKit
@@ -16,9 +34,6 @@ final class CheckoutViewController: UIViewController {
 
     private let orderId: String
     private let orderValue: String
-
-    /// Voucher user đã áp trên widget (nil = chưa áp / đã huỷ). Nút "Thanh toán" redeem cái này.
-    private var appliedVoucherId: String?
 
     private let payButton: UIButton = {
         let btn = UIButton(type: .system)
@@ -47,17 +62,9 @@ final class CheckoutViewController: UIViewController {
         payButton.addTarget(self, action: #selector(payTapped), for: .touchUpInside)
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Màn này sở hữu sự kiện áp/huỷ voucher trong lúc hiển thị (callback SDK là 1-1).
-        let events = DemoPromotionCallback.shared
-        events.onApplied = { [weak self] voucherId in
-            self?.appliedVoucherId = voucherId
-        }
-        events.onCleared = { [weak self] in
-            self?.appliedVoucherId = nil
-        }
-    }
+    // Không cần nghe `onVoucherApplied` / `onVoucherCleared` ở đây nữa: state ưu đãi đang áp do SDK
+    // giữ, `confirmRedemption` đọc thẳng lúc bấm. Hai callback đó vẫn là API thật của SDK (báo host
+    // cập nhật tổng tiền, badge…) — xem ViewController.swift để biết cách nghe.
 
     // MARK: - Layout
 
@@ -82,25 +89,38 @@ final class CheckoutViewController: UIViewController {
 
     // MARK: - Actions
 
+    /// KHÔNG chặn khi chưa áp ưu đãi: `confirmRedemption` tự trả `onSuccess` ngay và không gọi mạng
+    /// (docs/features/EndowView.md §2, bước 1). SDK không có quyền chặn thanh toán của host — đơn
+    /// không dùng ưu đãi vẫn phải đi tiếp được.
     @objc private func payTapped() {
-        guard let voucherId = appliedVoucherId else {
-            showAlert("Chưa áp dụng ưu đãi", "Vui lòng chọn và áp dụng một ưu đãi trên widget trước khi thanh toán.")
-            return
-        }
         payButton.isEnabled = false
-        // Headless `api` trả DTO công khai — gọi thẳng.
-        PromotionSDK.api.createRedemption(orderId: orderId, orderValue: orderValue, voucherIds: [voucherId]) { [weak self] result in
-            self?.payButton.isEnabled = true
-            switch result {
-            case .success(let redemption):
-                self?.showAlert("Thanh toán thành công", "Đã tạo phiên redemption.\nsessionId: \(redemption.sessionId)")
-            case .failure(let error):
-                self?.showAlert("Thanh toán lỗi", error.localizedDescription)
+        PromotionSDK.confirmRedemption(
+            onSuccess: { [weak self] in
+                self?.payButton.isEnabled = true
+                self?.proceedPayment()
+            },
+            onError: { [weak self] errorCode in
+                self?.payButton.isEnabled = true
+                self?.showAlert("Thanh toán lỗi", Self.errorMessage(errorCode))
             }
-        }
+        )
+    }
+
+    /// Chỗ host chạy tiếp luồng thanh toán thật của mình. Đối ứng `proceedPayment()` bên Android.
+    private func proceedPayment() {
+        showAlert("Thanh toán thành công", "Đã tạo phiên redemption cho các ưu đãi đang áp.")
     }
 
     // MARK: - Helpers
+
+    /// SDK chỉ trả **mã lỗi**; câu hiển thị là chuỗi của host. Đối ứng `mapErrorMessage` bên Android.
+    private static func errorMessage(_ code: String) -> String {
+        switch code {
+        case "missing_customer_id": return "Thiếu thông tin khách hàng."
+        case "INSUFFICIENT_BUDGET": return "Ưu đãi đã hết ngân sách. Số tiền giảm trên widget vừa được cập nhật lại."
+        default: return "Có lỗi xảy ra, vui lòng thử lại."
+        }
+    }
 
     private func showAlert(_ title: String, _ message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)

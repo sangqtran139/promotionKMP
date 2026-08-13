@@ -20,3 +20,9 @@
 -dontwarn org.slf4j.**
 -dontwarn okhttp3.**
 -dontwarn okio.**
+
+# Ktor build cho JVM nên `io.ktor.util.debug.IntellijIdeaDebugDetector` tham chiếu
+# java.lang.management.* — API chỉ có trên JVM desktop, KHÔNG có trên Android → R8 báo
+# "Missing class java.lang.management.ManagementFactory" và fail minify. Code này chỉ chạy
+# khi debug trong IDE, runtime Android không bao giờ chạm tới, nên bỏ qua an toàn.
+-dontwarn java.lang.management.**
