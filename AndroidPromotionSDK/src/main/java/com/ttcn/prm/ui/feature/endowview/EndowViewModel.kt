@@ -1,153 +1,81 @@
 package com.ttcn.prm.ui.feature.endowview
 
+import com.ttcn.prm.ui.base.PRMStoreViewModel
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
-import com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount
-import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowConfirmResult
+import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowState
 import com.ttcn.promotionsdk.presentation.endow.EndowStore
-import com.ttcn.promotionsdk.presentation.endow.widgetState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
- * Lớp bọc mỏng quanh [EndowStore] (tầng UI-logic dùng chung ở `promotionLogic`) cho custom view
- * [PRMEndowView]. **Đồng nhất với iOS**: iOS có `EndowViewModel` tương ứng bọc cùng store.
+ * ViewModel của widget [PRMEndowView] — cùng khuôn với mọi màn khác: [PRMStoreViewModel] bọc store
+ * dùng chung, không thêm tầng kiến trúc nào.
  *
- * Tạo qua [create] để DI tự resolve; [scope] gắn với vòng đời View.
+ * **Đổi so với bản trước, ba điểm:**
+ *
+ * 1. **Là `ViewModel` thật** (qua [PRMStoreViewModel]), không còn là object thường tạo bằng
+ *    `create(scope)` với scope gắn vào View. Trước đây store chết theo `onDetachedFromWindow`, nên
+ *    host mở màn "Chọn ưu đãi" bằng `replace()` là widget detach → `viewModel = null` → bấm "Áp
+ *    dụng"/"Thanh toán" trả `PRM_ERROR_GENERAL` mà **không hề gọi mạng**. iOS không dính vì
+ *    `endowVM` là property của `PromotionSDKImpl`. Nay store sống theo `ViewModelStore` của host.
+ *
+ * 2. **Bỏ `create()`**, lấy store qua DI nội bộ như các màn khác (`promotionViewModelFactory()`).
+ *    Use case tự resolve repository từ đồ thị đã init, không nơi nào phải khai tay.
+ *
+ * 3. **Bỏ máy trạng thái `settleCompletion`/`sawValidating`/`handleSettle`/`consumeErrorUnlessSettling`**.
+ *    Bốn thứ đó tồn tại chỉ vì `EndowStore.validateAndApply` là fire-and-forget: muốn biết kết quả
+ *    phải rình `isValidating` true→false trên dòng state chung — mà `StateFlow` là **conflated** nên
+ *    còn phải chặn widget xoá lỗi trước khi nơi gọi đọc kịp. Nay store `suspend` và **trả thẳng
+ *    state cuối**, nên cả bốn biến mất. iOS bỏ y hệt.
+ *
+ * Bề mặt state là **chính [EndowState] của store**, không bọc lại — xem [PRMStoreViewModel].
  */
 internal class EndowViewModel(
-    private val store: EndowStore,
-    private val scope: CoroutineScope,
+    findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
+    validateStackableDiscountsUseCase: ValidateStackableDiscountsUseCase,
+    createRedemptionSessionUseCase: CreateRedemptionSessionUseCase,
+) : PRMStoreViewModel<EndowState, EndowIntent>(
+    { scope ->
+        EndowStore(
+            findEligibleCampaignsUseCase = findEligibleCampaignsUseCase,
+            validateStackableDiscountsUseCase = validateStackableDiscountsUseCase,
+            createRedemptionSessionUseCase = createRedemptionSessionUseCase,
+            scope = scope,
+        )
+    },
 ) {
 
-    /** Bề mặt view (Android model) — chiếu từ [EndowState] của store. */
-    val uiState: StateFlow<PRMEndowUiState> =
-        store.state
-            .map { it.toUiState() }
-            .stateIn(scope, SharingStarted.Eagerly, store.currentState().toUiState())
+    /** [PRMStoreViewModel.store] khai kiểu `PRMStore`; hai hàm `suspend` dưới đây là của riêng store này. */
+    private val endowStore: EndowStore get() = store as EndowStore
 
-    /** One-shot cho validate&apply: chờ `isValidating` true→false rồi gọi completion đúng một lần. */
-    private var settleCompletion: ((EndowState) -> Unit)? = null
-    private var sawValidating = false
+    fun loadInitial() = dispatch(EndowIntent.LoadInitial)
 
-    init {
-        // Theo dõi vòng validate để bắn [settleCompletion] — đối ứng `handleSettle` bên iOS.
-        scope.launch { store.state.collect { handleSettle(it) } }
-    }
+    /** Cờ hiển thị widget, đọc cache (fail-open). Rule + tên cờ nằm ở store, dùng chung iOS. */
+    fun availabilityFromCache(): Boolean = endowStore.availabilityFromCache()
 
-    // ─── Public API (forward xuống store) ───────────────────────────────────────
-
-    fun loadInitial() = store.dispatch(EndowIntent.LoadInitial)
+    /** Làm mới cờ từ server rồi trả giá trị thật. */
+    suspend fun refreshAvailability(): Boolean = endowStore.refreshAvailability()
 
     /**
-     * Validate + áp các ưu đãi user chọn ở màn "Chọn ưu đãi" (store lo validate).
-     * [completion] gọi **một** lần khi validate xong (thành công/thất bại) để màn chọn quyết định
-     * đóng hay báo lỗi — đối ứng `EndowViewModel.validateAndApply(_:completion:)` bên iOS.
+     * Validate + áp ưu đãi user chọn ở màn "Chọn ưu đãi"; **trả state cuối của đúng lượt này**.
+     * Đối ứng `EndowViewModel.validateAndApply(_:)` bên iOS.
      */
-    fun validateAndApply(offers: List<EligibleOffer>, completion: ((EndowState) -> Unit)? = null) {
-        // Rỗng → store xoá áp NGAY, không có vòng validate nào để chờ; bắn completion luôn cho khỏi treo.
-        if (offers.isEmpty()) {
-            store.dispatch(EndowIntent.ValidateAndApply(offers))
-            completion?.invoke(store.currentState())
-            return
-        }
-        settleCompletion = completion
-        sawValidating = false
-        store.dispatch(EndowIntent.ValidateAndApply(offers))
-    }
+    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowState =
+        endowStore.validateAndApply(offers)
 
     /** Host tự validate rồi đưa kết quả vào (giữ public API `PRMEndowView.setDiscountDetails`). */
     fun setApplied(details: List<AppliedDiscount>, unavailable: Boolean = false) =
-        store.dispatch(EndowIntent.SetApplied(details.map { it.toEndowAppliedDiscount() }, unavailable))
+        dispatch(EndowIntent.SetApplied(details, unavailable))
 
-    fun markUnavailable() = store.dispatch(EndowIntent.MarkUnavailable)
+    fun markUnavailable() = dispatch(EndowIntent.MarkUnavailable)
 
-    fun clearApplied() = store.dispatch(EndowIntent.ClearApplied)
+    fun clearApplied() = dispatch(EndowIntent.ClearApplied)
 
-    fun consumeError() = store.dispatch(EndowIntent.ConsumeError)
+    fun consumeError() = dispatch(EndowIntent.ConsumeError)
 
     /** Bấm "Thanh toán" — nghiệp vụ nằm trọn ở [EndowStore.confirmRedemption] (dùng chung với iOS). */
-    suspend fun confirmRedemption(): EndowConfirmResult = store.confirmRedemption()
-
-    /**
-     * Xoá lỗi — **trừ khi** đang chờ kết quả một vòng validate.
-     *
-     * `errorCode` là field dùng chung, có hai nơi quan sát: [handleSettle] (bắn completion cho màn
-     * "Chọn ưu đãi") và `PRMEndowView.renderState` (hiện lỗi rồi xoá). `store.state` là `StateFlow`
-     * nên **conflated**: widget xoá trước là [handleSettle] có thể nhảy qua luôn state mang lỗi và
-     * chỉ thấy bản đã xoá → completion nhận `errorCode = null` → màn chọn đóng như thành công dù
-     * validate hỏng. Giữ lỗi lại cho tới khi completion đọc xong; [handleSettle] tự xoá sau đó.
-     */
-    fun consumeErrorUnlessSettling() {
-        if (settleCompletion != null) return
-        store.dispatch(EndowIntent.ConsumeError)
-    }
-
-    private fun handleSettle(state: EndowState) {
-        if (state.isValidating) {
-            sawValidating = true
-            return
-        }
-        val completion = settleCompletion ?: return
-        if (!sawValidating) return
-        settleCompletion = null
-        sawValidating = false
-        completion(state)
-        // Đã giao lỗi cho nơi gọi → giờ mới xoá (widget bị chặn xoá trong lúc chờ).
-        if (state.errorCode != null) store.dispatch(EndowIntent.ConsumeError)
-    }
-
-    companion object {
-        /** Tạo instance; use case tự lấy repository từ đồ thị đã init. [scope] gắn với [PRMEndowView]. */
-        fun create(scope: CoroutineScope): EndowViewModel =
-            EndowViewModel(
-                store = EndowStore(
-                    findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
-                    validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),
-                    createRedemptionSessionUseCase = CreateRedemptionSessionUseCase(),
-                    scope = scope,
-                ),
-                scope = scope,
-            )
-    }
+    suspend fun confirmRedemption(): EndowConfirmResult = endowStore.confirmRedemption()
 }
-
-// ─── Map EndowState (store) → model UI Android ────────────────────────────────
-
-private fun EndowState.toUiState() = PRMEndowUiState(
-    myVouchers = myOffers,
-    otherVouchers = otherOffers,
-    myIsLastPage = myIsLastPage,
-    otherIsLastPage = otherIsLastPage,
-    discountDetails = appliedDiscounts.map { it.toAppliedDiscount() },
-    discountUnavailable = discountUnavailable,
-    totalVoucherCount = totalVoucherCount,
-    hasLoadedInitial = hasLoadedInitial,
-    error = errorCode,
-    widgetState = widgetState,
-)
-
-
-private fun EndowAppliedDiscount.toAppliedDiscount() = AppliedDiscount(
-    objectId = objectId,
-    objectType = objectType,
-    valid = valid,
-    calculatedDiscount = calculatedDiscount,
-    eligibilityStatus = eligibilityStatus,
-)
-
-private fun AppliedDiscount.toEndowAppliedDiscount() = EndowAppliedDiscount(
-    objectId = objectId,
-    objectType = objectType,
-    valid = valid,
-    calculatedDiscount = calculatedDiscount,
-    eligibilityStatus = eligibilityStatus,
-)

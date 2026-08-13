@@ -8,7 +8,10 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.findViewTreeViewModelStoreOwner
+import com.ttcn.prm.ui.di.promotionViewModelFactory
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ttcn.prm.R
 import com.ttcn.prm.entry.PromotionSDK
@@ -19,6 +22,9 @@ import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.promotionsdk.presentation.endow.EndowConfirmResult
+import com.ttcn.promotionsdk.presentation.endow.EndowHostEvent
+import com.ttcn.promotionsdk.presentation.endow.EndowHostNotifier
+import com.ttcn.promotionsdk.presentation.endow.EndowState
 import com.ttcn.promotionsdk.presentation.endow.EndowWidgetState
 import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
@@ -60,11 +66,14 @@ class PRMEndowView @JvmOverloads constructor(
     private var lifecycleObserver: DefaultLifecycleObserver? = null
     private var lifecycleOwnerRef: LifecycleOwner? = null
 
-    // Theo dõi transition để phát callback host đúng một lần mỗi lần đổi (không spam theo mỗi render).
-    private var lastNotifiedState: EndowWidgetState? = null
-    private var lastNotifiedCount: Int = -1
-    /** `null` = chưa báo lần nào, nên lần áp cờ đầu tiên luôn bắn callback. */
-    private var lastNotifiedAvailability: Boolean? = null
+    /**
+     * Quyết định "khi nào bắn callback host" — rule dùng chung ở `promotionLogic`, có test.
+     * Trước đây là ba biến `lastNotifiedState`/`lastNotifiedCount`/`lastNotifiedAvailability` ngay
+     * tại đây, và iOS có bản riêng chỉ hai biến — cùng hợp đồng public mà hai cách tính.
+     *
+     * Một instance mỗi widget: nó có trạng thái, hai `PRMEndowView` cùng màn phải đếm riêng.
+     */
+    private val hostNotifier = EndowHostNotifier()
 
     // ─── Read-only accessors (delegate to ViewModel state) ────────────────────
 
@@ -74,20 +83,20 @@ class PRMEndowView @JvmOverloads constructor(
      * Host lấy qua [PromotionSDK.createChoosePromotionFragment].
      */
     internal val myVouchers: List<EligibleOffer>
-        get() = viewModel?.uiState?.value?.myVouchers ?: emptyList()
+        get() = viewModel?.state?.value?.myOffers ?: emptyList()
 
     internal val otherVouchers: List<EligibleOffer>
-        get() = viewModel?.uiState?.value?.otherVouchers ?: emptyList()
+        get() = viewModel?.state?.value?.otherOffers ?: emptyList()
 
     /** Cờ phân trang đi kèm [myVouchers] / [otherVouchers] — màn "Chọn ưu đãi" cần để biết còn trang không. */
     internal val myIsLastPage: Boolean
-        get() = viewModel?.uiState?.value?.myIsLastPage ?: true
+        get() = viewModel?.state?.value?.myIsLastPage ?: true
 
     internal val otherIsLastPage: Boolean
-        get() = viewModel?.uiState?.value?.otherIsLastPage ?: true
+        get() = viewModel?.state?.value?.otherIsLastPage ?: true
 
     val discountDetails: List<AppliedDiscount>
-        get() = viewModel?.uiState?.value?.discountDetails ?: emptyList()
+        get() = viewModel?.state?.value?.appliedDiscounts ?: emptyList()
 
     // ─── Public callbacks ─────────────────────────────────────────────────────
 
@@ -133,8 +142,26 @@ class PRMEndowView @JvmOverloads constructor(
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         viewScope = scope
 
-        // ViewModel tạo lúc scope đã sẵn sàng — scope gắn với View lifecycle
-        val vm = EndowViewModel.create(scope)
+        // VM lấy từ `ViewModelStore` của màn host (qua cây view), KHÔNG tự tạo theo scope của View.
+        //
+        // Đây là chỗ sửa lỗi cũ: bản trước `EndowViewModel.create(viewScope)` nên store chết ở
+        // `onDetachedFromWindow`. Host mở màn "Chọn ưu đãi" bằng `replace()` → widget detach →
+        // `viewModel = null` → bấm "Áp dụng"/"Thanh toán" trả `PRM_ERROR_GENERAL` mà không gọi mạng.
+        // iOS không dính vì `endowVM` là property của `PromotionSDKImpl`.
+        //
+        // Thiếu owner (host nhúng widget ngoài mọi Activity/Fragment có ViewModelStore) → không dựng
+        // được VM; widget ẩn đi thay vì chạy nửa vời rồi lỗi khi bấm.
+        val owner = findViewTreeViewModelStoreOwner()
+        if (owner == null) {
+            // Mọi ComponentActivity/Fragment đều cấp owner này, nên tới đây là host đã nhúng widget
+            // vào một cây view không có ViewModelStore (Dialog/Window tự dựng, ViewGroup rời…).
+            // Ẩn IM LẶNG là kiểu hỏng tệ nhất: host không hiểu vì sao widget biến mất. Báo ra
+            // `onError` để host còn biết đường sửa chỗ nhúng.
+            isVisible = false
+            onError?.invoke(ErrorCodes.GENERAL)
+            return
+        }
+        val vm = ViewModelProvider(owner, promotionViewModelFactory())[EndowViewModel::class.java]
         viewModel = vm
 
         // Lưới an toàn cho trường hợp view bị huỷ mà không qua onDetachedFromWindow. Phải GỠ ở
@@ -142,19 +169,20 @@ class PRMEndowView @JvmOverloads constructor(
         // host thì sống lâu hơn view rất nhiều — attach/detach vài vòng (RecyclerView tái dụng,
         // fragment show/hide) là chồng một đống observer, mỗi cái ghim một view chết lại tới khi
         // host destroy.
-        val owner = findViewTreeLifecycleOwner()
+        // Tên KHÁC `owner` ở trên (ViewModelStoreOwner) — hai thứ khác nhau, trùng tên là lỗi compile.
+        val lifecycleOwner = findViewTreeLifecycleOwner()
         val observer = object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
                 releaseScope()
             }
         }
-        lifecycleOwnerRef = owner
+        lifecycleOwnerRef = lifecycleOwner
         lifecycleObserver = observer
-        owner?.lifecycle?.addObserver(observer)
+        lifecycleOwner?.lifecycle?.addObserver(observer)
 
         // Observe state changes
         scope.launch {
-            vm.uiState.collect { state ->
+            vm.state.collect { state ->
                 renderState(state)
             }
         }
@@ -163,11 +191,8 @@ class PRMEndowView @JvmOverloads constructor(
 
         // Gác bởi cờ VOUCHER_SELECTION, y như `PromotionSDKImpl.applyFlag` bên iOS: áp cache hiện
         // có ngay lập tức (chưa có cache → bật lạc quan), rồi làm mới từ server và áp lại nếu đổi.
-        applyFeatureFlag(PromotionFeatureGate.canShowVoucherSelection(), vm)
-        scope.launch {
-            PromotionFeatureGate.refresh()
-            applyFeatureFlag(PromotionFeatureGate.canShowVoucherSelection(), vm)
-        }
+        applyFeatureFlag(vm.availabilityFromCache(), vm)
+        scope.launch { applyFeatureFlag(vm.refreshAvailability(), vm) }
     }
 
     /**
@@ -178,10 +203,7 @@ class PRMEndowView @JvmOverloads constructor(
      * (cache rồi server) không sinh callback trùng.
      */
     private fun applyFeatureFlag(enabled: Boolean, vm: EndowViewModel) {
-        if (lastNotifiedAvailability != enabled) {
-            lastNotifiedAvailability = enabled
-            PromotionSDK.getCallback()?.onAvailabilityChanged(enabled)
-        }
+        emit(hostNotifier.onAvailability(enabled))
         isVisible = enabled
         if (enabled) vm.loadInitial()
     }
@@ -194,10 +216,14 @@ class PRMEndowView @JvmOverloads constructor(
         releaseScope()
     }
 
+    /**
+     * Chỉ gỡ **scope render** của View. KHÔNG đụng [viewModel]: nó thuộc `ViewModelStore` của host,
+     * sống qua detach/attach và qua cả xoay màn — đó chính là điều bản `create(scope)` cũ không có.
+     * `onCleared()` của ViewModel lo huỷ scope store.
+     */
     private fun releaseScope() {
         viewScope?.cancel()
         viewScope = null
-        viewModel = null
     }
 
     // ─── Public API ───────────────────────────────────────────────────────────
@@ -230,7 +256,14 @@ class PRMEndowView @JvmOverloads constructor(
             onSettled?.invoke(ErrorCodes.GENERAL)
             return
         }
-        vm.validateAndApply(offers) { state -> onSettled?.invoke(state.errorCode) }
+        // Store `suspend` và trả state cuối của đúng lượt này → không còn rình `isValidating` trên
+        // dòng state chung, không còn phải giữ lỗi lại chờ nơi gọi đọc.
+        val scope = viewScope
+        if (scope == null) {
+            onSettled?.invoke(ErrorCodes.GENERAL)
+            return
+        }
+        scope.launch { onSettled?.invoke(vm.validateAndApply(offers).errorCode) }
     }
 
     /** Đánh dấu ưu đãi hiện tại không còn khả dụng mà không thay đổi danh sách. */
@@ -292,12 +325,13 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Private: render ──────────────────────────────────────────────────────
 
-    private fun renderState(state: PRMEndowUiState) {
+    private fun renderState(state: EndowState) {
         // Handle error
-        state.error?.let {
+        state.errorCode?.let {
             onError?.invoke(it)
-            // KHÔNG xoá khi đang chờ kết quả validate — xem `EndowViewModel.consumeErrorUnlessSettling`.
-            viewModel?.consumeErrorUnlessSettling()
+            // Xoá được ngay: nơi gọi `validateAndApply` nhận state trả về trực tiếp, không đọc nhờ
+            // dòng state này nữa nên không còn đua nhau (trước phải có `consumeErrorUnlessSettling`).
+            viewModel?.consumeError()
         }
 
         if (!state.hasLoadedInitial) return
@@ -309,12 +343,12 @@ class PRMEndowView @JvmOverloads constructor(
         when (state.widgetState) {
             EndowWidgetState.UNAVAILABLE -> {
                 currentState = EndowWidgetState.UNAVAILABLE
-                showUnavailableState(state.discountDetails)
+                showUnavailableState(state.appliedDiscounts)
             }
 
             EndowWidgetState.APPLIED -> {
                 currentState = EndowWidgetState.APPLIED
-                showAppliedState(state.discountDetails)
+                showAppliedState(state.appliedDiscounts)
             }
 
             EndowWidgetState.NOT_APPLIED -> {
@@ -332,20 +366,22 @@ class PRMEndowView @JvmOverloads constructor(
     }
 
     /**
-     * Phát sự kiện cho host qua callback đã set lúc [PromotionSDK.initialize] — đối ứng iOS
-     * (`onVoucherCountChanged` / `onVoucherApplied`). Chỉ phát khi thật sự đổi để không spam theo
-     * mỗi lần render. `onVoucherCleared` phát trực tiếp ở click "Hủy" (xem [setupClickListeners]).
+     * Phát sự kiện cho host qua callback đã set lúc [PromotionSDK.initialize]. **Quyết định** bắn
+     * hay không nằm ở [EndowHostNotifier] (dùng chung iOS); ở đây chỉ map sự kiện → callback.
+     * `onVoucherCleared` phát trực tiếp ở click "Hủy" (xem [setupClickListeners]).
      */
-    private fun notifyHost(state: PRMEndowUiState) {
-        val callback = PromotionSDK.getCallback()
-        if (state.totalVoucherCount != lastNotifiedCount) {
-            lastNotifiedCount = state.totalVoucherCount
-            callback?.onVoucherCountChanged(state.totalVoucherCount)
+    private fun notifyHost(state: EndowState) = emit(hostNotifier.onState(state))
+
+    /** Map [EndowHostEvent] dùng chung → callback public của Android. */
+    private fun emit(events: List<EndowHostEvent>) {
+        val callback = PromotionSDK.getCallback() ?: return
+        events.forEach { event ->
+            when (event) {
+                is EndowHostEvent.VoucherApplied -> callback.onVoucherApplied(event.voucherId)
+                is EndowHostEvent.VoucherCountChanged -> callback.onVoucherCountChanged(event.count)
+                is EndowHostEvent.AvailabilityChanged -> callback.onAvailabilityChanged(event.enabled)
+            }
         }
-        if (currentState == EndowWidgetState.APPLIED && lastNotifiedState != EndowWidgetState.APPLIED) {
-            state.discountDetails.firstOrNull()?.objectId?.let { callback?.onVoucherApplied(it) }
-        }
-        lastNotifiedState = currentState
     }
 
     // ─── Private: UI helpers ──────────────────────────────────────────────────

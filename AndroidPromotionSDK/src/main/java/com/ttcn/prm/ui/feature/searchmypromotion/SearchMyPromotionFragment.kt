@@ -18,6 +18,8 @@ import com.ttcn.prm.ui.feature.mypromotion.toMyVoucherListItem
 import com.ttcn.promotionsdk.presentation.base.PRMEffect
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionState
+import com.ttcn.promotionsdk.presentation.searchmypromotion.showsNoResult
+import com.ttcn.promotionsdk.presentation.searchmypromotion.showsResults
 import com.ttcn.prm.ui.feature.mypromotion.ServiceSelectorBottomSheet
 import com.ttcn.prm.ui.feature.mypromotion.ServiceSelectorUiItem
 import com.ttcn.prm.ui.feature.mypromotion.adapter.MyPromotionAdapter
@@ -113,12 +115,10 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
     }
 
     private fun renderState(state: SearchMyPromotionState) {
-        val trimmedKeyword = state.keyword.trim()
-        val hasValidKeyword = trimmedKeyword.length >= MIN_KEYWORD_LENGTH
-        val showNoResult = hasValidKeyword &&
-                !state.isLoading &&
-                state.isEmpty
-        val showResults = hasValidKeyword && state.vouchers.isNotEmpty()
+        // Cả hai quyết định đều là rule dùng chung ở store — iOS đọc đúng hai hàm này.
+        val showNoResult = state.showsNoResult()
+        val showResults = state.showsResults()
+        val hasValidKeyword = state.keyword.isNotBlank()
 
         binding.shimmerProvider.root.isVisible = state.isLoading && state.vouchers.isEmpty()
         binding.ctlSearch.isVisible = showResults || (hasValidKeyword && state.isLoading)
@@ -145,7 +145,8 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
 
 
     private companion object {
-        private const val MIN_KEYWORD_LENGTH = 1
+        // `MIN_KEYWORD_LENGTH = 1` đã bỏ: nó chỉ là cách viết khác của "từ khoá không rỗng", và luật
+        // đó nay nằm ở `SearchMyPromotionState.showsNoResult()/showsResults()` dùng chung với iOS.
         private const val LOAD_MORE_THRESHOLD = 2
     }
 }

@@ -123,9 +123,9 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
      Android có sẵn nền disabled trong `PRMButton`; nút bên này là `UIButton` thường nên hạ `alpha`.
      */
     private func updateApplyButtonState(_ state: ChoosePromotionViewModel.Display) {
-        let canApply = state.selectedCount > 0
-        applyButton?.isEnabled = canApply
-        applyButton?.alpha = canApply ? 1 : 0.5
+        // Luật ở store (`ChoosePromotionState.canApply()`) — không tự suy từ `selectedCount` nữa.
+        applyButton?.isEnabled = state.canApply
+        applyButton?.alpha = state.canApply ? 1 : 0.5
     }
 
     /// Áp `button` token cho nút "Áp dụng" (null-safe — bỏ qua field nil để giữ default).
@@ -336,7 +336,9 @@ extension ChoosePromotionViewController: UITableViewDataSource, UITableViewDeleg
         // Chỉ "Ưu đãi khác" phân trang theo cuộn: sắp hiện item cuối -> gọi page kế.
         // VM tự bỏ qua nếu đã hết trang hoặc đang tải.
         guard sectionData.type == .otherPromotions else { return }
-        if indexPath.row == sectionData.items.count - 1 {
+        // Ngưỡng do `shouldLoadMoreOther` (dùng chung với Android) quyết định — trước đây mỗi bên tự
+        // đặt điều kiện nên thời điểm nạp lệch nhau trên cùng một tập dữ liệu.
+        if viewModel.currentState.shouldLoadMoreOther(visibleIndex: Int32(indexPath.row)) {
             viewModel.dispatch(ChoosePromotionIntentLoadMoreOtherVouchers.shared)
         }
     }

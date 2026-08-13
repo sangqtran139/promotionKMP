@@ -60,6 +60,9 @@ class ChoosePromotionStore(
 
     private var debounceJob: Job? = null
 
+    /** Gác [ChoosePromotionIntent.SeedOnce] — xem KDoc của intent đó. */
+    private var hasSeeded = false
+
     override fun errorOf(state: ChoosePromotionState): String? = state.errorCode
 
     override val consumeErrorIntent: ChoosePromotionIntent = ChoosePromotionIntent.ConsumeError
@@ -81,6 +84,13 @@ class ChoosePromotionStore(
             ChoosePromotionIntent.LoadMoreMyVouchers -> loadMore(EligibleSection.MY_OFFERS)
             ChoosePromotionIntent.LoadMoreOtherVouchers -> loadMore(EligibleSection.OTHER_OFFERS)
             is ChoosePromotionIntent.SetPreSelected -> _state.update { it.copy(selectedIds = intent.ids.distinct()) }
+            is ChoosePromotionIntent.SeedOnce -> {
+                if (!hasSeeded) {
+                    hasSeeded = true
+                    _state.update { it.copy(selectedIds = intent.preSelectedIds.distinct()) }
+                    preload(intent.myOffers, intent.otherOffers, intent.myIsLastPage, intent.otherIsLastPage)
+                }
+            }
             is ChoosePromotionIntent.ToggleSelection -> onToggleSelection(intent.id)
             ChoosePromotionIntent.SeeMoreMy -> onSeeMoreMy()
             ChoosePromotionIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }

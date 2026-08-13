@@ -20,6 +20,31 @@ data class SearchMyPromotionState(
     val errorCode: String? = null,
 )
 
+/**
+ * Hiện view "không tìm thấy kết quả" thay cho list.
+ *
+ * Hai nền tảng từng phát biểu luật này **khác nhau**: Android
+ * (`SearchMyPromotionFragment.renderState`) đòi `keyword.trim().length >= MIN_KEYWORD_LENGTH &&
+ * !isLoading && isEmpty`, còn iOS (`SearchMyPromotionViewController.render`) chỉ xét `isEmpty` và
+ * mượn `!isLoading` từ nhánh `if` bao ngoài. Chúng đang **ra cùng kết quả** — nhưng chỉ vì
+ * [SearchMyPromotionStore] đã set `isEmpty = false` khi xoá từ khoá; sửa chỗ đó một cái là hai bên
+ * lệch âm thầm. Nay là một luật, ở một nơi.
+ */
+fun SearchMyPromotionState.showsNoResult(): Boolean =
+    keyword.isNotBlank() && !isLoading && isEmpty
+
+/** Hiện danh sách kết quả (kèm tiêu đề "Kết quả tìm kiếm"): có từ khoá và có ít nhất một voucher. */
+fun SearchMyPromotionState.showsResults(): Boolean =
+    keyword.isNotBlank() && vouchers.isNotEmpty()
+
+/**
+ * Voucher theo id trong danh sách đang hiển thị — cho điều hướng sang Chi tiết và cho bottom sheet
+ * "Chọn dịch vụ". Bên iOS hàm này từng được chép nguyên văn ở **hai** VM (`MyPromotionViewModel`,
+ * `SearchMyPromotionViewModel`).
+ */
+fun SearchMyPromotionState.voucher(id: String): MyPromotionVoucher? =
+    vouchers.firstOrNull { it.source.voucherId == id }
+
 sealed interface SearchMyPromotionIntent {
     data class QueryChanged(val keyword: String) : SearchMyPromotionIntent
     data object Search : SearchMyPromotionIntent

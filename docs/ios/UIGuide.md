@@ -204,9 +204,17 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 |--------|------|-------------|
 | `PRMFoundation` | Foundation | Extension (gồm `UITextField.textPublisher` cho Combine), Logger, `SDKBundle`/`PRMAsset` |
 | `PRMDesignKit` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`PRMButton`, `Shimmer`, `PRMRefreshTableView`, `PRMMarqueeLabel`…) |
-| `PRMPromotionUI` | Feature UI | View nghiệp vụ: `PromotionCardView`, `CouponViews`, `PRMEndowView` |
+| `PRMPromotionUI` | Feature UI | View nghiệp vụ **tái sử dụng**: `PromotionCardView`, `CouponViews`, `TabView`, `Search` |
 | `PRMKotlinBridge` | Keo | `boxed(_:)` (`Int?`→`KotlinInt?`) + `toPromotionError(_:)` (bóc exception Kotlin). **Không nghiệp vụ.** |
-| `PromotionSDKUI` | Facade | Public API + màn hình (MVVM), phụ thuộc mọi module qua `@_implementationOnly` |
+| `PromotionSDKUI` | Facade | Public API + màn hình (MVVM) + **widget `PRMEndowView`** (`Endow/`), phụ thuộc mọi module qua `@_implementationOnly` |
+
+> **`PRMEndowView` ở trong module SDK, không ở `PRMPromotionUI`.** Hai lý do: (1) soi gương Android —
+> bên kia widget nằm ở `ui/feature/endowview/` cạnh `EndowViewModel`, không nằm trong thư viện design;
+> (2) **host không được biết tới bốn package trong `Packages/`** — mọi khai báo `public` của module
+> PRM đều bị ghi vào `.swiftinterface` mà host compile theo, nên widget để `public` ở package ngoài là
+> buộc host phải `import PRMPromotionUI` (thứ không hề có trong gói phát hành). Ở trong module và để
+> `internal` thì host chỉ thấy `PromotionSDK.createEndowView(...) -> UIView`. Xem
+> [Distribution.md](./Distribution.md).
 
 Đã **xoá** khỏi bản KMP: `PromotionLogic` (Swift), `Repository`, `CoreNetwork`, `CoreDatabase` —
 kéo theo Realm, Alamofire, SwiftyJSON, KeychainSwift. Và nay **cả RxSwift cũng đã bị gỡ**:

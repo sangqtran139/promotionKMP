@@ -4,18 +4,18 @@
 #
 # Chạy không tham số thì nó hỏi chọn chế độ:
 #
-#   ./scripts/android.sh
+#   ./scripts/build-android.sh
 #     1) local    publish SDK vào ~/.m2 → build app demo
 #     2) publish  đẩy SDK lên Artifactory (mặc định Viettelmoney)
 #
 # Chọn thẳng khỏi hỏi:
 #
-#   ./scripts/android.sh local                    # publish ~/.m2 → build APK debug
-#   ./scripts/android.sh local --run              # build → cài → mở app trên máy đang cắm
-#   ./scripts/android.sh local --skip-app         # chỉ publish vào ~/.m2
-#   ./scripts/android.sh publish                  # hỏi 2 version rồi đẩy lên Viettelmoney
-#   ./scripts/android.sh publish -v 1.2.0 -l 1.0.0 --yes    # cho CI, không hỏi gì
-#   ./scripts/android.sh publish --target local   # publish thử vào ~/.m2 (không build app)
+#   ./scripts/build-android.sh local                    # publish ~/.m2 → build APK debug
+#   ./scripts/build-android.sh local --run              # build → cài → mở app trên máy đang cắm
+#   ./scripts/build-android.sh local --skip-app         # chỉ publish vào ~/.m2
+#   ./scripts/build-android.sh publish                  # hỏi 2 version rồi đẩy lên Viettelmoney
+#   ./scripts/build-android.sh publish -v 1.2.0 -l 1.0.0 --yes    # cho CI, không hỏi gì
+#   ./scripts/build-android.sh publish --target local   # publish thử vào ~/.m2 (không build app)
 #
 # Tuỳ chọn chung:
 #   -v, --version X         version của `promotion`     (mặc định: SDK_VERSION trong gradle.properties)

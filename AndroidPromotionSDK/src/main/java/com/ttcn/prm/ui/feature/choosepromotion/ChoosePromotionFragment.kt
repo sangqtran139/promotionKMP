@@ -21,7 +21,13 @@ import com.ttcn.prm.ui.feature.ext.toVoucherListItem
 import com.ttcn.promotionsdk.presentation.base.PRMEffect
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionState
+import com.ttcn.promotionsdk.presentation.choosepromotion.canApply
+import com.ttcn.promotionsdk.presentation.choosepromotion.highlightKeyword
+import com.ttcn.promotionsdk.presentation.choosepromotion.isSelected
 import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
+import com.ttcn.promotionsdk.presentation.choosepromotion.shouldLoadMoreOther
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
 import com.ttcn.prm.ui.feature.endowview.PRMEndowView
 import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
@@ -103,9 +109,8 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             binding.shimmerProvider.root.isVisible = state.isLoading
 
             // Gõ từ khoá mà không ra gì → view "không tìm thấy" thay cho list, giống màn "Tìm ưu đãi"
-            // (`SearchMyPromotionFragment.renderState`). Danh sách rỗng lúc KHÔNG tìm kiếm thì để
-            // nguyên list trống — đó là "chưa có ưu đãi nào", không phải "tìm không ra".
-            val showNoResult = state.keyword.isNotBlank() && !state.isLoading && state.isEmpty
+            // (`SearchMyPromotionFragment.renderState`). Luật ở store — iOS đọc cùng hàm.
+            val showNoResult = state.showsNoResult()
             binding.ctlNoResult.isVisible = showNoResult
             binding.rcvVoucher.isVisible = !state.isLoading && !showNoResult
 
@@ -119,12 +124,12 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             }
         }
 
-        // Seed voucher pre-select vào store trước khi load (store giữ selection).
-        viewModel.dispatch(ChoosePromotionIntent.SetPreSelected(preSelectedVoucherIds.toList()))
-
-        // Truyền data đã load sẵn; nếu rỗng → ViewModel tự gọi API
+        // `SeedOnce`, KHÔNG phải `SetPreSelected` + `Preload`: `observeData()` chạy lại mỗi lần view
+        // được dựng lại, mà store sống lâu hơn view — bắn lại là ghi đè tick của user về bộ đã áp ban
+        // đầu và rewind `otherOffers` về trang đầu. Cờ gác nằm ở store nên iOS dùng chung.
         viewModel.dispatch(
-            ChoosePromotionIntent.Preload(
+            ChoosePromotionIntent.SeedOnce(
+                preSelectedIds = preSelectedVoucherIds.toList(),
                 myOffers = initialMyOffers,
                 otherOffers = initialOtherOffers,
                 myIsLastPage = initialMyIsLastPage,
@@ -155,9 +160,15 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             )
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    if (dy <= 0) return
+                    // Ngưỡng do `shouldLoadMoreOther` (dùng chung) quyết định, tính theo **chỉ số
+                    // trong nhóm "Ưu đãi khác"** — không phải vị trí trên toàn list (vốn còn header,
+                    // divider, hàng "Xem thêm"). Bỏ luôn `dy <= 0`: list ngắn hơn màn hình thì không
+                    // có cú cuộn nào, bản cũ không bao giờ nạp thêm được còn iOS thì có.
                     val lm = recyclerView.layoutManager as LinearLayoutManager
-                    if (lm.findLastVisibleItemPosition() >= lm.itemCount - 2) {
+                    val lastVisible = lm.findLastVisibleItemPosition()
+                    if (lastVisible == RecyclerView.NO_POSITION) return
+                    val indexInOther = lastVisible - otherSectionOffset
+                    if (viewModel.state.value.shouldLoadMoreOther(indexInOther)) {
                         viewModel.dispatch(ChoosePromotionIntent.LoadMoreOtherVouchers)
                     }
                 }
@@ -165,16 +176,23 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         }
     }
 
+    /**
+     * Vị trí bắt đầu nhóm "Ưu đãi khác" trên list phẳng — đặt lại mỗi lần [rebuildList].
+     * `MAX_VALUE` khi chưa có nhóm đó: mọi chỉ số quy đổi sẽ âm nên không kích hoạt nạp thêm.
+     */
+    private var otherSectionOffset: Int = Int.MAX_VALUE
+
     private fun rebuildList(state: ChoosePromotionState) {
         val items = mutableListOf<ChoosePromotionListItem>()
+        otherSectionOffset = Int.MAX_VALUE
         // Từ khoá đang tìm → tô đỏ đoạn khớp trên item (đối ứng `highlightKeyword` bên iOS).
-        val highlightKeyword = state.keyword.trim()
+        val highlightKeyword = state.highlightKeyword()
 
         if (state.myOffers.isNotEmpty()) {
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
             state.visibleMyOffers().forEach { offer ->
                 val voucher = offer.toVoucherListItem()
-                val isSelected = voucher.voucherId in state.selectedIds
+                val isSelected = state.isSelected(voucher.voucherId)
                 items.add(
                     ChoosePromotionListItem.VoucherItem(
                         data = voucher.copy(isSelected = isSelected),
@@ -200,9 +218,12 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
                 items.add(ChoosePromotionListItem.SectionDivider)
             }
             items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
+            // Vị trí item ĐẦU TIÊN của nhóm "Ưu đãi khác" trên list phẳng. Scroll listener trừ đi số
+            // này để ra chỉ số TRONG NHÓM, thứ mà rule dùng chung `shouldLoadMoreOther` nhận.
+            otherSectionOffset = items.size
             state.otherOffers.forEach { offer ->
                 val voucher = offer.toVoucherListItem()
-                val isSelected = voucher.voucherId in state.selectedIds
+                val isSelected = state.isSelected(voucher.voucherId)
                 items.add(
                     ChoosePromotionListItem.VoucherItem(
                         data = voucher.copy(isSelected = isSelected),
@@ -268,13 +289,13 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
      * sang nền `prm_bg_button_primary_disabled`.
      */
     private fun updateApplyButtonState(state: ChoosePromotionState) {
-        val show = state.isMultiSelection && state.selectedIds.isNotEmpty()
+        val show = state.showsSelectedCount()
         binding.layoutReducePrice.isVisible = show
         if (show) {
             binding.txtNumberChooseEndow.text =
                 getString(R.string.prm_selected_voucher_count, state.selectedIds.size)
         }
-        binding.btnApply.isEnabled = state.selectedIds.isNotEmpty()
+        binding.btnApply.isEnabled = state.canApply()
     }
 
     // ─── Search ───────────────────────────────────────────────────────────────
@@ -284,12 +305,11 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         binding.edtVoucher.apply {
             // Chặn nhập quá giới hạn (TLNV MOB_004 control 2.1 — maxlength 255).
             maxLength = PROMOTION_SEARCH_MAX_LENGTH
+            // Gõ trắng KHÔNG cần rẽ nhánh sang `ClearKeyword`: store đã xử đúng đường đó trong
+            // `onQueryChanged` (huỷ debounce, nạp lại ngay). Nhánh cũ ở đây và bản chép của nó bên
+            // iOS (`ChoosePromotionViewModel.query(_:)`) là cùng một luật viết hai lần.
             onTextChangeListener = { keyword ->
-                if (keyword.isEmpty()) {
-                    viewModel.dispatch(ChoosePromotionIntent.ClearKeyword)
-                } else {
-                    viewModel.dispatch(ChoosePromotionIntent.QueryChanged(keyword))
-                }
+                viewModel.dispatch(ChoosePromotionIntent.QueryChanged(keyword))
             }
             setOnSearchActionListener { viewModel.dispatch(ChoosePromotionIntent.Search) }
             setOnDoneKeyboardListener { viewModel.dispatch(ChoosePromotionIntent.Search) }

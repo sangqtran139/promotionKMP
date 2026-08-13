@@ -15,21 +15,12 @@ import Foundation
 
 final class EndowViewModel: PRMStoreViewModel<EndowStore> {
 
-    /// **Tắt** cầu lỗi → effect tự động của base.
+    /// **Tắt** cầu lỗi → effect tự động của base: widget tự hiện lỗi rồi tự `consumeError`.
     ///
-    /// Widget phải giữ `errorCode` lại cho tới khi vòng validate kết thúc ([handleSettle] mới quyết
-    /// định giao lỗi cho nơi gọi rồi mới xoá). Để base tự `ConsumeError` mỗi lần state đổi là nuốt
-    /// mất lỗi đúng lúc user đang chờ kết quả bấm "Áp dụng". Đối ứng `consumeErrorUnlessSettling`
-    /// bên Android.
+    /// Trước đây tắt vì lý do khác — phải giữ `errorCode` cho tới khi vòng validate kết thúc, do
+    /// `validateAndApply` là fire-and-forget nên nơi gọi phải đọc nhờ dòng state chung. Lý do đó
+    /// hết: store `suspend` và **trả thẳng state cuối** của lượt gọi.
     override var autoConsumesError: Bool { false }
-
-    /// One-shot cho validate&apply: chờ `isValidating` true→false rồi gọi completion đúng một lần.
-    private var settleCompletion: ((EndowState) -> Void)?
-    private var sawValidating = false
-
-    /// Closure của nơi quan sát widget — base chỉ có **một** khe `onState`, mà VM này còn phải chạy
-    /// [handleSettle] trên mỗi state, nên nó giữ khe đó và forward tiếp ra ngoài.
-    private var externalOnState: ((EndowState) -> Void)?
 
     init(findEligibleUseCase: FindEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
          validateUseCase: ValidateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),
@@ -39,35 +30,45 @@ final class EndowViewModel: PRMStoreViewModel<EndowStore> {
             validateStackableDiscountsUseCase: validateUseCase,
             createRedemptionSessionUseCase: createRedemptionUseCase
         ))
-        onState = { [weak self] state in
-            guard let self = self else { return }
-            self.handleSettle(state)
-            self.externalOnState?(state)
-        }
     }
 
     // ─── Observe (đối ứng Android `uiState.collect`) ────────────────────────────
     /// Quan sát state (base đã hop main). Gọi một lần khi widget attach.
+    ///
+    /// Gán thẳng khe `onState` của base. Trước đây phải đi vòng qua `externalOnState` vì VM còn
+    /// chiếm khe đó để chạy `handleSettle` trên MỌI state — `handleSettle` đã bỏ nên khe trả về
+    /// đúng một người dùng.
     func observe(_ onState: @escaping (EndowState) -> Void) {
-        externalOnState = onState
+        self.onState = onState
         onState(currentState)   // phát ngay state hiện tại, khớp hành vi replay của StateFlow
     }
 
     // ─── Public API (forward xuống store) ───────────────────────────────────────
     func loadInitial() { dispatch(EndowIntentLoadInitial.shared) }
 
+    /// Cờ hiển thị widget, đọc cache (fail-open). Rule + tên cờ nằm ở store, dùng chung Android.
+    func availabilityFromCache() -> Bool { store.availabilityFromCache() }
+
+    /// Làm mới cờ từ server rồi trả giá trị thật.
+    ///
+    /// `.boolValue`: hàm `suspend` trả `Boolean` bên Kotlin sang Swift thành **`KotlinBoolean`** (kiểu
+    /// hộp), khác hẳn `availabilityFromCache()` không suspend — cái đó ra `Bool` thẳng.
+    /// Hỏng mạng → `try?` cho nil → `true`, fail-open đúng như [PromotionFeatureGate.refresh].
+    func refreshAvailability() async -> Bool {
+        (try? await store.refreshAvailability())?.boolValue ?? true
+    }
+
     /// Validate + áp offers đã chọn; [completion] gọi MỘT lần khi validate xong (thành công/thất bại).
     /// Widget-state cập nhật qua [observe]; [completion] để `PromotionSDKImpl` điều hướng (pop, callback host).
     func validateAndApply(_ offers: [EligibleOffer], completion: ((EndowState) -> Void)? = nil) {
-        // Rỗng → store xoá áp NGAY, không có vòng validate nào để chờ; bắn completion luôn cho khỏi treo.
-        if offers.isEmpty {
-            dispatch(EndowIntentValidateAndApply(offers: offers))
-            completion?(currentState)
-            return
+        Task { @MainActor in
+            // `suspend` bên Kotlin → `async throws` bên Swift. Trả state cuối của ĐÚNG lượt này nên
+            // không còn `settleCompletion`/`sawValidating`/`handleSettle` — Android bỏ y hệt.
+            let state = (try? await store.validateAndApply(offers: offers)) ?? currentState
+            completion?(state)
+            // Đã giao lỗi cho nơi gọi → giờ mới xoá, để lỗi cũ không dính sang vòng validate sau.
+            if state.errorCode != nil { consumeError() }
         }
-        settleCompletion = completion
-        sawValidating = false
-        dispatch(EndowIntentValidateAndApply(offers: offers))
     }
 
     func setApplied(_ discounts: [EndowAppliedDiscount], unavailable: Bool) {
@@ -92,16 +93,4 @@ final class EndowViewModel: PRMStoreViewModel<EndowStore> {
     func clearApplied() { dispatch(EndowIntentClearApplied.shared) }
     func consumeError() { dispatch(EndowIntentConsumeError.shared) }
 
-    private func handleSettle(_ state: EndowState) {
-        if state.isValidating {
-            sawValidating = true
-            return
-        }
-        guard sawValidating, let completion = settleCompletion else { return }
-        settleCompletion = nil
-        sawValidating = false
-        completion(state)
-        // Xoá sau khi đã giao cho nơi gọi, để lỗi cũ không dính sang vòng validate sau.
-        if state.errorCode != nil { consumeError() }
-    }
 }

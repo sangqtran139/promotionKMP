@@ -31,18 +31,31 @@ data class EndowState(
     val isValidating: Boolean = false,
     /** Mã lỗi một-lần; native hiển thị rồi `dispatch(ConsumeError)`. */
     val errorCode: String? = null,
-)
+) {
+    /**
+     * Trạng thái hiển thị của widget — **quyết định dùng chung**, native chỉ render theo.
+     *
+     * Là **property trong class**, không phải extension: extension property của Kotlin bridge sang
+     * Swift thành hàm tĩnh (`EndowContractKt.widgetState(state)`), nên iOS đã bỏ qua và chép lại
+     * nguyên 4 nhánh này bằng Swift — rule đụng tiền mà tồn tại hai bản, và 8 test ở `EndowStoreTest`
+     * chỉ phủ bản Kotlin. Để trong class thì cả hai nền tảng cùng đọc `state.widgetState`.
+     *
+     * Thứ tự nhánh có ý nghĩa: `UNAVAILABLE` phải xét TRƯỚC `APPLIED` — ưu đãi đã áp nhưng không còn
+     * hợp lệ vẫn có `appliedDiscounts` không rỗng.
+     *
+     * Khai ngoài constructor nên không lọt vào `equals`/`hashCode`/`copy` của data class.
+     */
+    val widgetState: EndowWidgetState
+        get() = when {
+            discountUnavailable && appliedDiscounts.isNotEmpty() -> EndowWidgetState.UNAVAILABLE
+            appliedDiscounts.isNotEmpty() -> EndowWidgetState.APPLIED
+            totalVoucherCount > 0 -> EndowWidgetState.NOT_APPLIED
+            else -> EndowWidgetState.EMPTY
+        }
+}
 
 /** Trạng thái hiển thị widget — **quyết định dùng chung** (rule cũ ở `PRMEndowView.renderState`). */
 enum class EndowWidgetState { EMPTY, NOT_APPLIED, APPLIED, UNAVAILABLE }
-
-val EndowState.widgetState: EndowWidgetState
-    get() = when {
-        discountUnavailable && appliedDiscounts.isNotEmpty() -> EndowWidgetState.UNAVAILABLE
-        appliedDiscounts.isNotEmpty() -> EndowWidgetState.APPLIED
-        totalVoucherCount > 0 -> EndowWidgetState.NOT_APPLIED
-        else -> EndowWidgetState.EMPTY
-    }
 
 /**
  * Kết quả validate cho 1 ưu đãi — model **shared** (đối xứng `AppliedDiscount` public của Android /

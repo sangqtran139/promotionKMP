@@ -50,6 +50,15 @@ enum class MyPromotionAction {
     NONE,
 }
 
+/**
+ * Voucher theo id trong danh sách đang hiển thị — cho điều hướng sang Chi tiết và cho bottom sheet
+ * "Chọn dịch vụ". Đối ứng
+ * [SearchMyPromotionState.voucher][com.ttcn.promotionsdk.presentation.searchmypromotion.voucher];
+ * bên iOS hàm này từng được chép nguyên văn ở cả hai VM.
+ */
+fun MyPromotionState.voucher(id: String): MyPromotionVoucher? =
+    vouchers.firstOrNull { it.source.voucherId == id }
+
 sealed interface MyPromotionIntent {
     data object LoadInitialIfNeeded : MyPromotionIntent
     data object Refresh : MyPromotionIntent

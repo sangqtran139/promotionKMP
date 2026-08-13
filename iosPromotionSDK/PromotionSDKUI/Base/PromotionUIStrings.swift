@@ -46,6 +46,9 @@ enum PromotionUIStrings {
         switch code {
         case "missing_customer_id": return "Không tìm thấy thông tin khách hàng"
         case "no_result", "error_detail_unavailable": return "Không tìm thấy kết quả phù hợp"
+        // Đối ứng `prm_error_network` / `prm_error_timeout` bên Android — giữ trùng câu chữ.
+        case "network_error": return "Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại"
+        case "timeout": return "Kết nối quá lâu không phản hồi. Vui lòng thử lại"
         default: return "Đã có lỗi xảy ra. Vui lòng thử lại sau"
         }
     }

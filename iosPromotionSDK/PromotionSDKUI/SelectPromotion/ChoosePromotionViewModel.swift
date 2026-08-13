@@ -49,6 +49,9 @@ final class ChoosePromotionViewModel:
         /// Đối ứng `ChoosePromotionFragment.updateApplyButtonState` bên Android.
         var showsSelectedCount = false
         var selectedCount = 0
+        /// Nút "Áp dụng" bấm được chưa — luật ở store (`canApply()`), đối ứng
+        /// `binding.btnApply.isEnabled` bên Android. Trước đây VC tự suy `selectedCount > 0`.
+        var canApply = false
     }
 
     let data: ChoosePromotionBuilder.DataModel
@@ -65,7 +68,6 @@ final class ChoosePromotionViewModel:
     }
 
     // Selection (`selectedIds`) + mở/thu gọn (`myExpanded`) nay do store quản — VC chỉ render.
-    private var didStart = false
 
     init(router: ChoosePromotionRouter,
          data: ChoosePromotionBuilder.DataModel,
@@ -80,10 +82,11 @@ final class ChoosePromotionViewModel:
     /// Seed pre-select rồi preload/fetch — đối ứng `ChoosePromotionFragment.observeData`
     /// (SetPreSelected → Preload). `didStart` chặn chạy lại khi màn được bind lại.
     func loadInitialIfNeeded() {
-        guard !didStart else { return }
-        didStart = true
-        dispatch(ChoosePromotionIntentSetPreSelected(ids: data.preSelectedVoucherIds))
-        dispatch(ChoosePromotionIntentPreload(
+        // Cờ gác nay ở STORE (`SeedOnce`), không phải `didStart` của VM: Android không có cờ tương
+        // ứng nên `observeData()` bắn lại mỗi lần view dựng lại và ghi đè tick của user. Một cờ dùng
+        // chung thì hai bên không thể lệch.
+        dispatch(ChoosePromotionIntentSeedOnce(
+            preSelectedIds: data.preSelectedVoucherIds,
             myOffers: data.preloadedMy,
             otherOffers: data.preloadedOther,
             myIsLastPage: data.myIsLastPage,
@@ -91,18 +94,16 @@ final class ChoosePromotionViewModel:
         ))
     }
 
-    /// Xoá trắng → `ClearKeyword` (reload ngay, không chờ debounce) — khớp Fragment Android.
+    /// Gõ trắng **không** cần rẽ nhánh sang `ClearKeyword`: store đã xử đúng đường đó trong
+    /// `onQueryChanged` (huỷ debounce, nạp lại ngay). Nhánh `if` cũ ở đây là bản chép của
+    /// `ChoosePromotionFragment.setupSearch` bên Android — cùng một luật viết hai lần.
     func query(_ keyword: String) {
-        if keyword.isEmpty {
-            dispatch(ChoosePromotionIntentClearKeyword.shared)
-        } else {
-            dispatch(ChoosePromotionIntentQueryChanged(keyword: keyword))
-        }
+        dispatch(ChoosePromotionIntentQueryChanged(keyword: keyword))
     }
 
     /// Điều hướng — không nằm ở store.
     func openDetail(voucherId: String) {
-        guard let promotion = Self.allLoaded(store.currentState()).first(where: { $0.id == voucherId })
+        guard let promotion = store.currentState().allOffers().first(where: { $0.id == voucherId })
         else { return }
         router.routeToDetail(promotion: promotion)
     }
@@ -115,13 +116,9 @@ final class ChoosePromotionViewModel:
     /// Ưu đãi user đang chọn, để bấm "Áp dụng" trả về widget — validate & áp do `EndowStore` lo.
     /// Là **hàm gọi lúc bấm** chứ không phải effect: chỉ đọc selection hiện tại, không có gì bất
     /// đồng bộ để chờ. Đối ứng `ChoosePromotionViewModel.selectedOffers()` bên Android.
+    /// Luật lọc nằm ở store (`ChoosePromotionState.selectedOffers()`) — Android gọi đúng hàm này.
     func selectedOffers() -> [EligibleOffer] {
-        let state = store.currentState()
-        return Self.allLoaded(state).filter { state.selectedIds.contains($0.id) }
-    }
-
-    fileprivate static func allLoaded(_ state: ChoosePromotionState) -> [EligibleOffer] {
-        state.myOffers.map { $0.source } + state.otherOffers.map { $0.source }
+        store.currentState().selectedOffers()
     }
 }
 
@@ -130,31 +127,33 @@ final class ChoosePromotionViewModel:
 /// Chiếu state dùng chung ([ChoosePromotionState]) → **view model đã dựng** (`Display`).
 private extension ChoosePromotionState {
 
+    /// Mọi **quyết định** đều lấy từ store (`showsNoResult()` / `showsSelectedCount()` / `canApply()`)
+    /// — Android đọc đúng những hàm đó. Ở đây chỉ còn việc xếp chúng vào struct cho VC.
     func toDisplay() -> ChoosePromotionViewModel.Display {
         ChoosePromotionViewModel.Display(
             sections: buildSections(),
             isLoading: isLoading,
             isLoadingMoreOther: isLoadingMoreOther,
-            showsNoResult: !keyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                && !isLoading && isEmpty,
-            showsSelectedCount: isMultiSelection && !selectedIds.isEmpty,
-            selectedCount: selectedIds.count
+            showsNoResult: showsNoResult(),
+            showsSelectedCount: showsSelectedCount(),
+            selectedCount: selectedIds.count,
+            canApply: canApply()
         )
     }
 
     /// iOS-only UI: dựng sections cho `UITableView` (Android dựng list item ở adapter).
     /// Selection + mở/thu gọn đều đã nằm ở store — hàm này chỉ đọc.
     func buildSections() -> [ChoosePromotionViewModel.PromotionSection] {
-        let trimmed = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = highlightKeyword()
         let isSearching = !trimmed.isEmpty
-        let selected = selectedIds
+        let state = self
         let cell: (ChooseOffer) -> MyPromotionCellViewModel = { offer in
             MyPromotionCellViewModel(
                 offer: offer.source,
                 isEnabled: offer.isUsable,
                 buttonTitle: PromotionUIStrings.detail,
                 showsCheckbox: true,
-                isChecked: selected.contains(offer.source.id),
+                isChecked: state.isSelected(id: offer.source.id),
                 // Hết hạn có chuỗi riêng. Không truyền thì cell rơi vào nhánh mặc định
                 // `unmatchedRules.first ?? .ineligible` → hiện "Không đủ điều kiện", sai nghĩa.
                 stateText: offer.isExpired ? PromotionUIStrings.expired : nil,

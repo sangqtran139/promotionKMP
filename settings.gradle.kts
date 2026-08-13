@@ -56,7 +56,7 @@ dependencyResolutionManagement {
         // tranh resolve androidx/ktor với google()/mavenCentral().
         if (useMavenLocal) {
             // Hệ quả: **phải publish vào ~/.m2 trước khi build app**, không có đường lùi ra server.
-            // `./scripts/android.sh local` ép sẵn đúng thứ tự publish → build.
+            // `./scripts/build-android.sh local` ép sẵn đúng thứ tự publish → build.
             mavenLocal {
                 content { includeGroup(sdkGroup) }
             }

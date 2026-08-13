@@ -39,8 +39,15 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
         private const val VIEW_TYPE_COUNT   = 1
     }
 
+    /**
+     * Danh sách y hệt thì thôi: `PRMEndowView.renderState` nay chạy theo **[EndowState] dùng chung**,
+     * tức nó thức dậy cả với những field widget không vẽ (`isValidating`, `isLoading`) — trước đây
+     * `PRMEndowUiState` không có mấy field đó nên nuốt luôn. Không chặn ở đây thì mỗi vòng validate
+     * lại một lần `notifyDataSetChanged` rebind toàn bộ hàng với đúng dữ liệu cũ.
+     */
     @SuppressLint("NotifyDataSetChanged")
     fun submitList(list: List<AppliedDiscount>) {
+        if (items == list) return
         items.clear()
         items.addAll(list)
         notifyDataSetChanged()

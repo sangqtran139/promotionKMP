@@ -14,7 +14,8 @@
   Ktor, coroutines, AppCompat, Glide… Không cần khai tay.
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.**` — và **chỉ** ở đó:
   `entry` (`PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKOptions`, `PromotionSessionConfig`…),
-  `entry.api` (headless), `entry.theme` (+ `entry.theme.token`), `entry.endowview` (widget checkout:
+  `entry.api` (headless). Hai nhóm public **nằm ngoài** `entry` vì lý do lịch sử — `ui.theme`
+  (+ `ui.theme.token`: `PromotionSDKTheme`, 6 token) và `ui.feature.endowview` (widget checkout:
   `PRMEndowView`, `AppliedDiscount`).
   Mọi class khác của SDK là `internal` — IDE không gợi ý, và import vào là lỗi compile.
 - Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,

@@ -34,7 +34,9 @@ final class SearchMyPromotionViewModel:
         return ServiceSelectorBuilder.items(forApplicableProducts: voucher.source.applicableProducts)
     }
 
+    /// Tra voucher theo id — luật ở store (`SearchMyPromotionState.voucher(id:)`), đối xứng
+    /// `MyPromotionViewModel.voucher(_:)`.
     private func voucher(_ id: String) -> MyPromotionVoucher? {
-        store.currentState().vouchers.first { $0.source.voucherId == id }
+        store.currentState().voucher(id: id)
     }
 }

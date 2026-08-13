@@ -20,7 +20,14 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionState
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
+import com.ttcn.promotionsdk.presentation.choosepromotion.allOffers
+import com.ttcn.promotionsdk.presentation.choosepromotion.canApply
+import com.ttcn.promotionsdk.presentation.choosepromotion.highlightKeyword
 import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
+import com.ttcn.promotionsdk.presentation.choosepromotion.selectedOffers
+import com.ttcn.promotionsdk.presentation.choosepromotion.shouldLoadMoreOther
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -65,6 +72,12 @@ class ChoosePromotionStoreBranchTest {
 
     private fun offer(id: String, usable: Boolean = true, expire: String? = null) =
         EligibleOffer(id = id, usable = usable, expireDate = expire)
+
+    /** `ChooseOffer` tối thiểu cho các test chỉ quan tâm SỐ LƯỢNG item, không quan tâm nội dung. */
+    private fun EligibleOffer.toChooseOfferForTest() =
+        com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer(
+            source = this, isUsable = true, expiringInDays = null, isExpired = false,
+        )
 
     private fun TestScopeStore(repo: FakeRepo, scheduler: kotlinx.coroutines.test.TestCoroutineScheduler) =
         ChoosePromotionStore(FindEligibleCampaignsUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(scheduler)))
@@ -358,6 +371,68 @@ class ChoosePromotionStoreBranchTest {
         assertEquals(COLLAPSED_MY_COUNT + 3, collapsed.copy(myExpanded = true).visibleMyOffers().size)
     }
 
+    // ─── Rule dùng chung: selection / nút Áp dụng / "không tìm thấy" ───────────
+
+    /** State có 2 offer "của tôi" (m1, m2) và 2 offer "khác" (o1, o2). */
+    private fun selectionState(vararg selected: String) = ChoosePromotionState(
+        myOffers = listOf("m1", "m2").map { offer(it).toChooseOfferForTest() },
+        otherOffers = listOf("o1", "o2").map { offer(it).toChooseOfferForTest() },
+        selectedIds = selected.toList(),
+    )
+
+    /** Gộp CẢ HAI nhóm, giữ thứ tự "của tôi" trước — thứ tự này là hợp đồng với native. */
+    @Test
+    fun allOffers_mergesBothGroupsInOrder() {
+        assertEquals(listOf("m1", "m2", "o1", "o2"), selectionState().allOffers().map { it.id })
+    }
+
+    /** Lọc đúng theo `selectedIds`, lấy được cả offer nằm ở nhóm "Ưu đãi khác". */
+    @Test
+    fun selectedOffers_filtersBothGroups() {
+        assertEquals(listOf("m2", "o1"), selectionState("m2", "o1").selectedOffers().map { it.id })
+        assertTrue(selectionState().selectedOffers().isEmpty())
+    }
+
+    /** Id lạ (offer đã bị lọc khỏi danh sách sau khi search) không sinh phần tử rác. */
+    @Test
+    fun selectedOffers_ignoresUnknownIds() {
+        assertEquals(listOf("m1"), selectionState("m1", "khong-ton-tai").selectedOffers().map { it.id })
+    }
+
+    @Test
+    fun canApply_onlyWhenSomethingSelected() {
+        assertFalse(selectionState().canApply())
+        assertTrue(selectionState("m1").canApply())
+    }
+
+    /** Thanh "Đã chọn N" đòi CẢ HAI: bật multi-select và có item được chọn. */
+    @Test
+    fun showsSelectedCount_requiresMultiSelectionAndSelection() {
+        assertFalse(selectionState("m1").showsSelectedCount())
+        assertFalse(selectionState().copy(isMultiSelection = true).showsSelectedCount())
+        assertTrue(selectionState("m1").copy(isMultiSelection = true).showsSelectedCount())
+    }
+
+    /** Rỗng mà KHÔNG có từ khoá = "chưa có ưu đãi nào", không phải "tìm không ra". */
+    @Test
+    fun showsNoResult_requiresKeyword() {
+        assertFalse(ChoosePromotionState(isEmpty = true).showsNoResult())
+        assertFalse(ChoosePromotionState(keyword = "   ", isEmpty = true).showsNoResult())
+        assertTrue(ChoosePromotionState(keyword = "abc", isEmpty = true).showsNoResult())
+    }
+
+    /** Đang tải thì chưa kết luận được là không có kết quả. */
+    @Test
+    fun showsNoResult_falseWhileLoading() {
+        assertFalse(ChoosePromotionState(keyword = "abc", isEmpty = true, isLoading = true).showsNoResult())
+    }
+
+    @Test
+    fun highlightKeyword_isTrimmed() {
+        assertEquals("abc", ChoosePromotionState(keyword = "  abc  ").highlightKeyword())
+        assertEquals("", ChoosePromotionState(keyword = "   ").highlightKeyword())
+    }
+
     @Test
     fun toChooseOffer_expiringDays_onlyWhenUsableAndWithinWarning() = runTest {
         // Không usable → không tính "còn X ngày" dù có ngưỡng.
@@ -482,5 +557,58 @@ class ChoosePromotionStoreBranchTest {
         val st = s.currentState()
         assertEquals(hugeWarning, st.expireWarningDate, "ngưỡng phải được ghi vào state cho loadMore dùng lại")
         assertNotNull(st.myOffers.single().expiringInDays, "đây chính là dòng 'HSD còn X ngày' từng mất")
+    }
+
+    // ─── SeedOnce & ngưỡng paging (rule vừa hạ xuống store) ───────────────────
+
+    @Test
+    fun seedOnce_ignoresSecondCall_soUserSelectionSurvivesViewRecreation() = runTest {
+        val repo = FakeRepo { EligibleOffersResult() }
+        val s = TestScopeStore(repo, testScheduler)
+        val seed = ChoosePromotionIntent.SeedOnce(
+            preSelectedIds = listOf("pre"),
+            myOffers = listOf(offer("a")),
+            otherOffers = listOf(offer("b")),
+            myIsLastPage = true,
+            otherIsLastPage = true,
+        )
+        s.dispatch(seed)
+        testScheduler.advanceUntilIdle()
+        s.dispatch(ChoosePromotionIntent.ToggleSelection("b"))   // user tick thêm
+
+        // View dựng lại → Android bắn seed lần nữa. Trước đây ghi đè về `["pre"]`.
+        s.dispatch(seed)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("b"), s.currentState().selectedIds, "seed lần 2 không được đụng selection")
+        assertEquals(0, repo.calls)
+    }
+
+    @Test
+    fun shouldLoadMoreOther_onlyAtLastItemAndWhenMorePagesRemain() {
+        val two = ChoosePromotionState(
+            otherOffers = listOf(offer("a"), offer("b")).map { it.toChooseOfferForTest() },
+            otherIsLastPage = false,
+        )
+        assertFalse(two.shouldLoadMoreOther(0), "chưa tới item cuối")
+        assertTrue(two.shouldLoadMoreOther(1), "item cuối → nạp")
+
+        assertFalse(two.copy(otherIsLastPage = true).shouldLoadMoreOther(1), "hết trang")
+        assertFalse(two.copy(isLoadingMoreOther = true).shouldLoadMoreOther(1), "đang nạp rồi")
+        assertFalse(two.copy(isLoading = true).shouldLoadMoreOther(1), "đang load lại cả màn")
+        assertFalse(
+            ChoosePromotionState(otherIsLastPage = false).shouldLoadMoreOther(0),
+            "nhóm rỗng thì không có gì để chạm tới",
+        )
+    }
+
+    /** Danh sách 1 item: iOS vốn nạp được, Android cũ đòi `dy > 0` nên không bao giờ nạp. */
+    @Test
+    fun shouldLoadMoreOther_firesEvenWhenListTooShortToScroll() {
+        val one = ChoosePromotionState(
+            otherOffers = listOf(offer("a").toChooseOfferForTest()),
+            otherIsLastPage = false,
+        )
+        assertTrue(one.shouldLoadMoreOther(0))
     }
 }

@@ -36,7 +36,9 @@ final class MyPromotionViewModel: PRMScreenViewModel<MyPromotionRouter, MyPromot
         return ServiceSelectorBuilder.items(forApplicableProducts: voucher.source.applicableProducts)
     }
 
+    /// Tra voucher theo id — luật ở store (`MyPromotionState.voucher(id:)`), dùng chung với
+    /// `SearchMyPromotionViewModel` (trước đây mỗi VM chép một bản y hệt).
     private func voucher(_ id: String) -> MyPromotionVoucher? {
-        store.currentState().vouchers.first { $0.source.voucherId == id }
+        store.currentState().voucher(id: id)
     }
 }

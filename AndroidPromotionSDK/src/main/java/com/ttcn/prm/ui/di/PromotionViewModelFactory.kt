@@ -10,6 +10,9 @@ import com.ttcn.prm.ui.feature.searchmypromotion.SearchMyPromotionViewModel
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.GetCustomerVoucherDetailUseCase
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
+import com.ttcn.prm.ui.feature.endowview.EndowViewModel
 
 /**
  * **Một** factory cho toàn bộ ViewModel của SDK — mọi Fragment dùng chung:
@@ -48,6 +51,16 @@ internal fun promotionViewModelFactory(): ViewModelProvider.Factory = viewModelF
     initializer {
         SearchMyPromotionViewModel(
             searchCustomerVouchersUseCase = SearchCustomerVouchersUseCase(),
+        )
+    }
+    // Widget `PRMEndowView` — VM duy nhất không thuộc về một Fragment. Nó lấy `ViewModelStoreOwner`
+    // từ cây view (`findViewTreeViewModelStoreOwner`), nên store sống theo màn của host thay vì chết
+    // theo `onDetachedFromWindow` như bản `create(scope)` cũ.
+    initializer {
+        EndowViewModel(
+            findEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
+            validateStackableDiscountsUseCase = ValidateStackableDiscountsUseCase(),
+            createRedemptionSessionUseCase = CreateRedemptionSessionUseCase(),
         )
     }
 }

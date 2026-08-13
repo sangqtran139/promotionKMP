@@ -22,7 +22,6 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
 import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowStore
 import com.ttcn.promotionsdk.presentation.endow.EndowWidgetState
-import com.ttcn.promotionsdk.presentation.endow.widgetState
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionIntent
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionStore
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent

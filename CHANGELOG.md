@@ -8,6 +8,32 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Changed — **BREAKING**: callback host đổi thứ tự & tần suất; widget Android đổi vòng đời
+
+Rule "khi nào bắn callback host" trước đây có **hai bản chép tay** và đã lệch: Android ba biến
+(`lastNotifiedState`/`lastNotifiedCount`/`lastNotifiedAvailability`) trong `PRMEndowView`, iOS hai
+biến trong `PromotionSDKImpl.render`. Nay gộp về `EndowHostNotifier` (`promotionLogic`), có 8 test.
+
+Hệ quả với host:
+
+- **Thứ tự đổi (iOS).** Nay luôn `onVoucherCountChanged` → `onVoucherApplied`. Bản iOS cũ bắn ngược
+  lại. Host nào xử lý voucher vừa áp trước rồi mới cập nhật tổng tiền cần xem lại.
+- **Tần suất giảm (iOS).** `onAvailabilityUpdate` trước bắn mỗi lần `applyFlag` chạy — mà nó chạy
+  hai lần (cache rồi server) — kể cả khi cờ không đổi. Nay chỉ bắn khi **đổi**, như Android.
+- **`PRMEndowView` cần `ViewModelStoreOwner`** trong cây view (mọi ComponentActivity/Fragment đều
+  có). Không có → widget ẩn **và** gọi `onError("error_general")`. Đổi lại: store không còn chết
+  theo `onDetachedFromWindow`, nên host mở màn "Chọn ưu đãi" bằng `replace()` không còn làm
+  "Áp dụng"/"Thanh toán" trả `error_general` mà không hề gọi mạng.
+- **State ưu đãi sống qua detach/attach và xoay màn.** Đổi đơn hàng (orderId/orderValue khác) thì
+  store tự vứt kết quả cũ và nạp lại — số tiền giảm tính theo orderValue cũ không được phép hiện tiếp.
+- **Nạp trang "Ưu đãi khác" (Android).** Bỏ điều kiện phải có cú cuộn xuống (`dy > 0`) và đổi sang
+  đếm theo chỉ số **trong nhóm**. Danh sách ngắn hơn màn hình nay vẫn nạp được trang kế — trước
+  không bao giờ nạp, còn iOS thì có. Rule chung: `ChoosePromotionState.shouldLoadMoreOther`.
+- **Màn "Chọn ưu đãi" không còn mất tick.** Seed pre-select + preload nay qua
+  `ChoosePromotionIntent.SeedOnce`, gác một lần trong store. Trước đây Android bắn lại mỗi lần view
+  dựng lại, ghi đè lựa chọn của user và rewind danh sách về trang đầu.
+
+
 ### Fixed — iOS: skeleton hàng tab-chip bị skeleton danh sách đè trên màn hình nhỏ
 
 Hai phần skeleton của màn "Ưu đãi của tôi" đều neo vào **vùng tab thật** chứ không neo vào nhau: chip

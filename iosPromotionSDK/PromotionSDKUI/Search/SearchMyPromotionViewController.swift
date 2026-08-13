@@ -147,8 +147,14 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
                                      expiringInDays: $0.expiringInDays?.intValue)
         }
         tableView.reloadData()
+        // Hai quyết định dưới đây là **rule dùng chung** ở store — Android đọc đúng hai hàm này
+        // (`SearchMyPromotionFragment.renderState`). Trước đây bên này tự suy từ `promotionItems`
+        // và `state.isEmpty`, thiếu hẳn điều kiện "đã có từ khoá" mà Android có.
+        let showsResults = state.showsResults()
+        let showsNoResult = state.showsNoResult()
+
         // Text "Kết quả tìm kiếm" chỉ hiện khi có kết quả (chưa search / không có KQ thì ẩn).
-        resultSearchLabel.isHidden = promotionItems.isEmpty
+        resultSearchLabel.isHidden = !showsResults
 
         shimmerOverlay.isHidden = !state.isLoading
         if state.isLoading {
@@ -157,8 +163,8 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
             shimmerView.startAnimating()
         } else {
             shimmerView.stopAnimating()
-            searchNoResultView.isHidden = !state.isEmpty
-            tableView.isHidden = state.isEmpty
+            searchNoResultView.isHidden = !showsNoResult
+            tableView.isHidden = !showsResults
         }
 
         renderLoadMore(state.isLoadingMore)

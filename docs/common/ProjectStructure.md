@@ -131,9 +131,9 @@ promotionLogic/src/
 - `PromotionContainer`, `PromotionUseCases`, `PromotionFeatureFlagUseCases`, `PromotionSDKConfig`
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
-- `com.ttcn.prm.entry.**` của `AndroidPromotionSDK` (`entry/`, `entry/api/`, `entry/theme/`,
-  `entry/endowview/`) — **public API thật sự**, và là **package public duy nhất**: mọi thứ ngoài nó
-  đều `internal`. Thay đổi = breaking cho host app, và phải sửa đối ứng bên `iosPromotionSDK/Entry/`
+- `com.ttcn.prm.entry.**` của `AndroidPromotionSDK` (`entry/`, `entry/api/`) cùng hai nhóm public
+  nằm ngoài nó vì lý do lịch sử — `ui/theme/` (+ `ui/theme/token/`) và `ui/feature/endowview/` —
+  **public API thật sự**: mọi thứ khác đều `internal`. Thay đổi = breaking cho host app, và phải sửa đối ứng bên `iosPromotionSDK/Entry/`
   của iOS. Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
 - `sharedLogic/`, `sharedUI/` — scaffold template, không phải nơi đặt logic Promotion.

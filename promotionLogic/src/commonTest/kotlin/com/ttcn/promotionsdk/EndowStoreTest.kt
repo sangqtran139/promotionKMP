@@ -27,7 +27,6 @@ import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowState
 import com.ttcn.promotionsdk.presentation.endow.EndowStore
 import com.ttcn.promotionsdk.presentation.endow.EndowWidgetState
-import com.ttcn.promotionsdk.presentation.endow.widgetState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest

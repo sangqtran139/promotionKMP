@@ -5,6 +5,23 @@ Màn hình **tìm kiếm voucher của khách hàng** theo từ khoá, có phân
 - **Package:** `ui/feature/promotion/searchmypromotion`
 - **Thành phần:** `SearchMyPromotionFragment`, `SearchMyPromotionViewModel`, `SearchMyPromotionContract`
 
+### Quyết định hiển thị — **native không tự suy**
+
+Extension của `SearchMyPromotionState` trong `SearchMyPromotionContract.kt`:
+
+| Hàm | Trả lời | Android | iOS |
+|---|---|---|---|
+| `showsNoResult()` | Hiện view "không tìm thấy kết quả" | `ctlNoResult` / `imgNoData` / `tvNoResultSubtext` | `searchNoResultView.isHidden` |
+| `showsResults()` | Hiện list + tiêu đề "Kết quả tìm kiếm" | `rcvSearchList`, `tvTitle` | `tableView`, `resultSearchLabel` |
+| `voucher(id)` | Tra voucher theo id (điều hướng, bottom sheet) | — (adapter đưa thẳng item) | cả hai VM |
+
+> ⚠️ **Hai nền tảng từng phát biểu luật này khác nhau.** Android đòi
+> `keyword.trim().length >= MIN_KEYWORD_LENGTH && !isLoading && isEmpty`; iOS chỉ xét `isEmpty` (và
+> mượn `!isLoading` từ nhánh `if` bao ngoài), thiếu hẳn điều kiện từ khoá. Chúng **ra cùng kết quả**
+> chỉ vì `SearchMyPromotionStore.resetSearchResults()` set `isEmpty = false` khi xoá từ khoá — sửa
+> chỗ đó là hai bên lệch âm thầm. Hằng `MIN_KEYWORD_LENGTH = 1` đã bỏ: nó chỉ là cách viết khác của
+> "từ khoá không rỗng". Test khoá luật: `SearchMyPromotionStoreTest.showsNoResult_*`.
+
 ---
 
 ## 1. Contract (MVI)

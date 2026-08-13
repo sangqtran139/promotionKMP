@@ -6,8 +6,8 @@
 - **Package public:** `entry/endowview/` — `PRMEndowView`, `AppliedDiscount`. Trạng thái widget dùng
   `EndowWidgetState` của `promotionLogic` (không còn bản sao `EndowViewState` bên Android).
   Đây là **bề mặt host**, nên nó ở trong `entry` như mọi thứ host chạm tới (xem [PublicApi.md](../common/PublicApi.md)).
-- **Package nội bộ:** `ui/feature/promotion/endowview/` — `EndowViewModel`, `PRMEndowUiState` (`internal`,
-  mang type của lõi).
+- **Package nội bộ:** `ui/feature/promotion/endowview/` — `EndowViewModel` (lớp bọc mỏng, **không**
+  còn state model riêng).
 
 > **Cập nhật (tầng UI-logic dùng chung):** Toàn bộ nghiệp vụ widget — `findEligible`, **validate & apply**,
 > và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
@@ -16,8 +16,10 @@
 > - Validate&apply đi qua `EndowStore.ValidateAndApply(offers)`. Màn "Chọn ưu đãi" chỉ **trả offers
 >   đang chọn** (`ApplySelectedOffers` /
 >   `onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate.
-> - Kết quả validate dùng model shared `EndowAppliedDiscount`; mỗi nền tảng map sang model public riêng
->   (`AppliedDiscount` bên Android).
+> - Kết quả validate dùng model shared `EndowAppliedDiscount`. Bên Android `AppliedDiscount` nay là
+>   **`typealias` trỏ thẳng vào nó** (không còn data class chép lại + hai hàm map qua lại): host giữ
+>   nguyên import `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` và vẫn dựng `AppliedDiscount(...)`
+>   như cũ. Host viết bằng **Java** thì không thấy typealias — phải dùng `EndowAppliedDiscount`.
 > - **iOS widget reactive off store** (parity Android): `endowVM.observe { render(EndowState) }` +
 >   `endowVM.loadInitial()`; `render` map `EndowStore.widgetState` → `PRMEndowView.setState`, callback
 >   host (count/applied) theo transition.
@@ -69,20 +71,24 @@ code sau khi view dựng xong thì lệnh của host chạy sau, cũng thắng.
 > chạy lại mỗi lần render — vô tác dụng vì không ai đặt nền cho `viewContainer`, nhưng là cái bẫy
 > nếu sau này nền mặc định chuyển sang `binding.root`.
 
-### State — `PRMEndowUiState` (`internal`)
+### State — `EndowState` (dùng chung, ở `promotionLogic`)
 
-`internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.
-Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; host lấy chúng gián tiếp
-qua `PromotionSDK.createChoosePromotionFragment(endowView)`.
+Android **không còn state model riêng**. `EndowViewModel.uiState` chính là `EndowStore.state`, và
+`PRMEndowView.renderState(state: EndowState)` đọc thẳng — cùng một object với iOS.
 
-| Field | Ý nghĩa |
-|-------|---------|
-| `myVouchers` / `otherVouchers` | `List<EligibleOffer>` đã nạp sẵn (truyền sang Choose Promotion để tránh gọi API lại) |
-| `discountDetails` | Chi tiết giảm giá sau khi áp dụng |
-| `discountUnavailable` | Có voucher nhưng không đủ điều kiện áp dụng |
-| `totalVoucherCount` | Tổng số ưu đãi = `myTotalElements + otherTotalElements` |
-| `hasLoadedInitial` | Đã nạp lần đầu |
-| `error` | Lỗi (nếu có) |
+`PRMEndowUiState` cũ (đã xoá) là bản sao đúng từng ấy field của `EndowState`, chỉ khác tên
+(`myOffers`→`myVouchers`, `appliedDiscounts`→`discountDetails`, `errorCode`→`error`) cộng một hàm
+`toUiState()` chạy lại mỗi lần state đổi. Không thêm thông tin nào, chỉ thêm một chỗ để hai nền tảng
+lệch nhau. Field: xem `EndowContract.kt`.
+
+Accessor `PRMEndowView.myVouchers` / `otherVouchers` vẫn `internal` vì mang `EligibleOffer` — type
+của `:promotionLogic`, không được lọt ra API public; host lấy gián tiếp qua
+`PromotionSDK.createChoosePromotionFragment(endowView)`.
+
+> ⚠️ `renderState` nay thức dậy theo **mọi** thay đổi của `EndowState`, kể cả field widget không vẽ
+> (`isValidating`, `isLoading`) — `PRMEndowUiState` trước đây nuốt luôn. Vì vậy
+> `ApplyPromotionAdapter.submitList` bỏ qua khi danh sách không đổi; gỡ cái chặn đó thì mỗi vòng
+> validate lại một lần `notifyDataSetChanged` vô ích.
 
 ### Nguồn dữ liệu và feature flag
 

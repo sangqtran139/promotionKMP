@@ -8,7 +8,9 @@
 //
 
 import UIKit
-@_implementationOnly import PRMPromotionUI
+// Không còn `import PRMPromotionUI`: `PRMEndowView` — thứ duy nhất file này lấy từ đó — nay nằm
+// trong chính module (`PromotionSDKUI/Endow/`). Entry giờ chỉ chạm hai package: Kotlin bridge và
+// design kit.
 @_implementationOnly import PRMKotlinBridge
 @_implementationOnly import PRMDesignKit
 
@@ -55,8 +57,10 @@ final class PromotionSDKImpl: NSObject {
 
     // Theo dõi transition để phát callback host đúng một lần (mirror Android `PRMEndowView.notifyHost`):
     // count đổi → onUpdateWidgetCount; chuyển sang APPLIED → onApplyVoucher.
-    private var lastNotifiedCount: Int = -1
-    private var lastNotifiedApplied = false
+    /// Quyết định "khi nào bắn callback host" — rule dùng chung ở `promotionLogic`, có test.
+    /// Trước đây là `lastNotifiedCount` + `lastNotifiedApplied` rải trong `render`, còn Android có
+    /// bản riêng ba biến: cùng hợp đồng public mà hai cách tính.
+    private let hostNotifier = EndowHostNotifier()
 
     init(options: PromotionSDKOptions) {
         self.context = PromotionMutableContext(session: options.session, availableServices: options.availableServices)
@@ -443,7 +447,10 @@ final class PromotionSDKImpl: NSObject {
         // quan), rồi `refresh()` xong gọi LẠI với giá trị thật từ server.
         let applyFlag: (Bool) -> Void = { [weak self, weak container] enabled in
             guard let self, let container else { return }
-            self.onAvailabilityUpdate?(enabled)
+            // Qua notifier: `applyFlag` chạy HAI lần (cache rồi server) nên gọi thẳng là host nhận
+            // callback trùng khi cờ không đổi. Android vốn đã chặn bằng `lastNotifiedAvailability`;
+            // nay cả hai bên dùng chung một rule.
+            self.emit(self.hostNotifier.onAvailability(enabled: enabled))
             guard enabled else {
                 // Server báo tắt (kể cả sau khi đã hiện lạc quan) → rút widget lại.
                 self.activeWidget?.removeFromSuperview()
@@ -470,13 +477,12 @@ final class PromotionSDKImpl: NSObject {
             ])
         }
 
-        let gate = PromotionFeatureGate.shared
+        // Cờ nào, đọc thế nào — do store quyết (dùng chung Android), native chỉ hỏi.
         // Gọi ngay với cache hiện có (chưa có cache → bật lạc quan).
-        applyFlag(gate.canShowVoucherSelection())
+        applyFlag(endowVM.availabilityFromCache())
         // Rồi làm mới từ server và gọi lại nếu giá trị đổi.
         Task { @MainActor in
-            try? await gate.refresh()
-            applyFlag(gate.canShowVoucherSelection())
+            applyFlag(await endowVM.refreshAvailability())
         }
         return container
     }
@@ -510,32 +516,49 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Map `EndowState` (store) → widget-state — **reactive**, mirror Android `PRMEndowView.renderState`.
-    /// Quyết định 4 trạng thái khớp `EndowStore.widgetState`; phát callback host đúng một lần theo transition.
+    ///
+    /// Quyết định 4 trạng thái lấy THẲNG từ `EndowState.widgetState` (rule dùng chung ở
+    /// `promotionLogic`, 8 test phủ ở `EndowStoreTest`). Trước đây hàm này chép lại nguyên 4 nhánh
+    /// bằng Swift — sửa rule bên Kotlin thì Android đổi theo còn iOS lặng lẽ giữ hành vi cũ.
+    ///
+    /// Ở đây chỉ còn phần **thật sự của native**: format chuỗi tiền và phát callback host theo
+    /// transition.
     private func render(_ state: EndowState, on view: PRMEndowView) {
         // Giữ trạng thái loading (shimmer) tới khi nạp xong — mirror Android `renderState` (return sớm).
         guard state.hasLoadedInitial else { return }
-        if state.discountUnavailable && !state.appliedDiscounts.isEmpty {
-            // Hiển thị số tiền của TẤT CẢ ưu đãi đã áp (mờ ở state .unavailable) — khớp Android
-            // (`ApplyPromotionAdapter` submit cả list, dim item invalid), nhất quán với nhánh .applied.
-            view.setState(.unavailable(voucherTitles: state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) }))
-            lastNotifiedApplied = false
-        } else if !state.appliedDiscounts.isEmpty {
-            view.setState(.applied(voucherTitles: state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) }))
-            if !lastNotifiedApplied {
-                lastNotifiedApplied = true
-                if let firstId = state.appliedDiscounts.first?.objectId { onApplyVoucher?(firstId) }
-            }
-        } else if state.totalVoucherCount > 0 {
-            view.setState(.notApplied(count: Int(state.totalVoucherCount)))
-            lastNotifiedApplied = false
-        } else {
-            view.setState(.empty)
-            lastNotifiedApplied = false
+
+        // Hiển thị số tiền của TẤT CẢ ưu đãi đã áp (mờ ở state .unavailable) — khớp Android
+        // (`ApplyPromotionAdapter` submit cả list, dim item invalid), nhất quán với nhánh .applied.
+        let titles = { state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) } }
+
+        switch state.widgetState {
+        case .unavailable: view.setState(.unavailable(voucherTitles: titles()))
+        case .applied:     view.setState(.applied(voucherTitles: titles()))
+        case .notApplied:  view.setState(.notApplied(count: Int(state.totalVoucherCount)))
+        case .empty:       view.setState(.empty)
+        // Kotlin thêm case mới mà iOS chưa cập nhật → về EMPTY thay vì không compile được.
+        // Cùng cách xử lý với `ChooseSeeMoreState.toSeeMoreState()`.
+        default:           view.setState(.empty)
         }
-        let count = Int(state.totalVoucherCount)
-        if count != lastNotifiedCount {
-            lastNotifiedCount = count
-            onUpdateWidgetCount?(count)
+
+        emit(hostNotifier.onState(state: state))
+    }
+
+    /// Map `EndowHostEvent` dùng chung → callback public của iOS.
+    ///
+    /// Thứ tự do notifier quyết định: **count trước, applied sau**. Bản cũ ở đây bắn ngược lại
+    /// (applied trong `switch`, count sau cùng) — host nào dựa vào thứ tự đó sẽ thấy đổi.
+    private func emit(_ events: [EndowHostEvent]) {
+        // Cast `as?` cho khớp cách file này vẫn xử lý sealed interface của Kotlin
+        // (`result as? EndowConfirmResultFailure`, `effect as? PRMEffectShowError`).
+        for event in events {
+            if let applied = event as? EndowHostEventVoucherApplied {
+                onApplyVoucher?(applied.voucherId)
+            } else if let changed = event as? EndowHostEventVoucherCountChanged {
+                onUpdateWidgetCount?(Int(changed.count))
+            } else if let availability = event as? EndowHostEventAvailabilityChanged {
+                onAvailabilityUpdate?(availability.enabled)
+            }
         }
     }
 

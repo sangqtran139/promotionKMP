@@ -75,7 +75,7 @@ class EndowStore(
     override fun dispatch(intent: EndowIntent) {
         when (intent) {
             EndowIntent.LoadInitial -> loadInitial()
-            is EndowIntent.ValidateAndApply -> validateAndApply(intent.offers)
+            is EndowIntent.ValidateAndApply -> scope.launch { validateAndApply(intent.offers) }
             is EndowIntent.SetApplied -> _state.update {
                 it.copy(appliedDiscounts = intent.discounts, discountUnavailable = intent.unavailable, errorCode = null)
             }
@@ -104,6 +104,22 @@ class EndowStore(
      * `suspend` chứ không phải intent: đây là câu hỏi có câu trả lời một-lần ("cho đi tiếp không?"),
      * nhét vào [EndowState] thì native lại phải dựng máy trạng thái để bắt đúng một lần.
      */
+    /**
+     * Widget có được hiện không, theo **cache** cờ tính năng — trả lời ngay, không chờ mạng.
+     *
+     * Tên cờ (`VOUCHER_SELECTION`) và luật fail-open nằm ở đây chứ không ở native: trước đây
+     * `PRMEndowView.onAttachedToWindow` (Android) và `PromotionSDKImpl.applyFlag` (iOS) mỗi bên tự
+     * gọi `PromotionFeatureGate.canShowVoucherSelection()`, tức cùng một quyết định "widget sống hay
+     * chết" viết hai lần. Chưa có cache → gate bật lạc quan, widget hiện rồi tự ẩn nếu server nói không.
+     */
+    fun availabilityFromCache(): Boolean = PromotionFeatureGate.canShowVoucherSelection()
+
+    /** Làm mới cờ từ server rồi trả giá trị thật. Hỏng thì [PromotionFeatureGate.refresh] giữ cache. */
+    suspend fun refreshAvailability(): Boolean {
+        PromotionFeatureGate.refresh()
+        return availabilityFromCache()
+    }
+
     suspend fun confirmRedemption(): EndowConfirmResult {
         val applied = _state.value.appliedDiscounts
         if (applied.isEmpty()) return EndowConfirmResult.Success
@@ -168,9 +184,26 @@ class EndowStore(
             )
     }
 
+    /**
+     * Khoá đơn hàng của lần nạp gần nhất — `null` = chưa nạp lần nào.
+     *
+     * Có nó vì store nay sống theo `ViewModelStore` của host (Android) / `PromotionSDKImpl` (iOS),
+     * tức **lâu hơn vòng đời một màn thanh toán**. Chỉ gác bằng `hasLoadedInitial` thì host mở lại
+     * widget cho ĐƠN KHÁC sẽ thấy nguyên ưu đãi + discount đã áp của đơn cũ, và không có lời gọi
+     * mạng nào để sửa. Bản cũ vô tình không dính vì store chết theo `onDetachedFromWindow`.
+     */
+    private var loadedOrderKey: String? = null
+
     private fun loadInitial() {
-        if (_state.value.hasLoadedInitial) return
         val ctx = PromotionContainer.requestContextProvider
+        val orderKey = "${ctx.getOrderId().orEmpty()}|${ctx.getOrderValue().orEmpty()}"
+        if (_state.value.hasLoadedInitial && loadedOrderKey == orderKey) return
+        if (loadedOrderKey != null && loadedOrderKey != orderKey) {
+            // Đơn khác → vứt sạch kết quả của đơn cũ. Không giữ lại gì: `appliedDiscounts` mang số
+            // tiền giảm tính theo orderValue cũ, hiện tiếp là hiện số sai.
+            _state.value = EndowState()
+        }
+        loadedOrderKey = orderKey
         scope.launch {
             _state.update { it.copy(isLoading = true) }
             runCatching {
@@ -224,13 +257,25 @@ class EndowStore(
      * bất kỳ item nào không hợp lệ → [EndowState.discountUnavailable] = true. Rỗng → xoá áp.
      * Rule diễn giải valid/discount ở domain ([ValidateDiscountsResult]) — dùng chung 2 nền tảng.
      */
-    private fun validateAndApply(offers: List<EligibleOffer>) {
+    /**
+     * Validate + áp, **trả về state cuối** của vòng validate này.
+     *
+     * `suspend` chứ không phải fire-and-forget là điểm mấu chốt: trước đây `dispatch` chỉ bắn đi, nên
+     * màn "Chọn ưu đãi" muốn biết kết quả phải tự dựng máy trạng thái rình `isValidating` true→false
+     * — và **cả hai nền tảng đều phải dựng một bản** (`settleCompletion` + `sawValidating` ở
+     * `EndowViewModel` Android lẫn iOS), kèm `consumeErrorUnlessSettling` để lỗi không bị widget xoá
+     * mất trước khi nơi gọi kịp đọc (`state` là StateFlow nên **conflated**).
+     *
+     * Trả thẳng state thì cả ba thứ đó biến mất: nơi gọi nhận đúng kết quả của lượt mình gọi, không
+     * ai đọc nhờ dòng state chung nữa.
+     */
+    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowState {
         if (offers.isEmpty()) {
             _state.update { it.copy(appliedDiscounts = emptyList(), discountUnavailable = false, errorCode = null) }
-            return
+            return _state.value
         }
         val ctx = PromotionContainer.requestContextProvider
-        scope.launch {
+        run {
             _state.update { it.copy(isValidating = true) }
             val request = ValidateDiscountsRequest(
                 orderId = ctx.getOrderId().orEmpty(),
@@ -257,11 +302,12 @@ class EndowStore(
                     _state.update { it.copy(isValidating = false, errorCode = throwable.toErrorCode()) }
                 }
         }
+        return _state.value
     }
 
     private companion object {
         /** Trùng `pageSize` màn chọn (COLLAPSED không liên quan) — giữ như PRMEndowViewModel cũ. */
-        private const val PAGE_SIZE = 10
+        private const val PAGE_SIZE = 20
 
         /** 422 — server báo hết ngân sách bằng HTTP status thay vì trong body. */
         private const val HTTP_UNPROCESSABLE = 422

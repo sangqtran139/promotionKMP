@@ -49,6 +49,10 @@
     <string name="prm_keyword_too_short">Từ khóa phải có ít nhất 2 ký tự</string>
     <string name="prm_missing_customer_id">Không tìm thấy thông tin khách hàng</string>
     <string name="prm_error_general">Đã có lỗi xảy ra. Vui lòng thử lại sau</string>
+    <!-- Lỗi transport, phân loại ở PromotionRemoteDataSource.apiCall. Tách khỏi prm_error_general vì
+         user xử lý được: bật lại mạng rồi bấm lại. Giữ trùng câu chữ với PromotionUIStrings bên iOS. -->
+    <string name="prm_error_network">Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại</string>
+    <string name="prm_error_timeout">Kết nối quá lâu không phản hồi. Vui lòng thử lại</string>
     <!-- PRM_MOB_021. Giữ nguyên câu chữ của iOS (PromotionSDKError.featureDisabled). -->
     <string name="prm_feature_disabled">Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>
     <!-- Title/nút mặc định cho dialog thông báo đơn của PromotionToastGate.showAlways. -->

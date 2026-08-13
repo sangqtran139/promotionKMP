@@ -1,16 +1,35 @@
 //
 //  PRMEndowView.swift
-//  PRMPromotionUI
+//  PRM (module PromotionSDKUI/Endow)
 //
 //  Created by thachlh on 14/5/26.
 //
+//  Widget checkout — **nằm trong chính module SDK**, không nằm ở `Packages/PRMPromotionUI`.
+//  Hai lý do, cùng một hướng:
+//
+//  1. **Soi gương Android.** Bên kia `PRMEndowView.kt` ở `ui/feature/endowview/` cạnh
+//     `EndowViewModel.kt` — không nằm trong thư viện design dùng chung. Nay iOS giống hệt:
+//     `PromotionSDKUI/Endow/` giữ cả view lẫn view-model.
+//  2. **Host không được biết tới 4 SPM trong `Packages/`.** Mọi thứ `public` của module PRM đều bị
+//     ghi vào `.swiftinterface` mà host compile theo. Để widget `public` trong PRMPromotionUI thì
+//     hoặc host phải `import PRMPromotionUI` (không có, vì gói phát hành chỉ có
+//     `Promotion.xcframework`), hoặc phải giữ `@_implementationOnly` ở mọi chỗ chạm tới. Ở trong
+//     module và để `internal` thì vấn đề biến mất từ gốc: host chỉ thấy
+//     `PromotionSDK.createEndowView(...) -> UIView`.
+//
+//  ⚠️ Đừng nâng bất kỳ khai báo nào dưới đây lên `public` — làm thế là kéo nó vào `.swiftinterface`
+//  và phá đúng cái vừa nói.
 
 import UIKit
-import PRMDesignKit
-import PRMFoundation
+@_implementationOnly import PRMDesignKit
+@_implementationOnly import PRMFoundation
+// `CouponValueView` — chip "giảm X đ" trên widget — vẫn ở package UI dùng chung, đúng chỗ của nó:
+// nó là component tái sử dụng, khác với bản thân widget (bề mặt của SDK). Import `internal` nên
+// không có gì rò vào `.swiftinterface`.
+@_implementationOnly import PRMPromotionUI
 
 // MARK: - State (tương tự Android EndowViewState)
-public enum SelectPromtionViewState {
+enum SelectPromtionViewState {
     case loading
     case notApplied(count: Int)               // Có ưu đãi, chưa chọn → "Sử dụng"
     case applied(voucherTitles: [String])     // Đã chọn ưu đãi (một/nhiều) → "Hủy"
@@ -19,23 +38,23 @@ public enum SelectPromtionViewState {
 }
 
 // MARK: - DataSource Protocol (tương tự Android ViewModel.create())
-public protocol PRMEndowViewDataSource: AnyObject {
+protocol PRMEndowViewDataSource: AnyObject {
     /// Gọi khi view được gắn vào window lần đầu — host load dữ liệu rồi gọi setState
     func selectPromtionViewDidAttachToWindow(_ view: PRMEndowView)
 }
 
 // MARK: - Delegate Protocol
-public protocol PRMEndowViewDelegate: AnyObject {
+protocol PRMEndowViewDelegate: AnyObject {
     func selectPromtionViewDidTapSelect(_ view: PRMEndowView)
 }
 
 // MARK: - PRMEndowView
-final public class PRMEndowView: UIView {
+final class PRMEndowView: UIView {
 
-    // MARK: - Public Properties
-    public weak var delegate: PRMEndowViewDelegate?
-    public weak var dataSource: PRMEndowViewDataSource?
-    public private(set) var currentState: SelectPromtionViewState = .loading
+    // MARK: - Properties (internal — chỉ `PromotionSDKImpl` trong cùng module chạm tới)
+    weak var delegate: PRMEndowViewDelegate?
+    weak var dataSource: PRMEndowViewDataSource?
+    private(set) var currentState: SelectPromtionViewState = .loading
 
     private var hasLoadedInitial = false
 
@@ -53,18 +72,18 @@ final public class PRMEndowView: UIView {
     private var themeToken: PRMDiscountBadgeThemeToken? { PRMThemeRegistry.shared.discountBadge() }
 
     // MARK: - Init
-    public override init(frame: CGRect) {
+    override init(frame: CGRect) {
         super.init(frame: frame)
         self.config()
     }
 
-    public required init?(coder: NSCoder) {
+    required init?(coder: NSCoder) {
         super.init(coder: coder)
         self.config()
     }
 
     // MARK: - Lifecycle — tương tự Android onAttachedToWindow
-    public override func didMoveToWindow() {
+    override func didMoveToWindow() {
         super.didMoveToWindow()
         guard window != nil, !hasLoadedInitial else { return }
         hasLoadedInitial = true
@@ -149,7 +168,7 @@ final public class PRMEndowView: UIView {
     // MARK: - Public API
 
     /// Cập nhật trạng thái hiển thị — tương tự Android renderState()
-    public func setState(_ state: SelectPromtionViewState) {
+    func setState(_ state: SelectPromtionViewState) {
         currentState = state
         clearCoupons()
         clearActionShimmer()

@@ -22,10 +22,10 @@ data class ChoosePromotionState(
     val selectedTabCode: String? = null,
     val keyword: String = "",
     val myPage: Int = 0,
-    val mySize: Int = 10,
+    val mySize: Int = 20,
     val myIsLastPage: Boolean = false,
     val otherPage: Int = 0,
-    val otherSize: Int = 10,
+    val otherSize: Int = 20,
     val otherIsLastPage: Boolean = true,
     val myOffers: List<ChooseOffer> = emptyList(),
     val otherOffers: List<ChooseOffer> = emptyList(),
@@ -50,17 +50,55 @@ sealed interface ChoosePromotionIntent {
     data object Refresh : ChoosePromotionIntent
     data class QueryChanged(val keyword: String) : ChoosePromotionIntent
     data object Search : ChoosePromotionIntent
+    /**
+     * Xoá trắng từ khoá → nạp lại danh sách đầy đủ ngay, không chờ debounce.
+     *
+     * Native **không cần** tự rẽ nhánh "gõ trắng thì gửi cái này": [QueryChanged] với chuỗi rỗng đã
+     * chạy đúng đường đó rồi (xem `ChoosePromotionStore.onQueryChanged`). Trước đây cả
+     * `ChoosePromotionFragment.setupSearch` lẫn `ChoosePromotionViewModel.query(_:)` bên iOS đều
+     * chép cùng một `if keyword.isEmpty()`. Giữ intent này cho nút "X" xoá tường minh.
+     */
     data object ClearKeyword : ChoosePromotionIntent
     data object LoadMoreMyVouchers : ChoosePromotionIntent
     data object LoadMoreOtherVouchers : ChoosePromotionIntent
     /** Seed các voucher pre-select (từ discount đang áp trước đó). */
     data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
+    /**
+     * Seed pre-select + preload **đúng một lần cho cả vòng đời store**.
+     *
+     * Android gọi `SetPreSelected` + `Preload` trong `observeData()` (chạy ở `onViewCreated`), nên
+     * view dựng lại là ghi đè `selectedIds` về bộ đã áp ban đầu — tick mới của user biến mất — và
+     * `preload()` rewind `otherOffers` về trang đầu, xoá các trang đã cuộn. iOS chặn bằng cờ
+     * `didStart` trong VM. Nay cờ nằm ở store nên hai bên không thể lệch.
+     */
+    data class SeedOnce(
+        val preSelectedIds: List<String>,
+        val myOffers: List<EligibleOffer>,
+        val otherOffers: List<EligibleOffer>,
+        val myIsLastPage: Boolean,
+        val otherIsLastPage: Boolean,
+    ) : ChoosePromotionIntent
     /** Chọn/bỏ chọn 1 ưu đãi theo id. */
     data class ToggleSelection(val id: String) : ChoosePromotionIntent
     /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
     data object SeeMoreMy : ChoosePromotionIntent
     data object ConsumeError : ChoosePromotionIntent
 }
+
+/**
+ * Còn phải nạp trang kế của nhóm "Ưu đãi khác" không, khi item thứ [visibleIndex] sắp hiện.
+ *
+ * Rule dùng chung, thay hai điều kiện từng lệch nhau: iOS bắn từ `willDisplay` khi
+ * `row == items.count - 1` (đếm trong section, chạy cả lúc list ngắn không cuộn được), Android bắn
+ * từ `onScrolled` với `dy > 0` và ngưỡng `findLastVisibleItemPosition() >= itemCount - 2` (đếm trên
+ * TOÀN list gồm header/divider/see-more). Cùng dữ liệu, hai thời điểm nạp khác nhau.
+ *
+ * Chốt theo cách iOS — nạp khi chạm item cuối, **không** đòi phải có cú cuộn: list ngắn hơn màn hình
+ * thì Android cũ không bao giờ nạp thêm được.
+ */
+fun ChoosePromotionState.shouldLoadMoreOther(visibleIndex: Int): Boolean =
+    !otherIsLastPage && !isLoadingMoreOther && !isLoading &&
+        otherOffers.isNotEmpty() && visibleIndex >= otherOffers.lastIndex
 
 /** Số item "Ưu đãi của tôi" hiện khi thu gọn — dùng chung 2 nền tảng. */
 const val COLLAPSED_MY_COUNT = 2
@@ -84,6 +122,49 @@ fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
 /** Danh sách "Ưu đãi của tôi" đang hiển thị theo trạng thái mở/thu gọn — dùng chung. */
 fun ChoosePromotionState.visibleMyOffers(): List<ChooseOffer> =
     if (myExpanded) myOffers else myOffers.take(COLLAPSED_MY_COUNT)
+
+/** Toàn bộ ưu đãi đã nạp của cả hai nhóm, đã bóc về domain model. */
+fun ChoosePromotionState.allOffers(): List<EligibleOffer> =
+    (myOffers + otherOffers).map { it.source }
+
+/**
+ * Ưu đãi user **đang chọn** — thứ bấm "Áp dụng" trả về widget (`EndowStore` lo validate & áp).
+ *
+ * Trước đây mỗi nền tảng tự lọc: `ChoosePromotionViewModel.selectedOffers()` bên Android và
+ * `ChoosePromotionViewModel.selectedOffers()` + `allLoaded(_:)` bên iOS — hai đoạn code khác ngôn
+ * ngữ nhưng cùng một luật, và luật này quyết định **ưu đãi nào được áp vào đơn**. Lệch một chỗ là
+ * lệch tiền.
+ */
+fun ChoosePromotionState.selectedOffers(): List<EligibleOffer> =
+    allOffers().filter { it.id in selectedIds }
+
+/**
+ * Thanh "Đã chọn N voucher" — chỉ ở chế độ chọn nhiều **và** đang có item được chọn.
+ * (Android `updateApplyButtonState`, iOS `Display.showsSelectedCount`.)
+ */
+fun ChoosePromotionState.showsSelectedCount(): Boolean =
+    isMultiSelection && selectedIds.isNotEmpty()
+
+/**
+ * Nút "Áp dụng" bấm được chưa. Chưa chọn gì thì **disable**: cả hai nền tảng đều bỏ qua danh sách
+ * rỗng, để nút bấm được chỉ tạo cảm giác app treo.
+ */
+fun ChoosePromotionState.canApply(): Boolean = selectedIds.isNotEmpty()
+
+/**
+ * Hiện view "không tìm thấy kết quả" thay cho list.
+ *
+ * **Có từ khoá** mới tính — list rỗng lúc không tìm kiếm là "chưa có ưu đãi nào", không phải "tìm
+ * không ra". Cùng luật với [SearchMyPromotionState.showsNoResult][com.ttcn.promotionsdk.presentation.searchmypromotion.showsNoResult].
+ */
+fun ChoosePromotionState.showsNoResult(): Boolean =
+    keyword.isNotBlank() && !isLoading && isEmpty
+
+/** Từ khoá dùng để tô đậm đoạn khớp trên card; rỗng = không tô. */
+fun ChoosePromotionState.highlightKeyword(): String = keyword.trim()
+
+/** Ưu đãi [id] có đang được tick không — cả hai nền tảng dựng card bằng cờ này. */
+fun ChoosePromotionState.isSelected(id: String): Boolean = id in selectedIds
 
 /**
  * View-model 1 ưu đãi eligible: **bọc** domain [EligibleOffer] ([source]) + quyết định hiển thị đã tính.

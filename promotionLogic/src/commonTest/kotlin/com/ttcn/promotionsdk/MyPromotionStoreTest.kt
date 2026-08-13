@@ -14,6 +14,7 @@ import com.ttcn.promotionsdk.domain.repository.PromotionRepository
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionIntent
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionStore
+import com.ttcn.promotionsdk.presentation.mypromotion.voucher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -255,4 +256,23 @@ class MyPromotionStoreTest {
         assertFalse(s.isEmpty)
         assertTrue(s.errorCode != null)
     }
+
+    /**
+     * Tra voucher theo id — rule dùng chung, thay hai bản chép tay ở `MyPromotionViewModel` và
+     * `SearchMyPromotionViewModel` bên iOS. Id lạ phải ra null chứ không được ném.
+     */
+    @Test
+    fun voucher_findsByIdOrNull() = runTest {
+        val repo = FakeRepo { _, _ ->
+            page(content = listOf(voucher("v1"), voucher("v2")), number = 0, last = true)
+        }
+        val store = MyPromotionStore(SearchCustomerVouchersUseCase(repo), CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+        store.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
+        testScheduler.advanceUntilIdle()
+
+        val state = store.state.value
+        assertEquals("v2", state.voucher("v2")?.source?.voucherId)
+        assertEquals(null, state.voucher("khong-ton-tai"))
+    }
+
 }

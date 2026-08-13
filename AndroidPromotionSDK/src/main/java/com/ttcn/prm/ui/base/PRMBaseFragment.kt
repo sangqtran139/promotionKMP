@@ -198,6 +198,11 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     protected fun mapPromotionError(code: String): String = when (code) {
         ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
         ErrorCodes.NO_RESULT, "error_detail_unavailable" -> getString(R.string.prm_no_result)
+        // Lỗi mạng/timeout có câu RIÊNG: tầng data đã cất công phân loại (`NetworkException`), gộp
+        // vào lỗi chung là vứt đi thông tin duy nhất mà user hành động được. Thấy rõ nhất ở nút
+        // "Áp dụng" màn Chọn ưu đãi — mất mạng lúc validate thì phải báo đúng là mất mạng.
+        ErrorCodes.NETWORK_ERROR -> getString(R.string.prm_error_network)
+        ErrorCodes.TIMEOUT -> getString(R.string.prm_error_timeout)
         else -> getString(R.string.prm_error_general)
     }
 

@@ -19,15 +19,21 @@ Sửa một bên thì sửa cả hai.
 >   **minSdk 24:** attribute `android:forceDarkAllowed` (chặn thêm OS force-dark với host light-only) chỉ
 >   có API 29+ nên đặt ở `res/values-v29/styles.xml`; bản `res/values/styles.xml` vẫn là theme Light đầy đủ.
 
-**Nhóm theme nằm hai bên ranh giới public.** Phần host cầm trên tay ở trong `entry`; phần SDK tự
-dùng ở ngoài và là `internal` — xem luật ở [PublicApi.md](./PublicApi.md).
+**Nhóm theme nằm hai bên ranh giới public**, nhưng **cùng một thư mục**: cả phần host cầm trên tay
+lẫn phần SDK tự dùng đều ở `ui/theme/` (Android) / `PromotionSDKUI/Theme/` (iOS); ranh giới do
+`internal` vẽ ra chứ không do vị trí file — xem luật ở [PublicApi.md](./PublicApi.md).
+
+> Theme **không** nằm trong `entry/`. Đã có lần chuyển nhóm public lên `Entry/Theme/` bên iOS
+> (commit `4b0dc59`) rồi trả về, vì nó làm iOS lệch Android — bên Android theme chưa bao giờ rời
+> `ui/theme/`. `entry/` chỉ giữ `PromotionSDK`, `PromotionSDKCallback`, `PromotionConfig`,
+> `PromotionSDKOptions` và `api/`.
 
 | | Android | iOS |
 |---|---|---|
-| **Public** (host dùng) | `entry/theme/PromotionSDKTheme.kt` | `Entry/Theme/PromotionSDKTheme.swift` |
-| | `entry/theme/token/*.kt` (6 token) | `Entry/Theme/Token/*.swift` (6 token) |
-| | `entry/theme/PromotionThemeJson.kt` | `Entry/Theme/PromotionThemeJson.swift` |
-| | `entry/theme/PromotionThemeDisplay.kt` | `Entry/Theme/PromotionThemeDisplay.swift` |
+| **Public** (host dùng) | `ui/theme/PromotionSDKTheme.kt` | `PromotionSDKUI/Theme/PromotionSDKTheme.swift` |
+| | `ui/theme/token/*.kt` (6 token) | `PromotionSDKUI/Theme/Token/*.swift` (6 token) |
+| | `ui/theme/PromotionThemeJson.kt` | `PromotionSDKUI/Theme/PromotionThemeJson.swift` |
+| | `ui/theme/PromotionThemeDisplay.kt` | `PromotionSDKUI/Theme/PromotionThemeDisplay.swift` |
 | **Internal** (SDK tự dùng) | `ui/theme/ThemeHex.kt` | `PromotionSDKUI/Theme/ThemeHex.swift` |
 | | `ui/theme/PromotionThemeStore.kt` | `PromotionSDKUI/Theme/PromotionThemeStore.swift` |
 | | `ui/theme/PromotionThemeDefaults.kt` | `PromotionSDKUI/Theme/PromotionThemeDefaults.swift` |
@@ -309,8 +315,9 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
    - Cập nhật DTO JSON ở cả hai bên, và thêm case vào `PromotionThemeJsonTest`.
    - Cập nhật **bảng token ở §2 của file này**.
 2. **Token mới (loại view mới)** = tạo `XxxToken` + applier + getter trong registry + field trong
-   `PromotionSDKTheme`. Token và `PromotionSDKTheme` nằm ở `entry/theme/` (Android) / `Entry/Theme/`
-   (iOS) vì host phải dựng được chúng; applier + registry ở `ui/theme/` và là `internal`.
+   `PromotionSDKTheme`. Token và `PromotionSDKTheme` là **public** vì host phải dựng được chúng;
+   applier + registry là `internal`. Tất cả cùng ở `ui/theme/` (Android) / `PromotionSDKUI/Theme/`
+   (iOS) — đừng tách phần public sang `entry/`.
 3. **Luôn null-safe**: applier `return` khi token/field null; không ghi đè style mặc định khi host
    không cấu hình.
 4. **Đơn vị nhất quán**: màu hex `#AARRGGBB` trong JSON, bo góc dp/pt.

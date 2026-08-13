@@ -11,8 +11,15 @@ import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherItem
 import com.ttcn.promotionsdk.domain.repository.PromotionRepository
 import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
+import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionAction
+import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionBadge
+import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionVoucher
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
+import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionState
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionStore
+import com.ttcn.promotionsdk.presentation.searchmypromotion.showsNoResult
+import com.ttcn.promotionsdk.presentation.searchmypromotion.showsResults
+import com.ttcn.promotionsdk.presentation.searchmypromotion.voucher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -87,6 +94,46 @@ class SearchMyPromotionStoreTest {
         val s = store.state.value
         assertEquals("", s.keyword)
         assertTrue(s.vouchers.isEmpty())
+    }
+
+    // ─── Rule dùng chung cho native: showsNoResult / showsResults / voucher(id) ──
+
+    /**
+     * "Không tìm thấy" đòi **có từ khoá**. Trước đây iOS chỉ xét `isEmpty` còn Android đòi thêm độ
+     * dài từ khoá — hai bên ra cùng kết quả chỉ nhờ store set `isEmpty = false` lúc reset. Test này
+     * khoá luật lại để lần sau đổi `isEmpty` không âm thầm làm lệch một nền tảng.
+     */
+    @Test
+    fun showsNoResult_requiresKeywordAndNotLoading() {
+        assertFalse(SearchMyPromotionState(isEmpty = true).showsNoResult())
+        assertFalse(SearchMyPromotionState(keyword = "  ", isEmpty = true).showsNoResult())
+        assertFalse(SearchMyPromotionState(keyword = "grab", isEmpty = true, isLoading = true).showsNoResult())
+        assertTrue(SearchMyPromotionState(keyword = "grab", isEmpty = true).showsNoResult())
+    }
+
+    /** Dựng thẳng, không qua mapper: mấy test dưới chỉ quan tâm id và số lượng. */
+    private fun listItem(id: String) = MyPromotionVoucher(
+        source = voucher(id),
+        isEnabled = true,
+        expiringInDays = null,
+        badge = MyPromotionBadge.NONE,
+        action = MyPromotionAction.USE,
+    )
+
+    /** Có voucher nhưng chưa gõ gì (danh sách còn sót từ lần trước) thì chưa phải "kết quả tìm kiếm". */
+    @Test
+    fun showsResults_requiresKeywordAndItems() {
+        val items = listOf(listItem("v1"))
+        assertFalse(SearchMyPromotionState(vouchers = items).showsResults())
+        assertFalse(SearchMyPromotionState(keyword = "grab").showsResults())
+        assertTrue(SearchMyPromotionState(keyword = "grab", vouchers = items).showsResults())
+    }
+
+    @Test
+    fun voucher_findsByIdOrNull() {
+        val state = SearchMyPromotionState(vouchers = listOf(listItem("v1"), listItem("v2")))
+        assertEquals("v2", state.voucher("v2")?.source?.voucherId)
+        assertEquals(null, state.voucher("khong-ton-tai"))
     }
 
     @Test

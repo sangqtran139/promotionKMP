@@ -11,6 +11,28 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 >   **"Xem thêm/Thu gọn"** (`myExpanded` + state-machine `SeeMoreMy`, `mySeeMoreState()`/`visibleMyOffers()`)
 >   nằm trong store — dùng chung Android & iOS.
 
+### Quyết định hiển thị — **native không tự suy**
+
+Mọi hàm dưới đây là extension của `ChoosePromotionState` trong `ChoosePromotionContract.kt`. Trước
+đây mỗi cái tồn tại **hai bản**, một trong `ChoosePromotionFragment`/`ChoosePromotionViewModel`
+(Android) và một trong `Display`/`ViewController` (iOS). Thêm quyết định hiển thị mới thì thêm ở đây,
+đừng viết vào Fragment/VC.
+
+| Hàm | Trả lời | Android dùng ở | iOS dùng ở |
+|---|---|---|---|
+| `selectedOffers()` | Ưu đãi user đang chọn → gửi đi validate & áp | `ChoosePromotionViewModel.selectedOffers()` | `ChoosePromotionViewModel.selectedOffers()` |
+| `allOffers()` | Gộp hai nhóm về `EligibleOffer`, "của tôi" trước | (qua `selectedOffers`) | `openDetail(voucherId:)` |
+| `canApply()` | Nút "Áp dụng" bấm được chưa | `btnApply.isEnabled` | `Display.canApply` |
+| `showsSelectedCount()` | Hiện thanh "Đã chọn N voucher" | `updateApplyButtonState` | `Display.showsSelectedCount` |
+| `showsNoResult()` | Hiện view "không tìm thấy" thay cho list | `observeData` | `Display.showsNoResult` |
+| `highlightKeyword()` | Từ khoá tô đậm (đã trim) | `rebuildList` | `buildSections` |
+| `isSelected(id)` | Card có tick không | `rebuildList` | `buildSections` |
+| `shouldLoadMoreOther(visibleIndex)` | Nạp trang kế nhóm "Ưu đãi khác" chưa | scroll listener | `willDisplay` |
+
+> **`QueryChanged("")` ≡ `ClearKeyword`.** Store tự huỷ debounce và nạp lại ngay khi từ khoá rỗng
+> (`ChoosePromotionStore.onQueryChanged`), nên native **không** rẽ nhánh `if keyword.isEmpty()` nữa —
+> cả hai bên từng chép cùng một nhánh đó. `ClearKeyword` vẫn còn cho nút "X" xoá tường minh.
+
 ### Nút "Xem thêm/Thu gọn" — `mySeeMoreState()`
 
 | Điều kiện | Trạng thái nút |
@@ -130,7 +152,7 @@ chưa dùng** — đừng tưởng là sót:
 
 | Chặng | Android | iOS |
 |---|---|---|
-| Widget giữ cờ | `EndowState` → `PRMEndowUiState` → `PRMEndowView.myIsLastPage` | `EndowState` (đọc thẳng qua `endowVM.state`) |
+| Widget giữ cờ | `EndowState` → `PRMEndowView.myIsLastPage` (đọc thẳng, không còn bọc qua model UI riêng) | `EndowState` (đọc thẳng qua `endowVM.state`) |
 | Truyền sang màn chọn | `PromotionSDK.createChoosePromotionFragment` → `ChoosePromotionFragment.forEndowView` (internal) → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
 
 Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`, không mở đường gọi trang kế.
