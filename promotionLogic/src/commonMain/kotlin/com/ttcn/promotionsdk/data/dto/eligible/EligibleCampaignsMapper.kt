@@ -71,8 +71,11 @@ private fun EligibleOfferDto.toEligibleOffer(): EligibleOffer? {
         id = id,
         campaignId = campaignId,
         voucherId = voucherId,
-        // Ưu tiên tên hiển thị voucher (v1.6), fallback tên campaign.
-        campaignName = voucherName ?: campaignName,
+        // Hai tên giữ RIÊNG, không hợp nhất. Bản cũ ghi `campaignName = voucherName ?: campaignName`
+        // ngay tại đây, nên từ domain trở lên không ai biết mình đang cầm tên nào. Thứ tự ưu tiên nay
+        // ở `EligibleOffer.displayName`.
+        campaignName = campaignName,
+        voucherName = voucherName,
         campaignType = campaignType,
         // `objectType` gửi lên `validateStackableDiscounts` / `createRedemption` phải thuộc enum
         // **CAMPAIGN / COUPON / VOUCHER** của BFF, và phải khớp loại của `objectId` đang gửi kèm

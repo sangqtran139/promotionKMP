@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.ttcn.promotionsdk.config.eligibleOrderItems
 
 
 /**
@@ -251,7 +252,10 @@ class ChoosePromotionStore(
         return FindEligibleCampaignsRequest(
             orderId = ctx.getOrderId().orEmpty(),
             orderValue = ctx.getOrderValue().orEmpty(),
-            items = ctx.getOrderItems(), // Order items từ provider (dùng chung 2 nền tảng).
+            // `eligibleOrderItems()` chứ không phải `getOrderItems()`: nó đổ `serviceCode`
+            // (từ `updateContext`) vào `productId` của từng item — đường duy nhất mà spec
+            // findEligible v19 nhận chiều dịch vụ. Widget dùng cùng hàm này.
+            items = ctx.eligibleOrderItems(),
             tabCode = null,
             keyword = s.keyword.takeIf { it.isNotBlank() },
             mySize = s.mySize,

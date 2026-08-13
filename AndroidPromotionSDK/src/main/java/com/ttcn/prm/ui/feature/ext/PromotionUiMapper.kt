@@ -84,10 +84,18 @@ internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem =
 internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherListItem(
     voucherId = id,
     campaignId = campaignId.orEmpty(),
-    // Tên hiển thị ưu tiên đối tác/merchant (partnerName, v1.6); số tiền giảm ở dòng nội dung.
-    merchantName = partnerName ?: campaignName.orEmpty(),
-    title = formatEstimatedDiscount(estimatedDiscount).orEmpty(),
-    description = campaignName.orEmpty(),
+    // Dòng nhỏ (trên): đối tác/merchant (partnerName, v1.6).
+    merchantName = partnerName ?: displayName.orEmpty(),
+    // Dòng to (dưới): **TÊN ƯU ĐÃI**, không phải số tiền giảm.
+    //
+    // `displayName` = `voucherName ?: campaignName` (`EligibleOffer.displayName`). Server trả
+    // `voucherName` ở **cả hai** nhóm, nên bình thường đây là tên voucher; `campaignName` chỉ đỡ khi
+    // response thiếu.
+    //
+    // Trước đây dòng này là `formatEstimatedDiscount(estimatedDiscount)` → "Giảm 50.000đ", lấy từ
+    // `discountPreview.estimatedDiscount`. Đã bỏ: user cần biết mình đang chọn ưu đãi NÀO.
+    title = displayName.orEmpty(),
+    description = displayName.orEmpty(),
     logo = logoUrl.orEmpty(),
     expirationDate = expireDate.orEmpty(),
     // Lõi không dựng sẵn câu tiếng Việt; lý do lấy từ rule đầu tiên không khớp. Rỗng → layout tự
@@ -102,21 +110,9 @@ internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherL
     applicableProducts = emptyList(),
 )
 
-/**
- * `"50000"` → `"Giảm 50.000đ"`; `null`/`"0"`/chuỗi không có số → `null`.
- *
- * Chuỗi lặp lại `R.string.prm_discount_amount_format` vì ViewModel không giữ `Context`;
- * sửa một chỗ thì sửa cả hai.
- */
-private fun formatEstimatedDiscount(raw: String?): String? {
-    val digits = raw?.filter { it.isDigit() }.orEmpty()
-    val value = digits.toLongOrNull() ?: return null
-    if (value <= 0) return null
-    return "Giảm ${value.groupedByThousands()}đ"
-}
-
-private fun Long.groupedByThousands(): String =
-    toString().reversed().chunked(3).joinToString(".").reversed()
+// `formatEstimatedDiscount` + `groupedByThousands` đã xoá cùng lúc bỏ dòng "Giảm 50.000đ" khỏi card
+// màn Chọn ưu đãi — không còn nơi nào gọi. Widget `PRMEndowView` format số tiền theo đường riêng
+// (`ApplyPromotionAdapter`), không đi qua đây.
 
 // Cảnh báo "sắp hết hạn" (expireWarningDate) nay do store (promotionLogic) tính một lần cho cả 2 nền
 // tảng — `MyPromotionVoucher.expiringInDays` / `ChooseOffer.expiringInDays`. Không còn tính lại ở đây.

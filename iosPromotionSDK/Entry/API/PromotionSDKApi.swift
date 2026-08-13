@@ -340,7 +340,7 @@ public final class PromotionSDKApi {
     private static func toOffer(_ model: EligibleOffer) -> PromotionEligibleOffer {
         PromotionEligibleOffer(
             id: model.id,
-            name: model.campaignName ?? "",
+            name: model.displayName ?? "",
             objectType: model.objectType,
             usable: model.usable,
             estimatedDiscount: model.estimatedDiscount,

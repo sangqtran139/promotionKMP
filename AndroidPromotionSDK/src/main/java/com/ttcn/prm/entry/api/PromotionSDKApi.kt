@@ -278,7 +278,7 @@ class PromotionSDKApi internal constructor(
 
     private fun toOffer(model: EligibleOffer) = PromotionEligibleOffer(
         id = model.id,
-        name = model.campaignName.orEmpty(),
+        name = model.displayName.orEmpty(),
         objectType = model.objectType,
         usable = model.usable,
         estimatedDiscount = model.estimatedDiscount,

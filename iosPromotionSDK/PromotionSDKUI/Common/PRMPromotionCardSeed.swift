@@ -53,7 +53,7 @@ struct PRMPromotionCardSeed {
         self.id = offer.id
         // Eligible API không trả merchant riêng.
         self.merchantName = ""
-        self.name = offer.campaignName ?? ""
+        self.name = offer.displayName ?? ""
         self.logo = nil
         self.expirationDate = offer.expireDate
         // `usable` là nguồn sự thật ở luồng checkout; map về status để dùng chung `displayState()`.

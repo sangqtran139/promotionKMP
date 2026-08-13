@@ -51,7 +51,17 @@ Cùng quy ước với màn "Ưu đãi của tôi" — sửa một bên thì s�
 | Dòng | Style | Nguồn | Android | iOS |
 |---|---|---|---|---|
 | Nhỏ, trên | Regular 12 / `tokenDark60`, 1 dòng | `partnerName ?: campaignName` (merchant) | `MyVoucherListItem.merchantName` → `txtVoucherName` | `MyPromotionCellViewModel.title` → `titleLabel` |
-| To, dưới | Medium 16 / `tokenDark100`, 2 dòng | `estimatedDiscount` đã format ("Giảm giá 50.000đ") | `.title` → `tvContent` | `.description` → `descriptionLabel` |
+| To, dưới | Medium 16 / `tokenDark100`, 2 dòng | **`campaignName`** = `voucherName ?: campaignName` (tên ưu đãi) | `.title` → `tvContent` | `.description` → `descriptionLabel` |
+
+> **Dòng to từng là số tiền giảm** — `discountPreview.estimatedDiscount` format thành "Giảm 50.000đ".
+> Đã bỏ: user cần biết mình đang chọn ưu đãi **nào**. Hai hàm format đi kèm cũng xoá luôn
+> (`formatEstimatedDiscount` trong `PromotionUiMapper.kt`, `MyPromotionCell.formatDiscount` bên iOS)
+> — widget checkout format số tiền theo đường riêng, không dùng chung.
+>
+> `voucherName` **không phải field riêng** ở domain: `EligibleCampaignsMapper.toEligibleOffer` hợp
+> nhất `campaignName = voucherName ?: campaignName`. Nhờ đó nhóm "của tôi" ra tên voucher, còn nhóm
+> "Ưu đãi khác" (chưa nhận nên không có voucher, không có `voucherName`) ra tên campaign — đúng ngữ
+> nghĩa. Muốn phân biệt hai thứ thì phải tách field ở `EligibleOffer` trước.
 
 > ⚠️ Tên field dễ nhầm ở **hai tầng**:
 > - iOS `MyPromotionCellViewModel.title` là dòng **nhỏ**, `description` là dòng **to** — ngược trực giác.
@@ -236,6 +246,40 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 | Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
 | Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
+
+## `serviceCode` đi vào request bằng đường nào
+
+Spec `findEligible` (3.5.4 v19) **không có field `serviceCode`** ở bất kỳ cấp nào — body chỉ gồm
+`customerInfo`, `orderInfo`, `filterOptions`, `scenario`, `sectionCode`, `keyword`, `pagination`.
+Chiều dịch vụ đi qua **`orderInfo.items[].productId`**.
+
+```
+updateContext(serviceCode = "TKBAOVIET")
+  → PromotionMutableContext.serviceCode
+  → PromotionRequestContextProvider.getService()
+  → ctx.eligibleOrderItems()        ← đổ vào productId của từng item còn trống
+  → orderInfo.items[].productId
+```
+
+Dùng `ctx.eligibleOrderItems()`, **không** phải `getOrderItems()`, ở mọi chỗ dựng request findEligible
+(`ChoosePromotionStore.buildRequest`, `EndowStore.loadInitial`). Hai chỗ lệch nhau là widget và màn
+chọn hỏi server hai câu khác nhau rồi ra hai danh sách khác nhau.
+
+Ba điều kèm theo:
+
+- **Nguồn là `updateContext`, không phải `PromotionSDKConfig.serviceCode`.** Config là hằng số cả
+  phiên; app có nhiều điểm mở màn chọn ưu đãi thì mỗi điểm `updateContext` trước khi mở là đủ, không
+  phải re-init. Context được đọc lại ở **mỗi** request nên không có giá trị cũ kẹt lại.
+- **`updateContext` ghi đè toàn bộ**, không merge: gọi `updateContext(serviceCode = …)` một mình là
+  xoá sạch `orderId`/`orderValue`/`orderItems`. Luôn truyền đủ bộ.
+- **Item tự khai `productId` thì giữ nguyên** — host biết dòng hàng của mình rõ hơn context cấp đơn.
+- **`items[]` rỗng thì SDK không tự dựng item.** `skuSourceId` là required mà context cấp đơn không
+  có SKU nào; rỗng → server chỉ chạy rule cấp đơn (spec §4.3).
+
+`EndowStore.loadedOrderKey` gồm cả `getService()`: hai điểm vào cùng đơn nhưng khác dịch vụ là hai
+danh sách khác nhau, thiếu nó thì widget giữ nguyên kết quả của dịch vụ trước.
+
+---
 
 > **Hai điểm từng sai, đừng làm lại:**
 >

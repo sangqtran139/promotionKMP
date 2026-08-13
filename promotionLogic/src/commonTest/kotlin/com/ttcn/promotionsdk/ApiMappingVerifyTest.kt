@@ -119,7 +119,9 @@ class ApiMappingVerifyTest {
         ).data
         val o = r.myOffers.single()
         assertEquals("v-1", o.id)
-        assertEquals("Ưu đãi Grab 50k", o.campaignName)
+        assertEquals("Ưu đãi Grab 50k", o.voucherName)
+        assertEquals("Camp Grab", o.campaignName)
+        assertEquals("Ưu đãi Grab 50k", o.displayName)
         assertEquals("2026-08-15T23:59:59", o.expireDate)
     }
 }

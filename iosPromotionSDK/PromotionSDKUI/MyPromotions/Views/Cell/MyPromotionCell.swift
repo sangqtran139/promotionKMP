@@ -166,16 +166,20 @@ struct MyPromotionCellViewModel {
         }
 
         // Hai dòng chữ, đối ứng `EligibleOffer.toMyVoucherListItem()` bên Android:
-        // `title` = dòng nhỏ phía trên (merchant), `description` = dòng to phía dưới (số tiền giảm).
-        var derivedDescription = ""
-        if let discount = offer.estimatedDiscount, let formatted = Self.formatDiscount(discount) {
-            derivedDescription = formatted
-        }
+        // `title` = dòng nhỏ phía trên (merchant), `description` = dòng to phía dưới (**tên ưu đãi**).
+        //
+        // `displayName` = `voucherName ?: campaignName` (`EligibleOffer.displayName`). Server trả
+        // `voucherName` ở **cả hai** nhóm, nên bình thường đây là tên voucher; `campaignName` chỉ đỡ
+        // khi response thiếu.
+        //
+        // Trước đây dòng này là `formatDiscount(offer.estimatedDiscount)` → "Giảm 50.000đ", lấy từ
+        // `discountPreview.estimatedDiscount`. Đã bỏ: user cần biết mình đang chọn ưu đãi NÀO.
+        let derivedDescription = offer.displayName ?? ""
 
         self.init(
             id: offer.id,
             // Ưu tiên tên đối tác/merchant (partnerName, v1.6), fallback tên ưu đãi.
-            title: offer.partnerName ?? offer.campaignName ?? "",
+            title: offer.partnerName ?? offer.displayName ?? "",
             description: derivedDescription,
             imageURL: offer.logoUrl,
             date: PRMPromotionDate.parse(offer.expireDate),
@@ -193,16 +197,10 @@ struct MyPromotionCellViewModel {
         )
     }
 
-    /// "100000" → "Giảm 100.000đ". nil nếu không parse được.
-    private static func formatDiscount(_ raw: String) -> String? {
-        let digits = raw.filter { $0.isNumber }
-        guard let value = Int(digits), value > 0 else { return nil }
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.groupingSeparator = "."
-        let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
-        return PromotionUIStrings.discount(formatted)
-    }
+    // `formatDiscount` đã xoá cùng lúc bỏ dòng "Giảm 50.000đ" khỏi card màn Chọn ưu đãi — không còn
+    // nơi nào gọi. Widget checkout format số tiền theo đường riêng
+    // (`PromotionSDKImpl.formatDiscount`), không đi qua cell này. Đối ứng Android:
+    // `formatEstimatedDiscount` trong `PromotionUiMapper.kt` cũng xoá.
 }
 
 protocol MyPromotionCellDelegate: AnyObject {

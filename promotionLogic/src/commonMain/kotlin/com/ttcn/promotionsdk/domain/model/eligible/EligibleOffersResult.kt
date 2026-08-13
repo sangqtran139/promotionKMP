@@ -30,6 +30,13 @@ data class EligibleOffer(
     val campaignId: String? = null,
     val voucherId: String? = null,
     val campaignName: String? = null,
+    /**
+     * Tên voucher/ưu đãi do server trả (`voucherName`, v1.6) — **có ở cả hai nhóm**, không riêng
+     * `myOffers`. Giữ RIÊNG với [campaignName] thay vì hợp nhất từ tầng mapper như trước
+     * (`campaignName = voucherName ?: campaignName`): gộp rồi thì không ai phân biệt được đang cầm
+     * tên voucher hay tên campaign. Chỗ nào cần "tên để hiển thị" thì dùng [displayName].
+     */
+    val voucherName: String? = null,
     val campaignType: String? = null,
     val objectType: String = "CAMPAIGN",
     val discountType: String? = null,
@@ -52,4 +59,14 @@ data class EligibleOffer(
 ) {
     /** Ưu đãi thuộc nhóm "của tôi" khi server trả kèm `voucherId`. */
     val isOwnedVoucher: Boolean get() = voucherId != null
+
+    /**
+     * Tên đem đi hiển thị: ưu tiên [voucherName], thiếu thì [campaignName].
+     *
+     * **Một nơi duy nhất** quyết định thứ tự ưu tiên đó — trước đây nó nằm ở tầng mapper DTO nên mọi
+     * consumer (card màn Chọn, `PromotionEligibleOffer.name` của API headless, seed màn Chi tiết bên
+     * iOS) đều vô tình phụ thuộc vào việc `campaignName` đã bị ghi đè. Nay các chỗ đó gọi thẳng
+     * hàm này, và [campaignName] giữ đúng nghĩa "tên campaign".
+     */
+    val displayName: String? get() = voucherName ?: campaignName
 }

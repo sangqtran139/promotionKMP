@@ -66,7 +66,10 @@ class EligibleMappingBranchTest {
         val o = r.myOffers.single()
 
         assertEquals("v1", o.id)                      // voucherId thắng campaignId
-        assertEquals("Ten voucher", o.campaignName)   // voucherName thắng campaignName
+        // Hai tên giữ RIÊNG từ khi bỏ hợp nhất ở mapper; thứ tự ưu tiên nằm ở `displayName`.
+        assertEquals("Ten voucher", o.voucherName)
+        assertEquals("Camp", o.campaignName)
+        assertEquals("Ten voucher", o.displayName)    // voucherName thắng campaignName
         assertEquals("VOUCHER", o.objectType)         // có voucherId → VOUCHER (KHÔNG lấy campaignType)
         assertEquals("2099-01-01", o.expireDate)      // expiresAt thắng validity.endDate
         assertEquals("1000", o.estimatedDiscount)
@@ -101,6 +104,8 @@ class EligibleMappingBranchTest {
 
         assertEquals("c9", o.id)                 // không voucherId → lùi campaignId
         assertEquals("ChiCampaign", o.campaignName)
+        assertNull(o.voucherName)                // response không có voucherName
+        assertEquals("ChiCampaign", o.displayName)  // → lùi về tên campaign
         assertEquals("CAMPAIGN", o.objectType)   // không voucherId → CAMPAIGN
         assertTrue(o.usable)                     // usable null → mặc định dùng được
         assertNull(o.expireDate)                 // không expiresAt lẫn validity

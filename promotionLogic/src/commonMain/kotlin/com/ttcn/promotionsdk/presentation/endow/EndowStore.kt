@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.ttcn.promotionsdk.config.eligibleOrderItems
 
 
 /**
@@ -196,7 +197,9 @@ class EndowStore(
 
     private fun loadInitial() {
         val ctx = PromotionContainer.requestContextProvider
-        val orderKey = "${ctx.getOrderId().orEmpty()}|${ctx.getOrderValue().orEmpty()}"
+        // Gồm cả dịch vụ: hai điểm vào cùng đơn nhưng khác `serviceCode` là hai danh sách ưu
+        // đãi khác nhau — thiếu nó thì widget giữ nguyên kết quả của dịch vụ trước.
+        val orderKey = "${ctx.getOrderId().orEmpty()}|${ctx.getOrderValue().orEmpty()}|${ctx.getService().orEmpty()}"
         if (_state.value.hasLoadedInitial && loadedOrderKey == orderKey) return
         if (loadedOrderKey != null && loadedOrderKey != orderKey) {
             // Đơn khác → vứt sạch kết quả của đơn cũ. Không giữ lại gì: `appliedDiscounts` mang số
@@ -211,8 +214,10 @@ class EndowStore(
                     FindEligibleCampaignsRequest(
                         orderId = ctx.getOrderId().orEmpty(),
                         orderValue = ctx.getOrderValue().orEmpty(),
-                        // Order items lấy từ provider (dùng chung 2 nền tảng) → campaign theo SKU.
-                        items = ctx.getOrderItems(),
+                        // Kèm `serviceCode` (đổ vào `productId`) — xem `eligibleOrderItems()`.
+                        // Phải trùng hàm màn Chọn dùng, nếu không widget và màn chọn hỏi
+                        // server hai câu khác nhau rồi ra hai danh sách khác nhau.
+                        items = ctx.eligibleOrderItems(),
                         mySize = PAGE_SIZE,
                         otherSize = PAGE_SIZE,
                     )
