@@ -73,7 +73,7 @@ internal class PRMBaseConfirmDialog : PRMBaseDialog<PrmDialogConfirmBinding>() {
                 }
             } else {
                 btnNegative.visibility = View.GONE
-                divider2.visibility = View.GONE
+                divider2.visibility = View.INVISIBLE
             }
 
             if (positiveColor != 0) {

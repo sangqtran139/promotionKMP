@@ -76,6 +76,16 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     override fun setupUI() {
+        // Container SDK nhận được có tràn xuống dưới navigation bar hay không phụ thuộc host —
+        // xem `applyNavigationBarInset`. Cùng cơ chế `PromotionDetailFragment` đang dùng cho `tvUse`.
+        //
+        // Áp cho `ctlApplyVoucher` (CardView bọc ngoài), KHÔNG phải `btnApply`: khác với `tvUse` —
+        // con trực tiếp của root, chỉ neo bottom đơn giản — `btnApply` nằm trong 1
+        // `ConstraintLayout` con `match_parent` lồng bên trong `CardView` `wrap_content`. Cộng
+        // `bottomMargin` cho `btnApply` không kéo theo CardView bọc ngoài (nền trắng + đổ bóng) di
+        // chuyển đúng, nên nav bar vẫn đè lên. `ctlApplyVoucher` mới là view neo bottom trực tiếp vào
+        // root — tương đương `tvUse` — nên phải là view nhận margin.
+        applyNavigationBarInset(binding.ctlApplyVoucher)
         setupRecyclerView()
         setupButtons()
         setupSearch()
@@ -326,13 +336,9 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
          * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang
          * áp, và đẩy kết quả ngược về widget khi user bấm "Áp dụng".
          *
-         * `internal`: fragment này là UI nội bộ. Host gọi qua bề mặt entry, nhận về [Fragment] trần:
-         *
-         * ```kotlin
-         * binding.endowView.onOpenVoucherSelection = {
-         *     addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
-         * }
-         * ```
+         * `internal`: fragment này là UI nội bộ. `PRMEndowView` tự gọi hàm này qua
+         * `PromotionSDK.openChoosePromotion(activity, endowView)` khi user bấm widget — host không
+         * đụng tới class này, kể cả gián tiếp.
          *
          * Host muốn làm thêm việc gì đó lúc áp thì ghi đè [onApplySelectedOffers] — nhớ tự gọi
          * `endowView.setDiscountDetails(...)` và hàm báo-đã-xong, vì set lại sẽ thay callback mặc định.

@@ -4,12 +4,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.app.base.AppBaseFragment
 import com.ttcn.promotionsdk.app.databinding.FragmentPaymentDemoBinding
-import com.ttcn.prm.entry.PromotionSDK
 
 /**
  * Màn thanh toán mẫu — tất cả những gì màn này chạm vào SDK đều nằm ở `com.ttcn.prm.entry`:
- * widget `PRMEndowView` (đặt trong layout của host) và `PromotionSDK.createChoosePromotionFragment`.
- * Không có lớp nội bộ nào của SDK ở đây.
+ * widget `PRMEndowView` (đặt trong layout của host). Widget tự điều hướng sang màn "Chọn ưu đãi"
+ * khi user bấm — host không cần wiring gì cho việc đó. Không có lớp nội bộ nào của SDK ở đây.
  */
 class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>() {
 
@@ -18,10 +17,7 @@ class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>
 
     override fun setupUI() {
         // ─── Wire endowView callbacks ─────────────────────────────────────────
-        binding.endowView.apply {
-            onOpenVoucherSelection = { openVoucherSelectionScreen() }
-            onError = { errorCode -> showToast(mapErrorMessage(errorCode)) }
-        }
+        binding.endowView.onError = { errorCode -> showToast(mapErrorMessage(errorCode)) }
 
         // ─── Confirm thanh toán ───────────────────────────────────────────────
         // Gọi thẳng trên widget: không còn class manager riêng, cũng không còn `clear()` phải nhớ.
@@ -31,13 +27,6 @@ class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>
                 onError = { errorCode -> showToast(mapErrorMessage(errorCode)) },
             )
         }
-    }
-
-    // ─── Navigation ───────────────────────────────────────────────────────────
-
-    /** SDK trả về [androidx.fragment.app.Fragment] trần — màn "Chọn ưu đãi" là UI nội bộ của SDK. */
-    private fun openVoucherSelectionScreen() {
-        addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
     }
 
     // ─── Payment ──────────────────────────────────────────────────────────────

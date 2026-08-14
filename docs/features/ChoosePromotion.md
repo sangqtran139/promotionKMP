@@ -152,8 +152,8 @@ chưa dùng** — đừng tưởng là sót:
 
 | Chặng | Android | iOS |
 |---|---|---|
-| Widget giữ cờ | `EndowState` → `PRMEndowView.myIsLastPage` (đọc thẳng, không còn bọc qua model UI riêng) | `EndowState` (đọc thẳng qua `endowVM.state`) |
-| Truyền sang màn chọn | `PromotionSDK.createChoosePromotionFragment` → `ChoosePromotionFragment.forEndowView` (internal) → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
+| Widget giữ cờ | `EndowState` → `PRMEndowUiState` → `PRMEndowView.myIsLastPage` | `EndowState` (đọc thẳng qua `endowVM.state`) |
+| Truyền sang màn chọn | `PromotionSDK.openChoosePromotion` (widget tự gọi khi bấm) → `ChoosePromotionFragment.forEndowView` (internal) → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
 
 Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`, không mở đường gọi trang kế.
 > - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);

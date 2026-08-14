@@ -22,14 +22,15 @@ enum PromotionToast {
         PRMToast.show(message, in: view)
     }
 
-    /// Toast **LUÔN hiện**, không đi qua `isEnabled` — dành cho thông báo "tính năng bị cờ chặn"
-    /// (PRM_MOB_021).
+    /// Thông báo **LUÔN hiện**, không đi qua `isEnabled` — dành cho "tính năng bị cờ chặn" (PRM_MOB_021).
     ///
     /// Ngoại lệ có chủ đích: các toast lỗi khác còn state thay thế (empty/shimmer/list cũ) nên tắt đi
     /// vẫn hiểu được; còn ở đây user bấm mà màn không mở, im lặng thì thành "app đơ".
     ///
-    /// Đối ứng `PromotionToastGate.showFeatureDisabled(context)` bên Android.
+    /// Hiện bằng `PRMConfirmationDialog` (1 nút "Đóng") thay vì toast — Toast dễ bị trôi qua quá
+    /// nhanh, dialog đảm bảo user thấy được. Đối ứng `PromotionToastGate.showFeatureDisabled(context)`
+    /// bên Android (cũng dùng `PRMBaseConfirmDialog`, không phải Toast dù tên class là ToastGate).
     static func showAlways(_ message: String, in view: UIView) {
-        PRMToast.show(message, in: view)
+        PRMConfirmationDialog.showError(message, in: view)
     }
 }

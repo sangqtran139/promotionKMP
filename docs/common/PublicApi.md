@@ -99,8 +99,10 @@ object PromotionSDK {
         hostHandlesDismiss: Boolean = false,
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
     )
-    // Màn "Chọn ưu đãi" nối sẵn với widget; trả Fragment trần (class thật là internal) — xem §4.
-    fun createChoosePromotionFragment(endowView: PRMEndowView): Fragment
+    // Màn "Chọn ưu đãi" nối sẵn với widget. `PRMEndowView` tự gọi hàm này khi user bấm — host không
+    // cần wiring. Public để host tự kích hoạt từ nơi khác nếu cần. Xem §4. (Android-only, N1: chưa có
+    // widget tương ứng bên iOS.)
+    fun openChoosePromotion(activity: FragmentActivity, endowView: PRMEndowView, containerViewId: Int? = null)
 }
 ```
 
@@ -355,8 +357,8 @@ Hai quy ước đã chốt, đừng đảo lại:
 
 | Type | Dùng để |
 |---|---|
-| `com.ttcn.prm.ui.feature.endowview.PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. |
-| `PromotionSDK.createChoosePromotionFragment(endowView)` | Mở màn "Chọn ưu đãi", nối sẵn với widget. Trả `androidx.fragment.app.Fragment` — class thật (`ChoosePromotionFragment`) là nội bộ. |
+| `com.ttcn.prm.ui.feature.endowview.PRMEndowView` | Widget ưu đãi ở màn thanh toán. Đặt thẳng vào XML của host. Bấm vào widget → **tự** mở màn "Chọn ưu đãi", host không cần wiring gì. |
+| `PromotionSDK.openChoosePromotion(activity, endowView, containerViewId)` | Widget tự gọi hàm này khi user bấm. Public để host tự kích hoạt màn "Chọn ưu đãi" từ nơi khác nếu cần (vd nút riêng ngoài widget) — cùng khuôn `openMyPromotion`/`openPromotionDetail`. |
 | `PRMEndowView.confirmRedemption(onSuccess, onError)` | Gọi khi bấm nút thanh toán của host. iOS: `PromotionSDK.confirmRedemption(onSuccess:onError:)`. |
 | `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` | Trạng thái widget, đọc qua `PRMEndowView.getCurrentState()`. |
 | `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). Nay là **`typealias` → `com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount`** (kiểu thật ở `promotionLogic`, dùng chung với iOS): host Kotlin **không phải đổi gì**, host **Java** phải dùng tên đầy đủ `EndowAppliedDiscount` vì Java không thấy typealias. **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
@@ -364,15 +366,20 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin
-binding.endowView.onOpenVoucherSelection = {
-    addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
-}
+// Chỉ cần nhúng widget vào layout — không cần dòng nào để mở màn "Chọn ưu đãi".
+<com.ttcn.prm.ui.feature.endowview.PRMEndowView
+    android:id="@+id/endowView"
+    ... />
 ```
 
-`createChoosePromotionFragment` lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai),
-pre-select voucher đang áp, và đẩy kết quả ngược về widget — host không phải chạm `EligibleOffer`,
-một type của lõi. Nó chỉ trả `Fragment` trần: màn "Chọn ưu đãi" là UI nội bộ, host add vào container
-của mình chứ không đụng tới class.
+Bấm vào widget (trạng thái `NOT_APPLIED`/`UNAVAILABLE`) → `PRMEndowView` tự resolve
+`FragmentActivity` từ `context`, gọi `PromotionSDK.openChoosePromotion(activity, this)`. Hàm này lấy
+lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang áp, và đẩy kết
+quả ngược về widget khi user bấm "Áp dụng" — host không phải chạm `EligibleOffer`, một type của lõi,
+và không cần biết `ChoosePromotionFragment` (nội bộ) tồn tại.
+
+Host muốn tự kích hoạt màn này từ nơi khác (vd nút "Xem ưu đãi" riêng, ngoài cú bấm mặc định của
+widget) thì gọi thẳng `PromotionSDK.openChoosePromotion(activity, endowView)`.
 
 
 ---

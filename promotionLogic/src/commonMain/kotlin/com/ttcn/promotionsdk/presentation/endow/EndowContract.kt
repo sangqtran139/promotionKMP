@@ -67,6 +67,7 @@ data class EndowAppliedDiscount(
     val valid: Boolean,
     val calculatedDiscount: String,
     val eligibilityStatus: String,
+    val tags: List<String> = emptyList(),
 )
 
 internal fun ValidateDiscountsResult.toEndowAppliedDiscount(objectId: String, objectType: String) =
@@ -76,6 +77,7 @@ internal fun ValidateDiscountsResult.toEndowAppliedDiscount(objectId: String, ob
         valid = isValidFor(objectId),
         calculatedDiscount = discountFor(objectId),
         eligibilityStatus = itemFor(objectId)?.eligibilityStatus.orEmpty(),
+        tags = itemFor(objectId)?.tags.orEmpty(),
     )
 
 sealed interface EndowIntent {

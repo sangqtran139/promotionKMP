@@ -35,6 +35,7 @@ internal fun StackableDiscountsResponse.toValidateDiscountsResult() = ValidateDi
             valid = detail.valid,
             calculatedDiscount = detail.calculatedDiscount,
             eligibilityStatus = detail.eligibilityStatus,
+            tags = detail.tags,
         )
     },
 )

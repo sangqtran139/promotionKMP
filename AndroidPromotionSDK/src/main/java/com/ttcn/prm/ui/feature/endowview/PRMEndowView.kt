@@ -29,6 +29,7 @@ import com.ttcn.promotionsdk.presentation.endow.EndowWidgetState
 import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.utils.applyTextColorIfSet
+import com.ttcn.prm.ui.utils.findActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,7 +81,7 @@ class PRMEndowView @JvmOverloads constructor(
     /**
      * Ưu đãi đã load sẵn, dùng lại cho màn "Chọn ưu đãi" để khỏi gọi `findEligible` hai lần.
      * `internal`: [EligibleOffer] thuộc `promotionLogic`, không được lọt ra API public.
-     * Host lấy qua [PromotionSDK.createChoosePromotionFragment].
+     * Widget tự đưa cho [PromotionSDK.openChoosePromotion] khi user bấm.
      */
     internal val myVouchers: List<EligibleOffer>
         get() = viewModel?.state?.value?.myOffers ?: emptyList()
@@ -99,8 +100,6 @@ class PRMEndowView @JvmOverloads constructor(
         get() = viewModel?.state?.value?.appliedDiscounts ?: emptyList()
 
     // ─── Public callbacks ─────────────────────────────────────────────────────
-
-    var onOpenVoucherSelection: (() -> Unit)? = null
 
     var onError: ((errorCode: String) -> Unit)? = null
 
@@ -396,15 +395,30 @@ class PRMEndowView @JvmOverloads constructor(
     private fun setupClickListeners() {
         binding.txtStatusEndow.setOnClickListener {
             when (currentState) {
-                EndowWidgetState.NOT_APPLIED -> onOpenVoucherSelection?.invoke()
+                EndowWidgetState.NOT_APPLIED, EndowWidgetState.UNAVAILABLE -> openChoosePromotionScreen()
                 EndowWidgetState.APPLIED -> {
                     viewModel?.clearApplied()
                     PromotionSDK.getCallback()?.onVoucherCleared()
                 }
-                EndowWidgetState.UNAVAILABLE -> onOpenVoucherSelection?.invoke()
                 EndowWidgetState.EMPTY -> Unit
             }
         }
+    }
+
+    /**
+     * Widget tự điều hướng sang màn "Chọn ưu đãi" — host không cần wiring gì thêm, chỉ nhúng
+     * [PRMEndowView] vào layout (xem [PromotionSDK.openChoosePromotion]).
+     *
+     * `context` không quy về được [androidx.fragment.app.FragmentActivity] (widget đặt ngoài
+     * Activity/Fragment thật, hiếm nhưng có thể xảy ra) → báo lỗi qua [onError] thay vì crash.
+     */
+    private fun openChoosePromotionScreen() {
+        val activity = context.findActivity()
+        if (activity == null) {
+            onError?.invoke(ErrorCodes.GENERAL)
+            return
+        }
+        PromotionSDK.openChoosePromotion(activity, this)
     }
 
     /** Chưa chọn ưu đãi, còn ưu đãi khả dụng → hiển thị nút "Sử dụng" */

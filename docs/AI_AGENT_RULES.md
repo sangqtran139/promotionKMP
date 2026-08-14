@@ -37,7 +37,7 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - Bề mặt host là **`com.ttcn.prm.entry.**`** (Android) và **`iosPromotionSDK/Entry/**`** (iOS).
   Ngoài đó, mọi khai báo top-level phải `internal` (Kotlin) / không có `public` (Swift).
 - Host cần dùng thêm thứ gì → **dời file đó vào `entry`**, KHÔNG nới `public` tại chỗ. Kiểu trả về
-  nên là type chung khi được (vd `PromotionSDK.createChoosePromotionFragment` trả `Fragment` trần)
+  nên là type chung khi được (vd `PromotionSDK.openChoosePromotion` nhận `PRMEndowView` mà không lộ `Fragment` thật)
   để class thật vẫn ẩn.
 - Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng —
   [PublicApi.md](./common/PublicApi.md) có sẵn hai lệnh `grep` để kiểm, cả hai phải **không in ra gì**.

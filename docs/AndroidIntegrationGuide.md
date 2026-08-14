@@ -261,15 +261,8 @@ Màn gọi **không cần** là màn thanh toán.
 ```kotlin
 // Trong Fragment.setupUI — nhớ updateContext(orderId, orderValue) trước khi màn dựng widget
 
-// User bấm vào widget → mở màn "Chọn ưu đãi". SDK dựng sẵn fragment đã nối với widget;
-// host chỉ add vào container của mình. Kiểu trả về là `androidx.fragment.app.Fragment` trần —
-// class thật là UI nội bộ của SDK, host không cần biết tên.
-binding.endowView.onOpenVoucherSelection = {
-    parentFragmentManager.beginTransaction()
-        .add(R.id.container, PromotionSDK.createChoosePromotionFragment(binding.endowView))
-        .addToBackStack(null)
-        .commit()
-}
+// User bấm vào widget → widget TỰ mở màn "Chọn ưu đãi" (PromotionSDK.openChoosePromotion nội bộ).
+// Không cần wiring gì ở đây — host chỉ cần layout XML ở trên là đủ.
 
 btnConfirmPayment.setOnClickListener {
     binding.endowView.confirmRedemption(

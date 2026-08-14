@@ -33,4 +33,5 @@ data class DiscountItemResult(
     val valid: Boolean,
     val calculatedDiscount: String,
     val eligibilityStatus: String,
+    val tags: List<String> = emptyList(),
 )

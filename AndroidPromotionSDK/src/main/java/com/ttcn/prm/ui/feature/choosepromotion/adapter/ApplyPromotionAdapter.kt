@@ -19,8 +19,8 @@ import com.ttcn.prm.ui.theme.PromotionThemeRegistry
  * Luôn render từ [AppliedDiscount] — dữ liệu trực tiếp từ discountDetails
  * trong response của validateStackableDiscounts.
  *
- * - [AppliedDiscount.valid] = true  → hiển thị bình thường
- * - [AppliedDiscount.valid] = false → hiển thị mờ/disabled
+ * - [AppliedDiscount.valid] = true  → nền/chữ xanh mint (bình thường)
+ * - [AppliedDiscount.valid] = false → nền/chữ xám, đồng bộ nút "+N" — xem [DiscountBadgeApplier]
  */
 internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -97,13 +97,13 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: AppliedDiscount, token: DiscountBadgeToken?) {
-            // `calculatedDiscount` là chuỗi số thô của server ("75000") — phải format trước khi hiện,
-            // nếu không widget lòi số trần. Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
-            binding.txtName.text = formatDiscountAmount(binding.root.context, item.calculatedDiscount)
+            // Text ưu tiên lấy từ `tags[0]` (nhãn server gửi sẵn). Server cũ / host tự dựng
+            // `AppliedDiscount` qua `setDiscountDetails` không kèm tags → fallback format số tiền
+            // giảm như trước, tránh voucher hiện chữ trống. Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
+            binding.txtName.text = item.tags.firstOrNull()?.takeIf { it.isNotBlank() }
+                ?: formatDiscountAmount(binding.root.context, item.calculatedDiscount)
 
-            // valid=false → hiển thị mờ
-            binding.root.alpha = if (item.valid) 1f else 0.4f
-
+            // Nền/chữ đổi màu (xanh mint khi valid, xám khi không) — xem `DiscountBadgeApplier`.
             DiscountBadgeApplier.apply(
                 binding,
                 token,

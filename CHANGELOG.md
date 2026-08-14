@@ -8,31 +8,25 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
-### Changed — **BREAKING**: callback host đổi thứ tự & tần suất; widget Android đổi vòng đời
+### Changed — **BREAKING**: widget "Ưu đãi" tự mở màn "Chọn ưu đãi", bỏ `onOpenVoucherSelection`
 
-Rule "khi nào bắn callback host" trước đây có **hai bản chép tay** và đã lệch: Android ba biến
-(`lastNotifiedState`/`lastNotifiedCount`/`lastNotifiedAvailability`) trong `PRMEndowView`, iOS hai
-biến trong `PromotionSDKImpl.render`. Nay gộp về `EndowHostNotifier` (`promotionLogic`), có 8 test.
+Trước đây `PRMEndowView` chỉ bắn callback `onOpenVoucherSelection` khi user bấm — host phải tự dựng
+`FragmentTransaction` để add `PromotionSDK.createChoosePromotionFragment(endowView)` vào container
+của mình. Bước này lặp lại y hệt ở mọi host, và là chỗ dễ quên/làm sai (container id, back stack,
+dedup double-tap).
 
-Hệ quả với host:
+Nay widget tự điều hướng: bấm vào widget → `PRMEndowView` tự resolve `FragmentActivity` từ `context`
+rồi gọi `PromotionSDK.openChoosePromotion(activity, endowView)` nội bộ — cùng khuôn
+`openMyPromotion`/`openPromotionDetail` (tự chọn `FragmentManager` qua `resolveFragmentManager`,
+dedup theo tag, `addToBackStack`). Host không cần dòng nào cho việc này nữa; chỉ cần nhúng
+`PRMEndowView` vào layout XML.
 
-- **Thứ tự đổi (iOS).** Nay luôn `onVoucherCountChanged` → `onVoucherApplied`. Bản iOS cũ bắn ngược
-  lại. Host nào xử lý voucher vừa áp trước rồi mới cập nhật tổng tiền cần xem lại.
-- **Tần suất giảm (iOS).** `onAvailabilityUpdate` trước bắn mỗi lần `applyFlag` chạy — mà nó chạy
-  hai lần (cache rồi server) — kể cả khi cờ không đổi. Nay chỉ bắn khi **đổi**, như Android.
-- **`PRMEndowView` cần `ViewModelStoreOwner`** trong cây view (mọi ComponentActivity/Fragment đều
-  có). Không có → widget ẩn **và** gọi `onError("error_general")`. Đổi lại: store không còn chết
-  theo `onDetachedFromWindow`, nên host mở màn "Chọn ưu đãi" bằng `replace()` không còn làm
-  "Áp dụng"/"Thanh toán" trả `error_general` mà không hề gọi mạng.
-- **State ưu đãi sống qua detach/attach và xoay màn.** Đổi đơn hàng (orderId/orderValue khác) thì
-  store tự vứt kết quả cũ và nạp lại — số tiền giảm tính theo orderValue cũ không được phép hiện tiếp.
-- **Nạp trang "Ưu đãi khác" (Android).** Bỏ điều kiện phải có cú cuộn xuống (`dy > 0`) và đổi sang
-  đếm theo chỉ số **trong nhóm**. Danh sách ngắn hơn màn hình nay vẫn nạp được trang kế — trước
-  không bao giờ nạp, còn iOS thì có. Rule chung: `ChoosePromotionState.shouldLoadMoreOther`.
-- **Màn "Chọn ưu đãi" không còn mất tick.** Seed pre-select + preload nay qua
-  `ChoosePromotionIntent.SeedOnce`, gác một lần trong store. Trước đây Android bắn lại mỗi lần view
-  dựng lại, ghi đè lựa chọn của user và rewind danh sách về trang đầu.
+**Host phải sửa:**
 
+| Cũ | Mới |
+|---|---|
+| `binding.endowView.onOpenVoucherSelection = { addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView)) }` | Xoá hẳn — widget tự mở màn, không cần wiring |
+| `PromotionSDK.createChoosePromotionFragment(endowView): Fragment` | `PromotionSDK.openChoosePromotion(activity, endowView, containerViewId = null)` — chỉ cần gọi thẳng khi host muốn tự kích hoạt màn này từ nơi khác ngoài cú bấm mặc định của widget |
 
 ### Fixed — iOS: skeleton hàng tab-chip bị skeleton danh sách đè trên màn hình nhỏ
 

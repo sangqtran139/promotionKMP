@@ -48,6 +48,7 @@ object PromotionSDK {
     private const val TAG = "PromotionSDK"
     private const val TAG_MY_PROMOTION = "prm_my_promotion"
     private const val TAG_PROMOTION_DETAIL = "prm_promotion_detail"
+    private const val TAG_CHOOSE_PROMOTION = "prm_choose_promotion"
 
     private var callback: PromotionSDKCallback? = null
     private var mutableContext: PromotionMutableContext? = null
@@ -613,25 +614,42 @@ object PromotionSDK {
     }
 
     /**
-     * Dựng màn "Chọn ưu đãi" nối sẵn với widget [PRMEndowView] ở màn thanh toán, rồi trả về dạng
-     * [Fragment] để host tự add/replace vào container của mình.
+     * Hiển thị màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
+     *
+     * `PRMEndowView` tự gọi hàm này khi user bấm widget (xem `PRMEndowView.setupClickListeners`) —
+     * host **không cần wiring gì thêm**. Public vì đôi khi host muốn tự kích hoạt màn này từ nơi khác
+     * ngoài cú bấm mặc định của widget (vd nút "Xem ưu đãi" riêng).
+     *
+     * Cùng khuôn [openMyPromotion]/[openPromotionDetail]: gác bởi cờ
+     * [PromotionFeatureFlag.VOUCHER_SELECTION] (TẮT → thông báo PRM_MOB_021, không mở màn), tự chọn
+     * [FragmentManager] theo [containerViewId] (xem [resolveFragmentManager]), dedup theo tag.
      *
      * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang áp, và
-     * đẩy kết quả ngược về widget khi user bấm "Áp dụng" — host không phải chạm `EligibleOffer`,
-     * một type của lõi.
+     * đẩy kết quả ngược về widget khi user bấm "Áp dụng" — xem [ChoosePromotionFragment.forEndowView].
      *
-     * ```kotlin
-     * binding.endowView.onOpenVoucherSelection = {
-     *     addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView))
-     * }
-     * ```
+     * @param activity Activity host (FragmentActivity / AppCompatActivity).
+     * @param endowView Instance widget đang hiển thị — dùng để lấy lại data đã tải + đẩy kết quả chọn.
+     * @param containerViewId Xem [openMyPromotion].
      *
-     * Trả kiểu [Fragment] chứ không phải class thật: màn "Chọn ưu đãi" là UI nội bộ của SDK, host
-     * không cần và không nên biết tới nó.
+     * Chưa [initialize] → log `Log.e` rồi **không làm gì**. Xem [requireInitialized].
      */
     @JvmStatic
-    fun createChoosePromotionFragment(endowView: PRMEndowView): Fragment =
-        ChoosePromotionFragment.forEndowView(endowView)
+    @JvmOverloads
+    fun openChoosePromotion(activity: FragmentActivity, endowView: PRMEndowView, containerViewId: Int? = null) {
+        if (!requireInitialized("openChoosePromotion()")) return
+        if (!PromotionFeatureGate.canShowVoucherSelection()) {
+            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
+            return
+        }
+        val fm = resolveFragmentManager(activity, containerViewId)
+        if (fm.findFragmentByTag(TAG_CHOOSE_PROMOTION) != null) return
+        val fragment = ChoosePromotionFragment.forEndowView(endowView)
+        fm.beginTransaction()
+            .setReorderingAllowed(true)
+            .addOrHideThenAdd(fm, containerViewId, fragment, TAG_CHOOSE_PROMOTION)
+            .addToBackStack(TAG_CHOOSE_PROMOTION)
+            .commit()
+    }
 
 
     /**

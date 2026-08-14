@@ -93,6 +93,24 @@ class DiscountMapperTest {
     }
 
     @Test
+    fun validateResponse_mapsTags() {
+        val r = response(
+            DiscountDetail(
+                "a", "CAMPAIGN", true, "1000", "ELIGIBLE",
+                tags = listOf("Giảm 10k", "Đơn từ 100k"),
+            ),
+        ).toValidateDiscountsResult()
+
+        assertEquals(listOf("Giảm 10k", "Đơn từ 100k"), r.itemFor("a")?.tags)
+    }
+
+    @Test
+    fun validateResponse_missingTags_defaultsToEmpty() {
+        val r = response(DiscountDetail("a", "CAMPAIGN", true, "1000", "ELIGIBLE")).toValidateDiscountsResult()
+        assertTrue(r.itemFor("a")?.tags.orEmpty().isEmpty())
+    }
+
+    @Test
     fun validateResponse_unknownOffer_isOptimisticallyValidAndFallsBackToTotal() {
         // Khoá 2 quy ước DỄ HIỂU NHẦM (đang được cả Android lẫn iOS dựa vào):
         //  - isValidFor: server KHÔNG trả dòng nào cho offer ⇒ coi là hợp lệ (`?.valid != false`),

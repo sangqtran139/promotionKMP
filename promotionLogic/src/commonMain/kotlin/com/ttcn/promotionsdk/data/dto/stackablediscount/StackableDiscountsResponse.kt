@@ -65,6 +65,8 @@ data class DiscountDetail(
     @SerialName("eligibilityStatus") val eligibilityStatus: String = "",
     @SerialName("budgetStatus") val budgetStatus: String = "",
     @SerialName("validationMessages") val validationMessages: List<String> = emptyList(),
+    /** Nhãn hiển thị cho UI (ví dụ text trên voucher ở widget Endow) — `tags[0]` là nhãn chính. */
+    @SerialName("tags") val tags: List<String> = emptyList(),
     /** Payload tự do — xem ghi chú ở `RedeemableRequest.metadata`. */
     @SerialName("metadata") val metadata: JsonObject = JsonObject(emptyMap()),
 )

@@ -76,19 +76,18 @@ code sau khi view dựng xong thì lệnh của host chạy sau, cũng thắng.
 Android **không còn state model riêng**. `EndowViewModel.uiState` chính là `EndowStore.state`, và
 `PRMEndowView.renderState(state: EndowState)` đọc thẳng — cùng một object với iOS.
 
-`PRMEndowUiState` cũ (đã xoá) là bản sao đúng từng ấy field của `EndowState`, chỉ khác tên
-(`myOffers`→`myVouchers`, `appliedDiscounts`→`discountDetails`, `errorCode`→`error`) cộng một hàm
-`toUiState()` chạy lại mỗi lần state đổi. Không thêm thông tin nào, chỉ thêm một chỗ để hai nền tảng
-lệch nhau. Field: xem `EndowContract.kt`.
+`internal` vì nó mang `EligibleOffer` — type của `:promotionLogic`, không được lọt ra API public.
+Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; widget tự đưa chúng cho
+`PromotionSDK.openChoosePromotion(activity, endowView)` khi user bấm — host không chạm tới.
 
-Accessor `PRMEndowView.myVouchers` / `otherVouchers` vẫn `internal` vì mang `EligibleOffer` — type
-của `:promotionLogic`, không được lọt ra API public; host lấy gián tiếp qua
-`PromotionSDK.createChoosePromotionFragment(endowView)`.
-
-> ⚠️ `renderState` nay thức dậy theo **mọi** thay đổi của `EndowState`, kể cả field widget không vẽ
-> (`isValidating`, `isLoading`) — `PRMEndowUiState` trước đây nuốt luôn. Vì vậy
-> `ApplyPromotionAdapter.submitList` bỏ qua khi danh sách không đổi; gỡ cái chặn đó thì mỗi vòng
-> validate lại một lần `notifyDataSetChanged` vô ích.
+| Field | Ý nghĩa |
+|-------|---------|
+| `myVouchers` / `otherVouchers` | `List<EligibleOffer>` đã nạp sẵn (truyền sang Choose Promotion để tránh gọi API lại) |
+| `discountDetails` | Chi tiết giảm giá sau khi áp dụng — mỗi `AppliedDiscount` có thêm `tags: List<String>` (nhãn hiển thị server gửi kèm `discountDetails[]`, `tags[0]` là chữ hiện lên voucher; rỗng → fallback format `calculatedDiscount`, xem `ApplyPromotionAdapter.bind`) |
+| `discountUnavailable` | Có voucher nhưng không đủ điều kiện áp dụng |
+| `totalVoucherCount` | Tổng số ưu đãi = `myTotalElements + otherTotalElements` |
+| `hasLoadedInitial` | Đã nạp lần đầu |
+| `error` | Lỗi (nếu có) |
 
 ### Nguồn dữ liệu và feature flag
 
