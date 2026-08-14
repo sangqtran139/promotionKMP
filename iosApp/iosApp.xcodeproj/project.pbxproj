@@ -7,8 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA00000000000000000000F2 /* Promotion.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1 /* Promotion.xcframework */; };
-		AA00000000000000000000F3 /* Promotion.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1 /* Promotion.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		AA00000000000000000000F6 /* PromotionRemote in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000F5 /* PromotionRemote */; };
+/*
+	CŨ — link xcframework từ thư mục build cục bộ (../iosPromotionSDK/build).
+	Đổi ngược: bỏ comment 2 dòng dưới, và bỏ dòng PromotionRemote ở trên.
+	(Annotation kiểu chú thích tên đã bị gỡ khỏi 2 dòng này: pbxproj KHÔNG cho comment lồng nhau,
+	 gặp dấu đóng đầu tiên là nó kết thúc khối, phần còn lại thành cú pháp rác.)
+
+		AA00000000000000000000F2 = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1; };
+		AA00000000000000000000F3 = {isa = PBXBuildFile; fileRef = AA00000000000000000000F1; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+*/
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -18,8 +26,11 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				AA00000000000000000000F3 /* Promotion.xcframework in Embed Frameworks */,
 			);
+/*
+	CŨ: AA00000000000000000000F3 nằm ở đây để embed + ký xcframework cục bộ.
+	Nay SwiftPM tự embed và ký binaryTarget cho target app, nên phase này để rỗng.
+*/
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -27,7 +38,11 @@
 
 /* Begin PBXFileReference section */
 		55D4D5852F8C96950042667F /* iosApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AA00000000000000000000F1 /* Promotion.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Promotion.xcframework; path = "../iosPromotionSDK/build/Promotion.xcframework"; sourceTree = "<group>"; };
+/*
+	CŨ — trỏ thẳng vào gói vừa dựng trên máy:
+
+		AA00000000000000000000F1 = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Promotion.xcframework; path = "../iosPromotionSDK/build/Promotion.xcframework"; sourceTree = "<group>"; };
+*/
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -56,8 +71,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA00000000000000000000F2 /* Promotion.xcframework in Frameworks */,
+				AA00000000000000000000F6 /* PromotionRemote in Frameworks */,
 			);
+/*	CŨ: AA00000000000000000000F2 (xcframework cục bộ) đứng ở đây thay cho dòng trên. */
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -66,8 +82,9 @@
 		55B9CE9C2F8C979D00184BBF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				AA00000000000000000000F1 /* Promotion.xcframework */,
 			);
+/*	CŨ: AA00000000000000000000F1 hiện trong group Frameworks của Xcode.
+	Nay gói đến từ SwiftPM nên nó nằm ở mục "Package Dependencies". */
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
@@ -109,6 +126,7 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				AA00000000000000000000F5 /* PromotionRemote */,
 			);
 			productName = iosApp;
 			productReference = 55D4D5852F8C96950042667F /* iosApp.app */;
@@ -138,6 +156,9 @@
 			);
 			mainGroup = 55D4D57C2F8C96950042667F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AA00000000000000000000F4 /* XCLocalSwiftPackageReference "PromotionRemote" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 55D4D5862F8C96950042667F /* Products */;
 			projectDirPath = "";
@@ -185,10 +206,15 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.3;
+/*
+	CŨ — cho linker thấy gói vừa dựng trong build/. Phải BỎ khi dùng SwiftPM, không thì
+	Xcode vẫn tìm thấy bản cục bộ ở đó và ta không biết mình đang chạy bản nào:
+
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../iosPromotionSDK/build",
 				);
+*/
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -222,10 +248,15 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.3;
+/*
+	CŨ — cho linker thấy gói vừa dựng trong build/. Phải BỎ khi dùng SwiftPM, không thì
+	Xcode vẫn tìm thấy bản cục bộ ở đó và ta không biết mình đang chạy bản nào:
+
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../iosPromotionSDK/build",
 				);
+*/
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -384,6 +415,20 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		AA00000000000000000000F4 /* XCLocalSwiftPackageReference "PromotionRemote" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PromotionRemote;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AA00000000000000000000F5 /* PromotionRemote */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PromotionRemote;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 55D4D57D2F8C96950042667F /* Project object */;
 }

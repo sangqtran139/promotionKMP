@@ -26,6 +26,22 @@
 # Riêng `local`:   --skip-app, --install, --run
 # Riêng `publish`: --target viettelmoney|artifactory|local, --yes, --write, --dry-run
 #
+#   -f, --force             cho phép ĐÈ bản đã có trên server, và dọn cache local của đúng
+#                           version đó (~/.m2 + ~/.gradle/caches). Xem mục "Build đè" bên dưới.
+#
+# Chế độ đặt ở đâu cũng được: `publish --force` hay `--force publish` đều nhận.
+#
+# ── Build đè ─────────────────────────────────────────────────────────────────────────────────
+# Mặc định script CẢNH BÁO khi version đã tồn tại trên repo và bắt xác nhận tay, vì bản đã phát
+# hành là thứ người khác đang build theo. `--force` bỏ chốt đó.
+#
+# Đè xong thì cache local thành BẪY: Gradle đã giữ bản cũ theo đúng toạ độ group:module:version,
+# nên máy bạn vẫn build với artifact cũ trong im lặng — không lỗi, không cảnh báo. Vì vậy `--force`
+# luôn kèm dọn cache. Xoá ĐÚNG <module>/<version> chứ không xoá cả group: cùng group
+# `vn.viettelpay.library` còn hàng chục thư viện khác đang nằm nhờ trong cache.
+#
+# Chỉ dọn được máy CHẠY LỆNH. Máy đồng nghiệp và CI đã kéo bản cũ về thì vẫn giữ nó.
+#
 # HAI version ĐỘC LẬP, mỗi module một số. Chế độ `local` KHÔNG hỏi (vòng lặp dev chạy mấy chục lần
 # một ngày); chế độ `publish` hỏi từng số, Enter suông là giữ nguyên. Cả hai module LUÔN publish
 # cùng lượt: `promotion` trỏ LOGIC_VERSION trong metadata, đẩy lệch một bên là host resolve ra bản
@@ -50,6 +66,7 @@ DO_RUN=true
 ASSUME_YES=false
 DO_WRITE=false
 DRY_RUN=false
+FORCE=false
 
 APP_ID="com.ttcn.promotionsdk.app"
 LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
@@ -77,6 +94,14 @@ while [[ $# -gt 0 ]]; do
         -y|--yes)           ASSUME_YES=true; shift ;;
         --write)            DO_WRITE=true; shift ;;
         --dry-run)          DRY_RUN=true; shift ;;
+        -f|--force)         FORCE=true; shift ;;
+        # Chế độ đứng sau cờ vẫn nhận (`--force publish`). Bản đầu chỉ đọc chế độ ở vị trí thứ nhất,
+        # nên `--force publish` chết với "Tham số lạ: publish" — thông báo không hề nói ra vấn đề thật.
+        local|publish)
+            if [[ -n "$MODE" && "$MODE" != "$1" ]]; then
+                echo "Đã chọn chế độ '$MODE' rồi, không nhận thêm '$1'." >&2; exit 1
+            fi
+            MODE="$1"; shift ;;
         -h|--help)          usage; exit 0 ;;
         *)                  echo "Tham số lạ: $1 (xem --help)" >&2; exit 1 ;;
     esac
@@ -148,6 +173,52 @@ fi
 SDK_VERSION="${SDK_VERSION:-$CURRENT_SDK_VERSION}"
 LOGIC_VERSION="${LOGIC_VERSION:-$CURRENT_LOGIC_VERSION}"
 
+# ─── Dọn artifact cũ trong cache local ───────────────────────────────────────────────────────
+# Gradle đánh cache theo toạ độ group:module:version. Đè một version đã publish mà không dọn thì
+# máy này vẫn resolve ra bản CŨ, im lặng — không lỗi, không cảnh báo, chỉ là chạy sai code.
+#
+# Ba chỗ giữ bản cũ, phải dọn cả ba:
+#   ~/.m2/repository/<group>/<module>/<version>                        (publishToMavenLocal)
+#   ~/.gradle/caches/modules-2/files-2.1/<group>/<module>/<version>    (artifact tải từ remote)
+#   ~/.gradle/caches/modules-2/metadata-*/descriptors/<group>/<module>/<version>   (pom/module đã parse)
+#
+# Xoá tới cấp <version>, KHÔNG xoá cấp <module> hay <group>: cùng group `vn.viettelpay.library`
+# còn hàng chục thư viện khác (blurview, flexbox, cameraview…) và cả version cũ của chính
+# `promotion` đang nằm nhờ trong cache — xoá rộng tay là bắt máy tải lại hết.
+purge_local_artifacts() {
+    local group_path="${SDK_GROUP//.//}"
+    local removed=0 target
+
+    for pair in "promotion:$SDK_VERSION" "promotionLogic:$LOGIC_VERSION"; do
+        local module="${pair%%:*}"
+        local version="${pair##*:}"
+
+        for target in \
+            "$HOME/.m2/repository/$group_path/$module/$version" \
+            "$HOME/.gradle/caches/modules-2/files-2.1/$SDK_GROUP/$module/$version"
+        do
+            if [[ -d "$target" ]]; then
+                rm -rf "$target"
+                echo "  ✗ $target"
+                removed=$((removed + 1))
+            fi
+        done
+
+        # metadata-* có nhiều bản (một thư mục cho mỗi phiên bản Gradle từng chạy trên máy).
+        for target in "$HOME/.gradle/caches/modules-2"/metadata-*/descriptors/"$SDK_GROUP/$module/$version"; do
+            if [[ -d "$target" ]]; then
+                rm -rf "$target"
+                echo "  ✗ $target"
+                removed=$((removed + 1))
+            fi
+        done
+    done
+
+    if [[ "$removed" -eq 0 ]]; then
+        echo "  (cache local không có bản cũ nào của promotion:$SDK_VERSION / promotionLogic:$LOGIC_VERSION)"
+    fi
+}
+
 # x.y.z, cho phép hậu tố -SNAPSHOT / -rc1 / .1. Chặn ở đây vì version sai định dạng vẫn publish được
 # (Maven không kén), chỉ vỡ ra sau — lúc host resolve không thấy, hoặc thấy sai thứ tự version.
 check_version_format() {   # $1 = nhãn, $2 = version
@@ -181,6 +252,13 @@ fi
 
 if [[ "$MODE" == "local" ]]; then
     [[ "$DO_CLEAN" == true ]] && { echo "▸ Dọn build cũ"; gradle clean; }
+
+    # Dọn TRƯỚC khi publish vào ~/.m2: ở chế độ local ta ghi đè cùng một version mỗi lần chạy, nên
+    # bản cũ trong cache Gradle là thứ duy nhất có thể che mất bản vừa publish.
+    if [[ "$FORCE" == true ]]; then
+        echo "▸ Dọn cache local của promotion:$SDK_VERSION + promotionLogic:$LOGIC_VERSION"
+        purge_local_artifacts
+    fi
 
     # Bước dễ quên nhất: sửa SDK xong mà không publish thì app vẫn build với bản cũ trong ~/.m2 —
     # im lặng, không cảnh báo. Script ép đúng thứ tự publish → build.
@@ -287,8 +365,13 @@ if [[ "$TARGET" == "viettelmoney" && "$SDK_VERSION" != *SNAPSHOT ]] && command -
     http_code="$(curl -s -o /dev/null -w '%{http_code}' -u "$MAVEN_USER:$MAVEN_PASS" \
         --max-time 15 -I "$probe_url" 2>/dev/null || echo "000")"
     if [[ "$http_code" == "200" ]]; then
-        echo "⚠ Version $SDK_VERSION ĐÃ có trên repo. Repo release thường không cho ghi đè — nhiều khả năng publish sẽ bị từ chối." >&2
-        ASSUME_YES=false   # trường hợp này bắt buộc phải có người xác nhận
+        if [[ "$FORCE" == true ]]; then
+            echo "⚠ Version $SDK_VERSION ĐÃ có trên repo — ĐÈ theo --force. Repo release bật immutable thì server vẫn từ chối." >&2
+        else
+            echo "⚠ Version $SDK_VERSION ĐÃ có trên repo. Repo release thường không cho ghi đè — nhiều khả năng publish sẽ bị từ chối." >&2
+            echo "  Muốn đè thật thì thêm --force (kèm dọn cache local)." >&2
+            ASSUME_YES=false   # trường hợp này bắt buộc phải có người xác nhận
+        fi
     fi
 fi
 
@@ -318,6 +401,13 @@ fi
 
 echo "▸ Build + publish promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION → $TARGET"
 gradle "${GRADLE_TASKS[@]}"
+
+# Dọn SAU khi publish (ngược với chế độ local): dọn trước rồi publish thì Gradle vẫn kịp kéo bản cũ
+# về trong lúc build, thành ra dọn xong lại có ngay bản cũ nằm đó.
+if [[ "$FORCE" == true ]]; then
+    echo "▸ Dọn cache local để lần resolve sau lấy đúng bản vừa đè"
+    purge_local_artifacts
+fi
 
 # Mặc định KHÔNG ghi lại vào gradle.properties: publish thử một bản -SNAPSHOT/-rc không nên làm bẩn
 # nguồn version tập trung. Ghi rồi thì nhớ đồng bộ tay MARKETING_VERSION bên iOS.

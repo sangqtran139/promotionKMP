@@ -304,6 +304,33 @@ bằng `artifactoryReleasesRepo` / `artifactorySnapshotsRepo`):
 | `libs-release-local` | `SDK_VERSION` **không** kết thúc bằng `-SNAPSHOT` | Bật **immutable/không cho ghi đè** — đẩy trùng version bị từ chối, đúng như mong muốn |
 | `libs-snapshot-local` | `SDK_VERSION` kết thúc bằng `-SNAPSHOT` | Cho ghi đè, dùng khi tích hợp thử với host |
 
+### Build đè lên version đã publish
+
+`./scripts/build-android.sh publish --force` bỏ chốt cảnh báo khi version đã tồn tại. Repo release
+bật immutable thì **server vẫn từ chối** — cờ này chỉ bỏ chốt phía script, không phá được chốt phía
+Artifactory.
+
+Đè xong, cache local thành bẫy: Gradle giữ artifact theo đúng toạ độ `group:module:version`, nên máy
+bạn tiếp tục build với bản **cũ** trong im lặng — không lỗi, không cảnh báo. Vì vậy `--force` luôn
+kèm dọn cache, ba chỗ:
+
+```
+~/.m2/repository/<group>/<module>/<version>
+~/.gradle/caches/modules-2/files-2.1/<group>/<module>/<version>
+~/.gradle/caches/modules-2/metadata-*/descriptors/<group>/<module>/<version>
+```
+
+Xoá tới cấp `<version>`, **không** xoá cấp `<module>` hay `<group>`: cùng group
+`vn.viettelpay.library` còn hàng chục thư viện khác (blurview, flexbox, cameraview…) và cả version cũ
+của chính `promotion` đang nằm nhờ trong cache Gradle.
+
+`--force` cũng dùng được ở chế độ `local` (dọn trước khi publish vào `~/.m2`), cho lúc nghi ngờ cache
+đang che mất bản vừa build.
+
+> Chỉ dọn được máy chạy lệnh. Máy đồng nghiệp và CI đã kéo bản cũ về thì vẫn giữ nó.
+> Bên iOS có cùng cờ và một cái bẫy nặng hơn (cache SPM dùng chung toàn máy) —
+> xem [../ios/Distribution.md](../ios/Distribution.md) §4.
+
 Việc chọn repo đọc thẳng `SDK_VERSION` chứ **không** dùng `project.version`: callback
 `pluginManager.withPlugin` chạy lúc module áp plugin, tức **trước** dòng `version = sdkVersion` trong
 script của module đó — lúc ấy `project.version` vẫn là `"unspecified"` và sẽ chọn nhầm repo release

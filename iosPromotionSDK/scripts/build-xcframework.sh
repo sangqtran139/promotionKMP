@@ -93,13 +93,27 @@ cp -R "$BUILD_DIR/dev.xcarchive/dSYMs/$FRAMEWORK.dSYM" "$BUILD_DIR/"
 echo "▶︎ Xoá *.abi.json (chỉ dùng cho công cụ so ABI, host không cần)"
 find "$OUT" -name "*.abi.json" -delete
 
+# `*.private.swiftinterface` — bản interface dành cho client dùng `@_spi`. SDK này KHÔNG khai `@_spi`
+# ở đâu cả, nên nó ra **giống hệt từng byte** bản `.swiftinterface` công khai: 23KB × 3 slice nhân
+# đôi mà không thêm thông tin gì. Thiếu file này thì Swift tự dùng bản công khai — không có SPI để
+# mà hụt.
+#
+# Nếu sau này SDK bắt đầu phơi API qua `@_spi`, phải BỎ dòng này lại, không thì client SPI mất lối.
+echo "▶︎ Xoá *.private.swiftinterface (trùng khít bản công khai — SDK không dùng @_spi)"
+find "$OUT" -name "*.private.swiftinterface" -delete
+
 # Gói phát hành: TÊN CỐ ĐỊNH `Promotion.xcframework.zip` (không kèm version) để mang đi tích hợp ngay —
 # version nằm trong Info.plist của framework (MARKETING_VERSION ở trên), không cần lộ ra tên file.
 # `ditto` giữ đúng symlink của framework (zip thường làm hỏng), là cách chuẩn để nén xcframework.
+#
+# `--norsrc --noextattr` thay cho `--sequesterRsrc` trước đây: cờ cũ gói resource fork + metadata HFS
+# vào thư mục `__MACOSX/` bên trong zip — 86 entry `._*` rác mà host giải nén ra là thấy. Ở đây nó
+# bảo vệ một thứ KHÔNG tồn tại: framework iOS phẳng, không có symlink nào (macOS mới có `Versions/A`),
+# và xattr duy nhất là `com.apple.provenance` do macOS tự dán. Bỏ cả hai đi thì gói sạch, không mất gì.
 ZIP="$BUILD_DIR/Promotion.xcframework.zip"
 echo "▶︎ Đóng gói $ZIP"
 rm -f "$ZIP"
-ditto -c -k --sequesterRsrc --keepParent "$OUT" "$ZIP"
+ditto -c -k --keepParent --norsrc --noextattr "$OUT" "$ZIP"
 
 # Xcode dịch sẵn `.swiftinterface` của framework thành module nhị phân rồi cache ở
 # `SwiftExplicitPrecompiledModules/` (explicit module build). Cache đó **không** tự hết hạn khi
