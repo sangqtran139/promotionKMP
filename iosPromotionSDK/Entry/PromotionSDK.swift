@@ -8,7 +8,7 @@
 //
 //  Singleton tĩnh — đối ứng 1:1 `object PromotionSDK` bên Android. Toàn bộ điểm vào là hàm/thuộc
 //  tính `static`; SDK chỉ giữ **một** đồ thị DI sống tại một thời điểm. Cấu hình một lần qua
-//  `initialize(options:)`, cập nhật đơn hàng/dịch vụ qua `updateContext(...)`.
+//  `initialize(options:)`, cập nhật đơn hàng/dịch vụ qua `updateOrderInfo(...)`.
 //
 
 import UIKit
@@ -186,7 +186,7 @@ public final class PromotionSDK {
     /// Session đã truyền lúc `initialize`. `nil` khi chưa `initialize`. Đối ứng `PromotionSDK.session`.
     public static var session: PromotionSessionConfig? { impl?.context.session }
 
-    /// Giá trị động hiện tại được ghi qua `updateContext`. `nil` khi chưa ghi. Đối ứng Android.
+    /// Giá trị động hiện tại được ghi qua `updateOrderInfo`. `nil` khi chưa ghi. Đối ứng Android.
     public static var currentOrderId: String? { impl?.context.orderId }
     public static var currentOrderValue: String? { impl?.context.orderValue }
     public static var currentServiceCode: String? { impl?.context.serviceCode }
@@ -195,20 +195,31 @@ public final class PromotionSDK {
     /// Cập nhật context đơn hàng / dịch vụ — gọi mỗi khi host vào màn có voucher (checkout, dịch vụ…).
     ///
     /// Ghi vào context đang sống; **không** cần `initialize` lại. SDK đọc lại các giá trị này ở **mỗi**
-    /// request, nên gọi trước khi mở màn hoặc gọi API là đủ. Đối ứng `PromotionSDK.updateContext` Android.
+    /// request, nên gọi trước khi mở màn hoặc gọi API là đủ. Đối ứng `PromotionSDK.updateOrderInfo` Android.
     ///
-    /// - Parameter orderItems: dòng sản phẩm của đơn — cần khi muốn lấy campaign theo SKU; bỏ trống
-    ///   thì chỉ nhận campaign cấp đơn. (Luồng widget có thể dùng `createEndowView(orderItems:)`.)
-    public static func updateContext(
-        orderId: String? = nil,
+    /// Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên `skuId`/`productName`/`productCategory`/`quantity`/
+    /// `unitPrice` được truyền phẳng thay vì `[PromotionOrderItem]`; SDK tự bọc lại thành mảng 1 phần tử.
+    ///
+    /// - Parameter orderId: mã đơn hàng — bắt buộc.
+    /// - Parameter productId: mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. (Luồng
+    ///   widget có thể dùng `createEndowView(orderItems:)`.)
+    /// - Parameter quantity: số lượng (> 0) — mặc định `1` nếu không truyền.
+    public static func updateOrderInfo(
+        orderId: String,
+        productId: String,
         orderValue: String? = nil,
-        serviceCode: String? = nil,
         metaData: String? = nil,
-        orderItems: [PromotionOrderItem] = []
+        skuId: String? = nil,
+        productName: String? = nil,
+        productCategory: String? = nil,
+        quantity: Int? = nil,
+        unitPrice: String? = nil
     ) {
-        guard let impl = requireImpl("updateContext()") else { return }
-        impl.updateContext(orderId: orderId, orderValue: orderValue, serviceCode: serviceCode,
-                           metaData: metaData, orderItems: orderItems)
+        guard let impl = requireImpl("updateOrderInfo()") else { return }
+        impl.updateOrderInfo(orderId: orderId, productId: productId, orderValue: orderValue,
+                             metaData: metaData, skuId: skuId,
+                             productName: productName, productCategory: productCategory,
+                             quantity: quantity, unitPrice: unitPrice)
     }
 
     // MARK: - Theming
@@ -409,7 +420,8 @@ public final class PromotionSDK {
     ///
     /// Dùng khi giữ **một** phiên SDK từ lúc login (chưa biết đơn) rồi bơm `orderId`/`orderValue` tại
     /// màn thanh toán. SDK dùng 2 giá trị này để validate voucher khi user bấm "Áp dụng".
-    /// Tương đương gọi `updateContext(orderId:orderValue:)` rồi `createEndowView(from:)`.
+    /// Tương đương gọi `impl.updateOrder(orderId:orderValue:)` (không phải `updateOrderInfo`, hàm đó
+    /// yêu cầu thêm `productId` bắt buộc) rồi `createEndowView(from:)`.
     /// - Note: `orderValue` là chuỗi số nguyên (VNĐ), vd `"500000"`.
     public static func createEndowView(from viewController: UIViewController,
                                        orderId: String?,

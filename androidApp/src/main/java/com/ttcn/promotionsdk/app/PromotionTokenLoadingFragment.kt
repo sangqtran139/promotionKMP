@@ -81,11 +81,11 @@ class PromotionTokenLoadingFragment : Fragment() {
     /**
      * Danh mục dịch vụ HOST cung cấp cho bottom sheet "Chọn dịch vụ" — đối ứng `demoServices` bên iOS.
      *
-     * `serviceCode` phải khớp **`applicableProducts.productId`** của voucher (`sku` KHÔNG được dùng
+     * `productId` phải khớp **`applicableProducts.productId`** của voucher (`sku` KHÔNG được dùng
      * để so — xem `servicesForApplicableProducts`), nên ở đây là UUID chứ không phải mã "P-FOOD-001".
      *
      * Một `productId` gắn nhiều SKU (vd `…0011` = BH 2 chiều + gói doanh nghiệp, `…0003` = V120 + V90)
-     * nhưng list bị `distinctBy { serviceCode }` → khai **một dòng mỗi productId**, tên gộp các SKU.
+     * nhưng list bị `distinctBy { productId }` → khai **một dòng mỗi productId**, tên gộp các SKU.
      * Khai theo từng SKU thì dòng thứ hai bị loại âm thầm.
      */
     private val demoServices = listOf(
@@ -97,11 +97,15 @@ class PromotionTokenLoadingFragment : Fragment() {
     )
 
     private fun updateDemoContext() {
-        PromotionSDK.updateContext(
+        PromotionSDK.updateOrderInfo(
             orderId = "ORD-DEMO-001",
+            productId = "TKBAOVIET",
             orderValue = "500000",
-            serviceCode = "TKBAOVIET",
-            metaData = null,
+            metaData = "channel=MOBILE_APP",
+            productName = "Tài khoản Bảo Việt",
+            productCategory = "INSURANCE",
+            quantity = 1,
+            unitPrice = "500000",
         )
     }
 

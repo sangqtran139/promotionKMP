@@ -240,9 +240,9 @@ final class PromotionDetailViewController: PRMBaseViewController<PromotionDetail
     private func onServiceSelected(_ service: ServiceSelectorItem) {
         PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
             voucherId: viewModel.voucherId,
-            serviceCode: service.serviceCode,
-            serviceName: service.serviceName,
-            serviceType: service.serviceType,
+            productId: service.productId,
+            productName: service.productName,
+            skuSourceId: service.skuSourceId,
             iconUrl: service.iconUrl
         ))
     }

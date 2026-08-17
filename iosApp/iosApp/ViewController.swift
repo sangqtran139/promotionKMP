@@ -64,7 +64,7 @@ class ViewController: UIViewController {
         }
         // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
         events.onService = { [weak self] sel in
-            self?.showAlert("Đã chọn dịch vụ", "\(sel.serviceName) (\(sel.serviceCode))\nvoucher: \(sel.voucherId)")
+            self?.showAlert("Đã chọn dịch vụ", "\(sel.productName) (\(sel.productId))\nvoucher: \(sel.voucherId)")
         }
     }
 

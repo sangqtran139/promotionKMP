@@ -14,17 +14,17 @@ import Foundation
 public struct PromotionServiceSelection {
     /// ID voucher đang thao tác (bấm "Dùng"/"Áp dụng").
     public let voucherId: String
-    /// Mã dịch vụ được chọn (khớp `serviceCode` host cấu hình / `productId` của voucher).
-    public let serviceCode: String
-    public let serviceName: String
-    public let serviceType: String
+    /// Mã dịch vụ được chọn (khớp `productId` host cấu hình / `productId` của voucher).
+    public let productId: String
+    public let productName: String
+    public let skuSourceId: String
     public let iconUrl: String
 
-    public init(voucherId: String, serviceCode: String, serviceName: String, serviceType: String = "", iconUrl: String) {
+    public init(voucherId: String, productId: String, productName: String, skuSourceId: String = "", iconUrl: String) {
         self.voucherId = voucherId
-        self.serviceCode = serviceCode
-        self.serviceName = serviceName
-        self.serviceType = serviceType
+        self.productId = productId
+        self.productName = productName
+        self.skuSourceId = skuSourceId
         self.iconUrl = iconUrl
     }
 }

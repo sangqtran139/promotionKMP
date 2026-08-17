@@ -13,11 +13,11 @@ import Foundation
 enum ServiceSelectorBuilder {
 
     /// Trả về danh sách dịch vụ khả dụng cho voucher: giao giữa `applicableProducts.productId`
-    /// và `availableServices.serviceCode`, loại trùng theo serviceCode (giữ thứ tự host cung cấp).
+    /// và `availableServices.productId`, loại trùng theo productId (giữ thứ tự host cung cấp).
     /// Đọc config + lọc đều **dùng chung** với Android ở `promotionLogic` (`configuredServicesFor`);
     /// iOS chỉ map sang model bottom sheet.
     static func items(forApplicableProducts products: [ApplicableProduct]) -> [ServiceSelectorItem] {
         ServiceSelectorKt.configuredServicesFor(applicableProducts: products)
-            .map { ServiceSelectorItem(serviceCode: $0.serviceCode, serviceName: $0.serviceName, serviceType: $0.serviceType, iconUrl: $0.iconUrl) }
+            .map { ServiceSelectorItem(productId: $0.productId, productName: $0.productName, skuSourceId: $0.skuSourceId, iconUrl: $0.iconUrl) }
     }
 }

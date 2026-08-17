@@ -1,8 +1,8 @@
 package com.ttcn.prm.ui.feature.mypromotion
 
 internal data class ServiceSelectorUiItem(
-    val serviceCode: String,
-    val serviceName: String,
-    val serviceType: String,
+    val productId: String,
+    val productName: String,
+    val skuSourceId: String,
     val iconUrl: String,
 )

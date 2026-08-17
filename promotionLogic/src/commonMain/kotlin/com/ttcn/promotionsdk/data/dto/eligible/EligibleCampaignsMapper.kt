@@ -20,13 +20,18 @@ internal fun FindEligibleCampaignsRequest.toEligibleCampaignsRequest() = Eligibl
         orderId = orderId,
         orderValue = orderValue,
         currency = currency,
+        orderDate = orderDate,
+        metadata = orderMetadata,
         items = items.map { it.toDto() },
     ),
     filterOptions = EligibleFilterOptionsDto(
+        campaignTypes = filterOptions.campaignTypes,
+        discountTypes = filterOptions.discountTypes,
         includeExpired = filterOptions.includeExpired,
         checkBudgetAvailability = filterOptions.checkBudgetAvailability,
         includePreview = filterOptions.includePreview,
     ),
+    scenario = scenario,
     // sectionCode + keyword nay top-level; tabCode/channel bị bỏ khỏi request v1.6.
     sectionCode = section?.code,
     keyword = keyword?.trim()?.takeIf { it.isNotEmpty() },

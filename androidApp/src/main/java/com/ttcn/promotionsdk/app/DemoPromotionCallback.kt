@@ -7,7 +7,7 @@ import com.ttcn.prm.entry.PromotionServiceSelection
  * Callback SDK là 1-1 (một object nhận các sự kiện). App demo có nhiều màn muốn nghe cùng lúc, nên
  * giữ MỘT object callback dùng chung với các closure gán được — màn nào đang hiện thì gán closure của
  * mình vào. Đây là **tiện ích demo ~30 dòng**, KHÔNG phải wrapper anti-corruption: mọi lời gọi SDK
- * khác (initialize / updateContext / openMyPromotion / api) đều gọi THẲNG PromotionSDK.
+ * khác (initialize / updateOrderInfo / openMyPromotion / api) đều gọi THẲNG PromotionSDK.
  *
  * Soi gương `DemoPromotionCallback.swift` bên iOS — cùng 4 closure (`onApplied` / `onCleared` /
  * `onCountChanged` / `onService`) forward từ 4 event tương ứng. Sửa một bên thì sửa cả hai.

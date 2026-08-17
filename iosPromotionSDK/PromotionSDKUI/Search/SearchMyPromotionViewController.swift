@@ -198,9 +198,9 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
         ServiceSelectorBottomSheet.present(from: self, services: services) { [weak self] service in
             PromotionSDK.getCallback()?.onServiceSelected(selection: PromotionServiceSelection(
                 voucherId: voucherId,
-                serviceCode: service.serviceCode,
-                serviceName: service.serviceName,
-                serviceType: service.serviceType,
+                productId: service.productId,
+                productName: service.productName,
+                skuSourceId: service.skuSourceId,
                 iconUrl: service.iconUrl
             ))
         }

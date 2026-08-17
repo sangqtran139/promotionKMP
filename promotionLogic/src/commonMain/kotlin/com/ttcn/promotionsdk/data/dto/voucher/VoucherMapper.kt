@@ -77,7 +77,7 @@ private fun VoucherInfoDto.displayLabelOrReason(metadata: VoucherMetadataDto?): 
 
 /**
  * `applicableProducts` → domain. Bỏ phần tử thiếu `productId` vì đó chính là khoá khớp với
- * `PromotionAvailableService.serviceCode`; không có id thì không lọc dịch vụ được.
+ * `PromotionAvailableService.productId`; không có id thì không lọc dịch vụ được.
  *
  * **Giữ nguyên cả `type = EXCLUDED`** — quyết định dùng hay loại thuộc về tầng lọc
  * (`servicesForApplicableProducts`), mapper không tự cắt dữ liệu server.

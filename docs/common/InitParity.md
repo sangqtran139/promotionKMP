@@ -29,7 +29,7 @@
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |
 | Session | `session` | ✅ | ✅ | ✅ |
 | Order động | `currentOrderId` / `currentOrderValue` / `currentServiceCode` / `currentMetaData` | ✅ | ✅ | ✅ |
-| Cập nhật context | `updateContext(orderId, orderValue, serviceCode, metaData, orderItems)` | ✅ | ✅ | ✅ |
+| Cập nhật context | `updateOrderInfo(orderId, productId, orderValue, metaData, skuId, productName, productCategory, quantity, unitPrice)` | ✅ | ✅ | ✅ `orderId`/`productId` **bắt buộc** (B10); đơn chỉ 1 dòng sản phẩm → field phẳng thay vì `List<PromotionOrderItem>`, SDK tự bọc lại thành list nội bộ; `serviceCode` bỏ khỏi tham số ở cả 2 bên (B8) |
 | Đặt theme | `configure(theme)` | ✅ | ✅ | ✅ |
 | Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `var currentTheme` 🔧 | 🔧 iOS đổi property → hàm |
 | Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | *(thiếu)* 🔧 | 🔧 iOS bổ sung |
@@ -54,7 +54,7 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
 | `PromotionSessionConfig` | `accessToken, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`** |
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
-| `PromotionAvailableService` | `serviceCode, serviceName, serviceType = "", iconUrl = ""` | ✅ | ✅ | ✅ |
+| `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
 | `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
 | `PromotionOrderItem` | `skuId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
@@ -72,7 +72,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
 | `onVoucherCleared()` | — | |
 | `onVoucherCountChanged(count)` | `Int` | |
-| `onServiceSelected(selection)` | `PromotionServiceSelection` | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `serviceType` (lấy từ `PromotionAvailableService.serviceType` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
+| `onServiceSelected(selection)` | `PromotionServiceSelection` (`voucherId, productId, productName, skuSourceId = "", iconUrl`) | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `skuSourceId` (lấy từ `PromotionAvailableService.skuSourceId` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
 | `onAvailabilityChanged(enabled)` | `Bool` | Từ iOS `didUpdateAvailability`. **Bắn cả `true` lẫn `false` ở cả 2 nền tảng** (trước 2026-08-04 Android chỉ bắn `false` lúc user bị chặn, nên host ẩn rồi không hiện lại được): nạp cờ xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Bảng đầy đủ: [features/FeatureFlag.md §3](../features/FeatureFlag.md). |
 | `onClosed()` | — | Từ iOS `didClose` / Android `onSDKClosed`. |
 
@@ -156,7 +156,7 @@ PromotionSDK.initialize(context, accessToken, baseUrl)   // overload phẳng, 3 
 PromotionSDK.updateToken(newToken)
 
 // Vào màn có voucher:
-PromotionSDK.updateContext(orderId, orderValue)
+PromotionSDK.updateOrderInfo(orderId, productId, orderValue)
 
 // Mở UI có sẵn:
 PromotionSDK.openMyPromotion(activity[, containerViewId])   // Android
@@ -196,6 +196,35 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
   Android đổi tên hàm khớp iOS (`loadInitial`/`setApplied`/`markUnavailable`/`clearApplied`/`consumeError`);
   iOS bỏ `baseUrl` fallback hardcode, dùng rule "Xem thêm" dùng chung (`mySeeMoreState`/`visibleMyOffers`)
   và nhận `isEnabled` từ store thay vì tự suy lại.
+- [x] **B7.** (2026-08-14) Đổi tên `updateContext` → `updateOrderInfo` ở cả 2 nền tảng. Đơn chỉ hỗ trợ
+  **một** dòng sản phẩm nên bỏ tham số `orderItems: List<PromotionOrderItem>` (Android) /
+  `[PromotionOrderItem]` (iOS), thay bằng field phẳng `skuId`/`productId`/`productName`/
+  `productCategory`/`quantity`/`unitPrice` (đều tuỳ chọn, mặc định `nil`/`null`); SDK tự bọc lại
+  thành `List<PromotionOrderItem>` 1 phần tử hoặc rỗng trước khi ghi vào
+  `PromotionMutableContext.orderItems` — tầng dưới (`getOrderItems()`, `ChoosePromotionStore`/
+  `EndowStore`) không đổi. Điều kiện có/không item ban đầu khoá theo `skuId`, sau đổi sang `productId`
+  ở B9.
+- [x] **B8.** (2026-08-14) Bỏ tham số `serviceCode` khỏi `updateOrderInfo` ở **cả 2** nền tảng — không
+  còn cách nào để host set `PromotionMutableContext.serviceCode` qua public API. Field nội bộ
+  `serviceCode` + getter `getService()`/`currentServiceCode` **vẫn còn** (không xoá, tránh động vào
+  DI/parity chỗ khác) nhưng nay luôn `null` — hệ quả: `eligibleOrderItems()` (`PromotionSDKConfig.kt`,
+  cơ chế đổ `serviceCode` vào `orderInfo.items[].productId` cho `findEligible`) không còn nhánh nào
+  kích hoạt được nữa, coi như no-op ở cả 2 bên. Không nhầm với `PromotionAvailableService.productId`
+  (danh mục dịch vụ cho bottom sheet) hay `getVouchers/getVoucherDetail(serviceCode:)` (lọc theo dịch
+  vụ) — hai khái niệm khác, **không** đổi.
+- [x] **B9.** (2026-08-14) Điều kiện dựng `PromotionOrderItem` trong `updateOrderInfo` đổi từ khoá theo
+  `skuId` sang khoá theo `productId` ở cả 2 nền tảng — có `productId` thì dựng 1 phần tử (`skuId` để
+  trống → rơi về chuỗi rỗng `""`, không còn là điều kiện bật/tắt); không có `productId` → `orderItems`
+  rỗng. Hợp lý sau B8: `productId` giờ là field host chắc chắn có sẵn (địa chỉ dịch vụ đang thanh
+  toán, xem N-serviceCode ở B8) trong khi `skuId` có thể chưa biết ở một số luồng.
+- [x] **B10.** (2026-08-17) `orderId`/`productId` trong `updateOrderInfo` đổi từ tuỳ chọn (`String?` /
+  `String?`, default `nil`/`null`) sang **bắt buộc** (`String`, không default) ở cả 2 nền tảng — host
+  phải luôn truyền cả hai. Hệ quả: nhánh `orderItems = emptyList()`/`[]` (thiếu `productId`) không còn
+  đường vào nữa — mọi lời gọi `updateOrderInfo` giờ luôn dựng đúng 1 `PromotionOrderItem` (thay thế
+  điều kiện của B9). Thứ tự tham số đổi theo: `productId` dời từ vị trí 5 lên vị trí 2 (ngay sau
+  `orderId`) để hai tham số bắt buộc đứng đầu chữ ký ở cả 2 bên. `PromotionOrderItem.productId` (model)
+  **không đổi** — vẫn `String?`, vì type này còn dùng ở luồng widget/`findEligible` nơi `productId` vẫn
+  tuỳ chọn.
 
 > ### Emission — đã cân cả 2 nền tảng ✅
 > Contract callback đối xứng tuyệt đối **và** đủ 6 sự kiện đều được phát ở cả hai bên:

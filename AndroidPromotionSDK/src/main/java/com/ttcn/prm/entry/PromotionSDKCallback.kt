@@ -3,14 +3,14 @@ package com.ttcn.prm.entry
 /**
  * Dữ liệu trả về host khi user chọn 1 dịch vụ trong bottom sheet "Chọn dịch vụ".
  *
- * [serviceCode] khớp `serviceCode` host cấu hình / `productId` của voucher.
+ * [productId] khớp `productId` host cấu hình / `productId` của voucher.
  * Đối ứng `PromotionServiceSelection` bên iOS (nằm cùng file callback — xem docs/InitParity.md §3).
  */
 data class PromotionServiceSelection(
     val voucherId: String,
-    val serviceCode: String,
-    val serviceName: String,
-    val serviceType: String = "",
+    val productId: String,
+    val productName: String,
+    val skuSourceId: String = "",
     val iconUrl: String,
 )
 

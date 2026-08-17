@@ -218,6 +218,9 @@ class EndowStore(
                         // Phải trùng hàm màn Chọn dùng, nếu không widget và màn chọn hỏi
                         // server hai câu khác nhau rồi ra hai danh sách khác nhau.
                         items = ctx.eligibleOrderItems(),
+                        // `metaData` (từ `updateOrderInfo`) — đổ vào orderInfo.metadata (free map),
+                        // giống ChoosePromotionStore.buildRequest().
+                        orderMetadata = ctx.getMetaData()?.let { mapOf("metaData" to it) },
                         mySize = PAGE_SIZE,
                         otherSize = PAGE_SIZE,
                     )

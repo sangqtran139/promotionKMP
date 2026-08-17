@@ -6,7 +6,7 @@ import com.ttcn.promotionsdk.domain.model.voucher.ApplicableProduct
 
 /**
  * Dịch vụ khả dụng cho một voucher: **giao** giữa `applicableProducts.productId` và
- * `availableServices.serviceCode`, loại trùng theo `serviceCode` (giữ thứ tự host cung cấp).
+ * `availableServices.productId`, loại trùng theo `productId` (giữ thứ tự host cung cấp).
  *
  * **Tầng UI-logic dùng chung** — cả hai nền tảng gọi hàm này; mỗi bên chỉ map [AvailableService]
  * sang model UI riêng (ServiceSelectorUiItem / ServiceSelectorItem) + dựng bottom sheet native.
@@ -20,8 +20,8 @@ fun servicesForApplicableProducts(
 ): List<AvailableService> {
     val ids = applicableProducts.map { it.productId }.toSet()
     return availableServices
-        .filter { it.serviceCode in ids }
-        .distinctBy { it.serviceCode }
+        .filter { it.productId in ids }
+        .distinctBy { it.productId }
 }
 
 /**

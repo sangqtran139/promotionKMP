@@ -18,7 +18,7 @@
   (+ `ui.theme.token`: `PromotionSDKTheme`, 6 token) và `ui.feature.endowview` (widget checkout:
   `PRMEndowView`, `AppliedDiscount`).
   Mọi class khác của SDK là `internal` — IDE không gợi ý, và import vào là lỗi compile.
-- Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateContext(...)`,
+- Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateOrderInfo(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -182,13 +182,16 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 Giữ **một** phiên từ lúc login, tới màn có voucher mới bơm đơn hàng — **không** re-init:
 
 ```kotlin
-PromotionSDK.updateContext(
+PromotionSDK.updateOrderInfo(
+    // orderId/productId bắt buộc.
     orderId = order.id,
+    productId = "P-FOOD-001",
     orderValue = "500000",   // chuỗi số nguyên VNĐ
-    serviceCode = "TOPUP",
     metaData = null,
-    // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
-    orderItems = listOf(PromotionOrderItem(skuId = "SKU1", quantity = 1, unitPrice = "500000")),
+    // Đơn chỉ hỗ trợ MỘT dòng sản phẩm → truyền phẳng field của PromotionOrderItem thay vì List.
+    skuId = "SKU1",
+    quantity = 1,
+    unitPrice = "500000",
 )
 ```
 
@@ -196,7 +199,7 @@ SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần g�
 `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
 
 > ⚠️ Gọi trước `initialize` thì:
-> - `updateContext` / `api` → ném **`IllegalStateException`**.
+> - `updateOrderInfo` / `api` → ném **`IllegalStateException`**.
 > - `openMyPromotion` / `openPromotionDetail` → **không ném**, chỉ `Log.e` rồi bỏ qua (đối xứng
 >   `requireImpl` bên iOS). Lý do: `isFeatureEnabled`/`featureFlags` fail-open trả "bật hết" khi chưa
 >   init, host hỏi trước rồi hiện nút thì cú bấm của user không được phép giết app.
@@ -259,7 +262,7 @@ Màn gọi **không cần** là màn thanh toán.
 ```
 
 ```kotlin
-// Trong Fragment.setupUI — nhớ updateContext(orderId, orderValue) trước khi màn dựng widget
+// Trong Fragment.setupUI — nhớ updateOrderInfo(orderId, productId, orderValue) trước khi màn dựng widget
 
 // User bấm vào widget → widget TỰ mở màn "Chọn ưu đãi" (PromotionSDK.openChoosePromotion nội bộ).
 // Không cần wiring gì ở đây — host chỉ cần layout XML ở trên là đủ.
@@ -423,7 +426,7 @@ PromotionSDK.configure(
 
 | ❌ Sai | ✅ Đúng |
 |---|---|
-| Gọi `api` / `updateContext` / mở màn trước `initialize` | Luôn `initialize` sau login trước tiên |
+| Gọi `api` / `updateOrderInfo` / mở màn trước `initialize` | Luôn `initialize` sau login trước tiên |
 | Login lại nhưng đổi luôn baseUrl/environment | Gọi lại `initialize(...)` — field cố định giữ nguyên; đổi thật thì `release()` trước |
 | Import `com.ttcn.promotionsdk.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
@@ -436,7 +439,7 @@ PromotionSDK.configure(
 
 ```
 login thành công        → PromotionSDK.initialize(context, accessToken, baseUrl)
-vào màn có voucher       → PromotionSDK.updateContext(orderId, orderValue, ...)
+vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId, productId, orderValue, ...)
 mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
 refresh token giữa phiên → PromotionSDK.updateToken(newToken)

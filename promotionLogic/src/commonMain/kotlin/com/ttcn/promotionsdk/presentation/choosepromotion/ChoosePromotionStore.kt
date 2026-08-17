@@ -253,9 +253,12 @@ class ChoosePromotionStore(
             orderId = ctx.getOrderId().orEmpty(),
             orderValue = ctx.getOrderValue().orEmpty(),
             // `eligibleOrderItems()` chứ không phải `getOrderItems()`: nó đổ `serviceCode`
-            // (từ `updateContext`) vào `productId` của từng item — đường duy nhất mà spec
+            // (từ `updateOrderInfo`) vào `productId` của từng item — đường duy nhất mà spec
             // findEligible v19 nhận chiều dịch vụ. Widget dùng cùng hàm này.
             items = ctx.eligibleOrderItems(),
+            // `metaData` (từ `updateOrderInfo`) — chưa có field riêng ở findEligible nên đổ vào
+            // orderInfo.metadata (free map) giống customerType/segment/tier.
+            orderMetadata = ctx.getMetaData()?.let { mapOf("metaData" to it) },
             tabCode = null,
             keyword = s.keyword.takeIf { it.isNotBlank() },
             mySize = s.mySize,

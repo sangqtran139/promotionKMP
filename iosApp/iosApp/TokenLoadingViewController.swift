@@ -22,18 +22,18 @@ final class TokenLoadingViewController: UIViewController {
 
     /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ") — đối ứng `demoServices` bên Android.
     ///
-    /// `serviceCode` phải khớp **`applicableProducts.productId`** của voucher (`sku` KHÔNG được dùng
+    /// `productId` phải khớp **`applicableProducts.productId`** của voucher (`sku` KHÔNG được dùng
     /// để so — xem `servicesForApplicableProducts`), nên ở đây là UUID chứ không phải mã "P-FOOD-001".
     ///
     /// Một `productId` gắn nhiều SKU (vd `…0011` = BH 2 chiều + gói doanh nghiệp, `…0003` = V120 + V90)
-    /// nhưng list bị `distinctBy { serviceCode }` → khai **một dòng mỗi productId**, tên gộp các SKU.
+    /// nhưng list bị `distinctBy { productId }` → khai **một dòng mỗi productId**, tên gộp các SKU.
     /// Khai theo từng SKU thì dòng thứ hai bị loại âm thầm.
     private let demoServices: [PromotionAvailableService] = [
-        PromotionAvailableService(serviceCode: "P-ALC-001", serviceName: "Data Viettel MIMAX125 - không giới hạn", serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/mimax125/96"),
-        PromotionAvailableService(serviceCode: "P-BILL-001", serviceName: "Gói cước V120 / V90",                    serviceType: "TELCO",     iconUrl: "https://picsum.photos/seed/goicuoc/96"),
-        PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "BH xe máy Vespa 1 năm",                  serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/vespa/96"),
-        PromotionAvailableService(serviceCode: "P-FOOD-002", serviceName: "BH ô tô",       serviceType: "INSURANCE", iconUrl: "https://picsum.photos/seed/bhoto/96"),
-        PromotionAvailableService(serviceCode: "P-FOOD-003", serviceName: "Combo đồ uống đóng chai",                serviceType: "BEVERAGE",  iconUrl: "https://picsum.photos/seed/douong/96")
+        PromotionAvailableService(productId: "P-ALC-001", productName: "Data Viettel MIMAX125 - không giới hạn", skuSourceId: "TELCO",     iconUrl: "https://picsum.photos/seed/mimax125/96"),
+        PromotionAvailableService(productId: "P-BILL-001", productName: "Gói cước V120 / V90",                    skuSourceId: "TELCO",     iconUrl: "https://picsum.photos/seed/goicuoc/96"),
+        PromotionAvailableService(productId: "P-FOOD-001", productName: "BH xe máy Vespa 1 năm",                  skuSourceId: "INSURANCE", iconUrl: "https://picsum.photos/seed/vespa/96"),
+        PromotionAvailableService(productId: "P-FOOD-002", productName: "BH ô tô",       skuSourceId: "INSURANCE", iconUrl: "https://picsum.photos/seed/bhoto/96"),
+        PromotionAvailableService(productId: "P-FOOD-003", productName: "Combo đồ uống đóng chai",                skuSourceId: "BEVERAGE",  iconUrl: "https://picsum.photos/seed/douong/96")
     ]
 
     // MARK: - UI
@@ -163,12 +163,15 @@ final class TokenLoadingViewController: UIViewController {
     }
 
     private func updateDemoContext() {
-        PromotionSDK.updateContext(
+        PromotionSDK.updateOrderInfo(
             orderId: "ORD-DEMO-001",
+            productId: "TKBAOVIET",
             orderValue: "500000",
-            // TEST: để nil (khớp Android demo) — kiểm tra detail có load + nút "Sử dụng ngay" hiện không.
-            serviceCode: "TKBAOVIET",
-            metaData: nil
+            metaData: "channel=MOBILE_APP",
+            productName: "Tài khoản Bảo Việt",
+            productCategory: "INSURANCE",
+            quantity: 1,
+            unitPrice: "500000"
         )
     }
 

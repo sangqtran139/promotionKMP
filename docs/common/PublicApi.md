@@ -77,9 +77,11 @@ object PromotionSDK {
     val currentOrderValue: String?
     val currentServiceCode: String?
     val currentMetaData: String?
-    fun updateContext(orderId: String? = null, orderValue: String? = null,
-                      serviceCode: String? = null, metaData: String? = null,
-                      orderItems: List<PromotionOrderItem> = emptyList())
+    fun updateOrderInfo(orderId: String, productId: String, orderValue: String? = null,
+                        metaData: String? = null,
+                        skuId: String? = null,
+                        productName: String? = null, productCategory: String? = null,
+                        quantity: Int? = null, unitPrice: String? = null)
 
     fun configure(theme: PromotionSDKTheme?)
     fun currentTheme(): PromotionSDKTheme?
@@ -179,11 +181,11 @@ PromotionSDK.initialize(
         callback = myCallback,
     ),
 )
-PromotionSDK.updateContext(orderId = orderId, orderValue = orderValue)   // cập nhật khi vào màn có voucher
+PromotionSDK.updateOrderInfo(orderId = orderId, productId = productId, orderValue = orderValue)   // cập nhật khi vào màn có voucher
 val api = PromotionSDK.api
 ```
 
-Order/dịch vụ **động** đi qua `updateContext` (ghi vào `PromotionMutableContext`, lõi đọc lại ở **mỗi**
+Order/dịch vụ **động** đi qua `updateOrderInfo` (ghi vào `PromotionMutableContext`, lõi đọc lại ở **mỗi**
 request) — không cần `initialize` lại. Refresh token = `initialize` lại với session mới.
 
 ### iOS
@@ -197,25 +199,28 @@ PromotionSDK.initialize(
             language: "vi-VN",
             environment: .prod
         ),
-        availableServices: [PromotionAvailableService(serviceCode: "P-FOOD-001", serviceName: "Mua đồ ăn")],
+        availableServices: [PromotionAvailableService(productId: "P-FOOD-001", productName: "Mua đồ ăn")],
         callback: self          // PromotionSDKCallback
     )
 )
-PromotionSDK.updateContext(orderId: orderId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
-// cần campaign theo SKU → thêm orderItems: [PromotionOrderItem(...)]
+PromotionSDK.updateOrderInfo(orderId: orderId, productId: productId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
+// cần campaign theo SKU chi tiết hơn → thêm skuId:/quantity:/unitPrice: (và productName:/productCategory: nếu có)
 let api = PromotionSDK.api      // PromotionSDKApi
 ```
 
 > **Mô hình vòng đời hai bên giờ ĐỐI ỨNG nhau.** Cả hai đều là singleton tĩnh: cấu hình một lần qua
 > `PromotionSDK.initialize(options:)` (iOS) / `PromotionSDK.initialize(context, options)` (Android), rồi cập
-> nhật đơn hàng/dịch vụ qua `updateContext(...)` mà **không** init lại. Giá trị động nằm ở
+> nhật đơn hàng/dịch vụ qua `updateOrderInfo(...)` mà **không** init lại. Giá trị động nằm ở
 > `PromotionMutableContext` — lõi đọc lại ở **mỗi** request, nên refresh token = `initialize`/`init`
-> lại với session mới, còn order/service chỉ cần `updateContext`.
+> lại với session mới, còn order/service chỉ cần `updateOrderInfo`.
 
-**`orderItems` (dòng sản phẩm / SKU).** Truyền qua `updateContext(orderItems = …)` ở **cả hai** nền
-tảng khi cần campaign theo SKU; bỏ trống → chỉ nhận campaign cấp đơn. `ChoosePromotionStore` và
-`EndowStore` đọc lại qua `PromotionRequestContextProvider.getOrderItems()`. iOS còn giữ thêm overload
-tiện tay `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget iOS là factory, xem
+**Dòng sản phẩm / SKU.** Đơn chỉ hỗ trợ **một** dòng sản phẩm nên `updateOrderInfo` nhận field phẳng
+(`skuId`/`productId`/`productName`/`productCategory`/`quantity`/`unitPrice`) thay vì `List<PromotionOrderItem>`
+ở **cả hai** nền tảng; SDK tự bọc lại thành `List<PromotionOrderItem>` 1 phần tử trước khi ghi vào
+`PromotionMutableContext`. `orderId`/`productId` **bắt buộc** (không default, không nullable) — `skuId`
+để trống thì rơi về chuỗi rỗng, các field còn lại vẫn tuỳ chọn. `ChoosePromotionStore` và `EndowStore` đọc lại qua
+`PromotionRequestContextProvider.getOrderItems()`. iOS còn giữ thêm overload tiện tay
+`createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget iOS là factory, xem
 [InitParity §5.3](./InitParity.md#53-widget)).
 
 ---
@@ -337,7 +342,7 @@ Mười type, thứ tự khai báo trong file đúng như bảng này:
 | `PromotionEligibleOffer` | `id` = `voucherId` nếu đã sở hữu, ngược lại `campaignId`; `usable = false` → hiển thị mờ |
 | `PromotionEligibleResult` | `myOffers`, `otherOffers`, `myIsLastPage`, `otherIsLastPage` |
 | `PromotionOrderItem` | `skuId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
-| `PromotionAvailableService` | `serviceCode`, `serviceName`, `serviceType`, `iconUrl`. ⚠️ `serviceCode` phải khớp **`applicableProducts.productId`** của voucher (không phải `sku`) thì dịch vụ mới hiện ở bottom sheet "Chọn dịch vụ"; danh sách bị lọc trùng theo `serviceCode` nên mỗi `productId` chỉ khai **một** dòng, kể cả khi nó gắn nhiều SKU |
+| `PromotionAvailableService` | `productId`, `productName`, `skuSourceId`, `iconUrl`. ⚠️ `productId` phải khớp **`applicableProducts.productId`** của voucher (không phải `sku`) thì dịch vụ mới hiện ở bottom sheet "Chọn dịch vụ"; danh sách bị lọc trùng theo `productId` nên mỗi `productId` chỉ khai **một** dòng, kể cả khi nó gắn nhiều SKU |
 | `PromotionValidationResult` | `overallValid`, `totalDiscountAmount`, `finalAmount`, `items` |
 | `PromotionDiscountItem` | `objectId`, `discountAmount`, `isValid`, `eligibilityStatus` |
 | `PromotionRedemptionResult` | `sessionId`, `totalDiscount`, `finalAmount`, `validationErrors` |

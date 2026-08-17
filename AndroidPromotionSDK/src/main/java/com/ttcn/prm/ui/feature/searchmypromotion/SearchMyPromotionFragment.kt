@@ -105,9 +105,9 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
             PromotionSDK.getCallback()?.onServiceSelected(
                 PromotionServiceSelection(
                     voucherId = voucher.voucherId,
-                    serviceCode = service.serviceCode,
-                    serviceName = service.serviceName,
-                    serviceType = service.serviceType,
+                    productId = service.productId,
+                    productName = service.productName,
+                    skuSourceId = service.skuSourceId,
                     iconUrl = service.iconUrl,
                 )
             )

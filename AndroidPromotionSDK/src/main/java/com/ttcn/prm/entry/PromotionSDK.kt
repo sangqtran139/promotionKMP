@@ -41,7 +41,7 @@ import kotlinx.coroutines.withContext
 
 /**
  * Điểm vào SDK — singleton `object`, đối ứng 1:1 `PromotionSDK` bên iOS (thứ tự thành viên khớp nhau:
- * xem docs/InitParity.md §1). Cấu hình một lần qua [initialize], cập nhật đơn hàng/dịch vụ qua [updateContext].
+ * xem docs/InitParity.md §1). Cấu hình một lần qua [initialize], cập nhật đơn hàng/dịch vụ qua [updateOrderInfo].
  */
 object PromotionSDK {
 
@@ -312,7 +312,7 @@ object PromotionSDK {
     @JvmStatic
     val session: PromotionSessionConfig? get() = mutableContext?.session
 
-    /** Giá trị dynamic hiện tại được ghi qua [updateContext]. Null khi chưa [updateContext]. */
+    /** Giá trị dynamic hiện tại được ghi qua [updateOrderInfo]. Null khi chưa [updateOrderInfo]. */
     @JvmStatic
     val currentOrderId: String? get() = mutableContext?.orderId
     @JvmStatic
@@ -328,28 +328,46 @@ object PromotionSDK {
      * Ghi vào [PromotionMutableContext] đang sống; không cần [initialize] lại. SDK đọc lại các giá trị này
      * ở **mỗi** request, nên gọi trước khi mở màn hoặc gọi API là đủ.
      *
-     * @param orderItems Dòng sản phẩm của đơn — cần khi muốn lấy campaign theo SKU; bỏ trống thì
-     * chỉ nhận campaign cấp đơn. Đối ứng `PromotionSDK.updateContext(orderItems:)` bên iOS.
+     * Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên [skuId]/[productName]/[productCategory]/[quantity]/
+     * [unitPrice] được truyền phẳng thay vì `List<PromotionOrderItem>`; SDK tự bọc lại thành
+     * `List<PromotionOrderItem>` 1 phần tử trước khi ghi vào context.
+     *
+     * @param orderId Mã đơn hàng — bắt buộc.
+     * @param productId Mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. Đối ứng
+     * `PromotionSDK.updateOrderInfo(productId:...)` bên iOS.
+     * @param quantity Số lượng (> 0) — mặc định `1` nếu không truyền.
      *
      * @throws IllegalStateException nếu [initialize] chưa được gọi.
      */
     @JvmStatic
     @JvmOverloads
-    fun updateContext(
-        orderId: String? = null,
+    fun updateOrderInfo(
+        orderId: String,
+        productId: String,
         orderValue: String? = null,
-        serviceCode: String? = null,
         metaData: String? = null,
-        orderItems: List<PromotionOrderItem> = emptyList(),
+        skuId: String? = null,
+        productName: String? = null,
+        productCategory: String? = null,
+        quantity: Int? = null,
+        unitPrice: String? = null,
     ) {
         val ctx = checkNotNull(mutableContext) {
-            "PromotionSDK.initialize() must be called before updateContext()."
+            "PromotionSDK.initialize() must be called before updateOrderInfo()."
         }
         ctx.orderId = orderId
         ctx.orderValue = orderValue
-        ctx.serviceCode = serviceCode
         ctx.metaData = metaData
-        ctx.orderItems = orderItems
+        ctx.orderItems = listOf(
+            PromotionOrderItem(
+                skuId = skuId.orEmpty(),
+                productId = productId,
+                productName = productName,
+                productCategory = productCategory,
+                quantity = quantity ?: 1,
+                unitPrice = unitPrice.orEmpty(),
+            ),
+        )
     }
 
     // ─── Theming ─────────────────────────────────────────────────────────────

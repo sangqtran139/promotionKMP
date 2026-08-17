@@ -14,7 +14,7 @@ import Foundation
 @_implementationOnly import PRMKotlinBridge
 
 /// Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc `PromotionSDK.initialize`.
-/// Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng `PromotionSDK.updateContext`.
+/// Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng `PromotionSDK.updateOrderInfo`.
 public struct PromotionSessionConfig {
     public let accessToken: String
     public let baseUrl: String
@@ -36,18 +36,18 @@ public struct PromotionSessionConfig {
 
 /// Một dịch vụ khả dụng mà voucher có thể áp dụng.
 ///
-/// `serviceCode` phải khớp `productId` trong `applicableProducts` của voucher thì dịch vụ mới hiện
+/// `productId` phải khớp `productId` trong `applicableProducts` của voucher thì dịch vụ mới hiện
 /// ở bottom sheet "Chọn dịch vụ".
 public struct PromotionAvailableService {
-    public let serviceCode: String
-    public let serviceName: String
-    public let serviceType: String
+    public let productId: String
+    public let productName: String
+    public let skuSourceId: String
     public let iconUrl: String
 
-    public init(serviceCode: String, serviceName: String, serviceType: String = "", iconUrl: String = "") {
-        self.serviceCode = serviceCode
-        self.serviceName = serviceName
-        self.serviceType = serviceType
+    public init(productId: String, productName: String, skuSourceId: String = "", iconUrl: String = "") {
+        self.productId = productId
+        self.productName = productName
+        self.skuSourceId = skuSourceId
         self.iconUrl = iconUrl
     }
 }
@@ -82,7 +82,7 @@ extension PromotionSDKOptions {
 }
 
 /// Giữ toàn bộ context mà SDK cần — tĩnh (session) + động (đơn hàng / dịch vụ).
-/// `PromotionSDK.updateContext` ghi trực tiếp vào đây; instance được tạo mới mỗi `PromotionSDK.initialize`.
+/// `PromotionSDK.updateOrderInfo` ghi trực tiếp vào đây; instance được tạo mới mỗi `PromotionSDK.initialize`.
 ///
 /// Đối ứng `PromotionMutableContext` bên Android; thay cho `HostRequestContextProvider` cũ. Lõi Kotlin
 /// đọc lại các giá trị này ở **mỗi** request qua `PromotionRequestContextProvider`.
@@ -114,8 +114,8 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
             requestContextProvider: self,
             environment: session.environment.toCore(),
             availableServices: availableServices.map {
-                AvailableService(serviceCode: $0.serviceCode, serviceName: $0.serviceName,
-                                 serviceType: $0.serviceType, iconUrl: $0.iconUrl)
+                AvailableService(productId: $0.productId, productName: $0.productName,
+                                 skuSourceId: $0.skuSourceId, iconUrl: $0.iconUrl)
             },
             isDebug: isDebug
         )

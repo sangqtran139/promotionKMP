@@ -8,6 +8,73 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Changed — **BREAKING**: đổi tên field của `PromotionAvailableService` và `PromotionServiceSelection`
+
+Đồng nhất thuật ngữ với `PromotionOrderItem`/`ApplicableProductDto` — cả 2 nền tảng, cả 2 type public:
+
+| Cũ | Mới |
+|---|---|
+| `serviceCode` | `productId` |
+| `serviceName` | `productName` |
+| `serviceType` | `skuSourceId` |
+
+`iconUrl`/`voucherId` không đổi. Host đang dựng `PromotionAvailableService` hoặc đọc field của
+`PromotionServiceSelection` (payload `onServiceSelected`) bằng tham số/thuộc tính có tên phải sửa
+tên; dựng `PromotionAvailableService` theo vị trí (positional) thì không cần sửa vì thứ tự field
+giữ nguyên.
+
+Đổi kèm nội bộ (không phải public API nhưng cùng đường đi dữ liệu): `AvailableService` (core,
+`promotionLogic`), `ServiceSelectorUiItem` (Android), `ServiceSelectorItem` (iOS).
+
+### Changed — **BREAKING**: `updateContext` đổi tên thành `updateOrderInfo`, `orderItems` truyền phẳng
+
+Đơn hàng hiện chỉ hỗ trợ **một** dòng sản phẩm, nên `orderItems: List<PromotionOrderItem>` (Android) /
+`[PromotionOrderItem]` (iOS) bị bỏ khỏi chữ ký. Thay vào đó `updateOrderInfo` nhận trực tiếp các field
+của `PromotionOrderItem` (`skuId`, `productId`, `productName`, `productCategory`, `quantity`,
+`unitPrice` — đều tuỳ chọn); SDK tự bọc lại thành danh sách 1 phần tử (nếu có `skuId`) hoặc rỗng (nếu
+không) trước khi ghi vào context nội bộ.
+
+**Host phải sửa:**
+
+| Cũ | Mới |
+|---|---|
+| `PromotionSDK.updateContext(orderId, orderValue, serviceCode, metaData, orderItems = listOf(PromotionOrderItem(skuId = "SKU1", quantity = 1, unitPrice = "500000")))` | `PromotionSDK.updateOrderInfo(orderId, orderValue, serviceCode, metaData, skuId = "SKU1", quantity = 1, unitPrice = "500000")` |
+| `PromotionSDK.updateContext(orderId, orderValue)` (không có dòng sản phẩm) | `PromotionSDK.updateOrderInfo(orderId, orderValue)` — chỉ đổi tên hàm |
+
+### Changed — **BREAKING**: bỏ tham số `serviceCode` khỏi `updateOrderInfo`
+
+`updateOrderInfo` không còn nhận `serviceCode` ở cả 2 nền tảng. Host đang truyền `serviceCode = ...`
+(Android) / `serviceCode: ...` (iOS) vào lời gọi này phải **xoá** tham số đó — không có thay thế.
+
+Không ảnh hưởng `PromotionAvailableService.productId` (danh mục dịch vụ cho bottom sheet "Chọn dịch
+vụ") hay `getVouchers`/`getVoucherDetail(serviceCode:)` (lọc voucher theo dịch vụ) — hai API khác,
+vẫn giữ nguyên.
+
+### Changed — **BREAKING**: `updateOrderInfo` dựng dòng sản phẩm theo `productId` thay vì `skuId`
+
+Trước đây truyền `skuId` là điều kiện để SDK dựng `PromotionOrderItem` (bỏ trống → `orderItems` rỗng).
+Nay điều kiện đó chuyển sang `productId`: có `productId` → dựng 1 phần tử (`skuId` bỏ trống thì rơi về
+chuỗi rỗng thay vì làm mất cả item); không có `productId` → `orderItems` rỗng dù có truyền `skuId`.
+
+### Changed — **BREAKING**: `orderId`/`productId` trong `updateOrderInfo` nay bắt buộc
+
+Cả 2 nền tảng: `orderId` và `productId` đổi từ tuỳ chọn (`String?`/`String?`, default `nil`/`null`)
+sang **bắt buộc** (`String`, không default, không nhận `null`). Thứ tự tham số đổi theo — `productId`
+dời lên ngay sau `orderId` (vị trí thứ 2) để hai tham số bắt buộc đứng đầu. Vì `productId` giờ luôn có
+giá trị, `updateOrderInfo` luôn dựng đúng **1** `PromotionOrderItem`; nhánh `orderItems` rỗng khi thiếu
+`productId` không còn tồn tại.
+
+**Host phải sửa:**
+
+| Cũ | Mới |
+|---|---|
+| `PromotionSDK.updateOrderInfo(orderId, orderValue)` (không có dòng sản phẩm) | Phải thêm `productId`: `PromotionSDK.updateOrderInfo(orderId, productId, orderValue)` |
+| `PromotionSDK.updateOrderInfo(orderId = ..., skuId = "SKU1", productId = "P1", ...)` | Đổi thành `PromotionSDK.updateOrderInfo(orderId = ..., productId = "P1", skuId = "SKU1", ...)` (Kotlin dùng named-arg thì thứ tự không bắt buộc; Swift/Java positional phải theo đúng thứ tự mới) |
+
+**Host phải sửa:** nếu trước đây chỉ truyền `skuId` mà không truyền `productId` để lấy campaign theo
+SKU, giờ phải truyền thêm `productId` — thiếu nó thì `skuId`/`productName`/`productCategory`/
+`quantity`/`unitPrice` bị bỏ qua hoàn toàn, request chỉ còn nhận campaign cấp đơn.
+
 ### Changed — **BREAKING**: widget "Ưu đãi" tự mở màn "Chọn ưu đãi", bỏ `onOpenVoucherSelection`
 
 Trước đây `PRMEndowView` chỉ bắn callback `onOpenVoucherSelection` khi user bấm — host phải tự dựng

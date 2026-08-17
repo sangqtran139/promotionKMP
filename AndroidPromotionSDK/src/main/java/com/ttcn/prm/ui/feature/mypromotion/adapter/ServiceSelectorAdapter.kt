@@ -35,8 +35,8 @@ internal class ServiceSelectorAdapter(
 
         fun bind(item: ServiceSelectorUiItem) {
             binding.imgServiceIcon.loadPromotionVoucherLogo(item.iconUrl)
-            binding.tvServiceName.text = item.serviceName.ifBlank { item.serviceCode }
-            binding.root.contentDescription = item.serviceName.ifBlank { item.serviceCode }
+            binding.tvServiceName.text = item.productName.ifBlank { item.productId }
+            binding.root.contentDescription = item.productName.ifBlank { item.productId }
             binding.root.setOnClickListener {
                 val pos = bindingAdapterPosition
                 if (pos != RecyclerView.NO_POSITION) onItemClick(item)
@@ -46,7 +46,7 @@ internal class ServiceSelectorAdapter(
 
     private class DiffCallback : DiffUtil.ItemCallback<ServiceSelectorUiItem>() {
         override fun areItemsTheSame(oldItem: ServiceSelectorUiItem, newItem: ServiceSelectorUiItem) =
-            oldItem.serviceCode == newItem.serviceCode
+            oldItem.productId == newItem.productId
 
         override fun areContentsTheSame(oldItem: ServiceSelectorUiItem, newItem: ServiceSelectorUiItem) =
             oldItem == newItem

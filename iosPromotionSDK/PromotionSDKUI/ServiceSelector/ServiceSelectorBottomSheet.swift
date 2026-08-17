@@ -14,9 +14,9 @@ import UIKit
 
 /// Item hiển thị 1 dịch vụ trong bottom sheet (parity Android `ServiceSelectorUiItem`).
 struct ServiceSelectorItem: Equatable {
-    let serviceCode: String
-    let serviceName: String
-    let serviceType: String
+    let productId: String
+    let productName: String
+    let skuSourceId: String
     let iconUrl: String
 }
 
@@ -316,7 +316,7 @@ private final class ServiceSelectorCell: UICollectionViewCell {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func configure(with item: ServiceSelectorItem) {
-        let title = item.serviceName.isEmpty ? item.serviceCode : item.serviceName
+        let title = item.productName.isEmpty ? item.productId : item.productName
         nameLabel.text = title
         iconView.setImage(urlString: item.iconUrl)
     }

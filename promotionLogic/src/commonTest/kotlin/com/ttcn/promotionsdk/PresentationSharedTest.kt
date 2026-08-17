@@ -34,7 +34,7 @@ class PresentationSharedTest {
             applicableProducts = listOf(product("A"), product("B")),
             availableServices = listOf(service("A"), service("C")),
         )
-        assertEquals(listOf("A"), out.map { it.serviceCode })
+        assertEquals(listOf("A"), out.map { it.productId })
     }
 
     @Test
@@ -43,7 +43,7 @@ class PresentationSharedTest {
             applicableProducts = listOf(product("B"), product("A")),
             availableServices = listOf(service("A"), service("B")),
         )
-        assertEquals(listOf("A", "B"), out.map { it.serviceCode })
+        assertEquals(listOf("A", "B"), out.map { it.productId })
     }
 
     @Test

@@ -58,9 +58,9 @@ internal fun List<EligibleOffer>.toValidateDiscountsRequest(
 
 
 internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem = ServiceSelectorUiItem(
-    serviceCode = serviceCode,
-    serviceName = serviceName,
-    serviceType = serviceType,
+    productId = productId,
+    productName = productName,
+    skuSourceId = skuSourceId,
     iconUrl = iconUrl,
 )
 

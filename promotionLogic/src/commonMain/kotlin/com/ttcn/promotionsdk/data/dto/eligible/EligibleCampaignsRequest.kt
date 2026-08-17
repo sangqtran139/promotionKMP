@@ -13,6 +13,8 @@ internal data class EligibleCampaignsRequest(
     @SerialName("customerInfo") val customerInfo: EligibleCustomerInfo,
     @SerialName("orderInfo") val orderInfo: EligibleOrderInfo,
     @SerialName("filterOptions") val filterOptions: EligibleFilterOptionsDto,
+    /** Kịch bản đánh giá ưu đãi (vd `ALL` / `AUDIENCE_ONLY` / `PRODUCTS`). Null → server mặc định `ALL`. */
+    @SerialName("scenario") val scenario: String? = null,
     /** `my_offers` | `other_offers`. Null → trả cả 2 nhóm. */
     @SerialName("sectionCode") val sectionCode: String? = null,
     /** Tìm ưu đãi theo tên/mã voucher (max 255) — cả 2 nhóm; null → không lọc. */
@@ -61,7 +63,8 @@ internal data class EligibleOrderItemDto(
     @SerialName("productSourceId") val productSourceId: String? = null,
     @SerialName("quantity") val quantity: Int,
     @SerialName("unitPrice") val unitPrice: String,
-    @SerialName("totalPrice") val totalPrice: String? = null,
+    /** = quantity × unitPrice — optional, server tự tính nếu bỏ trống. */
+    @SerialName("subTotal") val subTotal: String? = null,
     /** Metadata cấp item cho rule engine (vd productName/productCategory). */
     @SerialName("metadata") val metadata: Map<String, String>? = null,
 )

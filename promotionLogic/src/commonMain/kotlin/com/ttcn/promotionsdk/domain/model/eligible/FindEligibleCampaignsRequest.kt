@@ -16,6 +16,13 @@ data class FindEligibleCampaignsRequest(
     val customerType: String? = null,
     val segment: String? = null,
     val tier: String? = null,
+    /** Ngày đặt đơn (ISO-8601, có offset) — null thì server dùng thời điểm gọi API. */
+    val orderDate: String? = null,
+    /** Metadata cấp đơn tự do phục vụ đánh giá ưu đãi (vd bankName/savingsAmount/term của sản phẩm
+     * tiết kiệm; kênh/vị trí nếu cần cũng truyền qua đây — server không có field riêng). */
+    val orderMetadata: Map<String, String>? = null,
+    /** Kịch bản đánh giá ưu đãi (vd `ALL` / `AUDIENCE_ONLY` / `PRODUCTS`). Null → server mặc định `ALL`. */
+    val scenario: String? = null,
     /** Mã tab lấy từ `tabs[].code`. Null → tab mặc định của server. */
     val tabCode: String? = null,
     /** Null → lấy cả hai nhóm. Có giá trị → chỉ load-more nhóm đó. */
@@ -63,6 +70,10 @@ data class EligibleOrderItem(
 )
 
 data class EligibleFilterOptions(
+    /** Lọc theo loại campaign. Null → không lọc. */
+    val campaignTypes: List<String>? = null,
+    /** Lọc theo kiểu giảm giá. Null → không lọc. */
+    val discountTypes: List<String>? = null,
     val includeExpired: Boolean = false,
     val checkBudgetAvailability: Boolean = true,
     val includePreview: Boolean = true,

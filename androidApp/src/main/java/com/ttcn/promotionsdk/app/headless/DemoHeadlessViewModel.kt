@@ -25,7 +25,7 @@ class DemoHeadlessViewModel : ViewModel() {
 
     private val api = PromotionSDK.api
 
-    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateContext() ─────────────
+    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateOrderInfo() ─────────────
     private val orderId get() = PromotionSDK.currentOrderId.orEmpty()
     private val orderValue get() = PromotionSDK.currentOrderValue.orEmpty()
 

@@ -70,7 +70,7 @@ class MainLauncherFragment : AppBaseFragment<FragmentMainLauncherBinding>() {
         DemoPromotionCallback.onApplied = { voucherId -> Log.d(TAG, "Voucher đã áp: $voucherId") }
         // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
         DemoPromotionCallback.onService = { sel ->
-            Log.d(TAG, "Đã chọn dịch vụ: ${sel.serviceName} (${sel.serviceCode}) voucher: ${sel.voucherId}")
+            Log.d(TAG, "Đã chọn dịch vụ: ${sel.productName} (${sel.productId}) voucher: ${sel.voucherId}")
         }
     }
 

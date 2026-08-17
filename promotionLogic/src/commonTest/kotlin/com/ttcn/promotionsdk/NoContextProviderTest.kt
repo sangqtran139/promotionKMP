@@ -28,7 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * Host **không** truyền `requestContextProvider` (hoặc chưa gọi `updateContext`) ⇒ mọi getter trả
+ * Host **không** truyền `requestContextProvider` (hoặc chưa gọi `updateOrderInfo`) ⇒ mọi getter trả
  * `null`. Store phải gửi chuỗi rỗng chứ không được ném NPE — đây là trạng thái thật lúc app vừa
  * khởi động, trước khi vào màn thanh toán.
  */

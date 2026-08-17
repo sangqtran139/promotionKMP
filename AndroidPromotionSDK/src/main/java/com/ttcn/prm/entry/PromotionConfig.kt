@@ -9,7 +9,7 @@ import com.ttcn.prm.entry.api.PromotionOrderItem
 
 /**
  * Thông tin phiên đăng nhập và cấu hình kết nối — truyền 1 lần lúc [PromotionSDK.initialize].
- * Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng [PromotionSDK.updateContext].
+ * Để cập nhật đơn hàng / dịch vụ mỗi khi vào màn, dùng [PromotionSDK.updateOrderInfo].
  */
 data class PromotionSessionConfig(
     val accessToken: String,
@@ -21,13 +21,13 @@ data class PromotionSessionConfig(
 /**
  * Một dịch vụ khả dụng mà voucher có thể áp dụng.
  *
- * [serviceCode] phải khớp `productId` trong `applicableProducts` của voucher thì dịch vụ mới hiện
+ * [productId] phải khớp `productId` trong `applicableProducts` của voucher thì dịch vụ mới hiện
  * ở bottom sheet "Chọn dịch vụ".
  */
 data class PromotionAvailableService(
-    val serviceCode: String,
-    val serviceName: String,
-    val serviceType: String = "",
+    val productId: String,
+    val productName: String,
+    val skuSourceId: String = "",
     val iconUrl: String = "",
 )
 
@@ -56,9 +56,9 @@ private fun buildCoreConfig(
     },
     availableServices = availableServices.map {
         AvailableService(
-            serviceCode = it.serviceCode,
-            serviceName = it.serviceName,
-            serviceType = it.serviceType,
+            productId = it.productId,
+            productName = it.productName,
+            skuSourceId = it.skuSourceId,
             iconUrl = it.iconUrl,
         )
     },
@@ -66,7 +66,7 @@ private fun buildCoreConfig(
 
 /**
  * Giữ toàn bộ context mà SDK cần — tĩnh (session + danh mục dịch vụ) + động (đơn hàng/dịch vụ).
- * [PromotionSDK.updateContext] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.initialize].
+ * [PromotionSDK.updateOrderInfo] ghi trực tiếp vào đây; instance được tạo mới mỗi [PromotionSDK.initialize].
  * [availableServices] giữ ở đây để [PromotionSDK.updateToken] dựng lại config không cần host truyền lại.
  */
 internal class PromotionMutableContext(

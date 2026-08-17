@@ -27,14 +27,14 @@ final class PromotionSDKImpl: NSObject {
     /// Báo host trạng thái bật/tắt SDK (feature flag Unleash) khi đã biết chắc.
     var onAvailabilityUpdate: ((Bool) -> Void)?
 
-    /// Nguồn context duy nhất: session tĩnh + order/dịch vụ động. `updateContext` ghi vào đây,
+    /// Nguồn context duy nhất: session tĩnh + order/dịch vụ động. `updateOrderInfo` ghi vào đây,
     /// lõi Kotlin đọc lại ở **mỗi** request. Thay cho `HostRequestContextProvider` + các field rời cũ.
     /// `var` để `updateToken` thay context (session mới) mà vẫn giữ order/dịch vụ đang ghi.
     private(set) var context: PromotionMutableContext
 
     var token: String? { context.session.accessToken }
 
-    // Định tuyến qua context để `updateContext` (host cập nhật khi mở widget thanh toán) và luồng
+    // Định tuyến qua context để `updateOrderInfo` (host cập nhật khi mở widget thanh toán) và luồng
     // build request dùng chung một nguồn — không phải re-init SDK, giữ 1 phiên từ lúc login.
     var orderId: String? {
         get { context.orderId }
@@ -240,15 +240,24 @@ final class PromotionSDKImpl: NSObject {
         if let orderItems { self.orderItems = orderItems }
     }
 
-    /// Ghi context động — gọi từ `PromotionSDK.updateContext`. Overwrite cả 5 trường (nil/rỗng = xoá),
-    /// đối ứng `PromotionSDK.updateContext` bên Android (ghi thẳng vào `PromotionMutableContext`).
-    func updateContext(orderId: String?, orderValue: String?, serviceCode: String?, metaData: String?,
-                       orderItems: [PromotionOrderItem]) {
+    /// Ghi context động — gọi từ `PromotionSDK.updateOrderInfo`. Overwrite cả 4 trường (nil/rỗng = xoá),
+    /// đối ứng `PromotionSDK.updateOrderInfo` bên Android (ghi thẳng vào `PromotionMutableContext`).
+    /// Đơn chỉ hỗ trợ **một** dòng sản phẩm nên nhận field phẳng rồi tự bọc thành `[PromotionOrderItem]`
+    /// 1 phần tử.
+    func updateOrderInfo(orderId: String, productId: String, orderValue: String?, metaData: String?,
+                         skuId: String?, productName: String?, productCategory: String?,
+                         quantity: Int?, unitPrice: String?) {
         context.orderId = orderId
         context.orderValue = orderValue
-        context.serviceCode = serviceCode
         context.metaData = metaData
-        context.orderItems = orderItems
+        context.orderItems = [PromotionOrderItem(
+            skuId: skuId ?? "",
+            productId: productId,
+            productName: productName,
+            productCategory: productCategory,
+            quantity: quantity ?? 1,
+            unitPrice: unitPrice ?? ""
+        )]
     }
 
     /// Đăng nhập user mới sau khi đã init một lần: đổi token (+ availableServices động),

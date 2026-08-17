@@ -20,7 +20,7 @@ final class DemoHeadlessViewModel {
 
     private let api = PromotionSDK.api
 
-    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateContext() ─────────────
+    // ─── Đọc lại giá trị đã set qua PromotionSDK.updateOrderInfo() ─────────────
     private var orderId: String { PromotionSDK.currentOrderId ?? "" }
     private var orderValue: String { PromotionSDK.currentOrderValue ?? "" }
 

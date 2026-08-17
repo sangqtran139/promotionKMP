@@ -12,7 +12,7 @@
   không SPM, không cài Kotlin/RxSwift.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
-- Cấu hình một lần bằng `PromotionSDK.initialize(accessToken:baseUrl:)`, bơm đơn hàng bằng `updateContext(...)`, nhận
+- Cấu hình một lần bằng `PromotionSDK.initialize(accessToken:baseUrl:)`, bơm đơn hàng bằng `updateOrderInfo(...)`, nhận
   sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -93,7 +93,7 @@ PromotionSDK.initialize(
     // tuỳ chọn:
     environment: .prod,                             // mặc định .prod
     availableServices: [                            // cho bottom sheet "Chọn dịch vụ"
-        PromotionAvailableService(serviceCode: "TOPUP", serviceName: "Nạp tiền", iconUrl: iconUrl)
+        PromotionAvailableService(productId: "TOPUP", productName: "Nạp tiền", iconUrl: iconUrl)
     ],
     callback: myCallback                            // conform PromotionSDKCallback (xem §7)
 )
@@ -154,20 +154,23 @@ PromotionSDK.initialize(options: PromotionSDKOptions(
 Giữ **một** phiên từ lúc login, tới màn có voucher mới bơm đơn hàng — **không** re-init:
 
 ```swift
-PromotionSDK.updateContext(
+PromotionSDK.updateOrderInfo(
+    // orderId/productId bắt buộc.
     orderId: order.id,
+    productId: "P-FOOD-001",
     orderValue: "500000",   // chuỗi số nguyên VNĐ
-    serviceCode: "TOPUP",
     metaData: nil,
-    // Có dòng sản phẩm → lấy được campaign theo SKU; bỏ trống thì chỉ campaign cấp đơn.
-    orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
+    // Đơn chỉ hỗ trợ MỘT dòng sản phẩm → truyền phẳng field của PromotionOrderItem thay vì mảng.
+    skuId: "SKU1",
+    quantity: 1,
+    unitPrice: "500000"
 )
 ```
 
 SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần gọi trước khi mở màn / gọi API. Đọc ngược lại
 qua `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
 
-> ⚠️ Gọi trước `initialize`: `updateContext` / `openMyPromotion` / `openPromotionDetail` /
+> ⚠️ Gọi trước `initialize`: `updateOrderInfo` / `openMyPromotion` / `openPromotionDetail` /
 > `createEndowView` **không crash** — chúng bỏ qua lệnh và ghi một dòng cảnh báo qua `NSLog`
 > (`[PromotionSDK] … bị gọi trước initialize()`). Riêng **`api`** vẫn `preconditionFailure` vì kiểu trả
 > về không optional. SDK khởi tạo thường là **bất đồng bộ** (chờ login), nên hãy gác điểm vào bằng
@@ -353,7 +356,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 
 | ❌ Sai | ✅ Đúng |
 |---|---|
-| Gọi `api` / `updateContext` trước `initialize` | Luôn `initialize` sau login trước tiên |
+| Gọi `api` / `updateOrderInfo` trước `initialize` | Luôn `initialize` sau login trước tiên |
 | Đổi token bằng cách sửa field | Gọi lại `initialize(options:)` với session mới |
 | Đặt xcframework "Do Not Embed" | **Embed & Sign** (framework có resource bundle) |
 | `import PromotionLogic` / `PRMKotlinBridge` | Chỉ `import PRM` |
@@ -366,7 +369,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 
 ```
 login thành công        → PromotionSDK.initialize(accessToken:baseUrl:)
-vào màn có voucher       → PromotionSDK.updateContext(orderId:orderValue:...)
+vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId:productId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
 refresh token giữa phiên → PromotionSDK.updateToken(newToken)

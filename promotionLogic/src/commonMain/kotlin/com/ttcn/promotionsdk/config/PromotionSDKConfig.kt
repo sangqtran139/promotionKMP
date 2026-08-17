@@ -3,9 +3,9 @@ package com.ttcn.promotionsdk.config
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOrderItem
 
 data class AvailableService(
-    val serviceCode: String,
-    val serviceName: String,
-    val serviceType: String,
+    val productId: String,
+    val productName: String,
+    val skuSourceId: String,
     val iconUrl: String
 )
 
@@ -34,7 +34,7 @@ interface PromotionRequestContextProvider {
  *
  * API `findEligible` (spec 3.5.4 v19) **không có field `serviceCode`** ở bất kỳ cấp nào — chiều
  * dịch vụ đi qua `orderInfo.items[].productId`, đúng như `VoucherInfoDto` đã ghi: *"`productId` là
- * khoá khớp với `PromotionAvailableService.serviceCode` do host khai"*.
+ * khoá khớp với `PromotionAvailableService.productId` do host khai"*.
  *
  * Nguồn giá trị là [getService] — tức `serviceCode` host truyền ở `updateContext`, đọc lại ở **mỗi**
  * request nên app có nhiều điểm mở màn chọn ưu đãi chỉ cần `updateContext` trước khi mở, không phải

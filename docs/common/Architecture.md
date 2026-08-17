@@ -54,13 +54,13 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
                                       ▼
   PromotionManager        (androidApp / iosApp — wrapper / anti-corruption)
   • map model APP ⇄ model SDK   • singleton   • adapter cho PromotionSDKCallback
-  • nuốt ràng buộc: token chụp lúc init · updateContext trước màn có voucher
+  • nuốt ràng buộc: token chụp lúc init · updateOrderInfo trước màn có voucher
                                       │  gọi entry tĩnh
                                       ▼
   PromotionSDK            ← ENTRY công khai; chữ ký chỉ Foundation/UIKit (iOS) /
                             không lộ core type (Android). Android: `object`;
                             iOS: `final class` + `_impl: NSObject` box.
-  ├─ vòng đời   initialize · release · isInitialized · updateContext · configure(theme)
+  ├─ vòng đời   initialize · release · isInitialized · updateOrderInfo · configure(theme)
   ├─ màn hình   openMyPromotion · openPromotionDetail · createEndowView → PRMEndowView
   ├─ headless   api: PromotionSDKApi
   └─ sự kiện    PromotionSDKCallback (6 sự kiện)

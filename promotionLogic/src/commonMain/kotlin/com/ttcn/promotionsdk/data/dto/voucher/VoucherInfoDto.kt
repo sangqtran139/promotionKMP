@@ -53,7 +53,7 @@ data class VoucherInfoDto(
 /**
  * Sản phẩm/SKU mà voucher áp dụng (Detail §6.2 / Search §6.4).
  *
- * `productId` là **khoá khớp** với `PromotionAvailableService.serviceCode` do host khai — xem
+ * `productId` là **khoá khớp** với `PromotionAvailableService.productId` do host khai — xem
  * `servicesForApplicableProducts`. Nhiều SKU có thể chung một `productId`.
  */
 @Serializable

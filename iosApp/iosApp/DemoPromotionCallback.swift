@@ -5,7 +5,7 @@
 //  Callback SDK là 1-1 (một object nhận 6 sự kiện). App demo có nhiều màn muốn nghe cùng lúc, nên
 //  giữ MỘT object callback dùng chung với các closure gán được — màn nào đang hiện thì gán closure
 //  của mình vào. Đây là **tiện ích demo ~30 dòng**, KHÔNG phải wrapper anti-corruption:
-//  mọi lời gọi SDK khác (initialize / updateContext / openMyPromotion / api) đều gọi THẲNG PromotionSDK.
+//  mọi lời gọi SDK khác (initialize / updateOrderInfo / openMyPromotion / api) đều gọi THẲNG PromotionSDK.
 //
 //  Host thật chỉ cần implement `PromotionSDKCallback` đúng những sự kiện mình quan tâm rồi truyền
 //  vào `PromotionSDK.initialize(callback:)` — không cần lớp fan-out này nếu chỉ có một nơi nghe.
