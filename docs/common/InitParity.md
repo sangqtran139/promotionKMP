@@ -21,8 +21,7 @@
 |---|---|---|---|---|
 | Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
 | Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
-| Login lại (session mới) | **`updateSession`** | `fun updateSession(accessToken, availableServices? = null, callback? = null)` | `updateSession(accessToken:availableServices:callback:)` | ✅ lối chính re-login: chỉ field động; **giữ** field cố định đã khoá. `availableServices` null = giữ danh mục hiện tại. Từ 2026-08-06 thêm `callback` (null = giữ callback hiện tại; gỡ callback vẫn chỉ có `release()`), gán **trước** khi dựng lại session để `onAvailabilityChanged` của phiên mới về đúng callback mới. Context động reset |
-| Login lại (fallback) | **`initialize`** (idempotent) | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ guard: SDK **khoá** field cố định (baseUrl/env/language/theme) ở lần init đầu; gọi lại chỉ áp field động, field cố định khác đi → cảnh báo log + bỏ qua |
+| Login lại / mở lại app | **`initialize`** | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ **lối duy nhất**, `updateSession` đã bỏ. `baseUrl`/`environment`/`language`/`theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc lần đầu sau `release()`) rồi **dùng lại**, các lần init sau không khởi tạo nữa — host chỉ đưa `accessToken` mới. `release()` **giữ** cấu hình tĩnh + theme, chỉ xoá dữ liệu phiên |
 | Refresh token (giữa phiên) | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ tuỳ chọn — cùng customer + **giữ cả** context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout) |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
 | Trạng thái | `isInitialized()` | ✅ | ✅ | ✅ |
@@ -36,7 +35,7 @@
 | Cờ — chụp tất cả | `featureFlags()` | `fun featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | ✅ cache đồng bộ, fail-open |
 | Cờ — tra một | `isFeatureEnabled(feature)` | `fun isFeatureEnabled(feature: PromotionFeature)` | `isFeatureEnabled(_ feature: PromotionFeature)` | ✅ enum public mỗi bên; hằng chuỗi lõi không ra tới host |
 | Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
-| Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread**; kèm bắn `onAvailabilityChanged` |
+| Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread** |
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
 | *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ |
 | Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, hostHandlesDismiss = false, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:hostHandlesDismiss:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào**; cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public. `hostHandlesDismiss` = ai pop màn chi tiết sau khi "Áp dụng" (mặc định SDK tự pop) |
@@ -70,14 +69,34 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 | Sự kiện (canonical) | Payload | Ghi chú |
 |---|---|---|
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
-| `onVoucherCleared()` | — | |
-| `onVoucherCountChanged(count)` | `Int` | |
 | `onServiceSelected(selection)` | `PromotionServiceSelection` (`voucherId, productId, productName, skuSourceId = "", iconUrl`) | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `skuSourceId` (lấy từ `PromotionAvailableService.skuSourceId` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
-| `onAvailabilityChanged(enabled)` | `Bool` | Từ iOS `didUpdateAvailability`. **Bắn cả `true` lẫn `false` ở cả 2 nền tảng** (trước 2026-08-04 Android chỉ bắn `false` lúc user bị chặn, nên host ẩn rồi không hiện lại được): nạp cờ xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Bảng đầy đủ: [features/FeatureFlag.md §3](../features/FeatureFlag.md). |
-| `onClosed()` | — | Từ iOS `didClose` / Android `onSDKClosed`. |
 
-**Đã loại:** Android `onError(errorCode)` — iOS không có, không nằm trong 6 sự kiện chuẩn. Đã bỏ khỏi
-`PromotionSDKCallback` theo lựa chọn "hợp nhất theo iOS".
+**Đã loại:**
+- Android `onError(errorCode)` — iOS không có, bỏ theo lựa chọn "hợp nhất theo iOS".
+- `onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed` — **host không
+  cần biết** mấy thứ này. Widget tự quản trạng thái của nó; việc bật/tắt theo cờ do SDK tự xử lý.
+  Cờ tính năng chặn một điểm mở màn thì báo qua tham số `onFeatureDisabled` của chính hàm `open…`
+  (xem dưới), không qua callback toàn cục.
+
+`PromotionSDKCallback` nay chỉ còn **hai** sự kiện: `onVoucherApplied`, `onServiceSelected`.
+
+### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
+
+Cả ba hàm mở màn nhận thêm tham số **tuỳ chọn**:
+
+| | Android | iOS |
+|---|---|---|
+| | `openMyPromotion(activity, containerViewId?, onFeatureDisabled?)` | `openMyPromotion(from:onFeatureDisabled:)` |
+| | `openPromotionDetail(…, onFeatureDisabled?)` | `openPromotionDetail(…, onFeatureDisabled:)` |
+| | `openChoosePromotion(…, onFeatureDisabled?)` | — (chưa có bản public) |
+
+Truyền → host tự xử lý. **Không truyền → SDK tự hiện popup** PRM_MOB_021. Màn không mở trong cả hai
+trường hợp.
+
+Nhận closure ngay ở hàm `open…` chứ không dùng callback toàn cục là **có lý do kỹ thuật**:
+`PromotionSDKCallback` là interface/protocol có default method — gọi vào thì luôn trúng thân mặc
+định, SDK **không phân biệt được** "host có implement" với "host mặc kệ", nên không thể dựa vào nó
+để quyết định có tự hiện popup hay không.
 
 Tất cả method đều `default {}` (Kotlin default method / Swift protocol extension) → host chỉ implement cái cần.
 
@@ -99,7 +118,7 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 | Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.3](#53-widget). |
 | Enum case (nếu chọn giữ) | `PROD/STAGING` | `prod/staging` | Convention enum mỗi ngôn ngữ (đang chờ ⚠️ §2). |
 | Ràng buộc View↔ViewModel | `StateFlow` + `collectFlow` | closure `onState`/`onEffect` | Không có `Flow` trong Swift. Hình dạng đã **ép trùng**: cùng `handleAction`, cùng `UiState`/`Effect`, `onState` replay state hiện tại khi gán (mô phỏng `StateFlow`). Từ 2026-07-23 iOS **không** còn Combine. |
-| Cách hiện lỗi / thông báo | `Toast` | `PRMToast` | **Đã đồng nhất: toast ở cả 2 bên** (từ 2026-07-24; trước đây iOS dùng `PRMConfirmationDialog`). Áp dụng cho **mọi lỗi**, kể cả PRM_MOB_021 khi cờ tính năng TẮT. Nội dung chuỗi cũng trùng: `PRMBaseFragment.mapPromotionError` ↔ `PromotionUIStrings.errorMessage` (cùng bộ mã lỗi). **Gom sau một cờ bật/tắt, mặc định TẮT** — `PromotionToastGate.isEnabled` (Android) / `PromotionToast.isEnabled` (iOS); lỗi vẫn được bắt, chỉ không hiện. **Trừ PRM_MOB_021 (cờ tính năng TẮT): luôn hiện, bỏ qua cổng** — `PromotionToastGate.showFeatureDisabled()` / `PromotionToast.showAlways()`. Xem [ErrorHandling.md](./ErrorHandling.md). |
+| Cách hiện lỗi / thông báo | popup | popup | **Đã đồng nhất: toast bỏ hẳn ở cả 2 bên.** Cần báo user → `PRMBaseFragment.showErrorDialog` (Android, `PRMBaseConfirmDialog`) ↔ `PRMBaseViewController.showErrorDialog` (iOS, `PRMConfirmationDialog`). Màn đã có shimmer/empty-view nói thay thì **không hiện gì**. Chuỗi lỗi trùng nhau: `mapPromotionError` ↔ `PromotionUIStrings.errorMessage`. Xem [ErrorHandling.md](./ErrorHandling.md). |
 
 ---
 
@@ -184,7 +203,7 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
 
 - [x] **B1.** Duyệt spec. Chốt 3 điểm ⚠️: (a) **enum case giữ convention** mỗi bên (`prod`↔`PROD`) — N1 duy nhất được miễn; (b) **bỏ `onError`**; (c) đổi `PromotionSDKServiceSelection → PromotionServiceSelection`.
 - [x] **B2.** Nắn 🔧: `baseURL→baseUrl`, `currentTheme` property→hàm, thêm `getCallback()` (iOS); đổi thứ tự tham số `openPromotionDetail` + đổi `init→initialize` (Android); gộp file config iOS về `PromotionConfig.swift`; `availableServices` đi qua core config 2 bên (xoá `PromotionSessionRuntime`).
-- [x] **B3.** Hợp nhất callback 2 bên theo [§3], bỏ tham số `sdk`, `PromotionSDKServiceSelection→PromotionServiceSelection`, bỏ `onError`. iOS emit đủ 6; Android nối `onAvailabilityChanged` tại 2 gate.
+- [x] **B3.** Hợp nhất callback 2 bên theo [§3], bỏ tham số `sdk`, `PromotionSDKServiceSelection→PromotionServiceSelection`, bỏ `onError`. (Sau đó rút tiếp còn 2 sự kiện — xem §3.)
 - [x] **B4.** Wrapper `PromotionManager` đối xứng 2 nền tảng theo [§6] (adapter callback), rewire điểm init chính của demo.
 - [x] **B5.** Cập nhật `docs/PublicApi.md` + demo. Spec này **đã đồng bộ** với code (2026-07-16).
 - [x] **B6.** (2026-07-23) Rà soát lại sau khi rollout shared store, nắn nốt các điểm lệch:
@@ -229,11 +248,6 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
 > ### Emission — đã cân cả 2 nền tảng ✅
 > Contract callback đối xứng tuyệt đối **và** đủ 6 sự kiện đều được phát ở cả hai bên:
 > - **iOS:** SDK callback là kênh duy nhất — phát đủ 6 (qua `PromotionSDKImpl` + facade).
-> - **Android:** `onAvailabilityChanged` tại 2 gate (`openMyPromotion` / `openPromotionDetail`);
->   `onVoucherApplied` / `onVoucherCleared` / `onVoucherCountChanged` từ widget `PRMEndowView`
->   (transition state → `PromotionSDK.getCallback()`); `onServiceSelected` từ bottom sheet ở
->   `MyPromotionFragment` + `PromotionDetailFragment`; `onClosed` từ `MyPromotionFragment.onDestroyView`
->   khi `isRemoving`. `getCallback()` null (host chưa set) → no-op an toàn.
 >
 > Điểm lệch emission còn lại (nhỏ): iOS phát `onVoucherApplied` sau khi validate xong ở luồng "Chọn
 > ưu đãi"; Android phát khi widget vào trạng thái APPLIED (`discountDetails` không rỗng). Ngữ nghĩa

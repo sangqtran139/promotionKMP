@@ -57,9 +57,16 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
         binding.sfEndow.onTextChangeListener = { keyword ->
             viewModel.dispatch(SearchMyPromotionIntent.QueryChanged(keyword))
         }
-        binding.sfEndow.setOnDoneKeyboardListener {
-            viewModel.dispatch(SearchMyPromotionIntent.Search)
-        }
+        // Phím Done chỉ ĐÓNG BÀN PHÍM, không gọi lại API.
+        //
+        // Mỗi ký tự gõ vào đã dispatch `QueryChanged`, store debounce 400ms rồi tự tìm. Đến lúc
+        // người dùng với tay bấm Done thì debounce đã bắn xong — dispatch thêm `Search` ở đây là
+        // gọi `searchCustomerVouchers` lần hai với **đúng từ khoá cũ**.
+        //
+        // Truyền `null` chứ không xoá hẳn lời gọi: `setOnDoneKeyboardListener` là chỗ duy nhất gọi
+        // `hideSoftInput()`, bỏ đi thì bàn phím không đóng nữa.
+        // Đối ứng `ChoosePromotionFragment.setupSearch`.
+        binding.sfEndow.setOnDoneKeyboardListener(null)
 
         binding.rcvSearchList.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -91,7 +98,10 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
         }
         collectFlow(viewModel.effects) { effect ->
             when (effect) {
-                is PRMEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
+                // KHÔNG hiện gì: SDK đã bỏ toast. Vẫn thu effect để store `ConsumeError` chạy đúng
+                // vòng của nó — bỏ luôn `collectFlow` thì `errorCode` nằm lại trong state.
+                // Màn này còn empty-view/list cũ nên user vẫn hiểu được chuyện gì xảy ra.
+                is PRMEffect.ShowError -> Unit
             }
         }
 

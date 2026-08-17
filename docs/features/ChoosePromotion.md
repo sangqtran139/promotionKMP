@@ -222,7 +222,7 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
         → PRMEndowView.applySelectedOffers(offers, onSettled)
         → PRMEndowViewModel.validateAndApply(offers) { state -> onSettled(state.errorCode) }
         → EndowStore: isValidating=true → validateStackableDiscounts → isValidating=false
-  errorCode != null → showToast(mapPromotionError(code)), **Ở LẠI** màn chọn (không áp)
+  errorCode != null → showErrorDialog(mapPromotionError(code)) — **popup**, **Ở LẠI** màn chọn (không áp)
   errorCode == null → goBack() (đóng màn; widget đã cập nhật qua state)
 ```
 

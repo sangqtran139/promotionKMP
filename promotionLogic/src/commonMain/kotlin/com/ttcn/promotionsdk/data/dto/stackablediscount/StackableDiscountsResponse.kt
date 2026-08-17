@@ -80,8 +80,19 @@ data class StackingOptimization(
     @SerialName("optimizationNotes") val optimizationNotes: List<String> = emptyList(),
 )
 
+/**
+ * Vi phạm luật nghiệp vụ cấp đơn, ví dụ `{"ruleCode": null, "message": "Voucher not found"}`.
+ *
+ * **Cả hai field đều nullable.** `ruleCode` từng khai `String` không-null: server trả `null` là
+ * kotlinx.serialization ném ngay
+ * `Unexpected 'null' value instead of string literal at path: $.data.businessRuleViolations[0].ruleCode`
+ * — và vì nó ném lúc parse **cả body**, toàn bộ kết quả validate mất trắng chứ không chỉ mất field
+ * này. Triệu chứng ở ngoài: bấm "Áp dụng" xong widget không hiện gì.
+ *
+ * `explicitNulls = false` của [PromotionHttpClient] chỉ bỏ null lúc **ghi**, không cứu lúc **đọc**.
+ */
 @Serializable
 data class BusinessRuleViolation(
-    @SerialName("ruleCode") val ruleCode: String,
-    @SerialName("message") val message: String = "",
+    @SerialName("ruleCode") val ruleCode: String? = null,
+    @SerialName("message") val message: String? = null,
 )

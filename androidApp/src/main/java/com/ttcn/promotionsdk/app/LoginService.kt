@@ -24,8 +24,8 @@ private const val TAG = "LoginService"
 class LoginService {
 
     private data class LoginRequest(
-        val msisdn: String = "84983725525",
-        val username: String = "84983725525",
+        val msisdn: String = "84346801339",
+        val username: String = "84346801339",
         val userType: String = "msisdn",
         val pin: String = "123123",
         val loginType: String = "BASIC",

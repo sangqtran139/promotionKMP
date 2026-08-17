@@ -174,7 +174,11 @@ class ChoosePromotionStore(
     private fun loadOffers(isRefresh: Boolean) {
         scope.launch {
             _state.update {
-                it.copy(isLoading = !isRefresh, isRefreshing = isRefresh, isLoadingMore = false, isLoadingMoreOther = false)
+                it.copy(
+                    isLoading = !isRefresh, isRefreshing = isRefresh,
+                    isLoadingMore = false, isLoadingMoreOther = false,
+                    loadFailed = false,   // lượt mới → xoá dấu hỏng của lượt trước
+                )
             }
             runCatching { findEligibleCampaignsUseCase(buildRequest(section = null)) }
                 .onSuccess { result ->
@@ -183,6 +187,7 @@ class ChoosePromotionStore(
                         it.copy(
                             isLoading = false,
                             isRefreshing = false,
+                            loadFailed = false,
                             tabs = result?.tabs.orEmpty().map { t -> t.toMyPromotionTab() }.sortedBy { t -> t.order },
                             selectedTabCode = result?.activeTab,
                             myPage = 0,
@@ -202,7 +207,9 @@ class ChoosePromotionStore(
                         it.copy(
                             isLoading = false, isRefreshing = false,
                             myOffers = emptyList(), otherOffers = emptyList(),
-                            isEmpty = true, hasLoadedInitial = true, errorCode = throwable.toErrorCode(),
+                            // `loadFailed` bền để giữ view rỗng; `errorCode` một-lần để bắn popup.
+                            isEmpty = true, hasLoadedInitial = true, loadFailed = true,
+                            errorCode = throwable.toErrorCode(),
                         )
                     }
                 }

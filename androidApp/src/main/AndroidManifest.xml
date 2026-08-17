@@ -2,8 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!--
+        `android:icon` phải trỏ vào `@mipmap/ic_launcher`, KHÔNG phải `@drawable/app_logo`.
+
+        `app_logo` là PNG trần — với launcher từ API 26 trở lên nó là "legacy icon", mỗi hãng tự
+        quyết cách nhét vào mask: Pixel thu nhỏ đặt trên nền trắng, một số OEM lại phóng to cho đầy
+        mask. Đó là lý do icon to nhỏ khác nhau tuỳ máy.
+
+        `@mipmap/ic_launcher` có bản adaptive ở `mipmap-anydpi-v26/` (API 26+) và PNG theo từng mật
+        độ cho máy cũ hơn — launcher nào cũng ra cùng một kết quả.
+    -->
     <application
-        android:icon="@drawable/app_logo"
+        android:icon="@mipmap/ic_launcher"
         android:label="Promotion SDK"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

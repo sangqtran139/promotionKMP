@@ -37,6 +37,9 @@ final class ChoosePromotionViewModel:
     struct Display {
         var sections: [PromotionSection] = []
         var isLoading = false
+        /// Đang nạp lại do kéo-để-tải-lại → chỉ vòng xoay của `UIRefreshControl`, KHÔNG bật shimmer
+        /// toàn màn như [isLoading]. Đối ứng `swipeRefreshVoucher.isRefreshing` bên Android.
+        var isRefreshing = false
         /// Đang lấy trang kế của nhóm "Ưu đãi khác" (cuộn tới đáy) → spinner ở đáy list. Nhóm "Ưu đãi
         /// của tôi" phân trang bằng nút "Xem thêm" nên không dùng cờ này.
         /// Đối ứng `ChoosePromotionListItem.Loading` bên Android.
@@ -45,6 +48,9 @@ final class ChoosePromotionViewModel:
         /// tìm kiếm thì không tính (đó là "chưa có ưu đãi nào").
         /// Đối ứng `showNoResult` trong `ChoosePromotionFragment.observeData`.
         var showsNoResult = false
+        /// Hiện view rỗng: tìm không ra kết quả **hoặc** lượt nạp vừa hỏng (kéo-để-tải-lại lỗi).
+        /// Luật ở store (`ChoosePromotionState.showsEmptyView()`) — Android đọc đúng hàm đó.
+        var showsEmptyView = false
         /// Thanh "Đã chọn N voucher" — chỉ hiện ở chế độ multi-select và đang có item được chọn.
         /// Đối ứng `ChoosePromotionFragment.updateApplyButtonState` bên Android.
         var showsSelectedCount = false
@@ -133,8 +139,10 @@ private extension ChoosePromotionState {
         ChoosePromotionViewModel.Display(
             sections: buildSections(),
             isLoading: isLoading,
+            isRefreshing: isRefreshing,
             isLoadingMoreOther: isLoadingMoreOther,
             showsNoResult: showsNoResult(),
+            showsEmptyView: showsEmptyView(),
             showsSelectedCount: showsSelectedCount(),
             selectedCount: selectedIds.count,
             canApply: canApply()

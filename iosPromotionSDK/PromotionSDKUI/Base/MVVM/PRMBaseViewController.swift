@@ -4,6 +4,7 @@
 //
 
 import UIKit
+@_implementationOnly import PRMDesignKit
 
 class PRMBaseViewController<VM>: UIViewController {
 
@@ -37,4 +38,15 @@ class PRMBaseViewController<VM>: UIViewController {
 
     func setupUI() {}
     func bindViewModel() {}
+
+    /// Báo lỗi cho user bằng **popup** (`PRMConfirmationDialog`, 1 nút "Đóng").
+    ///
+    /// Thay cho `PromotionToast` đã bỏ: SDK không dùng toast nữa (toast dễ bị hệ/OEM chặn và trôi
+    /// qua quá nhanh). Chỗ nào đã có empty-view/list cũ nói thay thì **không hiện gì**; chỉ dùng hàm
+    /// này khi im lặng sẽ khiến user không hiểu chuyện gì — ví dụ vừa chủ động bấm và đang chờ.
+    ///
+    /// Đối ứng `PRMBaseFragment.showErrorDialog` bên Android.
+    func showErrorDialog(_ message: String) {
+        PRMConfirmationDialog.showError(message, in: view)
+    }
 }

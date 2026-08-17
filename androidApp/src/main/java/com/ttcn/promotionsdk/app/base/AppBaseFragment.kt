@@ -49,7 +49,7 @@ abstract class AppBaseFragment<VB : ViewBinding> : Fragment() {
     open fun observeData() {}
 
     protected fun showToast(message: CharSequence?) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+//        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 
     /** Chồng [fragment] lên container đang chứa màn này. */

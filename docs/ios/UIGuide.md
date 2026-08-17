@@ -272,7 +272,7 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 
 `PromotionSDKFeature` đã bị xoá, và **không có** enum thay thế. Host không cần biết cờ nào đang bật:
 `openMyPromotion` / `openPromotionDetail` / widget đều tự gác qua `PromotionFeatureGate` của
-`promotionLogic`, và báo host qua `onAvailabilityChanged(enabled:)` khi bị chặn.
+`promotionLogic`; bị chặn thì SDK tự hiện popup, hoặc gọi `onFeatureDisabled` nếu host có truyền.
 
 > **Ràng buộc, đã kiểm chứng bằng compiler.** Kể cả khi muốn phơi ra, type Kotlin không thể xuất hiện
 > trong API public: nó bị ghi vào `.swiftinterface` của framework, kéo theo `import PRMKotlinBridge`.

@@ -116,12 +116,15 @@ public final class PromotionSDKApi {
             currency: "VND",
             channel: "MOBILE",
             customerType: nil, segment: nil, tier: nil,
+            // Ba tham số này Kotlin có default nhưng Obj-C bridging KHÔNG mang default sang, nên
+            // Swift buộc phải truyền đủ (xem commit "update serviceCode -> productId…").
+            orderDate: nil, orderMetadata: nil, scenario: nil,
             tabCode: tabCode,
             section: nil,
             keyword: nil,
             myPage: Int32(myPage), mySize: Int32(mySize),
             otherPage: Int32(otherPage), otherSize: Int32(otherSize),
-            filterOptions: EligibleFilterOptions(includeExpired: false, checkBudgetAvailability: true, includePreview: true)
+            filterOptions: EligibleFilterOptions(campaignTypes: nil, discountTypes: nil, includeExpired: false, checkBudgetAvailability: true, includePreview: true)
         )
         let useCases = self.useCases
         handle(

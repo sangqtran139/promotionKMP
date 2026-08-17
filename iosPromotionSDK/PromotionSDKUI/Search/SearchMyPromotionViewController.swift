@@ -189,7 +189,9 @@ final class SearchMyPromotionViewController: PRMBaseViewController<SearchMyPromo
     /// Lỗi nghiệp vụ → toast (đồng nhất Android: view map code → chuỗi rồi show).
     private func handle(_ effect: PRMEffect) {
         if let error = effect as? PRMEffectShowError {
-            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
+            // KHÔNG hiện gì: SDK đã bỏ toast. Màn này còn empty-view/list cũ nên user
+            // vẫn hiểu được. Đối ứng `is PRMEffect.ShowError -> Unit` bên Android.
+            _ = error
         }
     }
 
@@ -238,10 +240,15 @@ extension SearchMyPromotionViewController: UITableViewDataSource {
     }
 }
 
-// MARK: - UITextFieldDelegate (search action on return key)
+// MARK: - UITextFieldDelegate
 extension SearchMyPromotionViewController: UITextFieldDelegate {
+    /// Phím Return chỉ ĐÓNG BÀN PHÍM, không gọi lại API.
+    ///
+    /// Mỗi ký tự gõ vào đã đi tới `queryChanged`, store debounce 400ms rồi tự tìm. Đến lúc người
+    /// dùng với tay bấm Return thì debounce đã bắn xong — dispatch thêm `Search` ở đây là gọi
+    /// `searchCustomerVouchers` lần hai với **đúng từ khoá cũ**.
+    /// Đối ứng `setOnDoneKeyboardListener(null)` bên Android.
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        viewModel.dispatch(SearchMyPromotionIntentSearch.shared)
         textField.resignFirstResponder()
         return true
     }

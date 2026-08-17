@@ -97,9 +97,15 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: AppliedDiscount, token: DiscountBadgeToken?) {
-            // Text ưu tiên lấy từ `tags[0]` (nhãn server gửi sẵn). Server cũ / host tự dựng
-            // `AppliedDiscount` qua `setDiscountDetails` không kèm tags → fallback format số tiền
-            // giảm như trước, tránh voucher hiện chữ trống. Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
+            // Thứ tự: `tags[0]` (nhãn server) → TÊN VOUCHER → số tiền giảm.
+            //
+            // `tags[0]` đứng đầu vì đó là nhãn server chủ động gửi cho đúng lượt validate này —
+            // server muốn hiện gì thì hiện nấy. Thiếu nó mới lùi về `voucherName` lấy từ chính offer
+            // user vừa chọn: trước đây không có nhánh này, nên khi server trả `tags: []` +
+            // `calculatedDiscount: 0` (voucher bị từ chối) chip hiện "0đ" — user chọn voucher xong
+            // nhìn widget không thấy voucher đâu. Số tiền là chốt chặn cuối, cho host tự dựng
+            // `AppliedDiscount` qua `setDiscountDetails` (không có cả tag lẫn tên).
+            // Đối ứng `PromotionSDKImpl.appliedTitle` bên iOS.
             binding.txtName.text = item.tags.firstOrNull()?.takeIf { it.isNotBlank() }
                 ?: formatDiscountAmount(binding.root.context, item.calculatedDiscount)
 

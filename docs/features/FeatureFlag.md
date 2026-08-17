@@ -16,7 +16,7 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 - **Phần riêng mỗi nền tảng:** chỉ còn *chỗ gọi* hiển thị thông báo khi bị chặn —
   `PRMBaseFragment.openPromotionDetail()` và `BaseRouter.canOpenVoucherDetail()`; **cả hai đều toast**
   (`Toast` / `PRMToast`) và toast này **luôn hiện, bỏ qua cổng bật/tắt toast chung** —
-  `PromotionToastGate.showFeatureDisabled()` / `PromotionToast.showAlways()`, xem
+  `PRMBaseConfirmDialog.showFeatureDisabled()` / `PromotionSDKImpl.showFeatureDisabledToast(on:)` (đều là **popup**, toast đã bỏ), xem
   [ErrorHandling.md](../common/ErrorHandling.md).
 
 > **SDK vừa tự gác, vừa cho host hỏi.** Mọi điểm vào vẫn tự gác và hiện thông báo PRM_MOB_021 khi bị
@@ -150,20 +150,17 @@ Ba điều phải nhớ:
    hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
 3. **Đây là tầng tuỳ chọn.** Host bỏ qua hoàn toàn thì SDK vẫn tự gác như cũ (§2).
 
-**`onAvailabilityChanged(enabled:)` giờ bắn cả `true` lẫn `false`** — trước đây chỉ bắn `false` khi
-user đã bấm và bị chặn, nên host ẩn entry point rồi thì không có đường hiện lại. Nay nó bắn ở:
+**`onAvailabilityChanged` đã bị bỏ** khỏi `PromotionSDKCallback` — host không cần biết trạng thái
+bật/tắt để làm gì, SDK đã tự gác ở mọi điểm vào.
 
-| Lúc | Giá trị | Android | iOS |
-|---|---|---|---|
-| Nạp cờ xong sau `initialize` / login lại | `ENABLE_ALL` | `PromotionSDK.notifyAvailability()` | `PromotionSDKImpl.notifyAvailabilityAfterInitialLoad()` |
-| Mỗi lần `refreshFeatureFlags` | `ENABLE_ALL` | `PromotionSDK.refreshFeatureFlags` | idem |
-| Widget checkout đổi trạng thái | `VOUCHER_SELECTION` | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag` |
-| User bấm mà bị chặn | luôn `false` | `openMyPromotion` / `openPromotionDetail` | idem |
+Trước đây nó bắn ở bốn chỗ (nạp cờ xong sau `initialize`, mỗi lần `refreshFeatureFlags`, widget
+checkout đổi trạng thái, và khi user bấm mà bị chặn) — kèm một cái bẫy thứ tự chỉ iOS mới có: phải
+đợi `wireCallbacks` chạy xong mới báo được lần đầu, nên `PromotionSDKImpl` phải giữ Task nạp cờ lại ở
+`initialFlagLoad`. Bỏ callback là bỏ luôn cả lớp phức tạp đó.
 
-> iOS phải đợi `wireCallbacks` chạy xong mới báo được lần đầu: `PromotionSDKImpl.init` bắn Task nạp cờ,
-> nhưng `onAvailabilityUpdate` chỉ được nối **sau khi** `init` trả về. Vì thế Task được giữ lại ở
-> `initialFlagLoad` và `PromotionSDK.initialize` `await` nó sau `wireCallbacks`. Android không vướng:
-> `callback` được gán trước khi `launch`.
+Host muốn tự ẩn entry point thì hỏi chủ động bằng `isSdkEnabled()` / `isFeatureEnabled(...)` mỗi khi
+dựng UI (§3) — đừng cache lại, cờ đổi được giữa phiên. Còn khi user đã bấm mà bị chặn thì SDK tự hiện
+popup, hoặc gọi `onFeatureDisabled` nếu host truyền vào hàm `open…`.
 
 Test: `AndroidPromotionSDK/src/test/.../entry/api/PromotionFeatureMapperTest.kt` — ánh xạ enum ↔ hằng
 số lõi, và khẳng định công tắc tổng tắt thì snapshot tắt hết.

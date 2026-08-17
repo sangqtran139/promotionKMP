@@ -120,43 +120,52 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
   (đối ứng `uiEffect` bên Android). VC map `code` → chuỗi bằng `PromotionUIStrings.errorMessage`
-  rồi gọi **`PromotionToast.show(...)`**; state không giữ lại lỗi. Toast là idiom **dùng chung 2 nền
-  tảng** cho hầu hết luồng lỗi.
-
-> **Ngoại lệ — validate hỏng lúc bấm "Áp dụng" ở màn "Chọn ưu đãi".** Toast thường đi qua cổng
-> `isEnabled` (mặc định **TẮT**, xem dưới) nên lỗi bị nuốt: user vừa chủ động bấm và đang chờ kết
-> quả mà màn đứng im, không một thông báo. Nhánh này phải **luôn hiện**:
->
-> | | Cách hiện | Ở lại màn chọn |
-> |---|---|---|
-> | iOS | `PRMConfirmationDialog.showError(...)` — **popup**, buộc bấm "Đóng" | ✅ |
-> | Android | `PromotionToastGate.showAlways(...)` — toast bỏ qua cổng (**tạm thời**) | ✅ |
->
-> Đây là chỗ **duy nhất** `PRMConfirmationDialog` còn được dùng. Android dùng toast là giải pháp tạm;
-> khi chốt UI thì cân nhắc popup cho đồng bộ.
+  rồi hiển thị. `state` không giữ lại lỗi.
 - ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
 
-### Cổng bật/tắt toast (cả hai nền tảng)
+### Không còn toast — chỉ còn popup hoặc im lặng
 
-Toàn bộ hiển thị toast **gom sau một cờ**, mặc định **TẮT** — SDK vẫn **bắt lỗi như cũ** (effect
-`ShowError` vẫn phát, ViewModel vẫn `ConsumeError`), chỉ **không hiển thị** gì. Đổi cờ `true` để bật lại.
+SDK **đã bỏ hẳn toast** ở cả hai nền tảng. Trước đây có một cổng bật/tắt toast
+(hai cờ `isEnabled` nay đã xoá cùng lớp toast) mặc định **TẮT**, nên phần lớn lỗi
+nghiệp vụ bị nuốt im lặng mà nhìn code thì tưởng có báo. Nay chỉ còn hai lựa chọn, và phải chọn có
+chủ ý:
 
-| Nền tảng | Cờ | Điểm gác |
+| Cách | Dùng khi | Android | iOS |
+|---|---|---|---|
+| **Popup** | im lặng thì user không hiểu chuyện gì: vừa chủ động bấm và đang chờ kết quả, hoặc tính năng bị cờ chặn | `PRMBaseFragment.showErrorDialog(message)` → `PRMBaseConfirmDialog` | `PRMBaseViewController.showErrorDialog(_:)` → `PRMConfirmationDialog` |
+| **Không hiện gì** | màn đã có empty-view / shimmer / list cũ nói thay | nhánh `is PRMEffect.ShowError -> Unit` | `_ = error` trong `handle(_:)` |
+
+Hai hàm popup nằm ở **lớp base** của mỗi nền tảng, đừng gọi thẳng dialog ở call site. Chỗ nào không
+phải Fragment/VC (ví dụ `PromotionSDK` gọi từ Activity, `PRMBaseRouter`) thì dùng
+`PRMBaseConfirmDialog.showError(context, fm, message)` / `PRMConfirmationDialog.showError(_:in:)`.
+
+Đang dùng popup ở: validate hỏng khi bấm "Áp dụng", kéo-để-tải-lại hỏng (màn "Chọn ưu đãi"), và mọi
+đường bị feature flag chặn.
+
+### PRM_MOB_021 — tính năng bị cờ chặn
+
+**SDK tự hiện popup, host không phải lo câu chữ.** Đây là quyết định của SDK (chính SDK tắt tính
+năng) nên thông báo cũng phải của SDK. Gom đúng một hàm mỗi nền tảng:
+
+| Nền tảng | Hàm | Call site |
 |---|---|---|
-| Android | `PromotionToastGate.isEnabled` (`ui/base/`) | trong `PRMBaseFragment.showToast` / `PRMBaseActivity.showToast` |
-| iOS | `PromotionToast.isEnabled` (`PromotionSDKUI/Base/`) | trong `PromotionToast.show(_:in:)` — mọi call site đi qua đây |
+| Android | `PRMBaseConfirmDialog.showFeatureDisabled(context, fm)` | `PRMBaseFragment.openPromotionDetail`, `PromotionSDK.openMyPromotion`, `PromotionSDK.openPromotionDetail`, `PRMEndowView.confirmRedemption` |
+| iOS | `PromotionSDKImpl.showFeatureDisabledToast(on:)` | `PRMBaseRouter.canOpenVoucherDetail()`, `PromotionSDKImpl.confirmRedemption` |
 
-Đổi một bên thì đổi bên kia (giữ đối xứng).
+Host **vẫn** nhận lỗi qua `onError` — để **dừng luồng thanh toán**, không phải để hiện chữ. Callback
+trả thẳng **kiểu công khai** `PromotionSDKError`, không phải mã thô:
 
-**Ngoại lệ duy nhất — PRM_MOB_021 (tính năng bị cờ chặn): LUÔN hiện, không qua cổng.** Các toast lỗi
-khác còn state thay thế (empty / shimmer / list cũ) nên tắt đi vẫn hiểu được; còn ở đây user bấm mà
-màn không mở, im lặng thì thành "app đơ". Ngoại lệ này gom đúng **một hàm mỗi nền tảng**, đừng rải
-`PRMToast.show` / `Toast.makeText` trực tiếp ở call site:
+```kotlin
+onError = { error -> if (error is PromotionSDKError.FeatureDisabled) stopCheckout() }   // Android
+```
+```swift
+onError: { error in if case .featureDisabled = error { stopCheckout() } }               // iOS
+```
 
-| Nền tảng | Hàm bỏ qua cổng | Call site |
-|---|---|---|
-| Android | `PromotionToastGate.showFeatureDisabled(context)` | `PRMBaseFragment.openPromotionDetail`, `PromotionSDK.openMyPromotion`, `PromotionSDK.openPromotionDetail` |
-| iOS | `PromotionToast.showAlways(_:in:)` | `PRMBaseRouter.canOpenVoucherDetail()`, `PromotionSDKImpl.showFeatureDisabledToast(on:)` |
+Lý do không trả `String`: hằng số mã lỗi nằm trong `promotionLogic` (`implementation`, **không** có
+trên compile classpath của host), nên host chỉ còn cách hardcode `"PRM_MOB_021"`. Vẫn có
+`PromotionSDKError.from(code)` cho ai nhận mã thô từ nguồn khác — nó dùng đúng bảng map mà
+`PromotionSDKApi` (headless) đang dùng, một nguồn sự thật.
 
 ### Cả hai
 

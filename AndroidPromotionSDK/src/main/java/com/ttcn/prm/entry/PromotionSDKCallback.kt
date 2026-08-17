@@ -26,21 +26,7 @@ interface PromotionSDKCallback {
     /** Gọi khi user chọn và bấm "Áp dụng" ưu đãi thành công. */
     fun onVoucherApplied(voucherId: String) {}
 
-    /** Gọi khi user bấm "Hủy" để bỏ chọn ưu đãi trên widget. */
-    fun onVoucherCleared() {}
-
-    /** Gọi khi widget load xong và biết tổng số voucher khả dụng. */
-    fun onVoucherCountChanged(count: Int) {}
-
     /** Gọi khi user chọn 1 dịch vụ trong bottom sheet "Chọn dịch vụ" (Ưu đãi của tôi / Tìm kiếm / Chi tiết). */
     fun onServiceSelected(selection: PromotionServiceSelection) {}
 
-    /**
-     * Gọi khi biết chắc trạng thái bật/tắt SDK qua feature flag (Unleash).
-     * `enabled == false` → host nên ẩn toàn bộ điểm vào ưu đãi (entry point, widget).
-     */
-    fun onAvailabilityChanged(enabled: Boolean) {}
-
-    /** Gọi khi màn hình SDK được đóng (user back hoặc SDK release). */
-    fun onClosed() {}
 }

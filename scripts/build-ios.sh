@@ -27,14 +27,18 @@
 # Riêng `local`:   --run, --device 'iPhone 17 Pro'
 # Riêng `publish`: --yes, --dry-run
 #
-#   -f, --force         cho phép ĐÈ bản đã có trên Artifactory, và dọn cache SPM của đúng
-#                       version đó. Xem mục "Build đè" bên dưới.
+#   -f, --force         cho phép ĐÈ bản đã có trên Artifactory. Xem mục "Build đè" bên dưới.
 #
 # Chế độ đặt ở đâu cũng được: `publish --force` hay `--force publish` đều nhận.
 #
+# ── Dọn cache ────────────────────────────────────────────────────────────────────────────────
+# `publish` LUÔN dọn cache SPM của đúng version vừa đẩy, không cần cờ gì. `local --force` cũng dọn,
+# dùng khi nghi máy mình đang giữ bản cũ.
+#
 # ── Build đè ─────────────────────────────────────────────────────────────────────────────────
 # Mặc định script CHẶN khi version đã tồn tại: bản đã phát hành là thứ người khác đang build theo.
-# `--force` bỏ chốt đó — và bắt buộc phải dọn cache, vì SPM có HAI tầng, cả hai đều đánh key theo URL:
+# `--force` bỏ chốt đó. Cache thì đã được dọn sẵn ở mọi lần publish — cần thế vì SPM có HAI tầng,
+# cả hai đều đánh key theo URL:
 #
 #   1. <DerivedData>/SourcePackages/artifacts/…            xcframework đã giải nén
 #   2. ~/Library/Caches/org.swift.swiftpm/artifacts/<url>  file zip, DÙNG CHUNG mọi project trên máy
@@ -356,12 +360,14 @@ echo "▸ Đẩy lên Artifactory"
 
 [[ "$DRY_RUN" == true ]] && exit 0
 
-# Đè xong thì cache của chính máy này đang giữ zip CŨ dưới đúng URL vừa đè. Không dọn thì lần build
-# sau hoặc là chạy nhầm binary cũ, hoặc là báo "checksum does not match" mà chẳng hiểu vì sao.
-if [[ "$FORCE" == true ]]; then
-    echo "▸ Dọn cache SPM của version $SDK_VERSION (vừa đè lên bản cũ)"
-    purge_spm_cache "$SDK_VERSION"
-fi
+# Publish xong là dọn cache của ĐÚNG version vừa đẩy — luôn luôn, không chờ --force.
+#
+# Version mới thì cache chưa có gì, dọn chỉ tốn một lần quét thư mục. Nhưng khi đẩy đè lên một
+# version đã có, cache của chính máy này đang giữ zip CŨ dưới đúng URL vừa đè — không dọn thì lần
+# build sau hoặc chạy nhầm binary cũ, hoặc báo "checksum does not match" mà chẳng hiểu vì sao.
+# Dọn vô điều kiện thì không phải nhớ mình vừa đè hay vừa tạo mới.
+echo "▸ Dọn cache SPM của version $SDK_VERSION"
+purge_spm_cache "$SDK_VERSION"
 
 # App demo ghim url+checksum của bản đã phát hành, nên nó KHÔNG tự thấy bản vừa đẩy. In sẵn hai dòng
 # cần dán — bắt người ta tự ghép URL rồi tự chạy shasum là kiểu việc vặt dễ làm sai trong im lặng.

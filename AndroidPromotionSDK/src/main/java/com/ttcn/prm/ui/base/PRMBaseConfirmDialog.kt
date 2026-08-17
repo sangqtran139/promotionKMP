@@ -1,5 +1,8 @@
 package com.ttcn.prm.ui.base
 
+import android.content.Context
+import androidx.fragment.app.FragmentManager
+
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -132,6 +135,28 @@ internal class PRMBaseConfirmDialog : PRMBaseDialog<PrmDialogConfirmBinding>() {
             negativeColor = buttonNegativeColor
             this.isBoldNegativeText = isBoldNegativeText
             this.isDelete = isDelete
+        }
+
+        /**
+         * Thông báo lỗi dạng popup 1 nút "Đóng" — thay cho `PromotionToastGate.showAlways` đã bỏ.
+         *
+         * Dùng dialog chứ không Toast: Toast dễ bị hệ hoặc OEM chặn, và trôi qua quá nhanh với thông
+         * báo mà user vừa chủ động bấm rồi đứng chờ kết quả.
+         *
+         * Nhận `FragmentManager` nên **dùng được cả ngoài Fragment** (`PromotionSDK` gọi từ Activity);
+         * trong Fragment thì gọi `PRMBaseFragment.showErrorDialog` cho gọn.
+         */
+        fun showError(context: Context, fragmentManager: FragmentManager, message: CharSequence) {
+            newInstance(
+                title = context.getString(R.string.prm_notification_title),
+                content = message,
+                buttonPositive = context.getString(R.string.prm_notification_button_close),
+            ).show(fragmentManager, PRMBaseConfirmDialog::class.java.simpleName)
+        }
+
+        /** "Tính năng đang tắt" (PRM_MOB_021) — user bấm mà màn không mở, im lặng thành "app đơ". */
+        fun showFeatureDisabled(context: Context, fragmentManager: FragmentManager) {
+            showError(context, fragmentManager, context.getString(R.string.prm_feature_disabled))
         }
     }
 }

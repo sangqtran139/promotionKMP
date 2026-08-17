@@ -387,12 +387,12 @@ final class PromotionSDKImpl: NSObject {
     }
 
     /// Báo lỗi nghiệp vụ khi tính năng đang TẮT (PRM_MOB_021) — dùng cho các thao tác UI (bấm mở màn).
-    /// Toast **LUÔN hiện**, không qua cổng `PromotionToast.isEnabled`; đồng nhất Android
-    /// (`PromotionToastGate.showFeatureDisabled`).
+    /// Popup **LUÔN hiện** (`PRMConfirmationDialog`); đồng nhất Android
+    /// (`PRMBaseConfirmDialog.showFeatureDisabled`).
     func showFeatureDisabledToast(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
             ?? "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-        PromotionToast.showAlways(message, in: viewController.view)
+        PRMConfirmationDialog.showError(message, in: viewController.view)
     }
 
     /// Mở màn chi tiết ưu đãi theo `voucherId`. Màn tự fetch chi tiết đầy đủ; trong lúc chờ hiện shimmer.
@@ -408,13 +408,18 @@ final class PromotionSDKImpl: NSObject {
         navigator: UINavigationController?,
         returnVoucherOnApply: Bool = true,
         hostHandlesDismiss: Bool = false,
-        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
+        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil,
+        onFeatureDisabled: (() -> Void)? = nil
     ) {
         canOpenVoucherDetail { [weak self] enabled in
             guard let self else { return }
             guard enabled else {
-                self.showFeatureDisabledToast(on: viewController)
-                self.onAvailabilityUpdate?(false)
+                // Host có đăng ký thì trả cho host, không thì SDK tự hiện popup.
+                if let onFeatureDisabled {
+                    onFeatureDisabled()
+                } else {
+                    self.showFeatureDisabledToast(on: viewController)
+                }
                 return
             }
             let nav = navigator ?? viewController.navigationController ?? (viewController as? UINavigationController)
@@ -459,7 +464,6 @@ final class PromotionSDKImpl: NSObject {
             // Qua notifier: `applyFlag` chạy HAI lần (cache rồi server) nên gọi thẳng là host nhận
             // callback trùng khi cờ không đổi. Android vốn đã chặn bằng `lastNotifiedAvailability`;
             // nay cả hai bên dùng chung một rule.
-            self.emit(self.hostNotifier.onAvailability(enabled: enabled))
             guard enabled else {
                 // Server báo tắt (kể cả sau khi đã hiện lạc quan) → rút widget lại.
                 self.activeWidget?.removeFromSuperview()
@@ -514,10 +518,23 @@ final class PromotionSDKImpl: NSObject {
     weak var _navigator: UINavigationController?
 
     /// Bấm "Thanh toán" của host — uỷ thẳng xuống `EndowStore.confirmRedemption` (dùng chung Android).
-    func confirmRedemption(onSuccess: @escaping () -> Void, onError: @escaping (String) -> Void) {
-        endowVM.confirmRedemption { result in
+    func confirmRedemption(onSuccess: @escaping () -> Void, onError: @escaping (PromotionSDKError) -> Void) {
+        endowVM.confirmRedemption { [weak self] result in
             if let failure = result as? EndowConfirmResultFailure {
-                onError(failure.errorCode)
+                // Tính năng bị cờ chặn → SDK **tự hiện popup** đúng câu, không phó mặc host.
+                //
+                // Trước đây chỉ đẩy mã lỗi ra `onError`, host map sang chuỗi của họ và hiện thông báo
+                // sai nội dung — user đọc được một lỗi kỹ thuật thay vì "tính năng hiện không khả
+                // dụng". Đây là quyết định của SDK (chính SDK tắt tính năng) nên câu chữ cũng phải
+                // của SDK. Đối ứng `PRMEndowView.confirmRedemption` bên Android.
+                if failure.errorCode == PromotionErrorCodes.shared.FEATURE_DISABLED,
+                   let host = self?.activeWidget?.window?.rootViewController ?? self?._host {
+                    self?.showFeatureDisabledToast(on: host)
+                }
+                // Vẫn báo host: họ cần biết để DỪNG luồng thanh toán, không phải để hiện chữ.
+                // Trả **kiểu công khai**, không phải mã thô: host `switch` là xong, không phải so
+                // chuỗi. Đối ứng `PRMEndowView.onError` bên Android.
+                onError(PromotionSDKError.from(failure.errorCode))
             } else {
                 onSuccess()
             }
@@ -536,9 +553,9 @@ final class PromotionSDKImpl: NSObject {
         // Giữ trạng thái loading (shimmer) tới khi nạp xong — mirror Android `renderState` (return sớm).
         guard state.hasLoadedInitial else { return }
 
-        // Hiển thị số tiền của TẤT CẢ ưu đãi đã áp (mờ ở state .unavailable) — khớp Android
+        // Hiển thị TẤT CẢ ưu đãi đã áp (mờ ở state .unavailable) — khớp Android
         // (`ApplyPromotionAdapter` submit cả list, dim item invalid), nhất quán với nhánh .applied.
-        let titles = { state.appliedDiscounts.map { Self.formatDiscount($0.calculatedDiscount) } }
+        let titles = { state.appliedDiscounts.map(Self.appliedTitle) }
 
         switch state.widgetState {
         case .unavailable: view.setState(.unavailable(voucherTitles: titles()))
@@ -563,15 +580,22 @@ final class PromotionSDKImpl: NSObject {
         for event in events {
             if let applied = event as? EndowHostEventVoucherApplied {
                 onApplyVoucher?(applied.voucherId)
-            } else if let changed = event as? EndowHostEventVoucherCountChanged {
-                onUpdateWidgetCount?(Int(changed.count))
-            } else if let availability = event as? EndowHostEventAvailabilityChanged {
-                onAvailabilityUpdate?(availability.enabled)
             }
         }
     }
 
     /// Format số tiền giảm (chuỗi số thô) -> "Giảm x.xxxđ".
+    /// Chữ trên chip của widget: `tags[0]` (nhãn server) → số tiền giảm.
+    ///
+    /// Trước đây bên này **chỉ** format số tiền — không có nhánh `tags` mà Android có — nên nhãn
+    /// server gửi kèm bị bỏ qua hoàn toàn. Nay khớp đúng Android.
+    ///
+    /// Đối ứng `ApplyPromotionAdapter.bind` bên Android — sửa bên nào thì sửa cả bên kia.
+    private static func appliedTitle(_ discount: EndowAppliedDiscount) -> String {
+        if let tag = discount.tags.first, !tag.isEmpty { return tag }
+        return formatDiscount(discount.calculatedDiscount)
+    }
+
     private static func formatDiscount(_ raw: String) -> String {
         let digits = raw.filter { $0.isNumber }
         guard let value = Int(digits) else { return raw }

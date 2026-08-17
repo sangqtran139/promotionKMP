@@ -96,6 +96,12 @@
 
         <include layout="@layout/prm_item_shimmer_my_promotion" />
 
+        <include layout="@layout/prm_item_shimmer_my_promotion" />
+
+        <include layout="@layout/prm_item_shimmer_my_promotion" />
+
+        <include layout="@layout/prm_item_shimmer_my_promotion" />
+
       </LinearLayout>
     </com.facebook.shimmer.ShimmerFrameLayout>
 

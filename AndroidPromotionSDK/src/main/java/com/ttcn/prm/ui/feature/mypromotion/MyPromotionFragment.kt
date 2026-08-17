@@ -141,7 +141,10 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
         }
         collectFlow(viewModel.effects) { effect ->
             when (effect) {
-                is PRMEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
+                // KHÔNG hiện gì: SDK đã bỏ toast. Vẫn thu effect để store `ConsumeError` chạy đúng
+                // vòng của nó — bỏ luôn `collectFlow` thì `errorCode` nằm lại trong state.
+                // Màn này còn empty-view/list cũ nên user vẫn hiểu được chuyện gì xảy ra.
+                is PRMEffect.ShowError -> Unit
             }
         }
         viewModel.dispatch(MyPromotionIntent.LoadInitialIfNeeded)
@@ -203,7 +206,6 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
     override fun onDestroyView() {
         // Màn bị pop khỏi back stack (user back) → báo host. Đối ứng iOS `vc.onClose → onClosed`.
         // `isRemoving` false khi chỉ đổi cấu hình / đẩy màn khác lên trên (được lưu ở back stack).
-        if (isRemoving) PromotionSDK.getCallback()?.onClosed()
         super.onDestroyView()
     }
 

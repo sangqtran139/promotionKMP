@@ -99,9 +99,11 @@ final class CheckoutViewController: UIViewController {
                 self?.payButton.isEnabled = true
                 self?.proceedPayment()
             },
-            onError: { [weak self] errorCode in
+            onError: { [weak self] error in
                 self?.payButton.isEnabled = true
-                self?.showAlert("Thanh toán lỗi", Self.errorMessage(errorCode))
+                // `FeatureDisabled`: SDK đã tự hiện popup — host chỉ dừng luồng, đừng báo lần hai.
+                if case .featureDisabled = error { return }
+                self?.showAlert("Thanh toán lỗi", error.errorDescription ?? "Đã có lỗi xảy ra.")
             }
         )
     }

@@ -26,7 +26,5 @@ final class DemoPromotionCallback: PromotionSDKCallback {
 
     // Protocol có default rỗng → chỉ hiện thực đúng sự kiện demo cần.
     func onVoucherApplied(voucherId: String) { onApplied?(voucherId) }
-    func onVoucherCleared() { onCleared?() }
-    func onVoucherCountChanged(count: Int) { onCountChanged?(count) }
     func onServiceSelected(selection: PromotionServiceSelection) { onService?(selection) }
 }

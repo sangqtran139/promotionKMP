@@ -5,9 +5,8 @@
 //  Confirmation Dialog dùng chung (mobile) — dạng Lỗi: header "Thông báo" + nội dung + 1 nút "Đóng".
 //  UIKit thuần.
 //
-//  Dùng cho thông báo "tính năng bị cờ chặn" (PRM_MOB_021) qua `PromotionToast.showAlways` — đồng
-//  nhất với Android (`PromotionToastGate.showFeatureDisabled` dùng `PRMBaseConfirmDialog`, không phải
-//  Toast). Các lỗi nghiệp vụ khác vẫn qua `PRMToast` (`PromotionToast.show`, gác bởi `isEnabled`).
+//  Đường báo lỗi DUY NHẤT cho user của SDK — toast đã bị bỏ hẳn ở cả hai nền tảng.
+//  Gọi qua `PRMBaseViewController.showErrorDialog`; đối ứng `PRMBaseConfirmDialog` bên Android.
 //
 
 import UIKit

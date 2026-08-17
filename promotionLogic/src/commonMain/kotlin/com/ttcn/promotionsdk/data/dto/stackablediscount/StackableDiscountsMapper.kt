@@ -36,6 +36,9 @@ internal fun StackableDiscountsResponse.toValidateDiscountsResult() = ValidateDi
             calculatedDiscount = detail.calculatedDiscount,
             eligibilityStatus = detail.eligibilityStatus,
             tags = detail.tags,
+            validationMessages = detail.validationMessages,
         )
     },
+    // `ruleCode` hay null trong thực tế (xem response mẫu), nên chỉ lấy `message`.
+    businessRuleViolations = businessRuleViolations.mapNotNull { it.message?.takeIf(String::isNotBlank) },
 )

@@ -37,6 +37,13 @@ data class ChoosePromotionState(
     /** Nhóm "Ưu đãi của tôi" đang mở hết hay thu gọn — do store quản (state-machine `SeeMoreMy`). */
     val myExpanded: Boolean = false,
     val errorCode: String? = null,
+    /**
+     * Lượt nạp gần nhất **hỏng** (mạng/HTTP) — khác [errorCode] ở chỗ **bền**.
+     *
+     * [errorCode] là một-lần: native hiện xong là `dispatch(ConsumeError)` xoá ngay, nên không dùng
+     * để quyết định "có hiện view rỗng không" — hiện được một nhịp rồi biến mất, màn trắng trơn.
+     */
+    val loadFailed: Boolean = false,
 )
 
 sealed interface ChoosePromotionIntent {
@@ -146,10 +153,30 @@ fun ChoosePromotionState.showsSelectedCount(): Boolean =
     isMultiSelection && selectedIds.isNotEmpty()
 
 /**
- * Nút "Áp dụng" bấm được chưa. Chưa chọn gì thì **disable**: cả hai nền tảng đều bỏ qua danh sách
- * rỗng, để nút bấm được chỉ tạo cảm giác app treo.
+ * Nút "Áp dụng" bấm được chưa — **rule dùng chung**, hai nền tảng chỉ render theo.
+ *
+ * Ba điều kiện, mỗi cái chặn một tình huống thật:
+ *
+ * 1. **Chưa chọn gì** → disable. Cả hai nền tảng đều bỏ qua danh sách rỗng, để nút bấm được chỉ tạo
+ *    cảm giác app treo.
+ * 2. **Đang kéo-để-tải-lại** → disable tạm. Giữa lúc nạp lại, danh sách cũ vẫn nằm trên màn nhưng
+ *    server chưa trả lời voucher đang tick còn hợp lệ không. Cho bấm lúc này là gửi validate một
+ *    voucher mà chính mình sắp biết là hỏng.
+ * 3. **Voucher đang tick không còn dùng được** sau khi nạp lại → disable. Hai kiểu "không còn":
+ *    server trả về không dùng được nữa, hoặc **biến mất hẳn** khỏi danh sách — trường hợp sau lộ ra
+ *    ở chỗ số offer khớp được ít hơn số id đang tick.
+ *
+ * Xét [ChooseOffer.isUsable] chứ không phải cờ thô `source.usable`: `isUsable` đã gộp cả **hết hạn**
+ * (xem [toChooseOffer]). Voucher vừa hết hạn ngay lúc nạp lại thì `source.usable` vẫn `true`, chỉ
+ * `isUsable` bắt được.
  */
-fun ChoosePromotionState.canApply(): Boolean = selectedIds.isNotEmpty()
+fun ChoosePromotionState.canApply(): Boolean {
+    val ids = selectedIds.toSet()
+    if (ids.isEmpty()) return false
+    if (isRefreshing) return false
+    val selected = (myOffers + otherOffers).filter { it.source.id in ids }
+    return selected.map { it.source.id }.toSet().size == ids.size && selected.all { it.isUsable }
+}
 
 /**
  * Hiện view "không tìm thấy kết quả" thay cho list.
@@ -159,6 +186,16 @@ fun ChoosePromotionState.canApply(): Boolean = selectedIds.isNotEmpty()
  */
 fun ChoosePromotionState.showsNoResult(): Boolean =
     keyword.isNotBlank() && !isLoading && isEmpty
+
+/**
+ * Hiện view rỗng thay cho list: tìm không ra kết quả, **hoặc** lượt nạp vừa hỏng.
+ *
+ * Nhánh thứ hai là bắt buộc cho kéo-để-tải-lại: refresh lỗi thì store đã xoá sạch danh sách cũ, mà
+ * [showsNoResult] lại đòi có từ khoá — không có nhánh này thì user kéo, API hỏng, và nhận về một màn
+ * trắng hoàn toàn không giải thích gì.
+ */
+fun ChoosePromotionState.showsEmptyView(): Boolean =
+    showsNoResult() || (loadFailed && !isLoading && !isRefreshing)
 
 /** Từ khoá dùng để tô đậm đoạn khớp trên card; rỗng = không tô. */
 fun ChoosePromotionState.highlightKeyword(): String = keyword.trim()

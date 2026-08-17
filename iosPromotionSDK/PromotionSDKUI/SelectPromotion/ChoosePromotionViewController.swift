@@ -56,7 +56,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         self.configShimmer()
     }
 
-    // Shimmer skeleton phủ lên table trong lúc tải trang đầu (giống Android).
+    // Shimmer phủ lên table trong lúc tải trang đầu và lúc kéo-để-tải-lại (giống Android).
     private lazy var shimmerView: PRMShimmerReplicatorView = {
         let view = PRMShimmerReplicatorView(
             itemSize: .fixedHeight(PRMPromotionCardShimmerCell.itemHeight),
@@ -89,7 +89,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 
     private func configShimmer() {
         // Nền ĐỤC, trùng nền table: shimmer phủ lên table nên phải che hẳn danh sách cũ, nếu không
-        // lúc tìm kiếm user thấy kết quả cũ lộ xuyên qua skeleton. Đối ứng `shimmerOverlay` ở
+        // lúc tìm kiếm user thấy kết quả cũ lộ xuyên qua shimmer. Đối ứng `shimmerOverlay` ở
         // `MyPromotionViewController`.
         shimmerView.backgroundColor = Colors.tokenDark05
         // Chèn NGAY DƯỚI thanh đáy (chứa nút "Áp dụng") thay vì `addSubview` (luôn trên cùng):
@@ -181,6 +181,23 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         if #available(iOS 15.0, *) {
             self.promotionsTableView.sectionHeaderTopPadding = 0
         }
+
+        configPullToRefresh()
+    }
+
+    /// Kéo-để-tải-lại. Store dùng chung đã có sẵn `Refresh` (nạp lại **giữ nguyên** từ khoá và tab,
+    /// khác `LoadInitial` ở chỗ bật `isRefreshing` thay vì `isLoading` — nên shimmer toàn màn không
+    /// nhảy ra, chỉ có vòng xoay của refresh control).
+    ///
+    /// Đối ứng `SwipeRefreshLayout` bên Android (`prm_fragment_choose_promotion.xml`).
+    private func configPullToRefresh() {
+        let control = UIRefreshControl()
+        control.addTarget(self, action: #selector(didPullToRefresh), for: .valueChanged)
+        self.promotionsTableView.refreshControl = control
+    }
+
+    @objc private func didPullToRefresh() {
+        viewModel.dispatch(ChoosePromotionIntentRefresh.shared)
     }
     
     // MARK: - Bind ViewModel
@@ -211,17 +228,32 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
             totalLabel.text = ""
         }
 
-        shimmerView.isHidden = !state.isLoading
-        if state.isLoading {
+        // Shimmer hiện cho CẢ hai kiểu nạp: mở màn (`isLoading`) và kéo-để-tải-lại (`isRefreshing`).
+        // Store cố ý tách hai cờ, nhưng ở đây UI muốn cùng một hiệu ứng — người dùng kéo xong phải
+        // thấy màn đang dựng lại, không phải danh sách cũ đứng im. Đối ứng `showShimmer` bên Android.
+        let showShimmer = state.isLoading || state.isRefreshing
+
+        shimmerView.isHidden = !showShimmer
+        if showShimmer {
             shimmerView.startAnimating()
         } else {
             shimmerView.stopAnimating()
         }
 
+        // Vòng xoay do state tắt, KHÔNG tự tắt trong `didPullToRefresh`: gạt tay xong mà request lỗi
+        // hoặc chậm thì nó phải quay tiếp cho tới khi store hạ cờ. Store hạ `isRefreshing` ở cả nhánh
+        // thành công lẫn nhánh lỗi. Đối ứng `swipeRefreshVoucher.isRefreshing` bên Android.
+        if !state.isRefreshing, promotionsTableView.refreshControl?.isRefreshing == true {
+            promotionsTableView.refreshControl?.endRefreshing()
+        }
+
         // Gõ từ khoá mà không ra gì → view "không tìm thấy" thay cho list (đối ứng `showNoResult`
         // bên Android). List rỗng lúc không tìm kiếm thì để list trống như cũ.
-        searchNoResultView.isHidden = !state.showsNoResult
-        promotionsTableView.isHidden = state.showsNoResult
+        // Lúc shimmer đang hiện thì KHÔNG cho "không tìm thấy" chen vào: refresh ra rỗng sẽ nháy
+        // empty-view một nhịp trước khi dữ liệu mới về.
+        let showNoResult = state.showsEmptyView && !showShimmer
+        searchNoResultView.isHidden = !showNoResult
+        promotionsTableView.isHidden = showNoResult
 
         renderLoadMore(state.isLoadingMoreOther)
     }
@@ -242,10 +274,13 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         }
     }
 
-    /// Lỗi nghiệp vụ → toast (đồng nhất Android `showToast(mapPromotionError(code))`).
+    /// Lỗi → **popup** (`PRMConfirmationDialog`, 1 nút "Đóng"), không phải toast.
+    ///
+    /// Kéo-để-tải-lại mà API hỏng thì user đang chủ động chờ kết quả, im lặng là không chấp nhận
+    /// được. Đối ứng `showErrorDialog` bên Android (`PRMBaseFragment`).
     private func handle(_ effect: PRMEffect) {
         if let error = effect as? PRMEffectShowError {
-            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
+            showErrorDialog(PromotionUIStrings.errorMessage(error.errorCode))
         }
     }
     
@@ -266,10 +301,15 @@ extension ChoosePromotionViewController: SelectPromotionItemCellDelegate {
     }
 }
 
-// MARK: - UITextFieldDelegate (search action on return key)
+// MARK: - UITextFieldDelegate
 extension ChoosePromotionViewController: UITextFieldDelegate {
+    /// Phím Return chỉ ĐÓNG BÀN PHÍM, không gọi lại API.
+    ///
+    /// Mỗi ký tự gõ vào đã đi qua `searchTextChanged` → `viewModel.query(_:)`, và store debounce rồi
+    /// tự nạp. Đến lúc người dùng với tay bấm Return thì debounce đã bắn xong từ lâu — dispatch thêm
+    /// `Search` ở đây là gọi `findEligible` lần hai với **đúng từ khoá cũ**, tốn một vòng mạng mà
+    /// danh sách không đổi gì. Đối ứng `setOnDoneKeyboardListener(null)` bên Android.
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        viewModel.dispatch(ChoosePromotionIntentSearch.shared)
         textField.resignFirstResponder()
         return true
     }

@@ -5,6 +5,14 @@ data class ValidateDiscountsResult(
     val totalDiscountAmount: String,
     val finalAmount: String,
     val items: List<DiscountItemResult>,
+    /**
+     * Lý do cấp-đơn server từ chối (`businessRuleViolations[].message`), ví dụ `"Voucher not found"`.
+     *
+     * Trước đây DTO parse field này rồi **bỏ đi** — grep cả `commonMain` không nơi nào đọc. Hậu quả:
+     * validate trả `valid=false` mà không ai biết vì sao, native không có gì để hiện, còn dev thì
+     * phải mở log mạng mới thấy. Giữ lại ở đây để cả hai nền tảng dùng chung.
+     */
+    val businessRuleViolations: List<String> = emptyList(),
 ) {
     val validItems: List<DiscountItemResult> get() = items.filter { it.valid }
     val invalidItems: List<DiscountItemResult> get() = items.filter { !it.valid }
@@ -25,6 +33,13 @@ data class ValidateDiscountsResult(
      * `totalDiscountAmount` của cả kết quả (chuỗi số thô — tầng hiển thị tự format).
      */
     fun discountFor(objectId: String): String = itemFor(objectId)?.calculatedDiscount ?: totalDiscountAmount
+
+    /**
+     * Lý do đọc được để hiện/log cho [objectId]: ưu tiên thông điệp của chính dòng đó
+     * (`validationMessages`), không có thì lùi về lý do cấp đơn ([businessRuleViolations]).
+     */
+    fun reasonFor(objectId: String): List<String> =
+        itemFor(objectId)?.validationMessages?.takeIf { it.isNotEmpty() } ?: businessRuleViolations
 }
 
 data class DiscountItemResult(
@@ -34,4 +49,6 @@ data class DiscountItemResult(
     val calculatedDiscount: String,
     val eligibilityStatus: String,
     val tags: List<String> = emptyList(),
+    /** Lý do cấp-dòng server trả (`discountDetails[].validationMessages`). */
+    val validationMessages: List<String> = emptyList(),
 )

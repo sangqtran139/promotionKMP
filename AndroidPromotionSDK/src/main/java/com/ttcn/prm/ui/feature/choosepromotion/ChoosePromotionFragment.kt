@@ -14,7 +14,6 @@ import com.ttcn.promotionsdk.presentation.common.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
 import com.ttcn.prm.databinding.PrmFragmentChoosePromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
-import com.ttcn.prm.ui.base.PromotionToastGate
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ChoosePromotionListItem
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ChoosePromotionMainAdapter
 import com.ttcn.prm.ui.feature.ext.toVoucherListItem
@@ -26,6 +25,7 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.highlightKeyword
 import com.ttcn.promotionsdk.presentation.choosepromotion.isSelected
 import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
 import com.ttcn.promotionsdk.presentation.choosepromotion.shouldLoadMoreOther
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsEmptyView
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
@@ -87,6 +87,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         // root — tương đương `tvUse` — nên phải là view nhận margin.
         applyNavigationBarInset(binding.ctlApplyVoucher)
         setupRecyclerView()
+        setupPullToRefresh()
         setupButtons()
         setupSearch()
         listenApplyFromDetail()
@@ -112,17 +113,32 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         super.observeData()
 
         collectFlow(viewModel.state) { state ->
+            // Shimmer hiện cho CẢ hai kiểu nạp: mở màn (`isLoading`) và kéo-để-tải-lại
+            // (`isRefreshing`). Store cố ý tách hai cờ, nhưng ở đây UI muốn cùng một hiệu ứng —
+            // người dùng kéo xong phải thấy màn đang dựng lại, không phải danh sách cũ đứng im.
+            val showShimmer = state.isLoading || state.isRefreshing
+
             // Phải ẩn list khi shimmer hiện: trong `fragment_choose_promotion.xml`, `shimmer_provider`
             // là con ĐẦU TIÊN còn `rcvVoucher` là con sau nó, mà RecyclerView có nền đục
             // (`@color/prm_color_f4f4f4`) nên vẽ đè kín shimmer. Đối ứng `homeList.isVisible` ở
             // `MyPromotionFragment`.
-            binding.shimmerProvider.root.isVisible = state.isLoading
+            binding.shimmerProvider.root.isVisible = showShimmer
 
             // Gõ từ khoá mà không ra gì → view "không tìm thấy" thay cho list, giống màn "Tìm ưu đãi"
             // (`SearchMyPromotionFragment.renderState`). Luật ở store — iOS đọc cùng hàm.
-            val showNoResult = state.showsNoResult()
+            // Lúc shimmer đang hiện thì KHÔNG cho "không tìm thấy" chen vào: refresh ra rỗng sẽ nháy
+            // empty-view một nhịp trước khi dữ liệu mới về.
+            val showNoResult = state.showsEmptyView() && !showShimmer
             binding.ctlNoResult.isVisible = showNoResult
-            binding.rcvVoucher.isVisible = !state.isLoading && !showNoResult
+            binding.rcvVoucher.isVisible = !showShimmer && !showNoResult
+
+            // Ẩn cả thanh "Áp dụng" trong lúc shimmer — khớp iOS, nơi shimmer bám bounds của table
+            // (chạy tới tận đáy màn) nên phủ luôn vùng nút.
+            //
+            // Ẩn view chứ không trông vào z-order: shimmer là con ĐẦU TIÊN của `ctlMain`, còn
+            // `ctlApplyVoucher` là CardView đứng sau **và có elevation** — nó luôn vẽ đè lên shimmer
+            // dù shimmer đã kéo dài tới `parent` bottom.
+            binding.ctlApplyVoucher.isVisible = !showShimmer
 
             updateApplyButtonState(state)
             rebuildList(state)
@@ -130,7 +146,9 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
 
         collectFlow(viewModel.effects) { effect ->
             when (effect) {
-                is PRMEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
+                // Popup (`PRMBaseConfirmDialog`) chứ không toast: kéo-để-tải-lại mà API hỏng thì user
+                // đang chủ động chờ kết quả, im lặng là không chấp nhận được. Đối ứng iOS.
+                is PRMEffect.ShowError -> showErrorDialog(mapPromotionError(effect.errorCode))
             }
         }
 
@@ -149,6 +167,27 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
     }
 
     // ─── RecyclerView ─────────────────────────────────────────────────────────
+
+    /**
+     * Kéo-để-tải-lại. Store dùng chung đã có sẵn `Refresh` (nạp lại **giữ nguyên** từ khoá và tab,
+     * khác `LoadInitial` ở chỗ bật `isRefreshing` thay vì `isLoading` — nên shimmer toàn màn không
+     * nhảy ra, chỉ có vòng xoay của SwipeRefreshLayout).
+     *
+     * Cùng khuôn với `MyPromotionFragment.setupObservers`.
+     */
+    private fun setupPullToRefresh() {
+        binding.swipeRefreshVoucher.setOnRefreshListener {
+            viewModel.dispatch(ChoosePromotionIntent.Refresh)
+            // Thu vòng xoay lại NGAY: `SwipeRefreshLayout` ở đây chỉ đóng vai **nhận cử chỉ kéo**,
+            // còn việc báo "đang tải" đã có shimmer phủ kín màn lo. Để cả hai cùng chạy thì màn có
+            // hai chỉ báo chồng nhau cho cùng một lượt nạp.
+            //
+            // `isRefreshing = false` KHÔNG huỷ lượt nạp — intent đã dispatch ở dòng trên, store vẫn
+            // chạy tiếp; nó chỉ gỡ cái vòng tròn của widget. Nhờ vậy cũng khỏi phải đồng bộ vòng xoay
+            // theo `state.isRefreshing` nữa (trước đây phải cẩn thận để lỗi/chậm thì nó còn quay).
+            binding.swipeRefreshVoucher.isRefreshing = false
+        }
+    }
 
     private fun setupRecyclerView() {
         mainAdapter = ChoosePromotionMainAdapter(
@@ -270,20 +309,16 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             // Không có widget để áp (fragment bị FragmentManager tái tạo nên mất closure, hoặc host
             // tự dựng màn này không qua `forEndowView`). Báo lỗi rồi Ở LẠI — đóng màn ở đây là nói
             // dối user rằng đã áp xong.
-            PromotionToastGate.showAlways(
-                requireContext(),
-                parentFragmentManager,
-                mapPromotionError(ErrorCodes.GENERAL),
-            )
+            showErrorDialog(mapPromotionError(ErrorCodes.GENERAL))
             return
         }
         apply(offers) { errorCode ->
             if (errorCode != null) {
-                // `showToast` đi qua `PromotionToastGate.isEnabled` — mặc định TẮT, nên lỗi validate
+                // Popup chứ không toast: lỗi validate
                 // bị nuốt hoàn toàn: user bấm "Áp dụng", API hỏng, màn đứng im không một thông báo.
                 // Dùng `showAlways` như PRM_MOB_021: user vừa chủ động bấm và đang chờ kết quả, im
                 // lặng là không chấp nhận được. (iOS dùng popup `PRMConfirmationDialog`.)
-                PromotionToastGate.showAlways(requireContext(), parentFragmentManager, mapPromotionError(errorCode))
+                showErrorDialog(mapPromotionError(errorCode))
             } else {
                 goBack()
             }
@@ -322,7 +357,16 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
                 viewModel.dispatch(ChoosePromotionIntent.QueryChanged(keyword))
             }
             setOnSearchActionListener { viewModel.dispatch(ChoosePromotionIntent.Search) }
-            setOnDoneKeyboardListener { viewModel.dispatch(ChoosePromotionIntent.Search) }
+            // Phím Done chỉ ĐÓNG BÀN PHÍM, không gọi lại API.
+            //
+            // Mỗi ký tự gõ vào đã dispatch `QueryChanged`, và store debounce rồi tự nạp. Đến lúc
+            // người dùng với tay bấm Done thì debounce đã bắn xong từ lâu — dispatch thêm `Search`
+            // ở đây là gọi `findEligible` lần hai với **đúng từ khoá cũ**, tốn một vòng mạng mà
+            // danh sách không đổi gì.
+            //
+            // Truyền `null` chứ không xoá hẳn lời gọi: `setOnDoneKeyboardListener` là chỗ duy nhất
+            // gọi `hideSoftInput()`, bỏ đi thì bàn phím không đóng nữa.
+            setOnDoneKeyboardListener(null)
         }
     }
 

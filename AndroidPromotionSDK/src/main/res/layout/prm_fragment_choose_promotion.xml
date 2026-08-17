@@ -68,17 +68,28 @@
 
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rcvVoucher"
+        <!--
+            Kéo-để-tải-lại. Ràng buộc bố cục chuyển hết lên SwipeRefreshLayout; RecyclerView bên
+            trong đổi sang match_parent vì nó không còn là con của ConstraintLayout nữa.
+            Cùng cách làm với prm_fragment_my_promotion.xml (swipeRefreshLayout + homeList).
+        -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefreshVoucher"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:background="@color/prm_color_f4f4f4"
-            android:orientation="vertical"
-            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             app:layout_constraintBottom_toTopOf="@+id/ctl_apply_voucher"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher"
-            tools:listitem="@layout/prm_item_choose_promotion" />
+            app:layout_constraintTop_toBottomOf="@id/lnEdtVoucher">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rcvVoucher"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/prm_color_f4f4f4"
+                android:orientation="vertical"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                tools:listitem="@layout/prm_item_choose_promotion" />
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
         <!--
             Tìm không ra kết quả — cùng bố cục/chuỗi với màn "Tìm ưu đãi"

@@ -2,7 +2,6 @@ package com.ttcn.prm.ui.base
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.widget.Toast
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -29,12 +28,6 @@ internal abstract class PRMBaseActivity<VB : ViewBinding> : AppCompatActivity() 
 
     open fun setupUI() {}
     open fun observeData() {}
-
-    protected fun showToast(message: CharSequence?) {
-        // Toast bị gom sau [PromotionToastGate] — mặc định TẮT (lỗi vẫn được bắt, chỉ không hiện).
-        if (!PromotionToastGate.isEnabled) return
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
 
     /**
      * Thay nội dung [containerId] bằng [fragment], trong FragmentManager của Activity.

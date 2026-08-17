@@ -59,23 +59,16 @@ class PromotionTokenLoadingFragment : Fragment() {
     }
 
     // Gọi THẲNG PromotionSDK — không qua wrapper.
-    // Lần đầu: initialize(...) đầy đủ (chốt field cố định baseUrl/environment/language/theme).
-    // Login lại (đã init rồi): chỉ updateSession(...) với field động — không lặp lại config cố định.
+    // `updateSession` đã bị bỏ: **lúc nào vào app cũng initialize() lại**, lần nào cũng áp đủ cấu
+    // hình host truyền (kể cả baseUrl/environment/language). SDK không còn khoá field nào.
     private fun initSdk(token: String) {
-        if (PromotionSDK.isInitialized()) {
-            PromotionSDK.updateSession(
-                accessToken = token,
-                availableServices = demoServices,
-            )
-        } else {
-            PromotionSDK.initialize(
-                context = requireContext(),
-                accessToken = token,
-                baseUrl = DEMO_BASE_URL,
-                availableServices = demoServices,
-                callback = DemoPromotionCallback,
-            )
-        }
+        PromotionSDK.initialize(
+            context = requireContext(),
+            accessToken = token,
+            baseUrl = DEMO_BASE_URL,
+            availableServices = demoServices,
+            callback = DemoPromotionCallback,
+        )
     }
 
     /**

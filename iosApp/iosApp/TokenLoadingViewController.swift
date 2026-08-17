@@ -144,22 +144,16 @@ final class TokenLoadingViewController: UIViewController {
     }
 
     /// Gọi THẲNG PromotionSDK — không qua wrapper.
-    /// Lần đầu: initialize(...) đầy đủ (chốt field cố định baseUrl/environment/language/theme).
-    /// Login lại (đã init rồi): chỉ updateSession(...) với field động — không lặp lại config cố định.
+    /// `updateSession` đã bị bỏ: **lúc nào vào app cũng initialize() lại**, lần nào cũng áp đủ cấu
+    /// hình host truyền (kể cả baseUrl/environment/language). SDK không còn khoá field nào.
+    /// Đối ứng `PromotionTokenLoadingFragment.initSdk` bên Android.
     private func initSdk(token: String) {
-        if PromotionSDK.isInitialized() {
-            PromotionSDK.updateSession(
-                accessToken: token,
-                availableServices: demoServices,
-            )
-        } else {
-            PromotionSDK.initialize(
-                accessToken: token,
-                baseUrl: Self.baseUrl,
-                availableServices: demoServices,
-                callback: DemoPromotionCallback.shared,
-            )
-        }
+        PromotionSDK.initialize(
+            accessToken: token,
+            baseUrl: Self.baseUrl,
+            availableServices: demoServices,
+            callback: DemoPromotionCallback.shared,
+        )
     }
 
     private func updateDemoContext() {

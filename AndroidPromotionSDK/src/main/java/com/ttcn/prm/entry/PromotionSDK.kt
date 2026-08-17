@@ -25,7 +25,7 @@ import com.ttcn.prm.entry.api.toPublicDetail
 import com.ttcn.prm.entry.api.flagName
 import com.ttcn.prm.entry.api.toSnapshot
 import com.ttcn.prm.ui.feature.endowview.PRMEndowView
-import com.ttcn.prm.ui.base.PromotionToastGate
+import com.ttcn.prm.ui.base.PRMBaseConfirmDialog
 import com.ttcn.prm.ui.feature.choosepromotion.ChoosePromotionFragment
 import com.ttcn.prm.ui.feature.mypromotion.MyPromotionFragment
 import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
@@ -57,16 +57,17 @@ object PromotionSDK {
     private var appContext: Context? = null
 
     /**
-     * Cấu hình **cố định**, chốt ở lần [initialize] **đầu tiên**. Các lần [initialize] sau (host init lại
-     * mỗi khi login) chỉ áp field **động** (accessToken/availableServices); nếu host lỡ truyền
-     * field cố định khác đi → SDK cảnh báo và **bỏ qua**. Muốn đổi thật thì [release] rồi init lại.
+     * Cấu hình **tĩnh** — đặt ở lần [initialize] đầu (hoặc lần đầu sau [release]) rồi dùng lại cho
+     * mọi lần init sau. [release] **không** xoá: đây là cấu hình tích hợp của host, không phải dữ
+     * liệu phiên.
      */
-    private data class FixedConfig(
+    private data class StaticConfig(
         val baseUrl: String,
         val language: String,
         val environment: PromotionEnvironment,
     )
-    private var fixedConfig: FixedConfig? = null
+    private var staticConfig: StaticConfig? = null
+
 
     /**
      * Gác "đã [initialize] chưa" cho các **điểm mở màn**: chưa init → ghi `Log.e` rồi trả `false` để
@@ -116,44 +117,27 @@ object PromotionSDK {
      */
     @JvmStatic
     fun initialize(context: Context, options: PromotionSDKOptions) {
-        val incoming = options.session
-        val locked = fixedConfig
-        if (isInitialized() && locked != null) {
-            // Login lại: field cố định đã khoá. Cảnh báo nếu host truyền khác, rồi giữ nguyên bản khoá.
-            if (locked.baseUrl != incoming.baseUrl ||
-                locked.environment != incoming.environment ||
-                locked.language != incoming.language
-            ) {
-                Log.w(
-                    TAG,
-                    "initialize() được gọi lại với field cố định khác (baseUrl/environment/language). " +
-                        "Các field này chốt ở lần initialize() đầu và bị bỏ qua. Gọi release() trước nếu muốn đổi.",
-                )
-            }
-            if (options.callback != null) callback = options.callback
-            // Chỉ áp field động; ép field cố định về bản đã khoá. Context đơn hàng reset (phiên mới).
-            applySession(
-                context,
-                incoming.copy(
-                    baseUrl = locked.baseUrl,
-                    language = locked.language,
-                    environment = locked.environment,
-                ),
-                options.availableServices,
-                keepOrderContext = false,
-            )
-            return
-        }
-
-        // Lần đầu (hoặc sau release): chốt field cố định + dựng đồ thị DI đầy đủ.
+        // `baseUrl` / `environment` / `language` là cấu hình **tĩnh**: đã có thì DÙNG LẠI, không
+        // khởi tạo lần nữa. Host gọi `initialize` mỗi lần vào app chỉ để đưa **token mới**, không
+        // phải để đổi endpoint — bắt truyền lại đủ mỗi lần chỉ tạo cơ hội truyền thiếu.
+        //
+        // Khác cơ chế "khoá" cũ ở chỗ **không cảnh báo, không bỏ qua trong im lặng**: host truyền gì
+        // ở lần đầu (hoặc sau `release()`) thì đó là cấu hình; các lần sau field tĩnh đơn giản là
+        // không cần nữa. Muốn đổi thật → `release()` rồi init lại.
+        val staticCfg = staticConfig
+        val incoming = if (staticCfg == null) options.session else options.session.copy(
+            baseUrl = staticCfg.baseUrl,
+            language = staticCfg.language,
+            environment = staticCfg.environment,
+        )
         if (isInitialized()) release()
+        staticConfig = StaticConfig(incoming.baseUrl, incoming.language, incoming.environment)
         appContext = context.applicationContext
         callback = options.callback
-        fixedConfig = FixedConfig(incoming.baseUrl, incoming.language, incoming.environment)
         mutableContext = PromotionMutableContext(incoming, options.availableServices)
         PromotionContainer.initialize(context, options.toCoreConfig(mutableContext))
-        // Host truyền theme → ghi đè và lưu. Không truyền → khôi phục theme đã lưu lần trước.
-        // Nhờ vậy host cấu hình một lần; các lần mở app sau chỉ cần initialize(config), theme tự sống lại.
+        // Theme cũng là cấu hình tĩnh: host truyền → ghi đè + lưu; không truyền → khôi phục bản đã
+        // lưu. Nhờ vậy host cấu hình một lần, các lần init sau theme tự sống lại.
         val resolved = options.theme
         if (resolved != null) PromotionThemeStore.save(resolved)
         PromotionThemeRegistry.configure(resolved ?: PromotionThemeStore.load())
@@ -166,45 +150,9 @@ object PromotionSDK {
         }
     }
 
-    /**
-     * **Đăng nhập user mới** sau khi đã [initialize] một lần — chỉ truyền field **động**
-     * (`accessToken` + `availableServices` + `callback`); SDK **giữ nguyên** field cố định đã khoá
-     * (baseUrl / environment / language / theme). Đây là lối chính cho host: gọi [initialize]
-     * **một lần** lúc mở app, mỗi lần login sau chỉ gọi [updateSession].
-     *
-     * @param availableServices Danh mục dịch vụ cho phiên mới; bỏ trống (`null`) = giữ danh mục hiện tại.
-     * @param callback Nơi nhận sự kiện cho phiên mới; bỏ trống (`null`) = **giữ nguyên** callback hiện tại
-     *   (giống [availableServices]). Không có đường "gỡ callback" ở đây — muốn gỡ thì [release].
-     *   Dùng khi host thay object nghe sự kiện theo user đang đăng nhập, thay vì phải gọi lại [initialize].
-     *
-     * Context đơn hàng/dịch vụ reset về rỗng vì đây là phiên mới. Đối ứng `updateSession(...)` bên iOS.
-     *
-     * @throws IllegalStateException nếu [initialize] chưa được gọi.
-     */
-    @JvmStatic
-    @JvmOverloads
-    fun updateSession(
-        accessToken: String,
-        availableServices: List<PromotionAvailableService>? = null,
-        callback: PromotionSDKCallback? = null,
-    ) {
-        val ctx = checkNotNull(mutableContext) {
-            "PromotionSDK.initialize() must be called before updateSession()."
-        }
-        val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
-        // Gán TRƯỚC applySession: nạp lại cờ tính năng ở cuối applySession sẽ bắn
-        // `onAvailabilityChanged` của phiên mới — phải về callback mới, không phải callback của user cũ.
-        if (callback != null) this.callback = callback
-        applySession(
-            context,
-            ctx.session.copy(accessToken = accessToken),
-            availableServices ?: ctx.availableServices,
-            keepOrderContext = false,
-        )
-    }
 
     /**
-     * Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn [updateSession]:
+     * Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn [initialize]:
      * **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout).
      * Đối ứng `updateToken(_:)` bên iOS.
      *
@@ -262,13 +210,15 @@ object PromotionSDK {
         sdkScope?.cancel()
         sdkScope = null
         PromotionContainer.clear()
-        // Reset registry trong bộ nhớ; **không** xoá theme đã lưu — nó sống qua release/init.
+        // Xoá sạch **dữ liệu phiên**: session, context đơn hàng, callback, đồ thị DI.
+        //
+        // GIỮ lại cấu hình tĩnh (`baseUrl`/`environment`/`language` trong [staticConfig], và theme đã
+        // lưu): đó là cấu hình tích hợp của host, không phải dữ liệu người dùng. Xoá đi thì lần
+        // `initialize` sau host buộc phải truyền lại đủ, đúng thứ cơ chế này sinh ra để tránh.
         PromotionThemeRegistry.configure(null)
         callback = null
         mutableContext = null
         appContext = null
-        // Mở khoá cấu hình cố định: initialize() kế tiếp được coi là "lần đầu" và chốt lại từ đầu.
-        fixedConfig = null
     }
 
     /** `true` sau [initialize] và trước [release]. Gọi [release] khi chưa init là vô hại. */
@@ -449,7 +399,6 @@ object PromotionSDK {
      * [onComplete] chạy trên **main thread** để host set UI được ngay. Chưa [initialize] thì gọi
      * luôn với [PromotionFeatureFlagsSnapshot.AllEnabled].
      *
-     * Sau mỗi lần nạp, SDK báo lại công tắc tổng qua [PromotionSDKCallback.onAvailabilityChanged].
      *
      * ```kotlin
      * PromotionSDK.refreshFeatureFlags { flags ->
@@ -476,7 +425,6 @@ object PromotionSDK {
             PromotionFeatureGate.refresh()
             val flags = featureFlags()
             withContext(Dispatchers.Main) {
-                callback?.onAvailabilityChanged(flags.all)
                 onComplete?.invoke(flags)
             }
         }
@@ -489,7 +437,6 @@ object PromotionSDK {
     private suspend fun notifyAvailability() {
         val cb = callback ?: return
         val enabled = isSdkEnabled()
-        withContext(Dispatchers.Main) { cb.onAvailabilityChanged(enabled) }
     }
 
     // ─── Screens ─────────────────────────────────────────────────────────────
@@ -507,14 +454,34 @@ object PromotionSDK {
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
+    /**
+     * Cờ tính năng TẮT ở một điểm mở màn: **ưu tiên trả cho host**, host không nhận thì SDK tự lo.
+     *
+     * Không dùng callback toàn cục mà nhận lambda ngay ở hàm `open…`: chỉ có cách đó SDK mới biết
+     * chắc host **có đăng ký hay không**. `PromotionSDKCallback` là interface có default method —
+     * gọi vào thì luôn trúng thân mặc định, không phân biệt được "host implement" với "host mặc kệ",
+     * nên không thể dựa vào nó để quyết định có tự hiện popup hay không.
+     *
+     * Màn **không** mở trong cả hai nhánh — đây chỉ là chuyện ai báo cho user.
+     */
+    private fun notifyFeatureDisabled(activity: FragmentActivity, onFeatureDisabled: (() -> Unit)?) {
+        if (onFeatureDisabled != null) {
+            onFeatureDisabled()
+            return
+        }
+        PRMBaseConfirmDialog.showFeatureDisabled(activity, activity.supportFragmentManager)
+    }
+
     @JvmStatic
     @JvmOverloads
-    fun openMyPromotion(activity: FragmentActivity, containerViewId: Int? = null) {
+    fun openMyPromotion(
+        activity: FragmentActivity,
+        containerViewId: Int? = null,
+        onFeatureDisabled: (() -> Unit)? = null,
+    ) {
         if (!requireInitialized("openMyPromotion()")) return
         if (!PromotionFeatureGate.canOpenVoucherList()) {
-            // Dialog PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
-            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
-            callback?.onAvailabilityChanged(false)
+            notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }
         val fm = resolveFragmentManager(activity, containerViewId)
@@ -593,12 +560,11 @@ object PromotionSDK {
         returnVoucherOnApply: Boolean = true,
         hostHandlesDismiss: Boolean = false,
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
+        onFeatureDisabled: (() -> Unit)? = null,
     ) {
         if (!requireInitialized("openPromotionDetail()")) return
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            // Dialog PRM_MOB_021 LUÔN hiện, không qua cổng toast chung — user bấm mà màn không mở.
-            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
-            callback?.onAvailabilityChanged(false)
+            notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }
         val fm = resolveFragmentManager(activity, containerViewId)
@@ -653,10 +619,15 @@ object PromotionSDK {
      */
     @JvmStatic
     @JvmOverloads
-    fun openChoosePromotion(activity: FragmentActivity, endowView: PRMEndowView, containerViewId: Int? = null) {
+    fun openChoosePromotion(
+        activity: FragmentActivity,
+        endowView: PRMEndowView,
+        containerViewId: Int? = null,
+        onFeatureDisabled: (() -> Unit)? = null,
+    ) {
         if (!requireInitialized("openChoosePromotion()")) return
         if (!PromotionFeatureGate.canShowVoucherSelection()) {
-            PromotionToastGate.showFeatureDisabled(activity, activity.supportFragmentManager)
+            notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }
         val fm = resolveFragmentManager(activity, containerViewId)

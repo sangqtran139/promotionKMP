@@ -1,5 +1,7 @@
 package com.ttcn.prm.entry.api
 
+import com.ttcn.promotionsdk.domain.exception.PromotionErrorCodes
+
 /**
  * Kết quả của [PromotionSDKApi]. Đối ứng 1-1 với `PromotionApiResult.swift` bên iOS, nơi nó là
  * `typealias PromotionApiResult<T> = Result<T, PromotionSDKError>` — Swift đã có `Result` sẵn.
@@ -55,4 +57,35 @@ sealed class PromotionSDKError : Exception() {
 
     /** HTTP status nếu có — chỉ với [NetworkFailure]. */
     val serverCode: Int? get() = (this as? NetworkFailure)?.code
+
+    companion object {
+        /**
+         * Mã lỗi **thô** (chuỗi) → kiểu lỗi công khai, để host bắt **tường minh** thay vì so chuỗi.
+         *
+         * Cần hàm này vì SDK có hai bề mặt lỗi không giống nhau:
+         * - Headless [PromotionSDKApi] đã trả sẵn [PromotionSDKError] — bắt bằng `is` là xong.
+         * - Callback của widget ([com.ttcn.prm.ui.feature.endowview.PRMEndowView.onError],
+         *   [PromotionSDK.confirmRedemption]) chỉ trả `String`, mà hằng số mã lỗi nằm trong
+         *   `promotionLogic` — module khai `implementation` nên **không có** trên compile classpath
+         *   của host. Host không tham chiếu được hằng số, đành hardcode `"PRM_MOB_021"`.
+         *
+         * Với hàm này host viết được:
+         * ```kotlin
+         * endowView.onError = { code ->
+         *     when (PromotionSDKError.from(code)) {
+         *         is PromotionSDKError.FeatureDisabled -> stopCheckout()  // SDK đã tự hiện popup
+         *         else -> showMyOwnError()
+         *     }
+         * }
+         * ```
+         */
+        @JvmStatic
+        fun from(errorCode: String): PromotionSDKError = when (errorCode) {
+            PromotionErrorCodes.FEATURE_DISABLED -> FeatureDisabled
+            PromotionErrorCodes.TIMEOUT -> Timeout
+            PromotionErrorCodes.NO_RESULT -> ParseFailed
+            PromotionErrorCodes.NETWORK_ERROR -> NetworkFailure(code = null, message = "")
+            else -> NetworkFailure(code = null, message = errorCode)
+        }
+    }
 }

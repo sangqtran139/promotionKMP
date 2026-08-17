@@ -73,13 +73,13 @@ internal class PromotionDetailViewModel(
 ```
 
 > VM **không** nhận `PromotionSDKConfig` qua constructor. Cần config thì đọc tại chỗ dùng
-> (`configuredServicesFor(...)`, `isPromotionSdkDebug()`): `updateSession(...)` dựng lại config mới,
+> (`configuredServicesFor(...)`, `isPromotionSdkDebug()`): `initialize(...)` dựng lại config mới,
 > nên snapshot giữ từ lúc tạo VM sẽ cũ.
 
 ```kotlin
 // Fragment
 collectFlow(viewModel.state) { state -> render(state) }
-collectFlow(viewModel.errors) { code -> showToast(mapPromotionError(code)) }
+collectFlow(viewModel.effects) { /* PRMEffect.ShowError -> Unit, hoặc showErrorDialog(...) */ }
 viewModel.dispatch(PromotionDetailIntent.LoadDetail(voucherId))
 ```
 

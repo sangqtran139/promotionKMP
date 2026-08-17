@@ -24,7 +24,7 @@ bước 4-5(2), MOB_002 bước 4(2), MOB_004 bước 5 & 7 đều yêu cầu po
 giữ nguyên từ khoá / giữ nguyên màn hình".
 
 **App:** đã bỏ `PRMConfirmationDialog`, chuyển toàn bộ sang toast (quyết định 2026-07-24, xem
-[`ErrorHandling.md`](./ErrorHandling.md)), **và `PromotionToastGate.isEnabled = false`** → phần lớn
+[`ErrorHandling.md`](./ErrorHandling.md)), **và SDK đã bỏ hẳn toast** → phần lớn
 lỗi hiện **không hiển thị gì**. Ngoại lệ duy nhất đang hiện là PRM_MOB_021 (cờ tính năng tắt).
 
 **Mức độ:** cao — user không nhận được phản hồi khi API lỗi.

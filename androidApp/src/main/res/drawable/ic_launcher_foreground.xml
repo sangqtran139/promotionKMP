@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Lớp foreground của adaptive icon.
+
+    Khung adaptive icon là 108dp, nhưng launcher chỉ hiện 72dp ở giữa và **vùng an toàn thật sự chỉ
+    là đường tròn 66dp** — phần ngoài bị mask cắt, mà mỗi hãng cắt một kiểu (tròn, squircle, vuông bo).
+    Nên inset 21dp: 108 - 21*2 = 66dp, logo nằm gọn trong vùng an toàn và trông GIỐNG NHAU trên mọi máy.
+
+    `android:gravity="fill"` là bắt buộc, không được bỏ:
+    bản cũ dùng `gravity="center"`, mà với `<bitmap>` thì `center` nghĩa là **vẽ đúng kích thước gốc
+    rồi căn giữa — KHÔNG co giãn**. `app_logo.png` là ảnh 640×640 nằm trong `drawable/` (bucket mdpi),
+    tức 640dp, trong khi khung chỉ có 108dp → logo bị phóng to gấp nhiều lần rồi cắt cụt. Đây chính
+    là lỗi "icon bị to trên một số device": máy nào launcher tự chuẩn hoá kích thước thì còn đỡ, máy
+    nào vẽ thẳng thì thấy logo khổng lồ.
+-->
 <inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:inset="16dp">
+    android:inset="21dp">
     <bitmap
-        android:gravity="center"
+        android:gravity="fill"
         android:src="@drawable/app_logo" />
 </inset>

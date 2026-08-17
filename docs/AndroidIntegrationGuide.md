@@ -140,36 +140,41 @@ PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
 |---|---|
 | Khởi tạo (tối giản) | `PromotionSDK.initialize(context, accessToken, baseUrl)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(context, options)` |
-| **Login lại** (session mới) | `PromotionSDK.updateSession(accessToken, availableServices?, callback?)` |
 | Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
 | Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback(): PromotionSDKCallback?` |
 
-**Host gọi `initialize` MỘT LẦN, mỗi login sau chỉ gọi `updateSession`.** SDK tách hai loại field:
+**Lúc nào vào app cũng gọi `initialize(...)`.** `updateSession` đã bị bỏ — chỉ còn một lối vào.
 
-| Cố định (khoá ở lần init **đầu**) | Đặc trưng session (đổi mỗi login) |
+SDK tách hai loại field:
+
+| Tĩnh (đặt **một lần**, dùng lại) | Theo phiên (đưa mỗi lần init) |
 |---|---|
 | `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
 
-- **Login lần đầu (mở app):** `initialize(...)` với đầy đủ config → SDK **chốt** field cố định.
-- **Login lại (user khác / phiên mới):** `PromotionSDK.updateSession(accessToken, availableServices, callback)`
-  — chỉ field động; SDK **giữ** field cố định đã khoá. `availableServices` / `callback` bỏ trống = giữ danh
-  mục / callback hiện tại (muốn **gỡ** callback thì dùng `release()`). Context đơn hàng reset về rỗng vì là
-  phiên mới.
+Field **tĩnh** chỉ cần truyền ở lần `initialize` đầu (hoặc lần đầu sau `release()`). Các lần sau SDK
+**dùng lại giá trị đã có, không khởi tạo lần nữa** — host chỉ cần đưa `accessToken` mới:
 
-  ```kotlin
-  if (PromotionSDK.isInitialized()) {
-      // callback = ... chỉ cần truyền khi host đổi object nghe sự kiện theo user; bỏ trống = giữ cái cũ.
-      PromotionSDK.updateSession(accessToken = token, availableServices = services)
-  } else {
-      PromotionSDK.initialize(applicationContext, token, baseUrl, availableServices = services, callback = cb)
-  }
-  ```
+```kotlin
+// Lần đầu — khai đủ
+PromotionSDK.initialize(
+    context = applicationContext,
+    accessToken = token,
+    baseUrl = BASE_URL,
+    availableServices = services,
+    callback = cb,
+)
 
-- **Gọi lại `initialize(...)` cũng an toàn** (guard): SDK khoá field cố định, chỉ áp field động; host lỡ
-  truyền field cố định khác đi thì **bỏ qua** kèm cảnh báo log.
-- **Đổi field cố định thật** (vd chuyển environment): `release()` rồi `initialize(...)` lại.
+// Mỗi lần vào app / login lại — gọi y hệt, baseUrl vẫn phải truyền cho đúng chữ ký nhưng
+// SDK dùng lại giá trị tĩnh đã có. Chỉ `accessToken` là thật sự đổi.
+PromotionSDK.initialize(applicationContext, token, BASE_URL, availableServices = services)
+```
+
+- **Đổi field tĩnh thật** (vd chuyển environment): `release()` rồi `initialize(...)` lại.
+- **`release()` xoá dữ liệu phiên** (session, context đơn hàng, callback, đồ thị DI) nhưng **giữ**
+  cấu hình tĩnh và theme đã lưu — đó là cấu hình tích hợp của host, không phải dữ liệu người dùng.
+
 - **Refresh token giữa phiên (cùng customer, đang checkout):** `PromotionSDK.updateToken(newToken)` —
   tuỳ chọn, nhẹ hơn; **giữ nguyên** cả context đơn hàng đang ghi.
 
@@ -270,24 +275,40 @@ Màn gọi **không cần** là màn thanh toán.
 btnConfirmPayment.setOnClickListener {
     binding.endowView.confirmRedemption(
         onSuccess = { proceedPayment() },
-        onError = { errorCode -> showError(errorCode) },   // có thể là PRM_MOB_021, xem dưới
+        onError = { error ->
+            when (error) {
+                // SDK ĐÃ tự hiện popup "tính năng không khả dụng" — host chỉ cần dừng luồng,
+                // đừng hiện thêm thông báo của mình (user sẽ thấy hai cái).
+                is PromotionSDKError.FeatureDisabled -> stopCheckout()
+                else -> showError(error.message)
+            }
+        },
     )
 }
 
 ```
 
 > **`confirmRedemption` cũng bị feature flag gác.** Cờ `VOUCHER_REDEEM` (hoặc công tắc tổng
-> `ENABLE_ALL`) TẮT → `onError("PRM_MOB_021")`, **không gọi mạng**, và **không** gọi `onSuccess`.
-> Host phải xử lý mã này như một lỗi chặn thanh toán, đừng cho đi tiếp: giá đang hiển thị ở
+> `ENABLE_ALL`) TẮT → `onError` với mã `PRM_MOB_021`, **không gọi mạng**, và **không** gọi
+> `onSuccess`. Host phải xử lý như một lỗi chặn thanh toán, đừng cho đi tiếp: giá đang hiển thị ở
 > `PRMEndowView` là giá đã giảm, mà server không hề ghi nhận redemption.
+>
+> **`onError` trả thẳng `PromotionSDKError`** (không phải mã thô) — `when (error)` là xong, không so
+> chuỗi. Áp cho cả `PRMEndowView.onError` và `confirmRedemption(onError:)`.
+>
+> Có sẵn `PromotionSDKError.from(code)` nếu bạn nhận mã thô từ nguồn khác.
+>
+> **SDK tự hiện popup** cho trường hợp này (câu chữ của SDK, luôn hiện). Host không cần hiện lại —
+> hiện thêm chỉ làm user đọc hai thông báo cho cùng một chuyện.
 >
 > Ngoại lệ có chủ đích: user **chưa chọn voucher nào** thì `confirmRedemption` gọi `onSuccess` ngay,
 > bất kể cờ. Kill-switch tắt ưu đãi, không được tắt thanh toán của host.
 
 ### 6.3. Feature flag — SDK tự gác, host hỏi thêm được
 
-Nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` tự hiện Toast `PRM_MOB_021` và **không** mở
-màn, rồi báo host qua `onAvailabilityChanged(false)`. **Không làm gì thêm thì kill-switch vẫn chạy đủ.**
+Nếu cờ tương ứng TẮT, `openMyPromotion` / `openPromotionDetail` / `openChoosePromotion` **không** mở màn
+và tự hiện **popup** `PRM_MOB_021`. **Không làm gì thêm thì kill-switch vẫn chạy đủ.** Muốn tự xử lý
+thay vì để SDK hiện popup thì truyền `onFeatureDisabled` (xem §7).
 
 Muốn mượt hơn — ẩn hẳn nút trước khi user kịp bấm — thì hỏi SDK:
 
@@ -315,7 +336,7 @@ Ba điều cần nhớ:
 - **Fail-open**: chưa `initialize()` hoặc chưa gọi được API lần nào → trả bật hết. Không hàm nào ném lỗi.
 - Cờ có thể đổi giữa phiên → **đừng cache lại** snapshot, hỏi lại mỗi khi dựng UI.
 
-Không muốn hỏi chủ động thì chỉ cần nghe `onAvailabilityChanged` (§7).
+Không hỏi chủ động cũng được: cờ TẮT thì SDK tự chặn ở điểm mở màn (xem `onFeatureDisabled` dưới đây).
 
 ---
 
@@ -326,22 +347,34 @@ Là `interface` với mọi method có default rỗng → chỉ override cái c�
 ```kotlin
 val myCallback = object : PromotionSDKCallback {
     override fun onVoucherApplied(voucherId: String) { /* user áp voucher thành công */ }
-    override fun onVoucherCleared() { /* user bỏ chọn voucher */ }
-    override fun onVoucherCountChanged(count: Int) { /* widget load xong, biết số voucher khả dụng */ }
     override fun onServiceSelected(selection: PromotionServiceSelection) { /* điều hướng tới dịch vụ đã chọn */ }
-    override fun onAvailabilityChanged(enabled: Boolean) { /* enabled == false → ẩn điểm vào ưu đãi */ }
-    override fun onClosed() { /* màn SDK đóng (user back / release) */ }
 }
 ```
 
 | Sự kiện | Khi nào bắn |
 |---|---|
 | `onVoucherApplied(voucherId)` | User bấm "Áp dụng" thành công |
-| `onVoucherCleared()` | User bỏ chọn voucher trên widget |
-| `onVoucherCountChanged(count)` | Widget load xong, biết tổng voucher khả dụng |
 | `onServiceSelected(selection)` | User chọn dịch vụ trong bottom sheet |
-| `onAvailabilityChanged(enabled)` | Feature flag báo bật/tắt SDK — bắn **cả `true` lẫn `false`**: nạp cờ xong sau `initialize`, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và khi user bấm mà bị chặn. Nhớ đọc tham số `enabled`, đừng coi mọi lần gọi là "tắt". |
-| `onClosed()` | Màn SDK bị đóng |
+
+> **Đã bỏ:** `onVoucherCleared`, `onVoucherCountChanged`, `onAvailabilityChanged`, `onClosed`.
+> Host không cần biết mấy thứ này — widget tự quản trạng thái của nó, việc bật/tắt theo cờ do SDK
+> tự xử lý.
+
+### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
+
+Ba hàm mở màn nhận thêm tham số **tuỳ chọn**:
+
+```kotlin
+PromotionSDK.openMyPromotion(activity)                                  // SDK tự hiện popup
+PromotionSDK.openMyPromotion(activity, onFeatureDisabled = { hideEntry() })  // host tự lo
+```
+
+Có truyền → host xử lý. **Không truyền → SDK tự hiện popup** PRM_MOB_021. Màn không mở trong cả hai
+trường hợp. Áp cho `openMyPromotion`, `openPromotionDetail`, `openChoosePromotion`.
+
+Nhận closure ngay ở hàm `open…` chứ không qua `PromotionSDKCallback` là có lý do: interface có
+default method nên SDK **không phân biệt được** "host có implement" với "host mặc kệ" — không thể
+dựa vào đó để quyết định có tự hiện popup hay không.
 
 > Callback của SDK là kênh **1-1** (một object nhận sự kiện, truyền qua `initialize(callback = ...)`).
 > Muốn nhiều nơi cùng nghe → host tự bọc một object fan-out nhỏ (tuỳ chọn; demo có `DemoPromotionCallback` ~30 dòng).
@@ -430,7 +463,7 @@ PromotionSDK.configure(
 | Login lại nhưng đổi luôn baseUrl/environment | Gọi lại `initialize(...)` — field cố định giữ nguyên; đổi thật thì `release()` trước |
 | Import `com.ttcn.promotionsdk.*` | Chỉ dùng `com.ttcn.prm.entry.*` |
 | Truyền `Activity` thường vào `openMyPromotion` | Phải là `FragmentActivity` / `AppCompatActivity` |
-| Tự hỏi feature flag để ẩn UI | Lắng nghe `onAvailabilityChanged(enabled)` |
+| Tự hỏi feature flag để ẩn UI | Dùng `isSdkEnabled()` / `isFeatureEnabled(...)` khi dựng UI |
 | Tưởng phải tự viết wrapper `PromotionManager` | Gọi thẳng `PromotionSDK` — SDK đã tự lo token/context/callback |
 
 ---

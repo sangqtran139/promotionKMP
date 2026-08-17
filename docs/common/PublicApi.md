@@ -60,13 +60,10 @@ object PromotionSDK {
     // Khởi tạo đầy đủ:
     fun initialize(context: Context, options: PromotionSDKOptions)
     // Login lại (lối chính): chỉ field động; giữ field cố định đã khoá (baseUrl/env/language/theme).
-    // availableServices null = giữ danh mục hiện tại; callback null = giữ callback hiện tại.
-    // Gọi lại initialize() cũng được (guard cùng cơ chế).
-    fun updateSession(accessToken: String,
-                      availableServices: List<PromotionAvailableService>? = null,
-                      callback: PromotionSDKCallback? = null)
+    // `updateSession` ĐÃ BỎ — lúc nào vào app cũng gọi initialize() lại. baseUrl/environment/
+    // language/theme là cấu hình TĨNH: đặt lần đầu rồi dùng lại, host chỉ đưa accessToken mới.
     fun updateToken(accessToken: String)                        // (tuỳ chọn) refresh token giữa phiên, giữ context đơn hàng
-    fun release()
+    fun release()                                   // xoá dữ liệu phiên; GIỮ cấu hình tĩnh + theme đã lưu
     fun isInitialized(): Boolean
     fun getCallback(): PromotionSDKCallback?
 
@@ -229,7 +226,7 @@ let api = PromotionSDK.api      // PromotionSDKApi
 
 **Tầng bắt buộc (SDK tự làm).** Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
 (`openMyPromotion`, mở chi tiết, widget) và báo lại khi bị chặn: toast `PRM_MOB_021` ở **cả hai nền
-tảng**, kèm `onAvailabilityChanged(enabled:)`. Host không làm gì thì kill-switch vẫn chạy đủ.
+tảng** — SDK tự hiện popup ở điểm mở màn. Host không làm gì thì kill-switch vẫn chạy đủ.
 
 **Tầng tuỳ chọn (host hỏi trước).** Bốn hàm ở bảng dưới cho host ẩn entry point của chính mình thay
 vì để user bấm rồi ăn toast:
@@ -249,7 +246,7 @@ DTO public: `PromotionFeature` (enum) + `PromotionFeatureFlagsSnapshot` — song
 `PromotionFeatureModels.kt` ↔ `PromotionFeatureModels.swift`, cùng lý do phải map như §3. Hằng chuỗi
 `PromotionFeatureFlag` và data class `PromotionFeatureFlags` của lõi **không** ra tới host.
 
-Chi tiết + bảng "khi nào `onAvailabilityChanged` bắn": [features/FeatureFlag.md §3](../features/FeatureFlag.md).
+Chi tiết: [features/FeatureFlag.md](../features/FeatureFlag.md). Muốn tự xử lý thay vì để SDK hiện popup → truyền `onFeatureDisabled` cho hàm `open…`.
 Xem thêm [HeadlessAPI.md §4](./HeadlessAPI.md).
 
 ---
@@ -367,7 +364,7 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PRMEndowView.confirmRedemption(onSuccess, onError)` | Gọi khi bấm nút thanh toán của host. iOS: `PromotionSDK.confirmRedemption(onSuccess:onError:)`. |
 | `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` | Trạng thái widget, đọc qua `PRMEndowView.getCurrentState()`. |
 | `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). Nay là **`typealias` → `com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount`** (kiểu thật ở `promotionLogic`, dùng chung với iOS): host Kotlin **không phải đổi gì**, host **Java** phải dùng tên đầy đủ `EndowAppliedDiscount` vì Java không thấy typealias. **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
-| `PromotionSDKCallback` | Thống nhất với iOS (6 sự kiện): `onVoucherApplied(voucherId)` / `onVoucherCleared` / `onVoucherCountChanged` / `onServiceSelected` / `onAvailabilityChanged` / `onClosed`. Xem [InitParity.md §3](./InitParity.md). |
+| `PromotionSDKCallback` | Thống nhất với iOS, còn **2 sự kiện**: `onVoucherApplied(voucherId)` / `onServiceSelected`. Bốn cái cũ (`onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed`) đã bỏ — host không cần biết. Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin

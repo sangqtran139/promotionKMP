@@ -18,6 +18,8 @@ import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.databinding.PrmViewEndowBinding
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ApplyPromotionAdapter
 import androidx.core.view.isVisible
+import com.ttcn.prm.ui.base.PRMBaseConfirmDialog
+import com.ttcn.prm.entry.api.PromotionSDKError
 import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
@@ -101,7 +103,16 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Public callbacks ─────────────────────────────────────────────────────
 
-    var onError: ((errorCode: String) -> Unit)? = null
+    /**
+     * Lỗi từ widget — **kiểu công khai**, không phải mã thô.
+     *
+     * Trước đây trả `String`: host muốn phân biệt `PRM_MOB_021` phải hardcode chuỗi, vì hằng số mã
+     * lỗi nằm trong `promotionLogic` (`implementation`, không có trên compile classpath của host).
+     * Nay `when (error) { is PromotionSDKError.FeatureDisabled -> … }` là xong.
+     *
+     * `FeatureDisabled`: SDK **đã tự hiện popup**, host chỉ cần dừng luồng của mình.
+     */
+    var onError: ((error: PromotionSDKError) -> Unit)? = null
 
     // ─── Init ─────────────────────────────────────────────────────────────────
 
@@ -157,7 +168,7 @@ class PRMEndowView @JvmOverloads constructor(
             // Ẩn IM LẶNG là kiểu hỏng tệ nhất: host không hiểu vì sao widget biến mất. Báo ra
             // `onError` để host còn biết đường sửa chỗ nhúng.
             isVisible = false
-            onError?.invoke(ErrorCodes.GENERAL)
+            onError?.invoke(PromotionSDKError.from(ErrorCodes.GENERAL))
             return
         }
         val vm = ViewModelProvider(owner, promotionViewModelFactory())[EndowViewModel::class.java]
@@ -202,7 +213,6 @@ class PRMEndowView @JvmOverloads constructor(
      * (cache rồi server) không sinh callback trùng.
      */
     private fun applyFeatureFlag(enabled: Boolean, vm: EndowViewModel) {
-        emit(hostNotifier.onAvailability(enabled))
         isVisible = enabled
         if (enabled) vm.loadInitial()
     }
@@ -289,7 +299,7 @@ class PRMEndowView @JvmOverloads constructor(
      * btnConfirmPayment.setOnClickListener {
      *     binding.endowView.confirmRedemption(
      *         onSuccess = { proceedPayment() },
-     *         onError = { code -> showError(code) },
+     *         onError = { error -> showError(error.message) },
      *     )
      * }
      * ```
@@ -306,18 +316,33 @@ class PRMEndowView @JvmOverloads constructor(
     @JvmOverloads
     fun confirmRedemption(
         onSuccess: () -> Unit,
-        onError: (errorCode: String) -> Unit = {},
+        onError: (error: PromotionSDKError) -> Unit = {},
     ) {
         val vm = viewModel
         val scope = viewScope
         if (vm == null || scope == null) {
-            onError(ErrorCodes.GENERAL)
+            onError(PromotionSDKError.from(ErrorCodes.GENERAL))
             return
         }
         scope.launch {
             when (val result = vm.confirmRedemption()) {
                 is EndowConfirmResult.Success -> onSuccess()
-                is EndowConfirmResult.Failure -> onError(result.errorCode)
+                is EndowConfirmResult.Failure -> {
+                    // Tính năng bị cờ chặn → SDK **tự hiện popup** đúng câu, không phó mặc host.
+                    //
+                    // Trước đây chỉ đẩy mã lỗi ra `onError`, host map sang chuỗi của họ và hiện toast
+                    // sai nội dung — user đọc được một lỗi kỹ thuật thay vì "tính năng hiện không khả
+                    // dụng". Đây là quyết định của SDK (chính SDK tắt tính năng), nên câu chữ cũng
+                    // phải của SDK. Cùng cách với `PRMBaseFragment.openPromotionDetail` và
+                    // `PromotionSDK.openMyPromotion`.
+                    if (result.errorCode == ErrorCodes.FEATURE_DISABLED) {
+                        context.findActivity()?.let { activity ->
+                            PRMBaseConfirmDialog.showFeatureDisabled(activity, activity.supportFragmentManager)
+                        }
+                    }
+                    // Vẫn báo host: họ cần biết để DỪNG luồng thanh toán, không phải để hiện chữ.
+                    onError(PromotionSDKError.from(result.errorCode))
+                }
             }
         }
     }
@@ -327,7 +352,7 @@ class PRMEndowView @JvmOverloads constructor(
     private fun renderState(state: EndowState) {
         // Handle error
         state.errorCode?.let {
-            onError?.invoke(it)
+            onError?.invoke(PromotionSDKError.from(it))
             // Xoá được ngay: nơi gọi `validateAndApply` nhận state trả về trực tiếp, không đọc nhờ
             // dòng state này nữa nên không còn đua nhau (trước phải có `consumeErrorUnlessSettling`).
             viewModel?.consumeError()
@@ -367,7 +392,7 @@ class PRMEndowView @JvmOverloads constructor(
     /**
      * Phát sự kiện cho host qua callback đã set lúc [PromotionSDK.initialize]. **Quyết định** bắn
      * hay không nằm ở [EndowHostNotifier] (dùng chung iOS); ở đây chỉ map sự kiện → callback.
-     * `onVoucherCleared` phát trực tiếp ở click "Hủy" (xem [setupClickListeners]).
+     * Chỉ còn `onVoucherApplied`: các callback đếm voucher / bật-tắt / đóng màn đã bỏ, host không cần biết.
      */
     private fun notifyHost(state: EndowState) = emit(hostNotifier.onState(state))
 
@@ -377,8 +402,6 @@ class PRMEndowView @JvmOverloads constructor(
         events.forEach { event ->
             when (event) {
                 is EndowHostEvent.VoucherApplied -> callback.onVoucherApplied(event.voucherId)
-                is EndowHostEvent.VoucherCountChanged -> callback.onVoucherCountChanged(event.count)
-                is EndowHostEvent.AvailabilityChanged -> callback.onAvailabilityChanged(event.enabled)
             }
         }
     }
@@ -398,7 +421,6 @@ class PRMEndowView @JvmOverloads constructor(
                 EndowWidgetState.NOT_APPLIED, EndowWidgetState.UNAVAILABLE -> openChoosePromotionScreen()
                 EndowWidgetState.APPLIED -> {
                     viewModel?.clearApplied()
-                    PromotionSDK.getCallback()?.onVoucherCleared()
                 }
                 EndowWidgetState.EMPTY -> Unit
             }
@@ -415,7 +437,7 @@ class PRMEndowView @JvmOverloads constructor(
     private fun openChoosePromotionScreen() {
         val activity = context.findActivity()
         if (activity == null) {
-            onError?.invoke(ErrorCodes.GENERAL)
+            onError?.invoke(PromotionSDKError.from(ErrorCodes.GENERAL))
             return
         }
         PromotionSDK.openChoosePromotion(activity, this)

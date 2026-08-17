@@ -68,16 +68,53 @@ data class EndowAppliedDiscount(
     val calculatedDiscount: String,
     val eligibilityStatus: String,
     val tags: List<String> = emptyList(),
+    /**
+     * Tên voucher, lấy từ chính [EligibleOffer] mà user vừa chọn — **không** phải từ response validate.
+     *
+     * Trước đây model này chỉ có id + số tiền, nên chip trên widget chỉ hiện được `tags[0]` (nhãn
+     * server gửi kèm) hoặc số tiền giảm. Server trả `tags: []` và `calculatedDiscount: 0` là chip ra
+     * "0đ" — user chọn voucher xong nhìn widget không thấy voucher đâu.
+     *
+     * Nghịch lý: lúc gọi `validateAndApply(offers)` SDK đang cầm sẵn `voucherName`, rồi vứt đi và đi
+     * xin lại chữ từ server. Nay giữ luôn.
+     */
+    val voucherName: String? = null,
+    /** Logo voucher, cùng nguồn với [voucherName]. */
+    val logoUrl: String? = null,
+    /** Lý do server từ chối (nếu [valid] = false) — để native hiện/log, không còn im lặng. */
+    val validationMessages: List<String> = emptyList(),
 )
 
-internal fun ValidateDiscountsResult.toEndowAppliedDiscount(objectId: String, objectType: String) =
+/**
+ * Nhận thẳng [offer] thay vì hai chuỗi id/type rời: offer mang sẵn tên + logo, mà đó chính là thứ
+ * widget cần hiển thị. Bản cũ chỉ nhận `objectId`/`objectType` nên phần nhận dạng voucher bị rơi
+ * ngay tại đây.
+ */
+internal fun ValidateDiscountsResult.toEndowAppliedDiscount(offer: EligibleOffer) =
     EndowAppliedDiscount(
-        objectId = objectId,
-        objectType = objectType,
-        valid = isValidFor(objectId),
-        calculatedDiscount = discountFor(objectId),
-        eligibilityStatus = itemFor(objectId)?.eligibilityStatus.orEmpty(),
-        tags = itemFor(objectId)?.tags.orEmpty(),
+        objectId = offer.id,
+        objectType = offer.objectType,
+        valid = isValidFor(offer.id),
+        calculatedDiscount = discountFor(offer.id),
+        eligibilityStatus = itemFor(offer.id)?.eligibilityStatus.orEmpty(),
+        tags = itemFor(offer.id)?.tags.orEmpty(),
+        voucherName = offer.voucherName ?: offer.campaignName,
+        logoUrl = offer.logoUrl,
+        validationMessages = reasonFor(offer.id),
+    )
+
+/**
+ * Bản dùng cho lượt **validate lại** (hết ngân sách → hỏi giá mới): lúc đó trong tay chỉ còn
+ * [previous] chứ không còn `EligibleOffer` gốc. Giữ nguyên tên + logo đã có, chỉ cập nhật phần
+ * server vừa tính lại — không thì mỗi lần revalidate là chip mất tên, quay về hiện số tiền.
+ */
+internal fun ValidateDiscountsResult.toEndowAppliedDiscount(previous: EndowAppliedDiscount) =
+    previous.copy(
+        valid = isValidFor(previous.objectId),
+        calculatedDiscount = discountFor(previous.objectId),
+        eligibilityStatus = itemFor(previous.objectId)?.eligibilityStatus.orEmpty(),
+        tags = itemFor(previous.objectId)?.tags.orEmpty(),
+        validationMessages = reasonFor(previous.objectId),
     )
 
 sealed interface EndowIntent {

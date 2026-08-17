@@ -88,7 +88,7 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         setupDetailTabs()
         val voucherId = arguments?.getString(KEY_VOUCHER_ID).orEmpty()
         if (voucherId.isBlank()) {
-            showToast(getString(R.string.prm_no_result))
+            // Không mở được chi tiết (thiếu voucherId) → thoát im lặng, SDK không dùng toast nữa.
             return
         }
         showDetailLoading()
@@ -118,7 +118,10 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         }
         collectFlow(viewModel.effects) { effect ->
             when (effect) {
-                is PRMEffect.ShowError -> showToast(mapPromotionError(effect.errorCode))
+                // KHÔNG hiện gì: SDK đã bỏ toast. Vẫn thu effect để store `ConsumeError` chạy đúng
+                // vòng của nó — bỏ luôn `collectFlow` thì `errorCode` nằm lại trong state.
+                // Màn này còn empty-view/list cũ nên user vẫn hiểu được chuyện gì xảy ra.
+                is PRMEffect.ShowError -> Unit
             }
         }
     }

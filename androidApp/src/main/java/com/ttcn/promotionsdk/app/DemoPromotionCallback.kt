@@ -24,7 +24,5 @@ object DemoPromotionCallback : PromotionSDKCallback {
 
     // Interface có default rỗng → chỉ override đúng sự kiện demo cần.
     override fun onVoucherApplied(voucherId: String) { onApplied?.invoke(voucherId) }
-    override fun onVoucherCleared() { onCleared?.invoke() }
-    override fun onVoucherCountChanged(count: Int) { onCountChanged?.invoke(count) }
     override fun onServiceSelected(selection: PromotionServiceSelection) { onService?.invoke(selection) }
 }

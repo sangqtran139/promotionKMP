@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.app
 
+import com.ttcn.prm.entry.api.PromotionSDKError
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.ttcn.promotionsdk.app.base.AppBaseFragment
@@ -17,15 +18,31 @@ class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>
 
     override fun setupUI() {
         // ─── Wire endowView callbacks ─────────────────────────────────────────
-        binding.endowView.onError = { errorCode -> showToast(mapErrorMessage(errorCode)) }
+        binding.endowView.onError = { error -> handleSdkError(error) }
 
         // ─── Confirm thanh toán ───────────────────────────────────────────────
         // Gọi thẳng trên widget: không còn class manager riêng, cũng không còn `clear()` phải nhớ.
         binding.btnConfirmPayment.setOnClickListener {
             binding.endowView.confirmRedemption(
                 onSuccess = { proceedPayment() },
-                onError = { errorCode -> showToast(mapErrorMessage(errorCode)) },
+                onError = { error -> handleSdkError(error) },
             )
+        }
+    }
+
+    /**
+     * Mẫu xử lý lỗi từ widget: **đọc qua `PromotionSDKError.from(code)`**, không so chuỗi.
+     *
+     * `onError` trả thẳng `PromotionSDKError` (kiểu công khai), host `when` là xong — không phải so
+     * chuỗi mã lỗi.
+     *
+     * Riêng `FeatureDisabled`: **SDK đã tự hiện popup**, host chỉ cần dừng luồng — hiện thêm thông
+     * báo của mình là user đọc hai lần cho cùng một chuyện.
+     */
+    private fun handleSdkError(error: PromotionSDKError) {
+        when (error) {
+            is PromotionSDKError.FeatureDisabled -> Unit
+            else -> showToast(error.message)
         }
     }
 

@@ -306,7 +306,9 @@ final class MyPromotionViewController: PRMBaseViewController<MyPromotionViewMode
     /// Lỗi nghiệp vụ → toast (đồng nhất Android `showToast`).
     private func handle(_ effect: PRMEffect) {
         if let error = effect as? PRMEffectShowError {
-            PromotionToast.show(PromotionUIStrings.errorMessage(error.errorCode), in: view)
+            // KHÔNG hiện gì: SDK đã bỏ toast. Màn này còn empty-view/list cũ nên user
+            // vẫn hiểu được. Đối ứng `is PRMEffect.ShowError -> Unit` bên Android.
+            _ = error
         }
     }
 

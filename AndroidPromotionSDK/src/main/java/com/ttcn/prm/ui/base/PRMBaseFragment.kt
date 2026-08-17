@@ -2,12 +2,12 @@ package com.ttcn.prm.ui.base
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.annotation.IdRes
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -185,12 +185,6 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
         }
     }
 
-    protected fun showToast(message: CharSequence?) {
-        // Toast bị gom sau [PromotionToastGate] — mặc định TẮT (lỗi vẫn được bắt, chỉ không hiện).
-        if (!PromotionToastGate.isEnabled) return
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-    }
-
     /**
      * Map mã lỗi (raw từ store) → chuỗi hiển thị — **dùng chung mọi màn** (đồng nhất iOS
      * `PromotionUIStrings.errorMessage`). Gom về đây thay cho `mapErrorMessage` lặp ở từng Fragment.
@@ -230,7 +224,8 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     ) {
         val containerId = (view?.parent as? ViewGroup)?.id
         if (containerId == null || containerId == View.NO_ID) {
-            showToast("Cannot navigate: no valid container found.")
+            // Thông báo cho DEV, không phải cho user → log, không toast.
+            Log.e("PRMBaseFragment", "Cannot navigate: no valid container found.")
             return
         }
         val tag = fragment::class.java.simpleName
@@ -256,7 +251,7 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     /**
      * Mở màn "Chi tiết ưu đãi", gác bởi cờ `VOUCHER_DETAIL`.
      * Cờ TẮT → thông báo PRM_MOB_021 và không điều hướng. Toast này đi thẳng
-     * [PromotionToastGate.showFeatureDisabled] nên **luôn hiện**, kể cả khi cổng toast chung đang TẮT.
+     * [PRMBaseConfirmDialog.showFeatureDisabled] — popup, luôn hiện.
      *
      * Song sinh của `BaseRouter.canRouteToDetail()` bên iOS: gom về base để cả ba màn gọi
      * (Ưu đãi của tôi, Tìm kiếm, Chọn ưu đãi) không thể quên gác.
@@ -271,7 +266,7 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
         returnVoucherOnApply: Boolean = false,
     ) {
         if (!PromotionFeatureGate.canOpenVoucherDetail()) {
-            PromotionToastGate.showFeatureDisabled(requireContext(), parentFragmentManager)
+            PRMBaseConfirmDialog.showFeatureDisabled(requireContext(), parentFragmentManager)
             return
         }
         addFragment(PromotionDetailFragment.newInstance(voucherId, returnVoucherOnApply))
@@ -325,5 +320,17 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
             topEntryId,
             FragmentManager.POP_BACK_STACK_INCLUSIVE,
         )
+    }
+
+    /**
+     * Báo lỗi cho user bằng **popup** ([PRMBaseConfirmDialog] 1 nút "Đóng").
+     *
+     * Thay cho `PromotionToastGate.showAlways` đã bỏ: toàn bộ cổng bật/tắt toast không còn, lỗi mà
+     * user đang chờ kết quả thì luôn phải hiện. Đối ứng `PromotionToast.showAlways` bên iOS
+     * (cũng dựng `PRMConfirmationDialog`).
+     */
+    protected fun showErrorDialog(message: CharSequence) {
+        if (!isAdded) return
+        PRMBaseConfirmDialog.showError(requireContext(), parentFragmentManager, message)
     }
 }

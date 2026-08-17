@@ -174,7 +174,7 @@ class EndowStore(
             .fold(
                 onSuccess = { result ->
                     if (result != null) {
-                        val details = current.map { result.toEndowAppliedDiscount(it.objectId, it.objectType) }
+                        val details = current.map { result.toEndowAppliedDiscount(it) }
                         _state.update {
                             it.copy(appliedDiscounts = details, discountUnavailable = details.any { d -> !d.valid })
                         }
@@ -300,7 +300,7 @@ class EndowStore(
                         _state.update { it.copy(isValidating = false, errorCode = ErrorCodes.NO_RESULT) }
                         return@onSuccess
                     }
-                    val details = offers.map { result.toEndowAppliedDiscount(it.id, it.objectType) }
+                    val details = offers.map { result.toEndowAppliedDiscount(it) }
                     val hasInvalid = details.any { !it.valid }
                     _state.update {
                         it.copy(isValidating = false, appliedDiscounts = details, discountUnavailable = hasInvalid, errorCode = null)

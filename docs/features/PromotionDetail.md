@@ -39,7 +39,7 @@ thẳng `PromotionDetailIntent` của `PromotionDetailStore` (dùng chung với 
 - `ConsumeError` — xoá lỗi sau khi đã báo (Fragment không gọi tay: `viewModel.errors` tự lo).
 
 ### Phần thuần Android
-- Lỗi: `collectFlow(viewModel.errors) { showToast(mapPromotionError(it)) }`.
+- Lỗi: thu effect nhưng **không hiện gì** (`is PRMEffect.ShowError -> Unit`) — màn đã có shimmer/empty-view nói thay. SDK đã bỏ toast; cần báo thì dùng `showErrorDialog(...)`.
 - Bottom sheet "Chọn dịch vụ": `viewModel.serviceOptions()` trả thẳng list, Fragment tự mở sheet —
   không đi vòng qua effect.
 

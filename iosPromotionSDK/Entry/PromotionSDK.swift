@@ -40,57 +40,51 @@ public final class PromotionSDK {
     /// `private var callback` bên Android).
     private static var callback: PromotionSDKCallback?
 
-    /// Cấu hình **cố định**, chốt ở lần `initialize` **đầu tiên** (baseUrl/environment/language). Các
-    /// lần `initialize` sau (host init lại mỗi khi login) chỉ áp field **động** (token/
-    /// availableServices); host lỡ truyền field cố định khác → SDK cảnh báo và **bỏ qua**. Muốn đổi
-    /// thật → `release()` rồi init lại. Đối ứng `fixedConfig` bên Android.
-    private struct FixedConfig {
+    /// Cấu hình **tĩnh** — đặt ở lần `initialize` đầu (hoặc lần đầu sau `release()`) rồi dùng lại cho
+    /// mọi lần init sau. `release()` **không** xoá: đây là cấu hình tích hợp của host, không phải dữ
+    /// liệu phiên. Đối ứng `StaticConfig` bên Android.
+    private struct StaticConfig {
         let baseUrl: String
         let language: String
         let environment: PromotionEnvironment
     }
-    private static var fixedConfig: FixedConfig?
+    private static var staticConfig: StaticConfig?
+
 
     // MARK: - Init
 
     /// Khởi tạo SDK. Đối ứng `PromotionSDK.initialize(context, options)` bên Android.
     ///
-    /// **Host chỉ cần gọi `initialize` — kể cả khi login lại.** Lần đầu chốt phần **cố định**
-    /// (`baseUrl` / `environment` / `language` / `theme`). Các lần sau (đăng nhập user mới) chỉ cần
-    /// truyền lại field **động** (`accessToken` / `availableServices`); SDK **bỏ qua**
-    /// mọi thay đổi ở field cố định (có cảnh báo log). Muốn đổi cấu hình cố định thật → `release()` rồi
-    /// init lại.
+    /// **Lúc nào vào app cũng gọi `initialize` lại** — `updateSession` đã bỏ.
+    ///
+    /// `baseUrl` / `environment` / `language` / `theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc
+    /// lần đầu sau `release()`) rồi dùng lại, các lần init sau **không cần khởi tạo nữa**. Host chỉ
+    /// cần đưa `accessToken` mới. Muốn đổi thật → `release()` rồi init lại.
     ///
     /// - Parameter options: session (token/baseUrl/language/environment), danh mục dịch vụ,
     ///   theme (bỏ trống = khôi phục theme đã lưu), và callback nhận sự kiện.
     public static func initialize(options: PromotionSDKOptions) {
-        let incoming = options.session
-        if isInitialized(), let locked = fixedConfig, let impl = impl {
-            // Login lại: field cố định đã khoá. Cảnh báo nếu host truyền khác, rồi giữ nguyên bản khoá.
-            if locked.baseUrl != incoming.baseUrl
-                || locked.environment != incoming.environment
-                || locked.language != incoming.language {
-                NSLog("[PromotionSDK] initialize() được gọi lại với field cố định khác (baseUrl/environment/language). Các field này chốt ở lần initialize() đầu và bị bỏ qua. Gọi release() trước nếu muốn đổi.")
-            }
-            if let cb = options.callback { callback = cb }
-            // Chỉ áp field động; ép field cố định về bản đã khoá. Context đơn hàng reset (phiên mới).
-            impl.applySession(
-                PromotionSessionConfig(
-                    accessToken: incoming.accessToken,
-                    baseUrl: locked.baseUrl, language: locked.language, environment: locked.environment,
-                ),
-                availableServices: options.availableServices,
-                keepOrderContext: false
+        // Đã có cấu hình tĩnh → dùng lại, chỉ nhận `accessToken` mới từ host.
+        let incoming: PromotionSessionConfig
+        if let cfg = staticConfig {
+            incoming = PromotionSessionConfig(
+                accessToken: options.session.accessToken,
+                baseUrl: cfg.baseUrl, language: cfg.language, environment: cfg.environment,
             )
-            return
+        } else {
+            incoming = options.session
         }
-
-        // Lần đầu (hoặc sau release): chốt field cố định + dựng đồ thị DI đầy đủ.
         if isInitialized() { release() }
-        let impl = PromotionSDKImpl(options: options)
+        staticConfig = StaticConfig(baseUrl: incoming.baseUrl, language: incoming.language,
+                                    environment: incoming.environment)
+        let impl = PromotionSDKImpl(options: PromotionSDKOptions(
+            session: incoming,
+            availableServices: options.availableServices,
+            theme: options.theme,
+            callback: options.callback,
+        ))
         _impl = impl
         callback = options.callback
-        fixedConfig = FixedConfig(baseUrl: incoming.baseUrl, language: incoming.language, environment: incoming.environment)
         // Host truyền theme → áp + lưu. Không truyền → khôi phục theme đã lưu lần trước. Host cấu hình
         // một lần; lần sau chỉ cần initialize lại, theme tự sống lại. Đối ứng PromotionSDK.initialize bên Android.
         impl.restoreOrApplyTheme(options.theme)
@@ -122,25 +116,6 @@ public final class PromotionSDK {
         ))
     }
 
-    /// **Đăng nhập user mới** sau khi đã `initialize` một lần — chỉ truyền field **động**
-    /// (`accessToken` + `availableServices` + `callback`); SDK **giữ nguyên** field cố định đã khoá
-    /// (baseUrl / environment / language / theme). Lối chính cho host: `initialize` **một
-    /// lần** lúc mở app, mỗi lần login sau chỉ gọi `updateSession`. Context đơn hàng reset (phiên mới).
-    ///
-    /// - Parameter availableServices: danh mục dịch vụ cho phiên mới; `nil` = giữ danh mục hiện tại.
-    /// - Parameter callback: nơi nhận sự kiện cho phiên mới; `nil` = **giữ nguyên** callback hiện tại
-    ///   (giống `availableServices`). Không có đường "gỡ callback" ở đây — muốn gỡ thì `release()`.
-    ///   Dùng khi host thay object nghe sự kiện theo user đang đăng nhập, thay vì gọi lại `initialize`.
-    /// Đối ứng `updateSession(...)` bên Android.
-    public static func updateSession(accessToken: String,
-                                     availableServices: [PromotionAvailableService]? = nil,
-                                     callback: PromotionSDKCallback? = nil) {
-        guard let impl = requireImpl("updateSession(accessToken:availableServices:callback:)") else { return }
-        // Gán TRƯỚC updateSession: nạp lại cờ tính năng ở cuối `applySession` sẽ bắn
-        // `onAvailabilityChanged` của phiên mới — phải về callback mới, không phải callback của user cũ.
-        if let callback { Self.callback = callback }
-        impl.updateSession(accessToken: accessToken, availableServices: availableServices)
-    }
 
     /// Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn `updateSession`:
     /// **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout). Đối ứng
@@ -156,8 +131,8 @@ public final class PromotionSDK {
         impl?.teardown()
         _impl = nil
         callback = nil
-        // Mở khoá cấu hình cố định: initialize() kế tiếp được coi là "lần đầu" và chốt lại từ đầu.
-        fixedConfig = nil
+        // Xoá sạch **dữ liệu phiên**. GIỮ `staticConfig` và theme đã lưu: đó là cấu hình tích hợp
+        // của host, không phải dữ liệu người dùng. Đối ứng `PromotionSDK.release()` bên Android.
     }
 
     /// `true` sau `initialize` và trước `release`. Đối ứng `PromotionSDK.isInitialized()` bên Android.
@@ -291,7 +266,6 @@ public final class PromotionSDK {
     /// Đối ứng `PromotionSDK.refreshFeatureFlags(onComplete)` bên Android.
     public static func refreshFeatureFlags(completion: ((PromotionFeatureFlagsSnapshot) -> Void)? = nil) {
         PromotionSDKImpl.refreshFeatureFlags { flags in
-            callback?.onAvailabilityChanged(enabled: flags.all)
             completion?(flags)
         }
     }
@@ -302,12 +276,26 @@ public final class PromotionSDK {
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
     /// Cờ `VOUCHER_LIST` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
     /// qua `onAvailabilityChanged(enabled:)`.
-    public static func openMyPromotion(from viewController: UIViewController) {
+    /// Cờ tính năng TẮT ở một điểm mở màn: **ưu tiên trả cho host**, host không nhận thì SDK tự lo.
+    ///
+    /// Nhận closure ngay ở hàm `open…` chứ không dùng callback toàn cục: chỉ có cách đó SDK mới biết
+    /// chắc host **có đăng ký hay không**. Đối ứng `PromotionSDK.notifyFeatureDisabled` bên Android.
+    private static func notifyFeatureDisabled(_ impl: PromotionSDKImpl,
+                                              _ viewController: UIViewController,
+                                              _ onFeatureDisabled: (() -> Void)?) {
+        if let onFeatureDisabled {
+            onFeatureDisabled()
+            return
+        }
+        impl.showFeatureDisabledToast(on: viewController)
+    }
+
+    public static func openMyPromotion(from viewController: UIViewController,
+                                       onFeatureDisabled: (() -> Void)? = nil) {
         guard let impl = requireImpl("openMyPromotion(from:)") else { return }
         impl.canOpenVoucherList { enabled in
             guard enabled else {
-                impl.showFeatureDisabledToast(on: viewController)
-                callback?.onAvailabilityChanged(enabled: false)
+                notifyFeatureDisabled(impl, viewController, onFeatureDisabled)
                 return
             }
             let nav = viewController.navigationController ?? (viewController as? UINavigationController)
@@ -315,9 +303,6 @@ public final class PromotionSDK {
                 with: .init(),
                 navigator: nav
             )
-            vc.onClose = {
-                callback?.onClosed()
-            }
             if let nav {
                 nav.pushViewController(vc, animated: true)
             } else {
@@ -367,7 +352,8 @@ public final class PromotionSDK {
         from viewController: UIViewController,
         returnVoucherOnApply: Bool = true,
         hostHandlesDismiss: Bool = false,
-        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil
+        onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil,
+        onFeatureDisabled: (() -> Void)? = nil
     ) {
         guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
@@ -377,7 +363,9 @@ public final class PromotionSDK {
             navigator: nav,
             returnVoucherOnApply: returnVoucherOnApply,
             hostHandlesDismiss: hostHandlesDismiss,
-            onVoucherApplied: onVoucherApplied
+            onVoucherApplied: onVoucherApplied,
+            // Cờ TẮT → trả cho host nếu có; không có thì impl tự hiện popup.
+            onFeatureDisabled: onFeatureDisabled
         )
     }
 
@@ -406,11 +394,11 @@ public final class PromotionSDK {
     /// Đối ứng `PRMEndowView.confirmRedemption(onSuccess:onError:)` bên Android; nghiệp vụ nằm ở
     /// `EndowStore.confirmRedemption` nên hai nền tảng chạy một đường. Chưa `initialize` → `onError`.
     public static func confirmRedemption(onSuccess: @escaping () -> Void,
-                                         onError: @escaping (String) -> Void = { _ in }) {
+                                         onError: @escaping (PromotionSDKError) -> Void = { _ in }) {
         // Chuỗi mã lỗi viết thẳng: file Entry này KHÔNG import PRMKotlinBridge (type Kotlin lọt vào
         // chữ ký public là app host không build được — xem PublicApi.md).
         guard let impl = requireImpl("confirmRedemption(onSuccess:onError:)") else {
-            onError("error_general")
+            onError(.networkFailure(code: nil, message: "error_general"))
             return
         }
         impl.confirmRedemption(onSuccess: onSuccess, onError: onError)
@@ -447,15 +435,6 @@ public final class PromotionSDK {
     private static func wireCallbacks(_ impl: PromotionSDKImpl) {
         impl.onApplyVoucher = { voucherId in
             callback?.onVoucherApplied(voucherId: voucherId)
-        }
-        impl.onClearVoucher = {
-            callback?.onVoucherCleared()
-        }
-        impl.onUpdateWidgetCount = { count in
-            callback?.onVoucherCountChanged(count: count)
-        }
-        impl.onAvailabilityUpdate = { enabled in
-            callback?.onAvailabilityChanged(enabled: enabled)
         }
     }
 }
