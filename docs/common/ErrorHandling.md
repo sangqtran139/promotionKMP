@@ -24,6 +24,7 @@ internal object ErrorCodes {
     const val GENERAL = "error_general"
     const val NETWORK_ERROR = "network_error"
     const val TIMEOUT = "timeout"
+    const val TOKEN_EXPIRED = "TOKEN_EXPIRED"  // HTTP 401/403 — xem §3
 }
 ```
 
@@ -80,6 +81,23 @@ private suspend fun <T : Any> headlessCall(block: suspend () -> T?): PromotionRe
 
 ⚠️ **Thứ tự `catch` quan trọng.** Cả ba loại timeout của Ktor đều kế thừa `IOException`.
 Bắt `IOException` trước sẽ nuốt mất timeout và báo sai mã lỗi.
+
+### HTTP 401/403 — `TOKEN_EXPIRED` → `onExpireToken()`
+
+`Throwable.toErrorCode()` (`domain/exception/ErrorCodeExtensions.kt`) ưu tiên kiểm tra
+`PromotionException.httpStatus`: `401`/`403` → luôn trả `TOKEN_EXPIRED`, bất kể `errorCode` server gửi
+kèm là gì. Đây là **điểm chặn duy nhất** — cả 5 store (`MyPromotion`/`SearchMyPromotion`/
+`ChoosePromotion`/`PromotionDetail`/`Endow`) đi qua hàm này nên không phải sửa từng store.
+
+Ở tầng Android UI, mã `TOKEN_EXPIRED` được hai nơi đọc thêm (ngoài đường Popup/Không-hiện-gì bình
+thường ở §4) để bắn `PromotionSDKCallback.onExpireToken()` ra host:
+- `PRMStoreViewModel.effects` — phủ 4 màn Fragment.
+- `PRMEndowView.renderState` — widget Endow không đi qua `effects` nên tự bắt riêng.
+
+`onExpireToken()` bắn **thêm**, không thay thế luồng báo lỗi hiện có (Popup/im lặng ở §4 vẫn chạy như
+cũ) — host tự quyết định điều hướng (thường là refresh token/đưa user về màn login). **Chưa áp dụng
+cho headless `PromotionSDKApi`** (xem `PromotionSDKError.SessionExpired`, hiện chưa wiring) — xem
+[InitParity.md §3](./InitParity.md#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên).
 
 ### Lỗi nghiệp vụ ẩn trong HTTP 200
 

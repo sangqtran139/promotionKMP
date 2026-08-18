@@ -156,6 +156,8 @@ object PromotionSDK {
      * **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout).
      * Đối ứng `updateToken(_:)` bên iOS.
      *
+     * [accessToken] trùng token hiện có → **no-op**, không re-init đồ thị DI.
+     *
      * @throws IllegalStateException nếu [initialize] chưa được gọi.
      */
     @JvmStatic
@@ -164,6 +166,10 @@ object PromotionSDK {
             "PromotionSDK.initialize() must be called before updateToken()."
         }
         val context = checkNotNull(appContext) { "Application context missing — call initialize() first." }
+        // Token trùng token hiện có → bỏ qua. `applySession` là thao tác NẶNG (huỷ `sdkScope`, `clear()`
+        // + `initialize()` lại `PromotionContainer`, refresh feature flag) — host gọi `updateToken()`
+        // lặp lại (ví dụ mỗi lần vào màn checkout) với cùng token không nên trả giá đó mỗi lần.
+        if (ctx.session.accessToken == accessToken) return
         applySession(context, ctx.session.copy(accessToken = accessToken), ctx.availableServices, keepOrderContext = true)
     }
 
@@ -286,6 +292,7 @@ object PromotionSDK {
      * @param productId Mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. Đối ứng
      * `PromotionSDK.updateOrderInfo(productId:...)` bên iOS.
      * @param quantity Số lượng (> 0) — mặc định `1` nếu không truyền.
+     * @param unitPrice Đơn giá — mặc định `"0"` nếu không truyền.
      *
      * @throws IllegalStateException nếu [initialize] chưa được gọi.
      */
@@ -315,7 +322,7 @@ object PromotionSDK {
                 productName = productName,
                 productCategory = productCategory,
                 quantity = quantity ?: 1,
-                unitPrice = unitPrice.orEmpty(),
+                unitPrice = unitPrice ?: "0",
             ),
         )
     }

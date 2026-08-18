@@ -43,9 +43,16 @@ public protocol PromotionSDKCallback: AnyObject {
     /// `enabled == false` → host nên ẩn toàn bộ điểm vào ưu đãi (entry point, widget).
 
     /// Gọi khi màn hình SDK bị đóng (user back).
+
+    /// Gọi khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget
+    /// Endow) trả về HTTP 401/403 — token hết hạn hoặc không hợp lệ. Host nên refresh token rồi gọi
+    /// lại `PromotionSDK.updateToken` (hoặc điều hướng user về màn đăng nhập). Đối ứng
+    /// `onExpireToken()` bên Android — xem docs/common/InitParity.md §3.
+    func onExpireToken()
 }
 
 public extension PromotionSDKCallback {
     func onVoucherApplied(voucherId: String) {}
     func onServiceSelected(selection: PromotionServiceSelection) {}
+    func onExpireToken() {}
 }

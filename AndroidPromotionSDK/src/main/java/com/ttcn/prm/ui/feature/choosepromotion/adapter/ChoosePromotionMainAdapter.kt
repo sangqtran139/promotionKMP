@@ -227,6 +227,8 @@ internal class ChoosePromotionMainAdapter(
                 // Đối ứng iOS: `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText`
                 // (lý do lấy từ `unmatchedRules`, dự phòng "Không đủ điều kiện").
                 ctlTop.alpha = if (canUse) 1f else 0.6f
+                // Đối ứng iOS `warningView.isHidden = viewModel.isEligible`: hiện/ẩn theo đúng `usable`
+                // của findEligible response (qua `canUse`), không tự suy thêm điều kiện nào khác.
                 ctlNotEnoughApplyVoucher.isVisible = !canUse
                 imgCircleNotEnoughApplyVoucher.isVisible = !canUse
                 txtExpired.isVisible = !canUse

@@ -256,7 +256,7 @@ final class PromotionSDKImpl: NSObject {
             productName: productName,
             productCategory: productCategory,
             quantity: quantity ?? 1,
-            unitPrice: unitPrice ?? ""
+            unitPrice: unitPrice ?? "0"
         )]
     }
 
@@ -550,6 +550,17 @@ final class PromotionSDKImpl: NSObject {
     /// Ở đây chỉ còn phần **thật sự của native**: format chuỗi tiền và phát callback host theo
     /// transition.
     private func render(_ state: EndowState, on view: PRMEndowView) {
+        // Widget không đi qua `PRMStoreViewModel.emitErrorIfNeeded` (đọc thẳng state, `autoConsumesError`
+        // tắt) nên phải tự bắt TOKEN_EXPIRED ở đây — 4 màn Store khác đã có base lo hộ. Đối ứng
+        // `PRMEndowView.renderState` bên Android (xử lý TRƯỚC guard `hasLoadedInitial`, vì `loadInitial()`
+        // hỏng cũng set `hasLoadedInitial = true` kèm `errorCode`).
+        if let errorCode = state.errorCode {
+            if errorCode == PromotionErrorCodes.shared.TOKEN_EXPIRED {
+                PromotionSDK.getCallback()?.onExpireToken()
+            }
+            endowVM.consumeError()
+        }
+
         // Giữ trạng thái loading (shimmer) tới khi nạp xong — mirror Android `renderState` (return sớm).
         guard state.hasLoadedInitial else { return }
 

@@ -179,6 +179,7 @@ public final class PromotionSDK {
     /// - Parameter productId: mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. (Luồng
     ///   widget có thể dùng `createEndowView(orderItems:)`.)
     /// - Parameter quantity: số lượng (> 0) — mặc định `1` nếu không truyền.
+    /// - Parameter unitPrice: đơn giá — mặc định `"0"` nếu không truyền.
     public static func updateOrderInfo(
         orderId: String,
         productId: String,

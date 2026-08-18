@@ -2,11 +2,14 @@ package com.ttcn.prm.ui.base
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ttcn.prm.entry.PromotionSDK
+import com.ttcn.promotionsdk.domain.exception.PromotionErrorCodes
 import com.ttcn.promotionsdk.presentation.base.PRMEffect
 import com.ttcn.promotionsdk.presentation.base.PRMStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Lớp bọc **duy nhất** quanh store dùng chung ([PRMStore] ở `promotionLogic`).
@@ -35,8 +38,20 @@ internal abstract class PRMStoreViewModel<S : Any, I : Any>(
 
     val state: StateFlow<S> get() = store.state
 
-    /** Sự kiện **một lần** (lỗi…). View map `errorCode` → chuỗi hiển thị. */
+    /**
+     * Sự kiện **một lần** (lỗi…). View map `errorCode` → chuỗi hiển thị.
+     *
+     * `TOKEN_EXPIRED` (HTTP 401/403 — xem [PromotionErrorCodes.TOKEN_EXPIRED]) bắn thêm
+     * `onExpireToken()` ra host tại đây, một lần cho cả bốn màn kế thừa lớp này, thay vì mỗi
+     * Fragment tự bắt. Effect vẫn chảy tiếp xuống view như cũ (không nuốt), UI vẫn tự quyết có hiển
+     * thị lỗi hay không.
+     */
     val effects: Flow<PRMEffect> get() = store.effects
+        .onEach { effect ->
+            if (effect is PRMEffect.ShowError && effect.errorCode == PromotionErrorCodes.TOKEN_EXPIRED) {
+                PromotionSDK.getCallback()?.onExpireToken()
+            }
+        }
 
     fun dispatch(intent: I) = store.dispatch(intent)
 }

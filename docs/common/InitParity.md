@@ -70,6 +70,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 |---|---|---|
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
 | `onServiceSelected(selection)` | `PromotionServiceSelection` (`voucherId, productId, productName, skuSourceId = "", iconUrl`) | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `skuSourceId` (lấy từ `PromotionAvailableService.skuSourceId` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
+| `onExpireToken()` | *(không tham số)* | Từ 2026-08-18: bắn khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget Endow) trả HTTP 401/403. `toErrorCode()` map `httpStatus` 401/403 → `PromotionErrorCodes.TOKEN_EXPIRED` (`promotionLogic`, dùng chung 5 store, cả 2 nền tảng). Android: `PRMStoreViewModel.effects` (4 màn Fragment) và `PRMEndowView.renderState` (widget) tự bắn `PromotionSDK.getCallback()?.onExpireToken()` khi thấy mã này. iOS (từ 2026-08-18): `PRMStoreViewModel.emitErrorIfNeeded` (4 màn Store-based) và `PromotionSDKImpl.render(_:on:)` (widget Endow) làm y hệt — effect/state vẫn chảy tiếp xuống UI như cũ (không nuốt lỗi). Headless (`PromotionSDKApi`) **không** đi qua callback này, xem [HeadlessAPI.md](./HeadlessAPI.md)/[PublicApi.md](./PublicApi.md). |
 
 **Đã loại:**
 - Android `onError(errorCode)` — iOS không có, bỏ theo lựa chọn "hợp nhất theo iOS".
@@ -78,7 +79,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
   Cờ tính năng chặn một điểm mở màn thì báo qua tham số `onFeatureDisabled` của chính hàm `open…`
   (xem dưới), không qua callback toàn cục.
 
-`PromotionSDKCallback` nay chỉ còn **hai** sự kiện: `onVoucherApplied`, `onServiceSelected`.
+`PromotionSDKCallback` nay còn **ba** sự kiện: `onVoucherApplied`, `onServiceSelected`, `onExpireToken`.
 
 ### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
 

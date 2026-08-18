@@ -86,10 +86,19 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      */
     protected fun applyNavigationBarInset(anchor: View) {
         anchor.doOnNextLayout {
-            val navBarInset = currentNavigationBarInset(anchor)
-            val toApply = if (navBarInset > 0 && isOverlappedByNavigationBar(anchor, navBarInset)) navBarInset else 0
-            val previouslyApplied = anchor.getTag(R.id.prm_tag_nav_bar_inset_margin) as? Int ?: 0
-            val baseMargin = ((anchor.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin ?: 0) - previouslyApplied
+            val previouslyApplied = anchor.getTag(R.id.prm_tag_nav_bar_inset_margin) as? Int
+            // Lần gọi THỨ HAI trở đi (Fragment không huỷ view, chỉ ẩn/hiện lại): toạ độ đọc được lúc
+            // này đã bị chính lần áp trước đẩy lên rồi, đo lại theo `isOverlappedByNavigationBar` sẽ
+            // LUÔN ra "không overlap" (vì đã dịch lên khỏi vùng nav bar) → tính nhầm `toApply = 0` →
+            // set `bottomMargin` về đúng giá trị GỐC, xoá mất margin đã áp — nút lại bị nav bar đè.
+            // Fix: giữ nguyên quyết định của lần đo ĐẦU (khi toạ độ còn nguyên bản, chưa bị sửa),
+            // không đo lại từ toạ độ đã dịch.
+            val toApply = previouslyApplied
+                ?: run {
+                    val navBarInset = currentNavigationBarInset(anchor)
+                    if (navBarInset > 0 && isOverlappedByNavigationBar(anchor, navBarInset)) navBarInset else 0
+                }
+            val baseMargin = ((anchor.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin ?: 0) - (previouslyApplied ?: 0)
             anchor.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                 bottomMargin = baseMargin + toApply
             }
@@ -112,10 +121,15 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     protected fun applyNavigationBarInsetAsScrollPadding(scrollable: View) {
         if (scrollable is ViewGroup) scrollable.clipToPadding = false
         scrollable.doOnNextLayout {
-            val navBarInset = currentNavigationBarInset(scrollable)
-            val toApply = if (navBarInset > 0 && isOverlappedByNavigationBar(scrollable, navBarInset)) navBarInset else 0
-            val previouslyApplied = scrollable.getTag(R.id.prm_tag_nav_bar_inset_padding) as? Int ?: 0
-            val basePadding = scrollable.paddingBottom - previouslyApplied
+            val previouslyApplied = scrollable.getTag(R.id.prm_tag_nav_bar_inset_padding) as? Int
+            // Cùng bug/fix với `applyNavigationBarInset` — xem comment ở đó. Lần gọi lại sau khi đã áp
+            // padding thì toạ độ đo được đã dịch lên rồi, không đo lại được nữa.
+            val toApply = previouslyApplied
+                ?: run {
+                    val navBarInset = currentNavigationBarInset(scrollable)
+                    if (navBarInset > 0 && isOverlappedByNavigationBar(scrollable, navBarInset)) navBarInset else 0
+                }
+            val basePadding = scrollable.paddingBottom - (previouslyApplied ?: 0)
             scrollable.updatePadding(bottom = basePadding + toApply)
             scrollable.setTag(R.id.prm_tag_nav_bar_inset_padding, toApply)
         }
@@ -286,6 +300,12 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      * SDK **đầu tiên** trong stack chứ không phải màn đang hiện — xem [PrmSystemBackInterceptor.wrapWindow].
      */
     open fun goBack() {
+        // Fragment có thể đã detach khỏi Activity trước khi hàm này chạy: `ChoosePromotionFragment`
+        // gọi `goBack()` từ callback bất đồng bộ của `PRMEndowView.applySelectedOffers` (chạy trên
+        // `viewScope` riêng của View, không theo lifecycle Fragment) — user bấm back hệ thống trong
+        // lúc chờ API trả lời là fragment đã bị pop, callback về sau vẫn cố `requireActivity()` và
+        // crash `IllegalStateException`. Cùng guard với `closeTopSdkScreen()`/`showErrorDialog()`.
+        if (!isAdded) return
         if (closeTopSdkScreen()) return
         requireActivity().onBackPressedDispatcher.onBackPressed()
     }

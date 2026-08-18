@@ -16,6 +16,9 @@ object PromotionErrorCodes {
 
     /** Tính năng đang TẮT qua feature flag. Trùng mã popup `PRM_MOB_021` của iOS. */
     const val FEATURE_DISABLED = "PRM_MOB_021"
+
+    /** API trả HTTP 401/403 — token hết hạn/không hợp lệ. Tầng native map mã này ra `onExpireToken()`. */
+    const val TOKEN_EXPIRED = "TOKEN_EXPIRED"
 }
 
 /**

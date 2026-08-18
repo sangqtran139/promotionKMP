@@ -353,6 +353,11 @@ class PRMEndowView @JvmOverloads constructor(
         // Handle error
         state.errorCode?.let {
             onError?.invoke(PromotionSDKError.from(it))
+            // Widget không đi qua `PRMStoreViewModel.effects` (đọc thẳng StateFlow) nên phải tự bắt
+            // TOKEN_EXPIRED ở đây — 4 màn Fragment khác đã có `PRMStoreViewModel.effects` lo hộ.
+            if (it == ErrorCodes.TOKEN_EXPIRED) {
+                PromotionSDK.getCallback()?.onExpireToken()
+            }
             // Xoá được ngay: nơi gọi `validateAndApply` nhận state trả về trực tiếp, không đọc nhờ
             // dòng state này nữa nên không còn đua nhau (trước phải có `consumeErrorUnlessSettling`).
             viewModel?.consumeError()

@@ -101,6 +101,12 @@ class PRMStoreViewModel<Store: PRMStoreBridge> {
 
     private func emitErrorIfNeeded(_ state: Store.State) {
         guard let code = store.errorOf(state: state) else { return }
+        // 401/403 (map sẵn ở `Throwable.toErrorCode()`, promotionLogic) → báo host qua callback toàn
+        // cục, một chỗ cho cả bốn màn kế thừa lớp này — effect vẫn chảy tiếp xuống UI như cũ, không
+        // nuốt lỗi. Đối ứng `PRMStoreViewModel.kt` bên Android.
+        if code == PromotionErrorCodes.shared.TOKEN_EXPIRED {
+            PromotionSDK.getCallback()?.onExpireToken()
+        }
         onEffect?(PRMEffectShowError(errorCode: code))   // view map code → chuỗi
         store.dispatch(intent: store.consumeErrorIntent)
     }

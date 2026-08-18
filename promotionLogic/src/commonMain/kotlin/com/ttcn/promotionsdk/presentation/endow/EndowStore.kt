@@ -200,15 +200,20 @@ class EndowStore(
         // Gồm cả dịch vụ: hai điểm vào cùng đơn nhưng khác `serviceCode` là hai danh sách ưu
         // đãi khác nhau — thiếu nó thì widget giữ nguyên kết quả của dịch vụ trước.
         val orderKey = "${ctx.getOrderId().orEmpty()}|${ctx.getOrderValue().orEmpty()}|${ctx.getService().orEmpty()}"
-        if (_state.value.hasLoadedInitial && loadedOrderKey == orderKey) return
+        // `isLoading` chặn request đang bay dở: `PRMEndowView` gọi hàm này HAI LẦN liền nhau (một lần
+        // theo cờ cache, một lần sau khi cờ server về) — thiếu vế `isLoading` thì lần gọi thứ hai lọt
+        // qua trong lúc request đầu chưa kịp trả (`hasLoadedInitial` vẫn false), bắn trùng `findEligible`.
+        if (loadedOrderKey == orderKey && (_state.value.hasLoadedInitial || _state.value.isLoading)) return
         if (loadedOrderKey != null && loadedOrderKey != orderKey) {
             // Đơn khác → vứt sạch kết quả của đơn cũ. Không giữ lại gì: `appliedDiscounts` mang số
             // tiền giảm tính theo orderValue cũ, hiện tiếp là hiện số sai.
             _state.value = EndowState()
         }
         loadedOrderKey = orderKey
+        // Set ĐỒNG BỘ trước khi launch — nếu để trong coroutine thì lần gọi thứ hai vẫn có thể chen
+        // vào khoảng hở giữa lúc `scope.launch` lập lịch và lúc coroutine thực sự chạy.
+        _state.update { it.copy(isLoading = true) }
         scope.launch {
-            _state.update { it.copy(isLoading = true) }
             runCatching {
                 findEligibleCampaignsUseCase(
                     FindEligibleCampaignsRequest(
