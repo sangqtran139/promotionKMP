@@ -26,14 +26,20 @@
 # Riêng `local`:   --skip-app, --install, --run
 # Riêng `publish`: --target viettelmoney|artifactory|local, --yes, --write, --dry-run
 #
-#   -f, --force             cho phép ĐÈ bản đã có trên server, và dọn cache local của đúng
-#                           version đó (~/.m2 + ~/.gradle/caches). Xem mục "Build đè" bên dưới.
+#   -f, --force             ĐÈ thẳng bản đã có trên server (khỏi hỏi), và dọn cache local của
+#                           đúng version đó (~/.m2 + ~/.gradle/caches). Xem mục "Build đè" bên dưới.
 #
 # Chế độ đặt ở đâu cũng được: `publish --force` hay `--force publish` đều nhận.
 #
 # ── Build đè ─────────────────────────────────────────────────────────────────────────────────
-# Mặc định script CẢNH BÁO khi version đã tồn tại trên repo và bắt xác nhận tay, vì bản đã phát
-# hành là thứ người khác đang build theo. `--force` bỏ chốt đó.
+# Script KHÔNG bao giờ tự đè: bản đã phát hành là thứ người khác đang build theo.
+#
+# Chạy tay (có TTY, không `--yes`) mà version đã tồn tại thì nó HỎI "Ghi đè bản đang có? [y/N]" —
+# trả lời `y` là đúng bằng `--force`. Hỏi ngay lúc probe, trước khi build. Không có ai để trả lời
+# (CI, pipe) hoặc đang `--yes` thì CHẶN, phải `--force` tường minh. Giống hệt build-ios.sh.
+#
+# Chốt này chỉ có với `--target viettelmoney` và version không phải -SNAPSHOT: chỉ URL đó là cố
+# định nên probe được. `--target artifactory` không probe — server tự từ chối nếu repo immutable.
 #
 # Đè xong thì cache local thành BẪY: Gradle đã giữ bản cũ theo đúng toạ độ group:module:version,
 # nên máy bạn vẫn build với artifact cũ trong im lặng — không lỗi, không cảnh báo. Vì vậy `--force`
@@ -67,6 +73,7 @@ ASSUME_YES=false
 DO_WRITE=false
 DRY_RUN=false
 FORCE=false
+OVERWRITING=false   # bật khi probe thấy version đã tồn tại và người dùng cho đè
 
 APP_ID="com.ttcn.promotionsdk.app"
 LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
@@ -366,17 +373,39 @@ if [[ "$TARGET" == "viettelmoney" && "$SDK_VERSION" != *SNAPSHOT ]] && command -
         --max-time 15 -I "$probe_url" 2>/dev/null || echo "000")"
     if [[ "$http_code" == "200" ]]; then
         if [[ "$FORCE" == true ]]; then
+            OVERWRITING=true
             echo "⚠ Version $SDK_VERSION ĐÃ có trên repo — ĐÈ theo --force. Repo release bật immutable thì server vẫn từ chối." >&2
+        elif [[ "$ASSUME_YES" != true && -t 0 ]]; then
+            # Có người ngồi trước máy thì HỎI — đối xứng build-ios.sh. Probe chạy TRƯỚC khi build
+            # nên trả lời "không" cũng chưa mất phút nào.
+            #
+            # Trả "y" thì bật luôn $FORCE chứ không chỉ cho đi tiếp: trên Android `--force` còn kéo
+            # theo dọn cache local. Đè mà không dọn thì Gradle giữ nguyên artifact cũ theo đúng toạ
+            # độ group:module:version, máy bạn build với bản cũ TRONG IM LẶNG — bẫy tả ở đầu file.
+            echo "⚠ Version $SDK_VERSION ĐÃ có trên repo — bản đã phát hành là thứ người khác đang build theo." >&2
+            echo "  Repo release thường bật immutable: đè có thể vẫn bị server từ chối giữa chừng." >&2
+            printf 'Ghi đè bản đang có? [y/N]: '
+            read -r overwrite_answer
+            if [[ "$overwrite_answer" == "y" || "$overwrite_answer" == "Y" ]]; then
+                FORCE=true
+                OVERWRITING=true
+            else
+                echo "Đã huỷ. Tăng version rồi chạy lại."
+                exit 0
+            fi
         else
-            echo "⚠ Version $SDK_VERSION ĐÃ có trên repo. Repo release thường không cho ghi đè — nhiều khả năng publish sẽ bị từ chối." >&2
-            echo "  Muốn đè thật thì thêm --force (kèm dọn cache local)." >&2
-            ASSUME_YES=false   # trường hợp này bắt buộc phải có người xác nhận
+            # Không có ai để trả lời (CI, pipe), hoặc đang --yes: KHÔNG tự đè.
+            # `--yes` nghĩa là "khỏi hỏi lại những gì tôi đã quyết", không phải "đồng ý sẵn cả việc
+            # chưa từng được hỏi". Muốn CI đè thì phải viết --force ra tường minh.
+            echo "❌ Version $SDK_VERSION ĐÃ có trên repo — bản đã phát hành là thứ người khác" >&2
+            echo "   đang build theo. Tăng version, hoặc --force nếu thực sự muốn ghi đè." >&2
+            exit 1
         fi
     fi
 fi
 
 echo
-echo "  Đích           : $TARGET_LABEL"
+echo "  Đích           : $TARGET_LABEL" "$([[ "$OVERWRITING" == true ]] && echo '← GHI ĐÈ bản đang có')"
 echo "  promotion      : $SDK_VERSION" "$([[ "$SDK_VERSION" != "$CURRENT_SDK_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_SDK_VERSION)")"
 echo "  promotionLogic : $LOGIC_VERSION" "$([[ "$LOGIC_VERSION" != "$CURRENT_LOGIC_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_LOGIC_VERSION)")"
 echo "  Gradle         : ./gradlew ${GRADLE_TASKS[*]} ${GRADLE_ARGS[*]}"

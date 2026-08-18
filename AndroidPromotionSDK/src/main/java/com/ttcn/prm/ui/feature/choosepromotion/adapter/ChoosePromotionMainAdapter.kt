@@ -224,13 +224,18 @@ internal class ChoosePromotionMainAdapter(
                 cbUseVoucher.isFocusable = false
 
                 // Không đủ điều kiện → làm mờ card + dải cảnh báo + nhãn lý do, ẩn "Chi tiết" và checkbox.
-                // Đối ứng iOS: `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText`
-                // (lý do lấy từ `unmatchedRules`, dự phòng "Không đủ điều kiện").
+                // Đối ứng iOS: `isDisabled` (blur overlay) + `stateText` (lý do lấy từ
+                // `unmatchedRules`, dự phòng "Không đủ điều kiện").
                 ctlTop.alpha = if (canUse) 1f else 0.6f
-                // Đối ứng iOS `warningView.isHidden = viewModel.isEligible`: hiện/ẩn theo đúng `usable`
-                // của findEligible response (qua `canUse`), không tự suy thêm điều kiện nào khác.
-                ctlNotEnoughApplyVoucher.isVisible = !canUse
-                imgCircleNotEnoughApplyVoucher.isVisible = !canUse
+                // Dải vàng CHỈ cho ca "đơn hàng chưa thoả điều kiện" (`usable=false` từ findEligible).
+                // Voucher HẾT HẠN cũng `!canUse` nhưng không hiện dải — hết hạn thì sửa đơn kiểu gì
+                // cũng không dùng được, không phải chuyện điều kiện. Luật ở store
+                // (`ChooseOffer.showsIneligibleWarning()`), đối ứng iOS `warningView.isHidden`.
+                val showsWarning = voucher.showsIneligibleWarning
+                ctlNotEnoughApplyVoucher.isVisible = showsWarning
+                // Khuyết đáy đổi sang bản VÀNG chỉ khi có dải nằm sau; ca hết hạn giữ khuyết xám.
+                imgCircleNotEnoughApplyVoucher.isVisible = showsWarning
+                // Badge lý do thì vẫn hiện cho MỌI ca không dùng được ("Đã hết hạn" / câu unmatchedRules).
                 txtExpired.isVisible = !canUse
                 // Hết hạn có chuỗi riêng; các ca `usable=false` khác thì dùng câu server gửi kèm
                 // (`unmatchedRules`). Cùng cách phân giải với `MyPromotionAdapter`.

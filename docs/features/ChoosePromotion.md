@@ -22,7 +22,7 @@ Mọi hàm dưới đây là extension của `ChoosePromotionState` trong `Choos
 |---|---|---|---|
 | `selectedOffers()` | Ưu đãi user đang chọn → gửi đi validate & áp | `ChoosePromotionViewModel.selectedOffers()` | `ChoosePromotionViewModel.selectedOffers()` |
 | `allOffers()` | Gộp hai nhóm về `EligibleOffer`, "của tôi" trước | (qua `selectedOffers`) | `openDetail(voucherId:)` |
-| `canApply()` | Nút "Áp dụng" bấm được chưa | `btnApply.isEnabled` | `Display.canApply` |
+| `canApply()` | Nút "Áp dụng" bấm được chưa (gồm cả **đang chờ kết quả áp**) | `btnApply.isEnabled` | `Display.canApply` |
 | `showsSelectedCount()` | Hiện thanh "Đã chọn N voucher" | `updateApplyButtonState` | `Display.showsSelectedCount` |
 | `showsNoResult()` | Hiện view "không tìm thấy" thay cho list | `observeData` | `Display.showsNoResult` |
 | `highlightKeyword()` | Từ khoá tô đậm (đã trim) | `rebuildList` | `buildSections` |
@@ -229,6 +229,34 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
 > **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`
 > bên iOS (completion của `endowVM.validateAndApply`).
 
+### Chống spam nút "Áp dụng"
+
+Lượt validate mất vài trăm ms tới vài giây; không khoá nút thì mỗi cú chạm là một lượt
+`validateStackableDiscounts` nữa cho **cùng một bộ voucher**, rồi n callback cùng chạy về — n popup
+lỗi, hoặc `goBack()`/`pop()` nhiều lần.
+
+Cờ nằm ở state dùng chung: `ChoosePromotionState.isApplying`, bật/tắt bằng
+`ChoosePromotionIntent.ApplyStarted` / `ApplyFinished`, và `canApply()` trả `false` khi nó bật —
+nên **nút tự tắt ở cả hai nền tảng** mà không bên nào phải thêm rule riêng.
+
+Vì sao native phải tự bắn hai intent (thay vì store tự biết): lượt validate **không chạy ở store
+này** mà ở `EndowStore` của widget. Store màn Chọn chỉ giữ cờ.
+
+| | Android | iOS |
+|---|---|---|
+| Bắn `ApplyStarted` | `ChoosePromotionFragment.onApplyClicked` | `ChoosePromotionViewController.didTapApplyButton` |
+| Bắn `ApplyFinished` | callback `onSettled` của `PRMEndowView.applySelectedOffers` | closure `onSettled` truyền qua `vc.onApplyVoucher` |
+| Chặn tức thời | `if (viewModel.state.value.isApplying) return` | `guard !viewModel.currentState.isApplying` |
+
+Hai chỗ dễ làm hỏng:
+
+1. **Quên `ApplyFinished` ở một nhánh** → nút khoá vĩnh viễn, user phải thoát màn. Mọi đường ra đều
+   phải gọi: `applySelectedOffers` bên Android gọi `onSettled` cả khi widget đã detach;
+   `PromotionSDKImpl` bên iOS gọi `onSettled()` cả trong nhánh `guard let self` hỏng.
+2. **Chỉ dựa vào `isEnabled`/`alpha` của nút.** Cả hai nền tảng render nút từ state phát ra ở lượt
+   sau (Android collect `StateFlow`, iOS `watchState`), nên vẫn hở một khung hình cho cú chạm thứ
+   hai. Vì vậy handler đọc thẳng state đồng bộ (`state.value` / `currentState`) rồi mới chạy tiếp.
+
 - Use case: `ValidateStackableDiscountsUseCase` (Domain) → repository → API, gọi từ `EndowStore`.
 - `objectId` gửi lên là `EligibleOffer.id`: `voucherId` nếu khách đã sở hữu, ngược lại `campaignId`.
 - Pre-select khi mở lại màn: **tất cả** `discountDetails` đang áp (kể cả item không còn hợp lệ) để user
@@ -242,12 +270,29 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 
 | Quyết định | Nguồn | Android | iOS |
 |---|---|---|---|
-| Còn dùng được | `ChooseOffer.isUsable` = `usable` (server) **AND** chưa quá `expireDate` → `MyVoucherListItem.isEnabled` | mờ card + dải "Chưa đủ điều kiện áp dụng" + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `isEligible` (warningView) + `stateText` |
+| Còn dùng được | `ChooseOffer.isUsable` = `usable` (server) **AND** chưa quá `expireDate` → `MyVoucherListItem.isEnabled` | mờ card + nhãn lý do, ẩn "Chi tiết" & checkbox | `isDisabled` (blur overlay) + `stateText` + `showsCheckbox` |
+| **Hiện dải "Chưa đủ điều kiện áp dụng"** | `ChooseOffer.showsIneligibleWarning()` = `!source.usable` — **chỉ cờ của server** | `MyVoucherListItem.showsIneligibleWarning` → `ctlNotEnoughApplyVoucher` + `imgCircleNotEnoughApplyVoucher` | `MyPromotionCellViewModel.showsIneligibleWarning` → `warningView.isHidden` |
 | Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
+| **Hết hạn** | `ChooseOffer.isExpired` (quá `expireDate`) — **kéo `isUsable` = false**, nhưng **không** kéo dải | nhãn "Đã hết hạn" (`prm_status_expired`) đè `displayStatusLabel` | `stateText: .expired` truyền từ `buildSections()` |
 | Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
 
 ### Dải "Chưa đủ điều kiện áp dụng" phải **luồn xuống dưới card**
+
+> **Hết hạn KHÔNG hiện dải này.** Dải nói đúng một chuyện: *đơn hàng hiện tại* chưa thoả điều kiện
+> của ưu đãi (chưa đủ giá trị tối thiểu, sai sản phẩm…) — sửa đơn là dùng được. Ưu đãi **hết hạn**
+> thì sửa đơn kiểu gì cũng vô ích, treo "Chưa đủ điều kiện áp dụng" lên là sai nghĩa; ca đó chỉ mờ
+> card + badge "Đã hết hạn".
+>
+> Bẫy: `ChooseOffer.isUsable` đã **gộp** hai lý do (`usable && !expired`), nên bám thẳng `isUsable`
+> để bật dải là dính luôn ca hết hạn — cả hai nền tảng từng sai đúng kiểu đó. Dải hỏi **đúng cờ của
+> server**: `ChooseOffer.showsIneligibleWarning()` = `!source.usable`, **một chỗ duy nhất**; Fragment
+> và Cell chỉ đọc, không bên nào tự suy lại.
+>
+> Ô tick (ẩn cho **mọi** ca không dùng được, gồm cả hết hạn): Android `cbUseVoucher.visibility = INVISIBLE`, iOS `showsCheckbox: offer.isUsable`
+> (`checkboxButton.isHidden`). **Ẩn chứ không bỏ chỗ** — checkbox không nằm trong `UIStackView` nên
+> constraint "merchant kết thúc trước checkbox 8px" vẫn sống, khớp INVISIBLE bên Android. Để `true`
+> cứng như trước thì ô tick vẫn lòi ra sau lớp phủ mờ, lệch Android.
 
 Dải cao **30**, bị card đè **8**, chỉ lòi ra **22**; nội dung (icon + chữ) căn giữa theo phần lòi ra
 chứ không theo cả dải. Không phải chi tiết trang trí: card là hình coupon — bo góc 12 + một khuyết
@@ -256,6 +301,7 @@ tròn ở cạnh đáy — nên dải mà chỉ nằm kề bên dưới thì m�
 | | Android | iOS |
 |---|---|---|
 | Dải | `ctlNotEnoughApplyVoucher`, khai báo **trước** `ctlTop` (vẽ sau lưng card) + `layout_marginBottom="@dimen/_minus22sdp"` | `warningView`, `contentStackView.spacing = -8` + `sendSubviewToBack` |
+| Bật/tắt | `voucher.showsIneligibleWarning` | `!viewModel.showsIneligibleWarning` |
 | Khuyết đáy | khuyết là giả (ảnh tròn đè lên card): đổi `imgCircleBottom` xám → `imgCircleNotEnoughApplyVoucher` vàng | khuyết là thật (cắt trong path `CouponBackgroundView`) → màu vàng của dải tự lộ qua |
 | Làm mờ card | `ctlTop.alpha = 0.6` | `blurOverlayView` **mask theo `CouponBackgroundView.cardPath(for:)`** |
 
@@ -269,7 +315,10 @@ Hai chỗ dễ làm hỏng lại:
    cho một khung bất kỳ để view khác mask theo.
 
 Chiều cao cell: `warningView.isHidden` thì stack bỏ luôn khoảng cách âm, cell co đúng bằng card —
-không cần constraint riêng cho ca "đủ điều kiện".
+không cần constraint riêng cho ca "đủ điều kiện" (và cho ca **hết hạn**, cũng không có dải).
+
+Khuyết đáy vàng (`imgCircleNotEnoughApplyVoucher` bên Android) bật/tắt **cùng cờ với dải**: không có
+dải mà vẫn đổi khuyết sang vàng thì card hết hạn lòi một chấm vàng vô nghĩa ở cạnh dưới.
 
 ## `serviceCode` đi vào request bằng đường nào
 

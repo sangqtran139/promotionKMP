@@ -302,6 +302,10 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
      * Lỗi → KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công → đóng màn. (Giống iOS.)
      */
     private fun onApplyClicked() {
+        // Chặn spam: `btnApply.isEnabled` bám `canApply()` nhưng chỉ đổi khi state phát ra lượt kế
+        // (collect bất đồng bộ), nên vẫn hở một khung hình cho cú bấm thứ hai. Đọc thẳng state ở đây
+        // là bịt hẳn. Đối ứng `guard !state.isApplying` bên iOS.
+        if (viewModel.state.value.isApplying) return
         val offers = viewModel.selectedOffers()
         if (offers.isEmpty()) return
         val apply = onApplySelectedOffers
@@ -312,7 +316,11 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             showErrorDialog(mapPromotionError(ErrorCodes.GENERAL))
             return
         }
+        // Khoá nút cho tới khi `validateStackableDiscounts` trả về (`applySelectedOffers` luôn gọi
+        // `onSettled` ở mọi nhánh, kể cả widget đã detach — nên không có đường nào kẹt khoá).
+        viewModel.dispatch(ChoosePromotionIntent.ApplyStarted)
         apply(offers) { errorCode ->
+            viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
             if (errorCode != null) {
                 // Popup chứ không toast: lỗi validate
                 // bị nuốt hoàn toàn: user bấm "Áp dụng", API hỏng, màn đứng im không một thông báo.

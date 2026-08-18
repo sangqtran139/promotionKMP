@@ -35,19 +35,13 @@ val artifactoryPassword = providers.gradleProperty("artifactoryPassword")
 // callback `withPlugin` chạy lúc subproject áp plugin, tức TRƯỚC dòng `version = …` trong script của
 // nó — lúc đó `project.version` vẫn là "unspecified" và sẽ chọn nhầm repo.
 //
-// **Hai module hai version độc lập** (SDK_VERSION / LOGIC_VERSION — xem gradle.properties), nên repo
-// đích phải tính RIÊNG cho từng module: bump `:promotionLogic` lên -SNAPSHOT trong khi
-// `:AndroidPromotionSDK` vẫn là bản release là chuyện thường, mà một `artifactoryRepoKey` dùng chung
-// sẽ đẩy cả hai vào cùng một repo — bản snapshot lọt vào repo release rồi kẹt luôn ở đó.
+// MỘT version cho cả hai module (SDK_VERSION — xem gradle.properties) nên repo đích cũng chỉ có
+// một: `:promotionLogic` và `:AndroidPromotionSDK` luôn cùng release hoặc cùng snapshot, không còn
+// cảnh lõi -SNAPSHOT trong khi UI đã release.
 val sdkVersion = providers.gradleProperty("SDK_VERSION").getOrElse("1.0.0")
-val logicVersion = providers.gradleProperty("LOGIC_VERSION").getOrElse("1.0.0")
 val snapshotsRepo = providers.gradleProperty("artifactorySnapshotsRepo").getOrElse("libs-snapshot-local")
 val releasesRepo = providers.gradleProperty("artifactoryReleasesRepo").getOrElse("libs-release-local")
-
-fun artifactoryRepoKeyFor(moduleName: String): String {
-    val version = if (moduleName == "promotionLogic") logicVersion else sdkVersion
-    return if (version.endsWith("SNAPSHOT")) snapshotsRepo else releasesRepo
-}
+val artifactoryRepoKey = if (sdkVersion.endsWith("SNAPSHOT")) snapshotsRepo else releasesRepo
 
 // ─── Repo phát hành: Artifactory nội bộ Viettelmoney ──────────────────────────────────────────
 //
@@ -75,9 +69,6 @@ val viettelmoneyUser = localProperties.getProperty("maven.username", "")
 val viettelmoneyPassword = localProperties.getProperty("maven.password", "")
 
 subprojects {
-    // Tên module, chốt ở đây rồi dùng bên trong: repo release/snapshot chọn theo version RIÊNG của
-    // từng module (SDK_VERSION hay LOGIC_VERSION).
-    val moduleName = name
     pluginManager.withPlugin("maven-publish") {
         extensions.configure<PublishingExtension> {
             repositories {
@@ -87,7 +78,7 @@ subprojects {
                 if (baseUrl != null) {
                     maven {
                         name = "artifactory"   // → task publish…ToArtifactoryRepository
-                        url = uri("$baseUrl/${artifactoryRepoKeyFor(moduleName)}")
+                        url = uri("$baseUrl/$artifactoryRepoKey")
                         // Artifactory nội bộ hay chạy http (như Bitbucket của team). Gradle 7+ chặn
                         // http mặc định, chỉ mở đúng khi URL thật sự là http.
                         isAllowInsecureProtocol = baseUrl.startsWith("http://")

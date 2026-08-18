@@ -27,7 +27,7 @@
 # Riêng `local`:   --run, --device 'iPhone 17 Pro'
 # Riêng `publish`: --yes, --dry-run
 #
-#   -f, --force         cho phép ĐÈ bản đã có trên Artifactory. Xem mục "Build đè" bên dưới.
+#   -f, --force         ĐÈ thẳng bản đã có trên Artifactory, khỏi hỏi. Xem mục "Build đè" bên dưới.
 #
 # Chế độ đặt ở đâu cũng được: `publish --force` hay `--force publish` đều nhận.
 #
@@ -36,8 +36,16 @@
 # dùng khi nghi máy mình đang giữ bản cũ.
 #
 # ── Build đè ─────────────────────────────────────────────────────────────────────────────────
-# Mặc định script CHẶN khi version đã tồn tại: bản đã phát hành là thứ người khác đang build theo.
-# `--force` bỏ chốt đó. Cache thì đã được dọn sẵn ở mọi lần publish — cần thế vì SPM có HAI tầng,
+# Script KHÔNG bao giờ tự đè: bản đã phát hành là thứ người khác đang build theo.
+#
+# Chạy tay (có TTY, không `--yes`) mà version đã tồn tại thì nó HỎI "Ghi đè bản đang có? [y/N]" —
+# trả lời `y` là đúng bằng `--force`. Hỏi ngay lúc probe, trước khi build, nên trả lời "không" cũng
+# chưa mất phút nào.
+#
+# Không có ai để trả lời (CI, pipe) hoặc đang `--yes` thì vẫn CHẶN, phải `--force` tường minh:
+# `--yes` là "khỏi hỏi lại những gì tôi đã quyết", không phải đồng ý sẵn cả việc chưa từng được hỏi.
+#
+# Cache thì đã được dọn sẵn ở mọi lần publish — cần thế vì SPM có HAI tầng,
 # cả hai đều đánh key theo URL:
 #
 #   1. <DerivedData>/SourcePackages/artifacts/…            xcframework đã giải nén
@@ -230,8 +238,29 @@ if [[ "$MODE" == "publish" ]]; then
                 if [[ "$FORCE" == true ]]; then
                     # Đè là việc một chiều — phải nói ra, không được lặng lẽ làm.
                     OVERWRITING=true
-                    echo "⚠ Version $SDK_VERSION ĐÃ có trên Artifactory — sẽ GHI ĐÈ theo --force." >&2
+                    echo "⚠ Version $SDK_VERSION ĐÃ có trên Artifactory — ĐÈ theo --force. Repo release bật immutable thì server vẫn từ chối." >&2
+                elif [[ "$ASSUME_YES" != true && -t 0 ]]; then
+                    # Có người ngồi trước máy thì HỎI — đối xứng build-android.sh. Probe chạy TRƯỚC
+                    # khi build nên trả lời "không" cũng chưa mất phút nào.
+                    #
+                    # Trả "y" thì bật luôn $FORCE chứ không chỉ $OVERWRITING: cờ này còn được chuyển
+                    # xuống publish-xcframework.sh, mà bên đó có chốt "đã tồn tại" RIÊNG — thiếu cờ
+                    # là build xong vài phút mới chết ở bước cuối.
+                    echo "⚠ Version $SDK_VERSION ĐÃ có trên Artifactory — bản đã phát hành là thứ người khác đang build theo." >&2
+                    echo "  Repo release thường bật immutable: đè có thể vẫn bị server từ chối giữa chừng." >&2
+                    printf 'Ghi đè bản đang có? [y/N]: '
+                    read -r overwrite_answer
+                    if [[ "$overwrite_answer" == "y" || "$overwrite_answer" == "Y" ]]; then
+                        FORCE=true
+                        OVERWRITING=true
+                    else
+                        echo "Đã huỷ. Tăng version rồi chạy lại."
+                        exit 0
+                    fi
                 else
+                    # Không có ai để trả lời (CI, pipe), hoặc đang --yes: KHÔNG tự đè.
+                    # `--yes` nghĩa là "khỏi hỏi lại những gì tôi đã quyết", không phải "đồng ý sẵn
+                    # cả việc chưa từng được hỏi". Muốn CI đè thì phải viết --force ra tường minh.
                     echo "❌ Version $SDK_VERSION ĐÃ có trên Artifactory — bản đã phát hành là thứ người khác" >&2
                     echo "   đang build theo. Tăng version, hoặc --force nếu thực sự muốn ghi đè." >&2
                     exit 1

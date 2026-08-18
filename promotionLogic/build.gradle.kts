@@ -12,16 +12,16 @@ plugins {
     `maven-publish`
 }
 
-// Version RIÊNG của lõi — KHÔNG dùng chung SDK_VERSION với :AndroidPromotionSDK (xem
-// gradle.properties). Sửa tầng UI không phải bump lõi và ngược lại.
-val logicVersion = (project.findProperty("LOGIC_VERSION") as String?) ?: "1.0.0"
+// DÙNG CHUNG `SDK_VERSION` với :AndroidPromotionSDK — một số cho cả SDK, đối xứng iOS.
+// Từng có `LOGIC_VERSION` riêng; bỏ vì hai số không tách được trên thực tế (xem gradle.properties).
+val sdkVersion = (project.findProperty("SDK_VERSION") as String?) ?: "1.0.0"
 val sdkGroup = (project.findProperty("SDK_GROUP") as String?) ?: "vn.viettelpay.library"
 
-// Toạ độ Maven: `$SDK_GROUP:promotionLogic:<LOGIC_VERSION>` (cả hai từ gradle.properties).
+// Toạ độ Maven: `$SDK_GROUP:promotionLogic:<SDK_VERSION>` (cả hai từ gradle.properties).
 // KMP **tự sinh publication** cho mọi target khi có plugin maven-publish — không tạo tay
 // MavenPublication như bên :AndroidPromotionSDK. Xem docs/android/Distribution.md §3.3.
 group = sdkGroup
-version = logicVersion
+version = sdkVersion
 
 // Repo đích (Artifactory) khai ở **build.gradle.kts gốc** cho cả hai module — Distribution.md §3.4.
 // `publishToMavenLocal` là task built-in, không cần khai `mavenLocal()` ở đây.

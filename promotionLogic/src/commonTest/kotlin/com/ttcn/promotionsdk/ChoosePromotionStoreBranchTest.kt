@@ -26,6 +26,7 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.highlightKeyword
 import com.ttcn.promotionsdk.presentation.choosepromotion.mySeeMoreState
 import com.ttcn.promotionsdk.presentation.choosepromotion.selectedOffers
 import com.ttcn.promotionsdk.presentation.choosepromotion.shouldLoadMoreOther
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsIneligibleWarning
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
@@ -499,6 +500,65 @@ class ChoosePromotionStoreBranchTest {
         assertFalse(o.isUsable, "hết hạn thì không được cho chọn, dù server chưa đánh DISABLED")
         assertTrue(o.isExpired, "native cần cờ này để hiện nhãn 'Đã hết hạn' thay vì badge rỗng")
         assertNull(o.expiringInDays, "đã hết hạn thì không còn là 'sắp hết hạn'")
+    }
+
+    /**
+     * Dải "Chưa đủ điều kiện áp dụng" bám **đúng cờ `usable` của server**, không phải `isUsable`.
+     *
+     * Ưu đãi hết hạn mà server vẫn nói `usable = true` thì `isUsable` = false (client trừ hạn dùng)
+     * nhưng **không** có dải: hết hạn thì sửa đơn kiểu gì cũng vô ích, treo "chưa đủ điều kiện" lên
+     * là sai nghĩa. Ca đó chỉ mờ card + badge "Đã hết hạn". Hai nền tảng từng cùng bám `isUsable`.
+     */
+    @Test
+    fun showsIneligibleWarning_expiredOffer_hasNoWarningStrip() = runTest {
+        val repo = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("a", usable = true, expire = "2000-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.LoadInitial)
+        testScheduler.advanceUntilIdle()
+
+        val o = s.currentState().myOffers.single()
+        assertFalse(o.isUsable, "hết hạn vẫn không cho chọn")
+        assertFalse(o.showsIneligibleWarning(), "nhưng KHÔNG hiện dải 'Chưa đủ điều kiện áp dụng'")
+    }
+
+    /** Server đánh `displayMode = DISABLED` (`usable = false`) — đúng ca của dải. */
+    @Test
+    fun showsIneligibleWarning_serverSaysUnusable_showsWarningStrip() = runTest {
+        val repo = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("a", usable = false, expire = "2099-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.LoadInitial)
+        testScheduler.advanceUntilIdle()
+
+        val o = s.currentState().myOffers.single()
+        assertFalse(o.isUsable)
+        assertFalse(o.isExpired)
+        assertTrue(o.showsIneligibleWarning())
+    }
+
+    /** Còn hạn + server cho dùng → không dải, không mờ. */
+    @Test
+    fun showsIneligibleWarning_usableOffer_hasNoWarningStrip() = runTest {
+        val repo = FakeRepo {
+            EligibleOffersResult(
+                myOffers = listOf(offer("a", usable = true, expire = "2099-01-01")),
+                expireWarningDate = hugeWarning,
+            )
+        }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.LoadInitial)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(s.currentState().myOffers.single().showsIneligibleWarning())
     }
 
     @Test

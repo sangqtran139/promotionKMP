@@ -25,7 +25,10 @@ struct MyPromotionCellViewModel {
     let isDisabled: Bool
     let checkedImage: UIImage?
     let uncheckedImage: UIImage?
-    let isEligible: Bool
+    /// Hiện dải "Chưa đủ điều kiện áp dụng" (chỉ màn Chọn ưu đãi). **Không** đồng nghĩa với
+    /// `!isDisabled`: voucher HẾT HẠN cũng `isDisabled = true` nhưng không hiện dải — hết hạn không
+    /// phải chuyện điều kiện của đơn hàng. Luật ở store: `ChooseOffer.showsIneligibleWarning()`.
+    let showsIneligibleWarning: Bool
     /// Keyword highlight title (chỉ dùng ở màn Search). nil = không highlight.
     let highlightKeyword: String?
     /// Số ngày còn lại khi voucher sắp hết hạn — **do store (promotionLogic) tính** theo
@@ -50,7 +53,7 @@ struct MyPromotionCellViewModel {
          isDisabled: Bool = false,
          checkedImage: UIImage? = nil,
          uncheckedImage: UIImage? = nil,
-         isEligible: Bool = true,
+         showsIneligibleWarning: Bool = false,
          highlightKeyword: String? = nil,
          expiringInDays: Int? = nil) {
         self.id = id
@@ -66,7 +69,7 @@ struct MyPromotionCellViewModel {
         self.isDisabled = isDisabled
         self.checkedImage = checkedImage
         self.uncheckedImage = uncheckedImage
-        self.isEligible = isEligible
+        self.showsIneligibleWarning = showsIneligibleWarning
         self.highlightKeyword = highlightKeyword
         self.expiringInDays = expiringInDays
     }
@@ -134,7 +137,8 @@ struct MyPromotionCellViewModel {
             isDisabled: derivedIsDisabled,
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
-            isEligible: isEnabled,
+            // Màn "Ưu đãi của tôi" không có dải cảnh báo — chỉ màn Chọn ưu đãi mới dựng.
+            showsIneligibleWarning: false,
             highlightKeyword: highlightKeyword,
             expiringInDays: expiringInDays
         )
@@ -143,8 +147,11 @@ struct MyPromotionCellViewModel {
     /// Ưu đãi đủ/không đủ điều kiện cho đơn hàng (Find Eligible Campaigns).
     ///
     /// - Parameter isEnabled: quyết định từ store (`ChooseOffer.isUsable`) — xem init phía trên.
+    /// - Parameter showsIneligibleWarning: dải "Chưa đủ điều kiện áp dụng" — cũng từ store
+    ///   (`ChooseOffer.showsIneligibleWarning()`), KHÔNG suy từ `isEnabled` vì ca hết hạn không có dải.
     init(offer: EligibleOffer,
          isEnabled: Bool,
+         showsIneligibleWarning: Bool,
          buttonTitle: String? = nil,
          showsCheckbox: Bool = false,
          isChecked: Bool = false,
@@ -191,7 +198,7 @@ struct MyPromotionCellViewModel {
             isDisabled: !isEnabled,
             checkedImage: checkedImage,
             uncheckedImage: uncheckedImage,
-            isEligible: isEnabled,
+            showsIneligibleWarning: showsIneligibleWarning,
             highlightKeyword: highlightKeyword,
             expiringInDays: expiringInDays
         )

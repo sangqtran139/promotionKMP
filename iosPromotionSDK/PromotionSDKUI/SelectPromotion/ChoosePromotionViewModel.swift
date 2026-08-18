@@ -159,8 +159,16 @@ private extension ChoosePromotionState {
             MyPromotionCellViewModel(
                 offer: offer.source,
                 isEnabled: offer.isUsable,
+                // Dải cảnh báo bám luật riêng ở store, KHÔNG phải `!isUsable`: ca hết hạn không có dải.
+                showsIneligibleWarning: offer.showsIneligibleWarning(),
                 buttonTitle: PromotionUIStrings.detail,
-                showsCheckbox: true,
+                // Không chọn được (hết hạn HOẶC chưa đủ điều kiện) → giấu luôn ô tick, không chỉ làm
+                // mờ. Đối ứng Android `ChoosePromotionMainAdapter`: `cbUseVoucher.visibility = INVISIBLE`.
+                // Trước đây luôn `true` nên ô tick vẫn lòi ra sau lớp phủ mờ trong khi Android đã ẩn.
+                // `isHidden` ở đây tương đương INVISIBLE bên Android: checkbox không nằm trong
+                // UIStackView nên constraint (merchant kết thúc trước checkbox 8px) vẫn giữ nguyên,
+                // card không co lại.
+                showsCheckbox: offer.isUsable,
                 isChecked: state.isSelected(id: offer.source.id),
                 // Hết hạn có chuỗi riêng. Không truyền thì cell rơi vào nhánh mặc định
                 // `unmatchedRules.first ?? .ineligible` → hiện "Không đủ điều kiện", sai nghĩa.

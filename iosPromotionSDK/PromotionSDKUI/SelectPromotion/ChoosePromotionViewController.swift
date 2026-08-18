@@ -36,7 +36,11 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     private var sections: [ChoosePromotionViewModel.PromotionSection] = []
 
     /// Callback trả về danh sách promotion đã chọn về host (tương tự Android onApplyVoucher).
-    var onApplyVoucher: (([EligibleOffer]) -> Void)?
+    ///
+    /// Tham số thứ hai (`onSettled`) **bắt buộc phải được gọi** khi lượt validate có kết quả — thành
+    /// công hay lỗi đều tính — nếu không nút "Áp dụng" khoá vĩnh viễn. Đối ứng tham số `onSettled`
+    /// của `PRMEndowView.applySelectedOffers` bên Android.
+    var onApplyVoucher: (([EligibleOffer], @escaping () -> Void) -> Void)?
 
     /// Forward callback "Áp dụng" từ màn chi tiết (đẩy tiếp tới SDK boundary).
     var onApplyVoucherFromDetail: ((String) -> Void)?
@@ -142,9 +146,18 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     /// Bấm "Áp dụng" → trả offers đang chọn cho widget (`EndowStore` validate). VM lọc từ store,
     /// VC không tự đọc state. Đối ứng `ChoosePromotionFragment.onApplyClicked` bên Android.
     @objc private func didTapApplyButton() {
+        // Chặn spam: `applyButton.isEnabled` bám `canApply()` nhưng chỉ đổi ở lượt state kế tiếp,
+        // vẫn hở cho cú chạm thứ hai. Đọc thẳng state ở đây là bịt hẳn. Đối ứng Android
+        // `if (viewModel.state.value.isApplying) return`.
+        guard !viewModel.currentState.isApplying else { return }
         let offers = viewModel.selectedOffers()
         guard !offers.isEmpty else { return }
-        onApplyVoucher?(offers)
+        // Khoá nút tới khi `validateStackableDiscounts` trả về. `onSettled` phải chạy ở mọi nhánh,
+        // kể cả nhánh lỗi — xem KDoc của `onApplyVoucher`.
+        viewModel.dispatch(ChoosePromotionIntentApplyStarted.shared)
+        onApplyVoucher?(offers) { [weak self] in
+            self?.viewModel.dispatch(ChoosePromotionIntentApplyFinished.shared)
+        }
     }
 
     /// Màn Chi tiết (mở từ đây) bấm "Áp dụng" → tick voucher đó. Router gọi vào, VC chỉ forward.

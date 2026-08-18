@@ -38,6 +38,12 @@ internal data class MyVoucherListItem(
      * **quyết định do store tính**; `null` nếu không áp dụng. UI chỉ format "Còn X ngày".
      */
     val expiringInDays: Int? = null,
+    /**
+     * Hiện dải "Chưa đủ điều kiện áp dụng" (chỉ màn Chọn ưu đãi) — **quyết định do store tính**
+     * (`ChooseOffer.showsIneligibleWarning()`). Khác [isEnabled]: voucher HẾT HẠN cũng `isEnabled =
+     * false` nhưng KHÔNG hiện dải, vì đó không phải chuyện điều kiện của đơn hàng.
+     */
+    val showsIneligibleWarning: Boolean = false,
 )
 
 internal data class TabItem(

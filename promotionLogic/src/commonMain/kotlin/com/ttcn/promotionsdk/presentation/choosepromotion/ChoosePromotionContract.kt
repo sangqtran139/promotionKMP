@@ -44,6 +44,15 @@ data class ChoosePromotionState(
      * để quyết định "có hiện view rỗng không" — hiện được một nhịp rồi biến mất, màn trắng trơn.
      */
     val loadFailed: Boolean = false,
+    /**
+     * Đang chờ `validateStackableDiscounts` của lượt bấm "Áp dụng" — bật từ lúc bấm tới lúc có
+     * response (kể cả response lỗi).
+     *
+     * Chỉ để **khoá nút**, không phải cờ loading của màn: shimmer/pull-to-refresh không đọc cờ này.
+     * Việc validate chạy ở `EndowStore` (widget) chứ không ở store này, nên native phải báo hai đầu
+     * bằng [ChoosePromotionIntent.ApplyStarted] / [ChoosePromotionIntent.ApplyFinished].
+     */
+    val isApplying: Boolean = false,
 )
 
 sealed interface ChoosePromotionIntent {
@@ -90,6 +99,17 @@ sealed interface ChoosePromotionIntent {
     /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
     data object SeeMoreMy : ChoosePromotionIntent
     data object ConsumeError : ChoosePromotionIntent
+
+    /**
+     * User vừa bấm "Áp dụng" và lượt validate đã gửi đi → khoá nút ([ChoosePromotionState.isApplying]).
+     *
+     * Phải do native bắn vì lượt validate không chạy ở store này (nó nằm ở `EndowStore` của widget).
+     * **Bắt buộc có [ApplyFinished] đối xứng ở MỌI nhánh kết thúc** — quên một nhánh là nút chết luôn.
+     */
+    data object ApplyStarted : ChoosePromotionIntent
+
+    /** Lượt validate đã có kết quả (thành công hay lỗi đều tính) → mở khoá nút. */
+    data object ApplyFinished : ChoosePromotionIntent
 }
 
 /**
@@ -166,6 +186,10 @@ fun ChoosePromotionState.showsSelectedCount(): Boolean =
  *    server trả về không dùng được nữa, hoặc **biến mất hẳn** khỏi danh sách — trường hợp sau lộ ra
  *    ở chỗ số offer khớp được ít hơn số id đang tick.
  *
+ * 4. **Đang chờ kết quả áp** ([ChoosePromotionState.isApplying]) → disable tới khi có response.
+ *    Không có nhánh này thì user bấm liên tiếp là gửi n lượt `validateStackableDiscounts` chồng nhau
+ *    cho cùng một bộ voucher, và n callback cùng chạy về (n popup lỗi, hoặc pop màn nhiều lần).
+ *
  * Xét [ChooseOffer.isUsable] chứ không phải cờ thô `source.usable`: `isUsable` đã gộp cả **hết hạn**
  * (xem [toChooseOffer]). Voucher vừa hết hạn ngay lúc nạp lại thì `source.usable` vẫn `true`, chỉ
  * `isUsable` bắt được.
@@ -174,6 +198,7 @@ fun ChoosePromotionState.canApply(): Boolean {
     val ids = selectedIds.toSet()
     if (ids.isEmpty()) return false
     if (isRefreshing) return false
+    if (isApplying) return false
     val selected = (myOffers + otherOffers).filter { it.source.id in ids }
     return selected.map { it.source.id }.toSet().size == ids.size && selected.all { it.isUsable }
 }
@@ -218,6 +243,20 @@ data class ChooseOffer(
      */
     val isExpired: Boolean,
 )
+
+/**
+ * Hiện dải "Chưa đủ điều kiện áp dụng" dưới card hay không.
+ *
+ * **Chỉ hỏi server, đúng một cờ [EligibleOffer.usable]** (`displayMode = "DISABLED"`; lý do nằm ở
+ * `unmatchedRules`). Dải nói về *điều kiện của đơn hàng* — server là bên duy nhất biết chuyện đó.
+ *
+ * **Không** dùng [ChooseOffer.isUsable]: cờ đó là `usable && !expired`, tức đã trộn thêm hạn dùng do
+ * client tự tính, nên bám vào nó là ưu đãi hết hạn cũng bị treo dải — sai nghĩa, vì hết hạn thì sửa
+ * đơn kiểu gì cũng vô ích. Hết hạn đi đường riêng: mờ card + badge "Đã hết hạn" ([ChooseOffer.isExpired]).
+ *
+ * Quyết định nằm ở **một chỗ duy nhất** này, Fragment/Cell chỉ đọc.
+ */
+fun ChooseOffer.showsIneligibleWarning(): Boolean = !source.usable
 
 internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
     // Xem chú thích cùng nội dung ở `VoucherItem.toMyPromotionVoucher`.

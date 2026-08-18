@@ -95,6 +95,10 @@ class ChoosePromotionStore(
             is ChoosePromotionIntent.ToggleSelection -> onToggleSelection(intent.id)
             ChoosePromotionIntent.SeeMoreMy -> onSeeMoreMy()
             ChoosePromotionIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
+            // Chống spam nút "Áp dụng": lượt validate chạy ở `EndowStore` nên store này không tự
+            // biết lúc nào bắt đầu/kết thúc — native báo. Chỉ đổi cờ, không đụng dữ liệu danh sách.
+            ChoosePromotionIntent.ApplyStarted -> _state.update { it.copy(isApplying = true) }
+            ChoosePromotionIntent.ApplyFinished -> _state.update { it.copy(isApplying = false) }
         }
     }
 

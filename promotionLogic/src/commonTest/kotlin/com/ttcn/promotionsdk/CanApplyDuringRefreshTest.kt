@@ -43,6 +43,21 @@ class CanApplyDuringRefreshTest {
         assertFalse(state(listOf(offer("v1")), emptyList()).canApply())
     }
 
+    // ─── 0. Đang chờ kết quả áp → tắt (chống spam) ────────────────────────────
+
+    /**
+     * Bấm "Áp dụng" xong, `validateStackableDiscounts` chưa trả lời → nút phải tắt. Không có nhánh
+     * này thì bấm liên tiếp là gửi nhiều lượt validate chồng nhau cho cùng bộ voucher, và nhiều
+     * callback cùng chạy về (nhiều popup lỗi, hoặc đóng màn nhiều lần).
+     */
+    @Test
+    fun applying_disabledUntilResponse() {
+        val s = state(listOf(offer("v1")), listOf("v1")).copy(isApplying = true)
+        assertFalse(s.canApply(), "đang chờ response thì không cho bấm lại")
+        // Có response (thành công hay lỗi đều dispatch `ApplyFinished`) → bật lại để user thử lại.
+        assertTrue(s.copy(isApplying = false).canApply())
+    }
+
     // ─── 1. Đang refresh → tắt tạm ────────────────────────────────────────────
 
     @Test

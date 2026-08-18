@@ -97,7 +97,11 @@ final class ChoosePromotionItemCell: UITableViewCell {
         promotionCardView.backgroundColor = .clear
         promotionCardView.configure(with: cardModel)
         
-        warningView.isHidden = viewModel.isEligible
+        // Chỉ ca "đơn hàng chưa thoả điều kiện" mới có dải. Voucher hết hạn cũng `isDisabled` nhưng
+        // KHÔNG hiện dải — xem `ChooseOffer.showsIneligibleWarning()` bên promotionLogic. Ẩn dải thì
+        // stack bỏ luôn khoảng cách âm, cell co đúng bằng card. Đối ứng Android
+        // `ctlNotEnoughApplyVoucher.isVisible`.
+        warningView.isHidden = !viewModel.showsIneligibleWarning
     }
 }
 

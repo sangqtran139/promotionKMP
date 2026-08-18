@@ -1,6 +1,7 @@
 package com.ttcn.prm.ui.feature.ext
 
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseOffer
+import com.ttcn.promotionsdk.presentation.choosepromotion.showsIneligibleWarning
 import com.ttcn.promotionsdk.config.AvailableService
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
@@ -130,5 +131,8 @@ internal fun ChooseOffer.toVoucherListItem(): MyVoucherListItem {
         // `usable = true` (server chưa đánh DISABLED) nên `displayStatusLabel` của nó rỗng — giữ
         // nguyên là badge đỏ trống trơn.
         status = if (isExpired) VoucherStatus.EXPIRED else base.status,
+        // Dải "Chưa đủ điều kiện áp dụng" KHÁC với "không dùng được": hết hạn cũng không dùng được
+        // nhưng không phải chuyện điều kiện đơn hàng. Luật ở store, đừng suy lại từ `isEnabled`.
+        showsIneligibleWarning = showsIneligibleWarning(),
     )
 }

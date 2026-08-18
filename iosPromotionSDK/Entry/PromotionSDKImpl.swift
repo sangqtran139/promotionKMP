@@ -643,8 +643,13 @@ final class PromotionSDKImpl: NSObject {
             ),
             navigator: nav
         )
-        vc.onApplyVoucher = { [weak self, weak host, weak vc] (promotions: [EligibleOffer]) in
-            guard let self, !promotions.isEmpty else { return }
+        vc.onApplyVoucher = { [weak self, weak host, weak vc] (promotions: [EligibleOffer], onSettled: @escaping () -> Void) in
+            // `onSettled` mở khoá nút "Áp dụng" (chống spam trong lúc chờ validate) → phải gọi ở MỌI
+            // đường ra, kể cả nhánh guard này, nếu không nút khoá vĩnh viễn.
+            guard let self, !promotions.isEmpty else {
+                onSettled()
+                return
+            }
 
             let pop: () -> Void = {
                 if let navCtrl = host?.navigationController {
@@ -657,6 +662,7 @@ final class PromotionSDKImpl: NSObject {
             // Bấm "Áp dụng" -> validate qua EndowStore; widget cập nhật qua `render` (observe).
             // Lỗi -> KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công/không-đủ-điều-kiện -> đóng màn.
             self.endowVM.validateAndApply(promotions) { [weak vc] state in
+                onSettled()
                 if let errorCode = state.errorCode {
                     // Validate hỏng → **popup** (không phải toast): user vừa bấm "Áp dụng" và đang
                     // chờ kết quả, toast trôi mất thì tưởng đã áp xong. Popup buộc phải bấm "Đóng".
