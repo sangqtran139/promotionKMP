@@ -247,6 +247,30 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 | Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
 
+### Dải "Chưa đủ điều kiện áp dụng" phải **luồn xuống dưới card**
+
+Dải cao **30**, bị card đè **8**, chỉ lòi ra **22**; nội dung (icon + chữ) căn giữa theo phần lòi ra
+chứ không theo cả dải. Không phải chi tiết trang trí: card là hình coupon — bo góc 12 + một khuyết
+tròn ở cạnh đáy — nên dải mà chỉ nằm kề bên dưới thì mấy chỗ khuyết/bo đó **hở ra nền list**.
+
+| | Android | iOS |
+|---|---|---|
+| Dải | `ctlNotEnoughApplyVoucher`, khai báo **trước** `ctlTop` (vẽ sau lưng card) + `layout_marginBottom="@dimen/_minus22sdp"` | `warningView`, `contentStackView.spacing = -8` + `sendSubviewToBack` |
+| Khuyết đáy | khuyết là giả (ảnh tròn đè lên card): đổi `imgCircleBottom` xám → `imgCircleNotEnoughApplyVoucher` vàng | khuyết là thật (cắt trong path `CouponBackgroundView`) → màu vàng của dải tự lộ qua |
+| Làm mờ card | `ctlTop.alpha = 0.6` | `blurOverlayView` **mask theo `CouponBackgroundView.cardPath(for:)`** |
+
+Hai chỗ dễ làm hỏng lại:
+
+1. **Đổi thứ tự z, không đổi thứ tự layout.** Bên iOS `sendSubviewToBack` chỉ động tới `subviews`,
+   `arrangedSubviews` giữ nguyên nên stack vẫn xếp card → dải. Đảo `arrangedSubviews` là dải nhảy lên trên.
+2. **Lớp phủ mờ phải cắt theo hình coupon.** `blurOverlayView` mà dùng `cornerRadius` (hình chữ nhật
+   bo góc) thì trắng 60% tràn ra ngoài chỗ khuyết + chỗ bo, phủ bạc lên chính dải vàng nằm sau —
+   nhìn y như bị hở. Vì vậy `CouponBackgroundView.cardPath(for:)` là hàm **thuần**, public, dựng path
+   cho một khung bất kỳ để view khác mask theo.
+
+Chiều cao cell: `warningView.isHidden` thì stack bỏ luôn khoảng cách âm, cell co đúng bằng card —
+không cần constraint riêng cho ca "đủ điều kiện".
+
 ## `serviceCode` đi vào request bằng đường nào
 
 Spec `findEligible` (3.5.4 v19) **không có field `serviceCode`** ở bất kỳ cấp nào — body chỉ gồm

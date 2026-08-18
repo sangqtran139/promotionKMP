@@ -15,6 +15,22 @@ protocol SelectPromotionItemCellDelegate: AnyObject {
 }
 
 final class ChoosePromotionItemCell: UITableViewCell {
+
+    /// Dải "Chưa đủ điều kiện áp dụng" — port `ctlNotEnoughApplyVoucher` của Android
+    /// (`prm_item_choose_promotion.xml`): dải cao 30, **luồn 8 điểm xuống DƯỚI card** nên chỉ lòi ra 22.
+    ///
+    /// Phần luồn vào là thứ làm nó khít: card là hình coupon có bo góc 12 và một khuyết tròn ở cạnh
+    /// đáy, nếu dải chỉ nằm kề bên dưới thì mấy chỗ khuyết đó hở ra nền list. Cho dải nằm SAU card và
+    /// ăn lên 8 điểm thì màu vàng lấp đúng những chỗ ấy — Android làm y hệt bằng `_minus22sdp` +
+    /// `prm_bg_circle_gold` (ảnh tròn vàng đè lên khuyết đáy).
+    private enum Metrics {
+        /// Phần dải bị card che.
+        static let warningOverlap: CGFloat = 8
+        /// Bo góc dưới của dải = bo góc card (`CouponBackgroundView.cornerRadius`) để hai cạnh bên thẳng hàng.
+        static let warningCornerRadius: CGFloat = 12
+    }
+
+    @IBOutlet private weak var contentStackView: UIStackView!
     @IBOutlet private weak var promotionCardView: PromotionCardView!
     @IBOutlet private weak var warningView: UIView!
     
@@ -28,8 +44,16 @@ final class ChoosePromotionItemCell: UITableViewCell {
         
         promotionCardView.delegate = self
         
-        warningView.layer.cornerRadius = 8
+        warningView.backgroundColor = Colors.tokenGold20
+        warningView.layer.cornerRadius = Metrics.warningCornerRadius
         warningView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+
+        // Khoảng cách ÂM = dải bị card đè lên 8 điểm. Stack ẩn arranged subview thì bỏ luôn khoảng
+        // cách này, nên ca "đủ điều kiện" (warningView.isHidden) chiều cao cell vẫn đúng bằng card.
+        contentStackView.spacing = -Metrics.warningOverlap
+        // …và dải phải nằm SAU card. Đổi thứ tự `subviews` không đụng `arrangedSubviews` nên layout
+        // giữ nguyên, chỉ đổi thứ tự vẽ.
+        contentStackView.sendSubviewToBack(warningView)
     }
     
     override func prepareForReuse() {
@@ -73,12 +97,7 @@ final class ChoosePromotionItemCell: UITableViewCell {
         promotionCardView.backgroundColor = .clear
         promotionCardView.configure(with: cardModel)
         
-        if viewModel.isEligible {
-            warningView.isHidden = true
-            // Cập nhật lại bo góc dưới cho card nếu cần (VD: tuỳ code PromotionCardView, tạm thời để mặc định)
-        } else {
-            warningView.isHidden = false
-        }
+        warningView.isHidden = viewModel.isEligible
     }
 }
 

@@ -25,31 +25,31 @@
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </view>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wrn-vw-123">
-                                <rect key="frame" x="0.0" y="20" width="320" height="28"/>
+                                <rect key="frame" x="0.0" y="20" width="320" height="30"/>
                                 <subviews>
                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="info.circle" catalog="system" translatesAutoresizingMaskIntoConstraints="NO" id="img-vw-123">
-                                        <rect key="frame" x="16" y="6.6666666666666661" width="16" height="14.66666666666667"/>
-                                        <color key="tintColor" red="0.94901960780000005" green="0.67843137249999996" blue="0.22352941179999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <rect key="frame" x="9" y="12" width="13" height="13"/>
+                                        <color key="tintColor" red="1" green="0.74509803920000003" blue="0.25490196079999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                         <constraints>
-                                            <constraint firstAttribute="height" constant="16" id="hgt-123"/>
-                                            <constraint firstAttribute="width" constant="16" id="wth-123"/>
+                                            <constraint firstAttribute="height" constant="13" id="hgt-123"/>
+                                            <constraint firstAttribute="width" constant="13" id="wth-123"/>
                                         </constraints>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Chưa đủ điều kiện áp dụng" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="lbl-vw-123">
-                                        <rect key="frame" x="36" y="5.6666666666666679" width="268" height="17"/>
-                                        <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                        <color key="textColor" red="0.20000000000000001" green="0.20000000000000001" blue="0.20000000000000001" alpha="1" colorSpace="calibratedRGB"/>
+                                        <rect key="frame" x="25" y="11.5" width="286" height="14.5"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                        <color key="textColor" red="0.13333333333333333" green="0.13333333333333333" blue="0.13333333333333333" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                 </subviews>
-                                <color key="backgroundColor" red="1" green="0.97254901960784312" blue="0.88235294117647056" alpha="1" colorSpace="calibratedRGB"/>
+                                <color key="backgroundColor" red="1" green="0.94901960784313721" blue="0.85098039215686272" alpha="1" colorSpace="calibratedRGB"/>
                                 <constraints>
-                                    <constraint firstItem="img-vw-123" firstAttribute="centerY" secondItem="wrn-vw-123" secondAttribute="centerY" id="cn-img-cy"/>
-                                    <constraint firstItem="img-vw-123" firstAttribute="leading" secondItem="wrn-vw-123" secondAttribute="leading" constant="16" id="cn-img-ld"/>
-                                    <constraint firstItem="lbl-vw-123" firstAttribute="centerY" secondItem="wrn-vw-123" secondAttribute="centerY" id="cn-lbl-cy"/>
-                                    <constraint firstItem="lbl-vw-123" firstAttribute="leading" secondItem="img-vw-123" secondAttribute="trailing" constant="4" id="cn-lbl-ld"/>
-                                    <constraint firstAttribute="trailing" secondItem="lbl-vw-123" secondAttribute="trailing" constant="16" id="cn-lbl-tr"/>
-                                    <constraint firstAttribute="height" constant="28" id="cn-wrn-hgt"/>
+                                    <constraint firstItem="img-vw-123" firstAttribute="centerY" secondItem="wrn-vw-123" secondAttribute="centerY" constant="4" id="cn-img-cy"/>
+                                    <constraint firstItem="img-vw-123" firstAttribute="leading" secondItem="wrn-vw-123" secondAttribute="leading" constant="9" id="cn-img-ld"/>
+                                    <constraint firstItem="lbl-vw-123" firstAttribute="centerY" secondItem="img-vw-123" secondAttribute="centerY" id="cn-lbl-cy"/>
+                                    <constraint firstItem="lbl-vw-123" firstAttribute="leading" secondItem="img-vw-123" secondAttribute="trailing" constant="3" id="cn-lbl-ld"/>
+                                    <constraint firstAttribute="trailing" secondItem="lbl-vw-123" secondAttribute="trailing" constant="9" id="cn-lbl-tr"/>
+                                    <constraint firstAttribute="height" constant="30" id="cn-wrn-hgt"/>
                                 </constraints>
                             </view>
                         </subviews>
@@ -67,6 +67,7 @@
             <viewLayoutGuide key="safeArea" id="njF-e1-oar"/>
             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
             <connections>
+                <outlet property="contentStackView" destination="stk-vw-123" id="out-stk-123"/>
                 <outlet property="promotionCardView" destination="crd-vw-123" id="out-crd-123"/>
                 <outlet property="warningView" destination="wrn-vw-123" id="out-wrn-123"/>
             </connections>

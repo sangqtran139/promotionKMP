@@ -169,15 +169,20 @@ public class PromotionCardView: PRMTapableView {
         return radio
     }()
     
+    /// Lớp phủ làm mờ card khi `isDisabled` (đối ứng `ctlTop.alpha = 0.6` của Android).
+    ///
+    /// **Cắt theo đúng hình coupon** (`blurOverlayMaskLayer`), không dùng `cornerRadius`: card có khuyết
+    /// tròn ở đáy và bo góc 12, phủ hình chữ nhật thì trắng 60% tràn ra ngoài mấy chỗ đó và làm bạc
+    /// thứ nằm sau card — thấy rõ ở màn chọn ưu đãi, nơi dải "Chưa đủ điều kiện áp dụng" luồn dưới đáy.
     private let blurOverlayView: UIView = {
         let view = UIView()
         view.backgroundColor = UIColor.white.withAlphaComponent(0.6)
-        view.layer.cornerRadius = 16
-        view.clipsToBounds = true
         view.isHidden = true
         view.isUserInteractionEnabled = false
         return view
     }()
+
+    private let blurOverlayMaskLayer = CAShapeLayer()
     
     private var model: PromotionCardModel?
 
@@ -297,6 +302,19 @@ public class PromotionCardView: PRMTapableView {
         blurOverlayView.makeAnchor { make in
             make.edges(to: self)
         }
+        blurOverlayView.layer.mask = blurOverlayMaskLayer
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+
+        guard bounds.width > 0, bounds.height > 0 else { return }
+        // Tắt implicit animation: cell tái sử dụng mà mask "chạy" từ hình cũ sang hình mới thì thấy giật.
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        blurOverlayMaskLayer.frame = bounds
+        blurOverlayMaskLayer.path = backgroundView.cardPath(for: bounds).cgPath
+        CATransaction.commit()
     }
     
     private func setupActions() {

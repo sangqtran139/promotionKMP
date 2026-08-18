@@ -118,22 +118,48 @@ public class CouponBackgroundView: UIView {
     }
     
     private func rebuildPaths() {
+        let path = cardPath(for: bounds)
+        cardLayer.path = path.cgPath
+        layer.shadowPath = path.cgPath
+        dashedLineLayer.path = dashedLinePath(in: bounds).cgPath
+    }
+
+    /// Đường viền coupon (bo góc + khuyết tròn) của một khung bất kỳ — hàm **thuần**, không đụng layer.
+    ///
+    /// Tách ra để view khác mask theo đúng hình này: lớp phủ làm mờ của `PromotionCardView` mà là hình
+    /// chữ nhật bo góc thì nó trùm ra ngoài chỗ khuyết và chỗ bo, phủ trắng lên thứ nằm sau card
+    /// (VD dải "Chưa đủ điều kiện áp dụng" luồn dưới đáy).
+    public func cardPath(for bounds: CGRect) -> UIBezierPath {
         switch cutoutOrientation {
         case .topBottom:
-            buildTopBottomPath()
+            return buildTopBottomPath(in: bounds)
         case .leftRight:
-            buildLeftRightPath()
+            return buildLeftRightPath(in: bounds)
         }
+    }
+
+    private func dashedLinePath(in bounds: CGRect) -> UIBezierPath {
+        let path = UIBezierPath()
+        switch cutoutOrientation {
+        case .topBottom:
+            let dashX = absoluteDashPosition ?? (bounds.width * dashPositionRatio)
+            path.move(to: CGPoint(x: dashX, y: cutoutRadius))
+            path.addLine(to: CGPoint(x: dashX, y: bounds.height - cutoutRadius))
+        case .leftRight:
+            let dashY = absoluteDashPosition ?? (bounds.height * dashPositionRatio)
+            path.move(to: CGPoint(x: cutoutRadius, y: dashY))
+            path.addLine(to: CGPoint(x: bounds.width - cutoutRadius, y: dashY))
+        }
+        return path
     }
     
     // MARK: - Top/Bottom Cutout Path
     
-    private func buildTopBottomPath() {
+    private func buildTopBottomPath(in bounds: CGRect) -> UIBezierPath {
         let width = bounds.width
         let height = bounds.height
         let dashX = absoluteDashPosition ?? (width * dashPositionRatio)
         
-
         let path = UIBezierPath()
         
         path.move(to: CGPoint(x: cornerRadius, y: 0))
@@ -187,20 +213,12 @@ public class CouponBackgroundView: UIView {
         
         path.close()
         
-        cardLayer.path = path.cgPath
-        layer.shadowPath = path.cgPath
-        
-
-        let linePath = UIBezierPath()
-        linePath.move(to: CGPoint(x: dashX, y: cutoutRadius))
-        linePath.addLine(to: CGPoint(x: dashX, y: height - cutoutRadius))
-        
-        dashedLineLayer.path = linePath.cgPath
+        return path
     }
     
     // MARK: - Left/Right Cutout Path
     
-    private func buildLeftRightPath() {
+    private func buildLeftRightPath(in bounds: CGRect) -> UIBezierPath {
         let width = bounds.width
         let height = bounds.height
         let dashY = absoluteDashPosition ?? (height * dashPositionRatio)
@@ -269,15 +287,7 @@ public class CouponBackgroundView: UIView {
         
         path.close()
         
-        cardLayer.path = path.cgPath
-        layer.shadowPath = path.cgPath
-        
-
-        let linePath = UIBezierPath()
-        linePath.move(to: CGPoint(x: cutoutRadius, y: dashY))
-        linePath.addLine(to: CGPoint(x: width - cutoutRadius, y: dashY))
-        
-        dashedLineLayer.path = linePath.cgPath
+        return path
     }
     
     // MARK: - Color
