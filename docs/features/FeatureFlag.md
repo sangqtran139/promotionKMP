@@ -79,6 +79,12 @@ Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn h
 `canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng. Gác nằm **sau** nhánh
 `discountDetails.isEmpty()`: đơn không có voucher nào thì `onSuccess` chạy bất kể cờ.
 
+> **Nhánh thanh toán KHÔNG hiện popup PRM_MOB_021**, khác mọi điểm gác còn lại. Ở các điểm kia user
+> vừa bấm để MỞ một tính năng, im lặng thì màn hình đứng im vô lý nên SDK tự hiện thông báo. Còn
+> `confirmRedemption` nằm giữa luồng thanh toán của **host** — chen popup của SDK vào là cướp quyền
+> điều khiển, trong khi host mới là bên biết phải dừng hay đi tiếp và hiện gì. Cờ tắt vẫn không gọi
+> API và vẫn trả `PRM_MOB_021` ra `onError`; chỉ bỏ phần hiển thị.
+
 Ánh xạ cờ ↔ hàm (giống hệt hai nền tảng):
 
 | Hàm | Cờ |

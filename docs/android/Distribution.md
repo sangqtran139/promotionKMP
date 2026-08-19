@@ -24,14 +24,14 @@ Tài liệu này: cách phát hành, cách host tích hợp, và — phần quan
 ./scripts/build-android.sh --help       # các tuỳ chọn: --clean, --install, --version, --logic-version
 ```
 
-Script hỏi version của **từng module** trước khi publish (Enter = giữ nguyên số trong
+Script hỏi version trước khi publish (một số cho cả hai module — Enter = giữ nguyên số trong
 `gradle.properties`), rồi ép đúng thứ tự **publish trước, build app sau** — bỏ bước publish thì
 Gradle báo `Could not find vn.viettelpay.library:promotion`. Số vừa chọn được truyền tiếp sang bước
 build app, nên `:androidApp` khai đúng bản vừa publish chứ không phải bản trong `gradle.properties`.
 Tương đương chạy tay:
 
 ```bash
-V="-PSDK_VERSION=1.0.1 -PLOGIC_VERSION=1.0.1"
+V="-PSDK_VERSION=1.0.1"
 ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal $V
 ./gradlew :androidApp:assembleDebug -PuseMavenLocal=true $V
 ```
@@ -100,23 +100,28 @@ Hai module cần `group` + `version` để Gradle biết dịch `projects.promot
 
 | Module | groupId | artifactId | version | Đổi tên được? |
 |---|---|---|---|---|
-| `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | `$LOGIC_VERSION` | **Không** — xem cảnh báo dưới |
+| `:promotionLogic` | `$SDK_GROUP` | `promotionLogic` | `$SDK_VERSION` | **Không** — xem cảnh báo dưới |
 | `:AndroidPromotionSDK` | `$SDK_GROUP` | `promotion` | `$SDK_VERSION` | Được — host khai thẳng toạ độ này |
 
-**groupId dùng chung, version thì KHÔNG.** Một group cho cả hai module, nhưng mỗi module một số
-version riêng — sửa tầng UI không phải bump lõi và ngược lại:
+**groupId và version đều dùng chung.** Một group, MỘT số cho cả hai module — đối xứng iOS, nơi
+`MARKETING_VERSION` là một số cho cả gói:
 
 ```properties
 SDK_GROUP=vn.viettelpay.library
-SDK_VERSION=1.0.0     # → promotion      (toạ độ host khai)
-LOGIC_VERSION=1.0.0   # → promotionLogic (lõi KMP)
+SDK_VERSION=1.0.0     # → promotion (toạ độ host khai) VÀ promotionLogic (lõi KMP)
 ```
 
-Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=… -PLOGIC_VERSION=…`, hoặc
-`./scripts/publish-android.sh` (hỏi từng số, Enter suông = giữ nguyên số trong `gradle.properties`).
+Override khi build: `-PSDK_GROUP=… -PSDK_VERSION=…`, hoặc `./scripts/build-android.sh publish`
+(hỏi một lần, Enter suông = giữ nguyên số trong `gradle.properties`).
+
+> **Từng có `LOGIC_VERSION` riêng** với lý do "sửa UI không phải bump lõi". Bỏ vì hai số không tách
+> được trên thực tế: `promotion` trỏ lõi trong metadata (xem ngay dưới) nên hai module **luôn** phải
+> publish cùng lượt — hai con số chỉ tạo thêm một chỗ để lệch. Xoá `LOGIC_VERSION` khỏi
+> `gradle.properties` mà quên `scripts/build-android.sh` thì script chết câm ngay sau bước chọn chế
+> độ (`set -euo pipefail` + `grep` không tìm thấy key) — nay `read_gradle_property` có `|| true`.
 
 > **Chỗ nối hai version không phải khai tay.** `:AndroidPromotionSDK` khai
-> `implementation(projects.promotionLogic)`, Gradle tự ghi `$SDK_GROUP:promotionLogic:$LOGIC_VERSION`
+> `implementation(projects.promotionLogic)`, Gradle tự ghi `$SDK_GROUP:promotionLogic:$SDK_VERSION`
 > vào POM + `module.json` của `promotion`.
 >
 > Hệ quả: **bump lõi thì phải publish lại cả hai**. Đẩy mỗi `promotionLogic` bản mới lên repo thì
@@ -186,7 +191,7 @@ plugins {
 }
 
 group = sdkGroup
-version = logicVersion            // LOGIC_VERSION — độc lập với :AndroidPromotionSDK
+version = sdkVersion              // SDK_VERSION — DÙNG CHUNG với :AndroidPromotionSDK
 
 kotlin {
     // KMP mặc định publish kèm sources.jar. Đây là lõi nghiệp vụ, đẩy sources lên Artifactory là

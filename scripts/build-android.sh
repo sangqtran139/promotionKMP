@@ -13,13 +13,12 @@
 #   ./scripts/build-android.sh local                    # publish ~/.m2 → build APK debug
 #   ./scripts/build-android.sh local --run              # build → cài → mở app trên máy đang cắm
 #   ./scripts/build-android.sh local --skip-app         # chỉ publish vào ~/.m2
-#   ./scripts/build-android.sh publish                  # hỏi 2 version rồi đẩy lên Viettelmoney
-#   ./scripts/build-android.sh publish -v 1.2.0 -l 1.0.0 --yes    # cho CI, không hỏi gì
+#   ./scripts/build-android.sh publish                  # hỏi version rồi đẩy lên Viettelmoney
+#   ./scripts/build-android.sh publish -v 1.2.0 --yes   # cho CI, không hỏi gì
 #   ./scripts/build-android.sh publish --target local   # publish thử vào ~/.m2 (không build app)
 #
 # Tuỳ chọn chung:
-#   -v, --version X         version của `promotion`     (mặc định: SDK_VERSION trong gradle.properties)
-#   -l, --logic-version X   version của `promotionLogic` (mặc định: LOGIC_VERSION)
+#   -v, --version X         version cho CẢ HAI module (mặc định: SDK_VERSION trong gradle.properties)
 #       --clean             dọn build cũ trước
 #   -h, --help              in phần này
 #
@@ -48,10 +47,13 @@
 #
 # Chỉ dọn được máy CHẠY LỆNH. Máy đồng nghiệp và CI đã kéo bản cũ về thì vẫn giữ nó.
 #
-# HAI version ĐỘC LẬP, mỗi module một số. Chế độ `local` KHÔNG hỏi (vòng lặp dev chạy mấy chục lần
-# một ngày); chế độ `publish` hỏi từng số, Enter suông là giữ nguyên. Cả hai module LUÔN publish
-# cùng lượt: `promotion` trỏ LOGIC_VERSION trong metadata, đẩy lệch một bên là host resolve ra bản
-# lõi không tồn tại.
+# MỘT version `SDK_VERSION` cho CẢ HAI module (`promotion` + `promotionLogic`) — đối xứng iOS, nơi
+# `MARKETING_VERSION` là một số cho cả gói. Trước đây tách `LOGIC_VERSION` riêng; bỏ vì hai số không
+# tách được trên thực tế: `promotion` trỏ lõi trong metadata nên hai module LUÔN phải publish cùng
+# lượt, đẩy lệch một bên là host resolve ra bản lõi không tồn tại.
+#
+# Chế độ `local` KHÔNG hỏi version (vòng lặp dev chạy mấy chục lần một ngày); `publish` hỏi một lần,
+# Enter suông là giữ nguyên.
 #
 # App demo lấy SDK từ đâu là do field `useMavenLocal` trong gradle.properties (true = ~/.m2,
 # false = Artifactory) — chế độ `local` tự truyền `-PuseMavenLocal=true` nên chạy đúng bất kể
@@ -64,7 +66,6 @@ cd "$(dirname "$0")/.."   # luôn chạy từ gốc repo, gọi script từ đâ
 MODE=""
 TARGET="viettelmoney"
 SDK_VERSION=""
-LOGIC_VERSION=""
 DO_CLEAN=false
 SKIP_APP=false
 DO_INSTALL=true
@@ -79,7 +80,7 @@ APP_ID="com.ttcn.promotionsdk.app"
 LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
 VIETTELMONEY_URL="https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney"
 
-usage() { sed -n '3,36p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '3,31p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # ─── Tham số ─────────────────────────────────────────────────────────────────────────────────
 # Chế độ là tham số vị trí ĐẦU TIÊN. Bắt riêng trước vòng lặp để `local`/`publish` không bị nhầm
@@ -92,7 +93,6 @@ fi
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -v|--version)       SDK_VERSION="${2:-}"; shift 2 ;;
-        -l|--logic-version) LOGIC_VERSION="${2:-}"; shift 2 ;;
         -t|--target)        TARGET="${2:-}"; shift 2 ;;
         --clean)            DO_CLEAN=true; shift ;;
         --skip-app)         SKIP_APP=true; shift ;;
@@ -150,35 +150,30 @@ fi
 
 # ─── Toạ độ & version ────────────────────────────────────────────────────────────────────────
 
-read_gradle_property()  { grep -E "^$1=" gradle.properties | head -1 | cut -d= -f2-; }
-read_local_property()   { grep -E "^$1=" local.properties 2>/dev/null | head -1 | cut -d= -f2-; }
+# `|| true` KHÔNG thừa: `set -euo pipefail` ở đầu file biến "grep không tìm thấy key" (thoát 1)
+# thành script CHẾT CÂM giữa chừng — không thông báo, không dòng lỗi nào. Đã dính đúng bẫy đó lúc bỏ
+# `LOGIC_VERSION` khỏi gradle.properties: script tắt ngay sau khi user vừa chọn chế độ. Thiếu key
+# phải ra chuỗi rỗng để nhánh `${...:-mặc định}` bên dưới lo tiếp.
+read_gradle_property()  { grep -E "^$1=" gradle.properties 2>/dev/null | head -1 | cut -d= -f2- || true; }
+read_local_property()   { grep -E "^$1=" local.properties  2>/dev/null | head -1 | cut -d= -f2- || true; }
 
 SDK_GROUP="$(read_gradle_property 'SDK_GROUP')";           SDK_GROUP="${SDK_GROUP:-vn.viettelpay.library}"
 CURRENT_SDK_VERSION="$(read_gradle_property 'SDK_VERSION')";     CURRENT_SDK_VERSION="${CURRENT_SDK_VERSION:-1.0.0}"
-CURRENT_LOGIC_VERSION="$(read_gradle_property 'LOGIC_VERSION')"; CURRENT_LOGIC_VERSION="${CURRENT_LOGIC_VERSION:-1.0.0}"
 
 # Chỉ chế độ `publish` mới hỏi version — phát hành thì con số là quyết định, hỏi mới đáng. Vòng lặp
-# dev thì không: lấy thẳng số trong gradle.properties, hai cờ -v/-l để override khi cần.
-if [[ "$MODE" == "publish" && "$ASSUME_YES" != true ]] \
-   && [[ -z "$SDK_VERSION" || -z "$LOGIC_VERSION" ]]; then
+# dev thì không: lấy thẳng số trong gradle.properties, cờ -v để override khi cần.
+if [[ "$MODE" == "publish" && "$ASSUME_YES" != true && -z "$SDK_VERSION" ]]; then
     if [[ ! -t 0 ]]; then
-        echo "Không có TTY để hỏi version — truyền thẳng: $0 publish --version x.y.z --logic-version a.b.c" >&2
+        echo "Không có TTY để hỏi version — truyền thẳng: $0 publish --version x.y.z" >&2
         exit 1
     fi
-    echo "Version cần publish (Enter = giữ nguyên):"
-    if [[ -z "$SDK_VERSION" ]]; then
-        printf '  %-14s [%s]: ' 'promotion' "$CURRENT_SDK_VERSION"; read -r answer
-        SDK_VERSION="${answer:-$CURRENT_SDK_VERSION}"
-    fi
-    if [[ -z "$LOGIC_VERSION" ]]; then
-        printf '  %-14s [%s]: ' 'promotionLogic' "$CURRENT_LOGIC_VERSION"; read -r answer
-        LOGIC_VERSION="${answer:-$CURRENT_LOGIC_VERSION}"
-    fi
+    echo "Version cần publish cho cả promotion + promotionLogic (Enter = giữ nguyên):"
+    printf '  %-14s [%s]: ' 'SDK_VERSION' "$CURRENT_SDK_VERSION"; read -r answer
+    SDK_VERSION="${answer:-$CURRENT_SDK_VERSION}"
     echo
 fi
 
 SDK_VERSION="${SDK_VERSION:-$CURRENT_SDK_VERSION}"
-LOGIC_VERSION="${LOGIC_VERSION:-$CURRENT_LOGIC_VERSION}"
 
 # ─── Dọn artifact cũ trong cache local ───────────────────────────────────────────────────────
 # Gradle đánh cache theo toạ độ group:module:version. Đè một version đã publish mà không dọn thì
@@ -196,9 +191,8 @@ purge_local_artifacts() {
     local group_path="${SDK_GROUP//.//}"
     local removed=0 target
 
-    for pair in "promotion:$SDK_VERSION" "promotionLogic:$LOGIC_VERSION"; do
-        local module="${pair%%:*}"
-        local version="${pair##*:}"
+    local version="$SDK_VERSION"
+    for module in promotion promotionLogic; do
 
         for target in \
             "$HOME/.m2/repository/$group_path/$module/$version" \
@@ -222,7 +216,7 @@ purge_local_artifacts() {
     done
 
     if [[ "$removed" -eq 0 ]]; then
-        echo "  (cache local không có bản cũ nào của promotion:$SDK_VERSION / promotionLogic:$LOGIC_VERSION)"
+        echo "  (cache local không có bản cũ nào của promotion / promotionLogic $SDK_VERSION)"
     fi
 }
 
@@ -234,10 +228,10 @@ check_version_format() {   # $1 = nhãn, $2 = version
         exit 1
     fi
 }
-check_version_format 'promotion' "$SDK_VERSION"
-check_version_format 'promotionLogic' "$LOGIC_VERSION"
+check_version_format 'SDK_VERSION' "$SDK_VERSION"
 
-GRADLE_ARGS=("-PSDK_VERSION=$SDK_VERSION" "-PLOGIC_VERSION=$LOGIC_VERSION")
+# Một `-P` cho cả hai module: `:promotionLogic/build.gradle.kts` cũng đọc `SDK_VERSION`.
+GRADLE_ARGS=("-PSDK_VERSION=$SDK_VERSION")
 gradle() { ./gradlew "$@" "${GRADLE_ARGS[@]}"; }
 
 # ─── Điều kiện cần: Android SDK ──────────────────────────────────────────────────────────────
@@ -263,13 +257,13 @@ if [[ "$MODE" == "local" ]]; then
     # Dọn TRƯỚC khi publish vào ~/.m2: ở chế độ local ta ghi đè cùng một version mỗi lần chạy, nên
     # bản cũ trong cache Gradle là thứ duy nhất có thể che mất bản vừa publish.
     if [[ "$FORCE" == true ]]; then
-        echo "▸ Dọn cache local của promotion:$SDK_VERSION + promotionLogic:$LOGIC_VERSION"
+        echo "▸ Dọn cache local của promotion + promotionLogic $SDK_VERSION"
         purge_local_artifacts
     fi
 
     # Bước dễ quên nhất: sửa SDK xong mà không publish thì app vẫn build với bản cũ trong ~/.m2 —
     # im lặng, không cảnh báo. Script ép đúng thứ tự publish → build.
-    echo "▸ Publish vào ~/.m2: promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION"
+    echo "▸ Publish vào ~/.m2: promotion + promotionLogic $SDK_VERSION"
     gradle :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal
 
     if [[ "$SKIP_APP" == true ]]; then
@@ -406,8 +400,8 @@ fi
 
 echo
 echo "  Đích           : $TARGET_LABEL" "$([[ "$OVERWRITING" == true ]] && echo '← GHI ĐÈ bản đang có')"
-echo "  promotion      : $SDK_VERSION" "$([[ "$SDK_VERSION" != "$CURRENT_SDK_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_SDK_VERSION)")"
-echo "  promotionLogic : $LOGIC_VERSION" "$([[ "$LOGIC_VERSION" != "$CURRENT_LOGIC_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_LOGIC_VERSION)")"
+echo "  Version        : $SDK_VERSION" "$([[ "$SDK_VERSION" != "$CURRENT_SDK_VERSION" ]] && echo "(gradle.properties đang là $CURRENT_SDK_VERSION)")"
+echo "  Module         : promotion + promotionLogic (chung một số)"
 echo "  Gradle         : ./gradlew ${GRADLE_TASKS[*]} ${GRADLE_ARGS[*]}"
 echo
 
@@ -428,7 +422,7 @@ fi
 
 [[ "$DO_CLEAN" == true ]] && { echo "▸ Dọn build cũ"; gradle clean; }
 
-echo "▸ Build + publish promotion $SDK_VERSION + promotionLogic $LOGIC_VERSION → $TARGET"
+echo "▸ Build + publish promotion + promotionLogic $SDK_VERSION → $TARGET"
 gradle "${GRADLE_TASKS[@]}"
 
 # Dọn SAU khi publish (ngược với chế độ local): dọn trước rồi publish thì Gradle vẫn kịp kéo bản cũ
@@ -449,7 +443,6 @@ if [[ "$DO_WRITE" == true ]]; then
         echo "▸ Đã ghi $1=$2 vào gradle.properties"
     }
     write_property SDK_VERSION "$SDK_VERSION" "$CURRENT_SDK_VERSION"
-    write_property LOGIC_VERSION "$LOGIC_VERSION" "$CURRENT_LOGIC_VERSION"
 fi
 
 echo

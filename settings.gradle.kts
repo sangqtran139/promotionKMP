@@ -18,11 +18,10 @@ pluginManagement {
 // Toạ độ SDK đọc từ gradle.properties — xem docs/android/Distribution.md §3.1. MỘT group duy nhất
 // cho mọi đích: ~/.m2, Artifactory chung, Artifactory Viettelmoney.
 val sdkGroup = providers.gradleProperty("SDK_GROUP").getOrElse("vn.viettelpay.library")
-// HAI version độc lập — `promotion` theo SDK_VERSION, `promotionLogic` theo LOGIC_VERSION.
-// Ở đây chúng chỉ dùng để chọn repo Artifactory (release hay snapshot); toạ độ thật thì
+// MỘT version cho cả hai module (`promotion` + `promotionLogic`) — xem gradle.properties.
+// Ở đây nó chỉ dùng để chọn repo Artifactory (release hay snapshot); toạ độ thật thì
 // `:androidApp` khai SDK_VERSION còn lõi về theo metadata.
 val sdkVersion = providers.gradleProperty("SDK_VERSION").getOrElse("1.0.0")
-val logicVersion = providers.gradleProperty("LOGIC_VERSION").getOrElse("1.0.0")
 
 val viettelmoneyUrl = "https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney"
 
@@ -91,13 +90,13 @@ dependencyResolutionManagement {
                 .getOrElse("libs-snapshot-local")
             val releasesRepo = providers.gradleProperty("artifactoryReleasesRepo")
                 .getOrElse("libs-release-local")
-            // Đăng ký repo cho CẢ hai module. Hai version độc lập nên chúng có thể nằm ở hai repo
-            // khác nhau (lõi đang -SNAPSHOT trong khi UI đã release là chuyện thường) — chỉ đăng ký
-            // theo mỗi SDK_VERSION thì Gradle không tìm ra `promotionLogic`. `distinct()` để trường
-            // hợp thường gặp (cả hai cùng release) không đăng ký trùng một URL hai lần.
-            val repoKeys = listOf(sdkVersion, logicVersion)
-                .map { if (it.endsWith("SNAPSHOT")) snapshotsRepo else releasesRepo }
-                .distinct()
+            // Hai module dùng CHUNG một version nên luôn nằm cùng một repo — chỉ cần một key.
+            // (Bản cũ tách `LOGIC_VERSION` nên phải đăng ký hai repo phòng khi lõi đang -SNAPSHOT
+            // còn UI đã release; giờ không có tình huống đó nữa.) Giữ nguyên dạng danh sách để vòng
+            // lặp đặt tên repo bên dưới không phải sửa.
+            val repoKeys = listOf(
+                if (sdkVersion.endsWith("SNAPSHOT")) snapshotsRepo else releasesRepo
+            )
             repoKeys.forEachIndexed { index, repoKey ->
                 maven {
                     // Tên repo phải duy nhất trong cùng một RepositoryHandler.

@@ -18,7 +18,6 @@ import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.databinding.PrmViewEndowBinding
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ApplyPromotionAdapter
 import androidx.core.view.isVisible
-import com.ttcn.prm.ui.base.PRMBaseConfirmDialog
 import com.ttcn.prm.entry.api.PromotionSDKError
 import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
@@ -328,19 +327,15 @@ class PRMEndowView @JvmOverloads constructor(
             when (val result = vm.confirmRedemption()) {
                 is EndowConfirmResult.Success -> onSuccess()
                 is EndowConfirmResult.Failure -> {
-                    // Tính năng bị cờ chặn → SDK **tự hiện popup** đúng câu, không phó mặc host.
+                    // KHÔNG popup, kể cả `PRM_MOB_021` (cờ `VOUCHER_REDEEM` tắt).
                     //
-                    // Trước đây chỉ đẩy mã lỗi ra `onError`, host map sang chuỗi của họ và hiện toast
-                    // sai nội dung — user đọc được một lỗi kỹ thuật thay vì "tính năng hiện không khả
-                    // dụng". Đây là quyết định của SDK (chính SDK tắt tính năng), nên câu chữ cũng
-                    // phải của SDK. Cùng cách với `PRMBaseFragment.openPromotionDetail` và
-                    // `PromotionSDK.openMyPromotion`.
-                    if (result.errorCode == ErrorCodes.FEATURE_DISABLED) {
-                        context.findActivity()?.let { activity ->
-                            PRMBaseConfirmDialog.showFeatureDisabled(activity, activity.supportFragmentManager)
-                        }
-                    }
-                    // Vẫn báo host: họ cần biết để DỪNG luồng thanh toán, không phải để hiện chữ.
+                    // Khác hẳn các điểm gác khác (`openMyPromotion`, `openPromotionDetail`): ở đó user
+                    // vừa bấm để MỞ một tính năng, không nói gì thì màn hình đứng im vô lý. Còn đây là
+                    // giữa luồng THANH TOÁN của host — SDK chen một popup của mình vào là cướp quyền
+                    // điều khiển, trong khi host mới là bên biết phải dừng hay đi tiếp và hiện gì.
+                    //
+                    // Cờ tắt vẫn KHÔNG gọi API (`EndowStore.confirmRedemption` chặn trước) và vẫn trả
+                    // đúng mã lỗi ra đây — chỉ bỏ phần hiển thị. Đối ứng `PromotionSDKImpl.confirmRedemption` iOS.
                     onError(PromotionSDKError.from(result.errorCode))
                 }
             }

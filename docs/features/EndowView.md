@@ -134,7 +134,8 @@ Nghiệp vụ nằm ở **`EndowStore.confirmRedemption`** (`promotionLogic`) n�
 đường. Thứ tự xử lý:
 
 1. Không áp ưu đãi nào → `onSuccess` ngay, **không gọi mạng**, không phụ thuộc cờ.
-2. Cờ `VOUCHER_REDEEM` tắt → `onError("PRM_MOB_021")`, không gọi mạng.
+2. Cờ `VOUCHER_REDEEM` tắt → `onError("PRM_MOB_021")`, không gọi mạng, **không popup** — xem
+   [FeatureFlag.md](FeatureFlag.md): luồng thanh toán là của host, SDK không chen thông báo vào.
 3. `INSUFFICIENT_BUDGET` (trong body **hoặc** HTTP 422) → validate lại (gác riêng bằng
    `VOUCHER_APPLY`) → cập nhật state → widget hiện giá mới → `onError("INSUFFICIENT_BUDGET")`.
 

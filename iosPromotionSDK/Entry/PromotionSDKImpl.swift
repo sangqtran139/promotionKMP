@@ -519,19 +519,19 @@ final class PromotionSDKImpl: NSObject {
 
     /// Bấm "Thanh toán" của host — uỷ thẳng xuống `EndowStore.confirmRedemption` (dùng chung Android).
     func confirmRedemption(onSuccess: @escaping () -> Void, onError: @escaping (PromotionSDKError) -> Void) {
-        endowVM.confirmRedemption { [weak self] result in
+        // Không còn `[weak self]`: closure không đụng tới `self` nữa kể từ khi bỏ popup PRM_MOB_021.
+        endowVM.confirmRedemption { result in
             if let failure = result as? EndowConfirmResultFailure {
-                // Tính năng bị cờ chặn → SDK **tự hiện popup** đúng câu, không phó mặc host.
+                // KHÔNG hiện gì, kể cả `PRM_MOB_021` (cờ `VOUCHER_REDEEM` tắt).
                 //
-                // Trước đây chỉ đẩy mã lỗi ra `onError`, host map sang chuỗi của họ và hiện thông báo
-                // sai nội dung — user đọc được một lỗi kỹ thuật thay vì "tính năng hiện không khả
-                // dụng". Đây là quyết định của SDK (chính SDK tắt tính năng) nên câu chữ cũng phải
-                // của SDK. Đối ứng `PRMEndowView.confirmRedemption` bên Android.
-                if failure.errorCode == PromotionErrorCodes.shared.FEATURE_DISABLED,
-                   let host = self?.activeWidget?.window?.rootViewController ?? self?._host {
-                    self?.showFeatureDisabledToast(on: host)
-                }
-                // Vẫn báo host: họ cần biết để DỪNG luồng thanh toán, không phải để hiện chữ.
+                // Khác hẳn các điểm gác khác (`openMyPromotion`, `openPromotionDetail`): ở đó user vừa
+                // bấm để MỞ một tính năng, không nói gì thì màn hình đứng im vô lý. Còn đây là giữa
+                // luồng THANH TOÁN của host — SDK chen một thông báo của mình vào là cướp quyền điều
+                // khiển, trong khi host mới là bên biết phải dừng hay đi tiếp và hiện gì.
+                //
+                // Cờ tắt vẫn KHÔNG gọi API (`EndowStore.confirmRedemption` chặn trước) và vẫn trả đúng
+                // mã lỗi ra đây — chỉ bỏ phần hiển thị. Đối ứng `PRMEndowView.confirmRedemption` Android.
+                //
                 // Trả **kiểu công khai**, không phải mã thô: host `switch` là xong, không phải so
                 // chuỗi. Đối ứng `PRMEndowView.onError` bên Android.
                 onError(PromotionSDKError.from(failure.errorCode))
