@@ -241,12 +241,15 @@ internal class PRMCircleImageView @JvmOverloads constructor(
             return
         }
         if (width == 0 && height == 0) return
-        if (mBitmap == null) {
+        // Giữ vào local val: `mBitmap` là `var` nên smart-cast không áp dụng được sau lệnh kiểm null,
+        // và đó là toàn bộ lý do bản trước phải rải `!!`.
+        val bitmap = mBitmap
+        if (bitmap == null) {
             invalidate()
             return
         }
 
-        mBitmapShader = BitmapShader(mBitmap!!, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        mBitmapShader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
 
         mBitmapPaint.isAntiAlias = true
         mBitmapPaint.shader = mBitmapShader
@@ -260,8 +263,8 @@ internal class PRMCircleImageView @JvmOverloads constructor(
         mFillPaint.isAntiAlias = true
         mFillPaint.color = mFillColor
 
-        mBitmapHeight = mBitmap!!.height
-        mBitmapWidth = mBitmap!!.width
+        mBitmapHeight = bitmap.height
+        mBitmapWidth = bitmap.width
 
         mBorderRect.set(calculateBounds())
         mBorderRadius = minOf(
@@ -309,6 +312,8 @@ internal class PRMCircleImageView @JvmOverloads constructor(
             (dx + 0.5f).toInt() + mDrawableRect.left, (dy + 0.5f).toInt() + mDrawableRect.top
         )
 
-        mBitmapShader!!.setLocalMatrix(mShaderMatrix)
+        // Hiện chỉ [setup] gọi hàm này, ngay sau khi gán `mBitmapShader`, nên non-null. Dùng `?.`
+        // thay `!!` để nếu sau này có chỗ gọi sớm hơn thì mất một khung vẽ chứ không crash.
+        mBitmapShader?.setLocalMatrix(mShaderMatrix)
     }
 }

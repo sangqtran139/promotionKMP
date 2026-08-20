@@ -117,6 +117,5 @@ class PromotionTokenLoadingFragment : Fragment() {
 
     private companion object {
         const val TAG = "TokenLoading"
-        const val DEMO_BASE_URL = "http://125.235.38.229:8080"
     }
 }

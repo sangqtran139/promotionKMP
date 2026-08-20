@@ -8,6 +8,37 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Changed — Android: mọi điều hướng nội bộ đi chung `PRMBaseFragment.addFragment()`
+
+`MyPromotionFragment.openSearchMyPromotion()` tự dựng `FragmentTransaction` riêng, chép lại đúng
+phần chọn FM (`parentFragmentManager`) + lấy container từ view cha + dedup theo tag mà
+[addFragment] đã làm — hai bản song song, và bản trong base thì thiếu mất hai chốt bảo vệ mà bản
+chép tay có. Nay màn Tìm kiếm gọi thẳng `addFragment()`, còn base nhận lại hai chốt đó cho **mọi**
+màn:
+
+- **Dedup theo tag** — bấm nhanh hai lần vào nút mở màn không còn chồng hai instance (trước đây
+  `openPromotionDetail()` dính lỗi này; `PromotionSDK` ở bề mặt host thì đã gác từ trước).
+- **`setReorderingAllowed(true)`** — animation và vòng đời chạy đúng khi add chồng màn.
+
+`addFragment()` thêm tham số `tag` (mặc định tên class) để giữ được các tag `prm_*` cố định. Không
+đổi chữ ký public nào — `PRMBaseFragment` là `internal`.
+
+### Fixed — Android: SDK không còn ghi log chẩn đoán ra logcat của host ở bản release
+
+`PromotionSDK` (Android) có 7 lệnh `Log.d(TAG = "PRMSystemBack", …)` **không gác cờ nào** — một khối
+còn ghi rõ `// TEMP DEBUG` — nằm đúng trên các entry point `openPromotionDetail()`, `popSdkScreen()`,
+`resolveFragmentManager()`, `addOrHideThenAdd()`. Hệ quả với host: logcat bị spam mỗi lần mở màn SDK
+**kể cả build release**, và nội dung log phơi cả tên class fragment/view của host cùng
+`identityHashCode`. Một lệnh `findViewById` cũng đang chạy chỉ để dựng chuỗi log.
+
+Nay: các dòng thuần debug bị xoá; hai dòng có giá trị chẩn đoán thật (giải thích vì sao
+`closePromotionDetail()` / `closeMyPromotion()` trả `false`) chuyển sang `debugLog()` — gác sau
+`PromotionSDKConfig.isDebug`, **cùng cờ** đã gác cURL/`LogLevel.BODY` ở `PromotionHttpClient` và log
+ảnh ở `PRMImageExt`. `Log.e` của `requireInitialized()` giữ nguyên hành vi luôn-in: nó báo host gọi
+sai API, không phải log chẩn đoán.
+
+Không đổi chữ ký public nào.
+
 ### Fixed — `onExpireToken()` không còn bắn nhầm khi lỗi 403
 
 `Throwable.toErrorCode()` (`domain/exception/ErrorCodeExtensions.kt`) trước đây map cả HTTP 401 **và**

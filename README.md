@@ -1,35 +1,69 @@
-This is a Kotlin Multiplatform project targeting Android, iOS.
+# TTCN Promotion SDK
 
-* [/iosApp](./iosApp/iosApp) contains an iOS application. Even if you’re sharing your UI with Compose Multiplatform,
-  you need this entry point for your iOS app. This is also where you should add SwiftUI code for your project.
+SDK ưu đãi/voucher cho **Android và iOS**, dựng trên một lõi **Kotlin Multiplatform** dùng chung.
 
-* [/sharedLogic](./sharedLogic/src) is for the code that will be shared between app targets in the project.
-  The most important subfolder is [commonMain](./sharedLogic/src/commonMain/kotlin). If preferred, you
-  can add code to the platform-specific folders here too.
+Hướng **headless**: toàn bộ nghiệp vụ + logic hiển thị nằm ở lõi KMP, còn giao diện do mỗi nền tảng
+tự dựng bằng công nghệ native của mình (Android XML View, iOS UIKit). Kết quả là hai SDK hoàn chỉnh —
+**AAR** và **XCFramework** — đứng trên cùng một lõi.
 
-* [/sharedUI](./sharedUI/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./sharedUI/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./sharedUI/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./sharedUI/src/jvmMain/kotlin)
-    folder is the appropriate location.
+## Cấu trúc
 
-### Running the apps
+| Thư mục | Vai trò |
+|---|---|
+| [`promotionLogic/`](./promotionLogic/src) | 📦 Lõi KMP — data / domain / usecase / store dùng chung. Namespace `com.ttcn.promotionsdk`. |
+| [`AndroidPromotionSDK/`](./AndroidPromotionSDK/src) | 📦 SDK Android (AAR) — Fragment, XML, adapter, theme. Namespace `com.ttcn.prm`. |
+| [`iosPromotionSDK/`](./iosPromotionSDK) | 📦 SDK iOS (XCFramework) — UIKit, MVVM + Builder/Router. |
+| [`androidApp/`](./androidApp/src) | App demo/host Android. |
+| [`iosApp/`](./iosApp) | App demo/host iOS (mở bằng Xcode). |
 
-Use the run configurations provided by the run widget in your IDE's toolbar. You can also use these commands and options:
+`iosPromotionSDK` là project Xcode, **không** phải module Gradle — nó tiêu thụ lõi qua XCFramework do
+`:promotionLogic` sinh ra. Vì vậy `settings.gradle.kts` chỉ include 3 module.
 
-- Android app: `./gradlew :androidApp:assembleDebug`
-- iOS app: open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+## Tài liệu
 
-### Running tests
+**Bắt đầu ở [`docs/README.md`](./docs/README.md).** Vài điểm vào hay dùng:
 
-Use the run button in your IDE's editor gutter, or run tests using Gradle tasks:
+| Cần gì | Đọc |
+|---|---|
+| Tích hợp vào app | [AndroidIntegrationGuide](./docs/AndroidIntegrationGuide.md) · [IosIntegrationGuide](./docs/IosIntegrationGuide.md) |
+| Kiến trúc | [Architecture](./docs/common/Architecture.md) |
+| File nằm ở đâu / đặt file mới vào đâu | [ProjectStructure](./docs/common/ProjectStructure.md) |
+| Public API (đổi = breaking host) | [PublicApi](./docs/common/PublicApi.md) |
+| Phát hành | [android/Distribution](./docs/android/Distribution.md) · [ios/Distribution](./docs/ios/Distribution.md) |
+| Từng màn hình | [`docs/features/`](./docs/features/README.md) |
 
-- Android tests: `./gradlew :sharedUI:testAndroidHostTest :sharedLogic:testAndroidHostTest`
-- iOS tests: `./gradlew :sharedLogic:iosSimulatorArm64Test`
+Lịch sử thay đổi: [`CHANGELOG.md`](./CHANGELOG.md). Quy tắc cho AI agent:
+[`docs/AI_AGENT_RULES.md`](./docs/AI_AGENT_RULES.md).
 
----
+## Chạy app demo
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+```bash
+./gradlew :androidApp:assembleDebug     # Android
+```
+
+iOS: mở [`iosApp/`](./iosApp) bằng Xcode rồi run.
+
+## Test
+
+Toàn bộ unit test nằm ở lõi (`promotionLogic/src/commonTest`), chạy trên cả hai target:
+
+```bash
+./gradlew :promotionLogic:testAndroidHostTest      # JVM
+./gradlew :promotionLogic:iosSimulatorArm64Test    # iOS (cần macOS)
+./gradlew :AndroidPromotionSDK:testDebugUnitTest   # test riêng tầng UI Android
+
+./scripts/test-report.sh                           # cả 2 target + coverage Kover
+```
+
+## Build bản phát hành
+
+Dùng script, đừng gọi tay từng Gradle task — version và toạ độ Maven được lấy từ
+`gradle.properties` (`SDK_VERSION`, `SDK_GROUP`):
+
+```bash
+./scripts/build-android.sh      # AAR + publish Maven
+./scripts/build-ios.sh          # XCFramework
+```
+
+Chi tiết ở [android/Distribution.md](./docs/android/Distribution.md) và
+[ios/Distribution.md](./docs/ios/Distribution.md).

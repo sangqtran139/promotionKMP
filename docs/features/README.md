@@ -57,35 +57,54 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 ## 3. Cấu trúc chuẩn của một feature
 
-### Android (`:promotionSDK`)
+Một feature nằm ở **ba nơi**. Logic ở nơi thứ nhất, hai nơi còn lại chỉ render.
+
+### Lõi dùng chung (`:promotionLogic`) — nơi đặt logic
 
 ```
-feature/<nhóm>/<feature>/
-├── XxxContract.kt        # data class XxxUiState + sealed XxxAction + sealed XxxEffect
-├── XxxViewModel.kt       # PRMBaseViewModel<State, Action, Effect>, handleAction(...)
-├── XxxFragment.kt        # render(state) + handleEffect(effect) + gửi Action
-└── adapter/              # ListAdapter + DiffUtil (nếu có danh sách)
+presentation/<feature>/
+├── XxxContract.kt        # data class XxxState + sealed interface XxxIntent
+│                         #   + model hiển thị (XxxVoucher, XxxTab…) + mapper toXxx()
+└── XxxStore.kt           # PRMStore<XxxState, XxxIntent> — gọi use case, phát State/Effect
 ```
 
-### iOS (`promotionSDK`)
+### Android (`:AndroidPromotionSDK`)
 
 ```
-<Feature>/
+ui/feature/<feature>/          # phẳng, KHÔNG có cấp <nhóm>
+├── XxxFragment.kt         # render(state) + thu Effect + dispatch(Intent) thẳng lên store
+├── XxxViewModel.kt        # lớp con 3 dòng của PRMStoreViewModel<XxxState, XxxIntent>
+├── XxxUiModels.kt         # model thuần trình bày của riêng Android (nếu cần)
+└── adapter/               # ListAdapter + DiffUtil (nếu có danh sách)
+```
+
+### iOS (`iosPromotionSDK`)
+
+```
+PromotionSDKUI/<Feature>/
 ├── XxxBuilder.swift          # lắp ráp VC + VM + Router
 ├── XxxRouter.swift           # điều hướng
-├── XxxViewModel.swift        # ViewModelType: transform(input:) -> Output
+├── XxxViewModel.swift        # lớp con của PRMStoreViewModel
 ├── XxxViewController.swift   # setupUI() + bindViewModel()
 └── XxxViewController.xib     # cùng tên class
 ```
 
-Cả hai đều **không** chứa business logic — chúng gọi use case của `:promotionLogic`.
+Hai tầng UI **không** chứa business logic, và cũng **không** gọi use case trực tiếp — chúng
+`dispatch` Intent vào store dùng chung rồi render State nhận về.
+
+> 📌 **Không** dựng lại `XxxUiState` / `XxxAction` riêng cho mỗi nền tảng. Bản trước có, chép gần 1-1
+> `State`/`Intent` của store ở bốn file, và đã bị bỏ — xem KDoc `PRMStoreViewModel`.
 
 ---
 
 ## 4. Khi thêm feature mới
 
 1. Nghiệp vụ trước: use case + repository + DTO ở `:promotionLogic`, kèm test `commonTest`.
-2. UI Android theo khuôn MVI, đăng ký ViewModel ở `ViewModelModule`.
-3. UI iOS theo khuôn Builder/Router/ViewModel/ViewController.
-4. Thêm một file tài liệu vào thư mục này + cập nhật bảng ở §1 và §2
+2. **Store + Contract** ở `promotionLogic/…/presentation/<feature>/`, kèm test `commonTest`.
+3. UI Android: Fragment + lớp con `PRMStoreViewModel`, đăng ký ở
+   `ui/di/PromotionViewModelFactory.kt` (`promotionViewModelFactory()`).
+4. UI iOS theo khuôn Builder/Router/ViewModel/ViewController — **cùng tên và cùng thứ tự hàm** với
+   Android (parity, xem [`../common/InitParity.md`](../common/InitParity.md)).
+5. Thêm một file tài liệu vào thư mục này + cập nhật bảng ở §1 và §2
    (AI_AGENT_RULES điều 3 & 8).
+6. Đổi hành vi/public API → ghi vào `CHANGELOG.md`.

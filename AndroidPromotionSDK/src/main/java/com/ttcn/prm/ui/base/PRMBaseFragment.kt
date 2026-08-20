@@ -230,11 +230,25 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      * Mở màn SDK mới **chồng lên** màn hiện tại, trong cùng container.
      *
      * Container lấy từ view cha của màn này — không cần nơi gọi truyền id, và tự đúng với mọi kiểu
-     * nhúng của host.
+     * nhúng của host. Cụ thể vì sao **không** dùng `activity.supportFragmentManager` +
+     * `android.R.id.content`:
+     * - Với host dùng Navigation, entry rơi vào back stack của Activity trong khi [closeTopSdkScreen]
+     *   đọc `parentFragmentManager` — back không pop được nó.
+     * - `android.R.id.content` **không** dùng được từ child FM: child FM chỉ tìm container bên trong
+     *   view của fragment cha, không thấy content view của Activity → fragment add xong không có
+     *   view, màn mở ra thành vô hình.
+     *
+     * **Dedup theo [tag]:** đã có màn cùng tag trong FM thì bỏ qua. Không có chốt này thì bấm nhanh
+     * hai lần vào nút mở màn là chồng hai instance, và phải back hai lần mới thoát được một màn.
+     * Cùng cách `PromotionSDK.openMyPromotion`/`openPromotionDetail` gác ở bề mặt host.
+     *
+     * @param tag Mặc định là tên class. Truyền tay khi muốn giữ một tag `prm_*` cố định (tag này
+     *   đồng thời là tên entry trong back stack).
      */
     protected fun addFragment(
         fragment: Fragment,
-        addToBackStack: Boolean = true
+        addToBackStack: Boolean = true,
+        tag: String = fragment::class.java.simpleName,
     ) {
         val containerId = (view?.parent as? ViewGroup)?.id
         if (containerId == null || containerId == View.NO_ID) {
@@ -242,8 +256,11 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
             Log.e("PRMBaseFragment", "Cannot navigate: no valid container found.")
             return
         }
-        val tag = fragment::class.java.simpleName
+        if (screenManager.findFragmentByTag(tag) != null) return
         screenManager.beginTransaction()
+            // Cho FragmentManager gộp/sắp xếp lại thao tác trong cùng transaction — bắt buộc để
+            // animation và vòng đời chạy đúng khi add chồng màn. Cùng cách `PromotionSDK` đang làm.
+            .setReorderingAllowed(true)
             .add(containerId, fragment, tag)
             .apply { if (addToBackStack) addToBackStack(tag) }
             .commit()

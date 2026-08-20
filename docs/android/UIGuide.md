@@ -19,7 +19,7 @@ kiến trúc **MVI**. Không dùng Compose — xem [ComposeGuide.md](../common/C
 
 > `minSdk = 24` — không dùng API yêu cầu min cao hơn nếu không guard bằng `Build.VERSION.SDK_INT`.
 
-**Khác với SDK cũ:** `:promotionSDK` **không** cần `kotlin-kapt` (Room đã bị loại bỏ), và **không**
+**Khác với SDK cũ:** `:AndroidPromotionSDK` **không** cần `kotlin-kapt` (Room đã bị loại bỏ), và **không**
 chứa networking — nó gọi `:promotionLogic`.
 
 ---

@@ -231,18 +231,16 @@ internal class PRMButton : PRMAbstractButton {
      * Resize button based on [PRMCoreButtonSize]
      */
     private fun updateSize() {
-        viewBinding?.buttonAction?.let {
-
-            if (viewBinding != null && viewBinding!!.imagePrefixIcon != null) {
-                if (viewBinding!!.imagePrefixIcon.visibility != View.VISIBLE) {
-                    val padding = resources.getDimensionPixelSize(coreButtonSize.paddingRes)
-                    it.setPadding(padding, 0, padding, 0)
-                }
-            } else {
+        val binding = viewBinding
+        binding?.buttonAction?.let {
+            // `imagePrefixIcon` là field của view binding và `prm_views_core_button_prm.xml` không có
+            // biến thể layout nào → nó KHÔNG BAO GIỜ null. Bản trước kiểm `viewBinding != null &&
+            // viewBinding!!.imagePrefixIcon != null` rồi mở nhánh `else` lặp lại y hệt thân trên:
+            // điều kiện luôn đúng nên nhánh đó là code chết, và hai lần `!!` chỉ để lách smart-cast.
+            if (binding.imagePrefixIcon.visibility != VISIBLE) {
                 val padding = resources.getDimensionPixelSize(coreButtonSize.paddingRes)
                 it.setPadding(padding, 0, padding, 0)
             }
-
 
             it.layoutParams = it.layoutParams.apply {
                 height = resources.getDimensionPixelSize(coreButtonSize.heightRes)

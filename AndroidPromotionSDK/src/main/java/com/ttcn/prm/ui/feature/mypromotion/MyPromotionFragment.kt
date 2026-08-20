@@ -183,24 +183,15 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
     }
 
     /**
-     * Mở màn Tìm kiếm **cùng FM và cùng container** với màn này.
+     * Mở màn Tìm kiếm **cùng FM và cùng container** với màn này — đi qua [addFragment] của base,
+     * giống hệt [openPromotionDetail].
      *
-     * Bản cũ add vào `android.R.id.content` qua `activity.supportFragmentManager`. Hai vấn đề:
-     * - Với host dùng Navigation, entry rơi vào back stack của Activity trong khi `closeTopSdkScreen()`
-     *   đọc `parentFragmentManager` — back không pop được nó.
-     * - `android.R.id.content` **không** dùng được từ child FM: child FM chỉ tìm container bên trong
-     *   view của fragment cha, không thấy content view của Activity → fragment add xong không có
-     *   view, màn Tìm kiếm thành vô hình.
-     *
-     * Lấy container từ chính view của màn này nên đúng cho cả hai kiểu host.
+     * Trước đây hàm này tự dựng transaction riêng, chép lại y nguyên phần chọn FM + lấy container +
+     * dedup của base. Lý do chọn FM/container như vậy đã dời lên KDoc của [addFragment]; giữ hai bản
+     * song song chỉ tạo cơ hội cho chúng trôi lệch nhau.
      */
     private fun openSearchMyPromotion() {
-        val fm = parentFragmentManager
-        if (fm.findFragmentByTag(TAG_SEARCH_MY_PROMOTION) != null) return
-        val containerId = (view?.parent as? ViewGroup)?.id ?: return
-        fm.beginTransaction().setReorderingAllowed(true)
-            .add(containerId, SearchMyPromotionFragment(), TAG_SEARCH_MY_PROMOTION)
-            .addToBackStack(TAG_SEARCH_MY_PROMOTION).commit()
+        addFragment(SearchMyPromotionFragment(), tag = TAG_SEARCH_MY_PROMOTION)
     }
 
     override fun onDestroyView() {

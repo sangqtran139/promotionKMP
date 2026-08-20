@@ -20,10 +20,16 @@ Việc tách `:promotionLogic` thành lõi headless chính là điều kiện c�
 - Business logic đã ở `commonMain`, không phụ thuộc Android/iOS.
 - `PromotionUseCases` trả `PromotionResult` — không ném exception, dễ map sang state.
 - Không có chuỗi hiển thị trong lõi, nên UI nào cũng dựng được copy của mình.
-- Project đã có sẵn module `sharedUI` cấu hình Compose Multiplatform (`org.jetbrains.compose`,
-  `compose-material3`, `lifecycle-viewmodel-compose`).
+- Tầng **UI-logic cũng đã dùng chung**: mỗi màn có `XxxStore` + `XxxContract` ở
+  `promotionLogic/…/presentation/`. Một màn Compose chỉ việc `collect` `state` và `dispatch` Intent —
+  không phải port lại logic hiển thị.
 
 Một màn hình Compose Multiplatform chỉ cần `implementation(projects.promotionLogic)`.
+
+> ⚠️ **Chưa có module Compose nào trong repo.** Bản trước của file này ghi "project đã có sẵn module
+> `sharedUI` cấu hình Compose Multiplatform" — `sharedUI`/`sharedLogic` là scaffold của template KMP
+> và **đã bị xoá**. Muốn làm Compose thì phải tạo module mới + thêm plugin `org.jetbrains.compose`
+> vào version catalog, tức là đụng AI_AGENT_RULES điều 6 → cần phê duyệt (xem mục dưới).
 
 ---
 

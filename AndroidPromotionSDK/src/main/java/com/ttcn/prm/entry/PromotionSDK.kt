@@ -32,6 +32,7 @@ import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.theme.PromotionThemeStore
+import com.ttcn.prm.ui.utils.isPromotionSdkDebug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,6 +47,8 @@ import kotlinx.coroutines.withContext
 object PromotionSDK {
 
     private const val TAG = "PromotionSDK"
+    /** Tag riêng cho log chẩn đoán điều hướng/phím back — xem [debugLog]. */
+    private const val TAG_SYSTEM_BACK = "PRMSystemBack"
     private const val TAG_MY_PROMOTION = "prm_my_promotion"
     private const val TAG_PROMOTION_DETAIL = "prm_promotion_detail"
     private const val TAG_CHOOSE_PROMOTION = "prm_choose_promotion"
@@ -77,6 +80,18 @@ object PromotionSDK {
         if (PromotionContainer.isInitialized()) return true
         Log.e(TAG, "$caller bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(...) trước.")
         return false
+    }
+
+    /**
+     * Log chẩn đoán, **chỉ in khi host bật `isDebug`** — cùng cờ gác cURL/`LogLevel.BODY` ở
+     * `PromotionHttpClient` và ảnh ở `PRMImageExt`. Đối ứng `#if DEBUG` bên iOS.
+     *
+     * Khác [Log.e] của [requireInitialized]: cái đó báo host dùng SAI API nên phải luôn in; những
+     * dòng dưới đây chỉ mô tả SDK chọn nhánh nào ở luồng chạy đúng, ra logcat bản release là rác —
+     * kèm theo lộ cả tên class fragment/view của host.
+     */
+    private fun debugLog(message: String) {
+        if (isPromotionSdkDebug()) Log.d(TAG_SYSTEM_BACK, message)
     }
 
     // ─── Init ────────────────────────────────────────────────────────────────
@@ -577,16 +592,6 @@ object PromotionSDK {
             return
         }
         val fm = resolveFragmentManager(activity, containerViewId)
-        // TEMP DEBUG: log ngay giá trị containerViewId THẬT SỰ nhận được từ host, trước khi làm gì khác.
-        val resolvedView = containerViewId?.let { activity.findViewById<android.view.View>(it) }
-        Log.d(
-            "PRMSystemBack",
-            "[PromotionSDK.openPromotionDetail] voucherId=$voucherId " +
-                "containerViewId=${containerViewId?.let { "0x" + it.toString(16) } ?: "null"} " +
-                "resolvedView=${resolvedView?.let { it::class.java.name + "@" + System.identityHashCode(it).toString(16) } ?: "NOT FOUND"} " +
-                "fm=${System.identityHashCode(fm).toString(16)} " +
-                "existingTagFragment=${fm.findFragmentByTag(TAG_PROMOTION_DETAIL)}"
-        )
         if (fm.findFragmentByTag(TAG_PROMOTION_DETAIL) != null) return
         val fragment = PromotionDetailFragment
             .newInstance(voucherId, returnVoucherOnApply, hostHandlesDismiss)
@@ -600,10 +605,6 @@ object PromotionSDK {
             .addOrHideThenAdd(fm, containerViewId, fragment, TAG_PROMOTION_DETAIL)
             .addToBackStack(TAG_PROMOTION_DETAIL)
             .commit()
-        Log.d(
-            "PRMSystemBack",
-            "[PromotionSDK.openPromotionDetail] commit() called (async), fragment=${System.identityHashCode(fragment).toString(16)}"
-        )
     }
 
     /**
@@ -673,11 +674,11 @@ object PromotionSDK {
 
     private fun popSdkScreen(activity: FragmentActivity, tag: String): Boolean {
         val fm = findManagerHolding(activity.supportFragmentManager, tag) ?: run {
-            Log.d("PRMSystemBack", "[popSdkScreen] không tìm thấy fragment tag=$tag")
+            debugLog("[popSdkScreen] không tìm thấy fragment tag=$tag")
             return false
         }
         if (fm.isStateSaved) {
-            Log.d("PRMSystemBack", "[popSdkScreen] tag=$tag nhưng FM đã lưu state -> bỏ qua")
+            debugLog("[popSdkScreen] tag=$tag nhưng FM đã lưu state -> bỏ qua")
             return false
         }
         return fm.popBackStackImmediate(tag, FragmentManager.POP_BACK_STACK_INCLUSIVE)
@@ -721,12 +722,6 @@ object PromotionSDK {
         // findFragment() ném IllegalStateException khi view không thuộc fragment nào — đó là trường
         // hợp container cấp Activity, hoàn toàn hợp lệ, nên nuốt và rơi về FM của Activity.
         val owner = runCatching { container.findFragment<Fragment>() }.getOrNull()
-        Log.d(
-            "PRMSystemBack",
-            "[resolveFragmentManager] container=0x${containerViewId.toString(16)} " +
-                "owner=${owner?.let { it::class.java.simpleName } ?: "none (Activity-level)"} " +
-                "-> ${if (owner != null) "childFragmentManager" else "activity.supportFragmentManager"}"
-        )
         return owner?.childFragmentManager ?: activity.supportFragmentManager
     }
 
@@ -738,15 +733,9 @@ object PromotionSDK {
     ): FragmentTransaction = apply {
         if (containerViewId != null) {
             val existing = fm.findFragmentById(containerViewId)
-            Log.d(
-                "PRMSystemBack",
-                "[addOrHideThenAdd] containerViewId=0x${containerViewId.toString(16)} != null -> " +
-                    "existingFragmentInContainer=$existing -> add(0x${containerViewId.toString(16)}, ${tag})"
-            )
             existing?.takeIf { it.isAdded && !it.isHidden }?.let { hide(it) }
             add(containerViewId, fragment, tag)
         } else {
-            Log.d("PRMSystemBack", "[addOrHideThenAdd] containerViewId == null -> add(android.R.id.content, $tag)")
             add(android.R.id.content, fragment, tag)
         }
     }
