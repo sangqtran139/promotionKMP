@@ -172,12 +172,15 @@ public final class PromotionSDK {
     /// Ghi vào context đang sống; **không** cần `initialize` lại. SDK đọc lại các giá trị này ở **mỗi**
     /// request, nên gọi trước khi mở màn hoặc gọi API là đủ. Đối ứng `PromotionSDK.updateOrderInfo` Android.
     ///
-    /// Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên `skuId`/`productName`/`productCategory`/`quantity`/
-    /// `unitPrice` được truyền phẳng thay vì `[PromotionOrderItem]`; SDK tự bọc lại thành mảng 1 phần tử.
+    /// Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên `skuSourceId`/`productName`/`productCategory`/
+    /// `quantity`/`unitPrice` được truyền phẳng thay vì `[PromotionOrderItem]`; SDK tự bọc lại thành
+    /// mảng 1 phần tử.
     ///
     /// - Parameter orderId: mã đơn hàng — bắt buộc.
     /// - Parameter productId: mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. (Luồng
     ///   widget có thể dùng `createEndowView(orderItems:)`.)
+    /// - Parameter skuSourceId: mã SKU đối tác — tuỳ chọn. Bỏ trống thì SDK **không** gửi field này
+    ///   lên server (không gửi chuỗi rỗng), server chỉ áp rule cấp sản phẩm/đơn.
     /// - Parameter quantity: số lượng (> 0) — mặc định `1` nếu không truyền.
     /// - Parameter unitPrice: đơn giá — mặc định `"0"` nếu không truyền.
     public static func updateOrderInfo(
@@ -185,7 +188,7 @@ public final class PromotionSDK {
         productId: String,
         orderValue: String? = nil,
         metaData: String? = nil,
-        skuId: String? = nil,
+        skuSourceId: String? = nil,
         productName: String? = nil,
         productCategory: String? = nil,
         quantity: Int? = nil,
@@ -193,7 +196,7 @@ public final class PromotionSDK {
     ) {
         guard let impl = requireImpl("updateOrderInfo()") else { return }
         impl.updateOrderInfo(orderId: orderId, productId: productId, orderValue: orderValue,
-                             metaData: metaData, skuId: skuId,
+                             metaData: metaData, skuSourceId: skuSourceId,
                              productName: productName, productCategory: productCategory,
                              quantity: quantity, unitPrice: unitPrice)
     }

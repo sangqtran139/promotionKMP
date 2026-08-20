@@ -238,7 +238,7 @@ class NullResponseBranchTest {
         FindEligibleCampaignsUseCase(repo).invoke(
             FindEligibleCampaignsRequest(
                 orderId = "O", orderValue = "1",
-                items = listOf(EligibleOrderItem(skuId = "S", quantity = 1, unitPrice = "1", orderItemId = "OI", productId = "P", productName = "N", productCategory = "C")),
+                items = listOf(EligibleOrderItem(skuSourceId = "S", quantity = 1, unitPrice = "1", orderItemId = "OI", productId = "P", productName = "N", productCategory = "C")),
                 keyword = "kw", tabCode = "t",
             ),
         )

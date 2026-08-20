@@ -184,7 +184,7 @@ final class DemoHeadlessViewModel {
     /// campaign cấp đơn). Context của SDK không đọc ngược ra `orderItems` được, nên demo tự dựng.
     private func demoOrderItems() -> [PromotionOrderItem] {
         [PromotionOrderItem(
-            skuId: Self.demoSkuId,
+            skuSourceId: Self.demoSkuId,
             productId: Self.demoProductId,
             quantity: 1,
             unitPrice: orderValue

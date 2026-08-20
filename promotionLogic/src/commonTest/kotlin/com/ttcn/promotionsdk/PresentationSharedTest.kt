@@ -101,6 +101,28 @@ class PresentationSharedTest {
     }
 
     @Test
+    fun toErrorCode_http401_mapsToTokenExpired() {
+        // Host bắn onExpireToken() dựa vào mã này — chỉ 401 (token thật sự hết hạn/không hợp lệ).
+        assertEquals(
+            PromotionErrorCodes.TOKEN_EXPIRED,
+            PromotionException("PRM_MOB_007", "x", httpStatus = 401).toErrorCode(),
+        )
+    }
+
+    @Test
+    fun toErrorCode_http403_doesNotMapToTokenExpired() {
+        // 403 = không đủ quyền, token vẫn hợp lệ — KHÔNG được bắn onExpireToken(), giữ nguyên errorCode gốc.
+        assertEquals(
+            "PRM_MOB_007",
+            PromotionException("PRM_MOB_007", "x", httpStatus = 403).toErrorCode(),
+        )
+        assertEquals(
+            PromotionErrorCodes.GENERAL,
+            PromotionException(null, "x", httpStatus = 403).toErrorCode(),
+        )
+    }
+
+    @Test
     fun toErrorCode_networkException_usesItsCode() {
         assertEquals("NETWORK_TIMEOUT", NetworkException("NETWORK_TIMEOUT", "timeout").toErrorCode())
     }

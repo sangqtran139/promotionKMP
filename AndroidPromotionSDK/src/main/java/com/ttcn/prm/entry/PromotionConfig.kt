@@ -95,7 +95,7 @@ internal class PromotionMutableContext(
      */
     override fun getOrderItems(): List<EligibleOrderItem> = orderItems.map {
         EligibleOrderItem(
-            skuId = it.skuId,
+            skuSourceId = it.skuSourceId,
             quantity = it.quantity,
             unitPrice = it.unitPrice,
             orderItemId = null,

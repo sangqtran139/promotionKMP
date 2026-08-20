@@ -24,7 +24,7 @@ internal object ErrorCodes {
     const val GENERAL = "error_general"
     const val NETWORK_ERROR = "network_error"
     const val TIMEOUT = "timeout"
-    const val TOKEN_EXPIRED = "TOKEN_EXPIRED"  // HTTP 401/403 — xem §3
+    const val TOKEN_EXPIRED = "TOKEN_EXPIRED"  // HTTP 401 — xem §3
 }
 ```
 
@@ -82,12 +82,14 @@ private suspend fun <T : Any> headlessCall(block: suspend () -> T?): PromotionRe
 ⚠️ **Thứ tự `catch` quan trọng.** Cả ba loại timeout của Ktor đều kế thừa `IOException`.
 Bắt `IOException` trước sẽ nuốt mất timeout và báo sai mã lỗi.
 
-### HTTP 401/403 — `TOKEN_EXPIRED` → `onExpireToken()`
+### HTTP 401 — `TOKEN_EXPIRED` → `onExpireToken()`
 
 `Throwable.toErrorCode()` (`domain/exception/ErrorCodeExtensions.kt`) ưu tiên kiểm tra
-`PromotionException.httpStatus`: `401`/`403` → luôn trả `TOKEN_EXPIRED`, bất kể `errorCode` server gửi
-kèm là gì. Đây là **điểm chặn duy nhất** — cả 5 store (`MyPromotion`/`SearchMyPromotion`/
-`ChoosePromotion`/`PromotionDetail`/`Endow`) đi qua hàm này nên không phải sửa từng store.
+`PromotionException.httpStatus`: `401` → luôn trả `TOKEN_EXPIRED`, bất kể `errorCode` server gửi
+kèm là gì. `403` (không đủ quyền, token vẫn hợp lệ) **không** map sang mã này — rơi về nhánh
+`errorCode`/`GENERAL` bình thường, không bắn `onExpireToken()`. Đây là **điểm chặn duy nhất** — cả 5
+store (`MyPromotion`/`SearchMyPromotion`/`ChoosePromotion`/`PromotionDetail`/`Endow`) đi qua hàm này
+nên không phải sửa từng store.
 
 Ở tầng Android UI, mã `TOKEN_EXPIRED` được hai nơi đọc thêm (ngoài đường Popup/Không-hiện-gì bình
 thường ở §4) để bắn `PromotionSDKCallback.onExpireToken()` ra host:

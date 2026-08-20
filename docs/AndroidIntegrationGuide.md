@@ -194,7 +194,7 @@ PromotionSDK.updateOrderInfo(
     orderValue = "500000",   // chuỗi số nguyên VNĐ
     metaData = null,
     // Đơn chỉ hỗ trợ MỘT dòng sản phẩm → truyền phẳng field của PromotionOrderItem thay vì List.
-    skuId = "SKU1",
+    skuSourceId = "SKU1",
     quantity = 1,
     unitPrice = "500000",
 )

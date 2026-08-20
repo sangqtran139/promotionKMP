@@ -100,7 +100,7 @@ public final class PromotionSDKApi {
     ) {
         let orderItems = items.map {
             EligibleOrderItem(
-                skuId: $0.skuId,
+                skuSourceId: $0.skuSourceId,
                 quantity: Int32($0.quantity),
                 unitPrice: $0.unitPrice,
                 orderItemId: nil,

@@ -43,8 +43,8 @@ internal fun FindEligibleCampaignsRequest.toEligibleCampaignsRequest() = Eligibl
 
 private fun EligibleOrderItem.toDto() = EligibleOrderItemDto(
     orderItemId = orderItemId,
-    // skuId của host = skuSourceId đối tác (BE resolve skuId nội bộ).
-    skuSourceId = skuId,
+    // Rỗng = host không truyền skuSourceId → gửi null để field bị bỏ hẳn khỏi JSON, không phải "".
+    skuSourceId = skuSourceId.takeIf { it.isNotBlank() },
     productId = productId,
     quantity = quantity,
     unitPrice = unitPrice,

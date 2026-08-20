@@ -160,7 +160,7 @@ public struct PromotionEligibleResult {
 /// — đơn không kèm items chỉ nhận campaign cấp đơn.
 public struct PromotionOrderItem {
     /// Mã SKU sản phẩm (bắt buộc).
-    public let skuId: String
+    public let skuSourceId: String
     public let productId: String?
     /// Tên sản phẩm — cho rule theo tên / hiển thị.
     public let productName: String?
@@ -172,14 +172,14 @@ public struct PromotionOrderItem {
     public let unitPrice: String
 
     public init(
-        skuId: String,
+        skuSourceId: String,
         productId: String? = nil,
         productName: String? = nil,
         productCategory: String? = nil,
         quantity: Int,
         unitPrice: String
     ) {
-        self.skuId = skuId
+        self.skuSourceId = skuSourceId
         self.productId = productId
         self.productName = productName
         self.productCategory = productCategory

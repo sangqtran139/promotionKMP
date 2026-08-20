@@ -76,7 +76,7 @@ object PromotionSDK {
     val currentMetaData: String?
     fun updateOrderInfo(orderId: String, productId: String, orderValue: String? = null,
                         metaData: String? = null,
-                        skuId: String? = null,
+                        skuSourceId: String? = null,
                         productName: String? = null, productCategory: String? = null,
                         quantity: Int? = null, unitPrice: String? = null)
 
@@ -201,7 +201,7 @@ PromotionSDK.initialize(
     )
 )
 PromotionSDK.updateOrderInfo(orderId: orderId, productId: productId, orderValue: orderValue)   // cập nhật khi vào màn có voucher
-// cần campaign theo SKU chi tiết hơn → thêm skuId:/quantity:/unitPrice: (và productName:/productCategory: nếu có)
+// cần campaign theo SKU chi tiết hơn → thêm skuSourceId:/quantity:/unitPrice: (và productName:/productCategory: nếu có)
 let api = PromotionSDK.api      // PromotionSDKApi
 ```
 
@@ -212,10 +212,11 @@ let api = PromotionSDK.api      // PromotionSDKApi
 > lại với session mới, còn order/service chỉ cần `updateOrderInfo`.
 
 **Dòng sản phẩm / SKU.** Đơn chỉ hỗ trợ **một** dòng sản phẩm nên `updateOrderInfo` nhận field phẳng
-(`skuId`/`productId`/`productName`/`productCategory`/`quantity`/`unitPrice`) thay vì `List<PromotionOrderItem>`
+(`skuSourceId`/`productId`/`productName`/`productCategory`/`quantity`/`unitPrice`) thay vì `List<PromotionOrderItem>`
 ở **cả hai** nền tảng; SDK tự bọc lại thành `List<PromotionOrderItem>` 1 phần tử trước khi ghi vào
-`PromotionMutableContext`. `orderId`/`productId` **bắt buộc** (không default, không nullable) — `skuId`
-để trống thì rơi về chuỗi rỗng, các field còn lại vẫn tuỳ chọn. `ChoosePromotionStore` và `EndowStore` đọc lại qua
+`PromotionMutableContext`. `orderId`/`productId` **bắt buộc** (không default, không nullable) — `skuSourceId`
+để trống thì request `findEligible` **không gửi field này lên server** (bỏ hẳn khỏi JSON, không gửi
+chuỗi rỗng), các field còn lại vẫn tuỳ chọn. `ChoosePromotionStore` và `EndowStore` đọc lại qua
 `PromotionRequestContextProvider.getOrderItems()`. iOS còn giữ thêm overload tiện tay
 `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget iOS là factory, xem
 [InitParity §5.3](./InitParity.md#53-widget)).
@@ -338,7 +339,7 @@ Mười type, thứ tự khai báo trong file đúng như bảng này:
 | `PromotionVoucherDetail` | thêm `description`, `guideline`, `startDate`, `bannerURL`, `logoURL` |
 | `PromotionEligibleOffer` | `id` = `voucherId` nếu đã sở hữu, ngược lại `campaignId`; `usable = false` → hiển thị mờ |
 | `PromotionEligibleResult` | `myOffers`, `otherOffers`, `myIsLastPage`, `otherIsLastPage` |
-| `PromotionOrderItem` | `skuId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
+| `PromotionOrderItem` | `skuSourceId`, `productId`, `productName`, `productCategory`, `quantity`, `unitPrice` |
 | `PromotionAvailableService` | `productId`, `productName`, `skuSourceId`, `iconUrl`. ⚠️ `productId` phải khớp **`applicableProducts.productId`** của voucher (không phải `sku`) thì dịch vụ mới hiện ở bottom sheet "Chọn dịch vụ"; danh sách bị lọc trùng theo `productId` nên mỗi `productId` chỉ khai **một** dòng, kể cả khi nó gắn nhiều SKU |
 | `PromotionValidationResult` | `overallValid`, `totalDiscountAmount`, `finalAmount`, `items` |
 | `PromotionDiscountItem` | `objectId`, `discountAmount`, `isValid`, `eligibilityStatus` |
@@ -364,7 +365,7 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PRMEndowView.confirmRedemption(onSuccess, onError)` | Gọi khi bấm nút thanh toán của host. iOS: `PromotionSDK.confirmRedemption(onSuccess:onError:)`. |
 | `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` | Trạng thái widget, đọc qua `PRMEndowView.getCurrentState()`. |
 | `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). Nay là **`typealias` → `com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount`** (kiểu thật ở `promotionLogic`, dùng chung với iOS): host Kotlin **không phải đổi gì**, host **Java** phải dùng tên đầy đủ `EndowAppliedDiscount` vì Java không thấy typealias. **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
-| `PromotionSDKCallback` | Thống nhất với iOS, còn **3 sự kiện**: `onVoucherApplied(voucherId)` / `onServiceSelected` / `onExpireToken()`. Bốn cái cũ (`onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed`) đã bỏ — host không cần biết. `onExpireToken()` bắn khi 1 API bên trong màn SDK trả HTTP 401/403 (chưa áp dụng cho headless `PromotionSDKApi`). Xem [InitParity.md §3](./InitParity.md). |
+| `PromotionSDKCallback` | Thống nhất với iOS, còn **3 sự kiện**: `onVoucherApplied(voucherId)` / `onServiceSelected` / `onExpireToken()`. Bốn cái cũ (`onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed`) đã bỏ — host không cần biết. `onExpireToken()` bắn khi 1 API bên trong màn SDK trả HTTP 401 (chưa áp dụng cho headless `PromotionSDKApi`). Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
 ```kotlin

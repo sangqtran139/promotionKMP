@@ -25,14 +25,14 @@ class EligibleOrderItemsServiceTest {
     }
 
     private fun item(sku: String, productId: String? = null) =
-        EligibleOrderItem(skuId = sku, quantity = 1, unitPrice = "1000", productId = productId)
+        EligibleOrderItem(skuSourceId = sku, quantity = 1, unitPrice = "1000", productId = productId)
 
     @Test
     fun fillsProductIdFromServiceCode() {
         val out = Ctx(service = "TKBAOVIET", items = listOf(item("SKU-1"), item("SKU-2")))
             .eligibleOrderItems()
         assertEquals(listOf("TKBAOVIET", "TKBAOVIET"), out.map { it.productId })
-        assertEquals(listOf("SKU-1", "SKU-2"), out.map { it.skuId }, "không đụng field khác")
+        assertEquals(listOf("SKU-1", "SKU-2"), out.map { it.skuSourceId }, "không đụng field khác")
     }
 
     @Test

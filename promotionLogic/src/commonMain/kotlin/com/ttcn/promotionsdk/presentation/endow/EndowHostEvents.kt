@@ -10,7 +10,7 @@ package com.ttcn.promotionsdk.presentation.endow
  * cần biết hai thứ đó.
  */
 sealed interface EndowHostEvent {
-    /** Widget vừa chuyển sang trạng thái ĐÃ ÁP. Mang id ưu đãi đầu tiên. */
+    /** Widget vừa vào APPLIED, hoặc đang APPLIED mà đổi sang voucher khác. Mang id ưu đãi đầu tiên. */
     data class VoucherApplied(val voucherId: String) : EndowHostEvent
 
 }
@@ -33,8 +33,14 @@ sealed interface EndowHostEvent {
  */
 class EndowHostNotifier {
 
-    /** `null` = chưa render lần nào, nên lần đầu vào APPLIED luôn được tính là chuyển trạng thái. */
-    private var lastWidgetState: EndowWidgetState? = null
+    /**
+     * Id ưu đãi đã báo cho host gần nhất, `null` nếu đang không ở APPLIED (chưa áp / vừa huỷ / vừa
+     * UNAVAILABLE). So theo **id** chứ không theo transition trạng thái: "Chọn lại" khi widget đang
+     * APPLIED (host tự gọi `PromotionSDK.openChoosePromotion` từ nút riêng, không qua "Hủy" trên
+     * widget) đổi thẳng `appliedDiscounts` sang voucher khác mà `widgetState` không hề rời APPLIED —
+     * theo dõi bằng transition (bản cũ) thì bỏ lọt lần đổi này, host kẹt callback với voucher cũ.
+     */
+    private var lastNotifiedVoucherId: String? = null
 
     /**
      * Trả danh sách sự kiện phải phát cho [state] này, theo đúng thứ tự cần bắn.
@@ -45,15 +51,17 @@ class EndowHostNotifier {
     fun onState(state: EndowState): List<EndowHostEvent> {
         val events = mutableListOf<EndowHostEvent>()
 
-        val current = state.widgetState
-        if (current == EndowWidgetState.APPLIED && lastWidgetState != EndowWidgetState.APPLIED) {
-            // Không có id thì KHÔNG bắn — nhưng vẫn ghi nhận đã sang APPLIED ở dưới, nếu không lần
+        if (state.widgetState == EndowWidgetState.APPLIED) {
+            val voucherId = state.appliedDiscounts.firstOrNull()?.objectId
+            // Không có id thì KHÔNG bắn — nhưng cũng không đụng lastNotifiedVoucherId, nếu không lần
             // render kế (danh sách đã có id) sẽ bắn lại và host nhận hai lần cho một lần áp.
-            state.appliedDiscounts.firstOrNull()?.objectId?.let {
-                events += EndowHostEvent.VoucherApplied(it)
+            if (voucherId != null && voucherId != lastNotifiedVoucherId) {
+                events += EndowHostEvent.VoucherApplied(voucherId)
+                lastNotifiedVoucherId = voucherId
             }
+        } else {
+            lastNotifiedVoucherId = null
         }
-        lastWidgetState = current
 
         return events
     }

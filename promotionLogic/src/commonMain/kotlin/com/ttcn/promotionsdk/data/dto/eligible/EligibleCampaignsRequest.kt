@@ -56,8 +56,10 @@ internal data class EligibleOrderInfo(
 @Serializable
 internal data class EligibleOrderItemDto(
     @SerialName("orderItemId") val orderItemId: String? = null,
-    /** SKU source id đối tác — BE resolve `skuId` nội bộ (thay cho `skuId`). */
-    @SerialName("skuSourceId") val skuSourceId: String,
+    /** SKU source id đối tác — BE resolve `skuId` nội bộ. Null nếu host không truyền (bỏ hẳn khỏi
+     * JSON nhờ `explicitNulls = false` ở [com.ttcn.promotionsdk.data.remote.PromotionHttpClient],
+     * không gửi chuỗi rỗng). */
+    @SerialName("skuSourceId") val skuSourceId: String? = null,
     @SerialName("productId") val productId: String? = null,
     /** Product source id đối tác — BE resolve `productId`. */
     @SerialName("productSourceId") val productSourceId: String? = null,

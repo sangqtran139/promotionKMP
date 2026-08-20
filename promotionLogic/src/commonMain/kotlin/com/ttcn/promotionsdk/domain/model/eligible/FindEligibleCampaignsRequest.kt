@@ -60,7 +60,8 @@ enum class EligibleSection(val code: String) {
 }
 
 data class EligibleOrderItem(
-    val skuId: String,
+    /** SKU source id đối tác — rỗng ("") = host không truyền, mapper bỏ hẳn field khi gửi lên server. */
+    val skuSourceId: String,
     val quantity: Int,
     val unitPrice: String,
     val orderItemId: String? = null,

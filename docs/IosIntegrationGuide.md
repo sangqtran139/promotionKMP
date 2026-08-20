@@ -160,7 +160,7 @@ PromotionSDK.updateOrderInfo(
     orderValue: "500000",   // chuỗi số nguyên VNĐ
     metaData: nil,
     // Đơn chỉ hỗ trợ MỘT dòng sản phẩm → truyền phẳng field của PromotionOrderItem thay vì mảng.
-    skuId: "SKU1",
+    skuSourceId: "SKU1",
     quantity: 1,
     unitPrice: "500000"
 )
@@ -211,7 +211,7 @@ container.addSubview(widget)
 // Widget checkout kèm dòng sản phẩm (lấy campaign theo SKU)
 let widget2 = PromotionSDK.createEndowView(
     from: self, orderId: order.id, orderValue: "500000",
-    orderItems: [PromotionOrderItem(skuId: "SKU1", quantity: 1, unitPrice: "500000")]
+    orderItems: [PromotionOrderItem(skuSourceId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
 ```
 

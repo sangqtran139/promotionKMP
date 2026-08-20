@@ -22,7 +22,10 @@
 >   như cũ. Host viết bằng **Java** thì không thấy typealias — phải dùng `EndowAppliedDiscount`.
 > - **iOS widget reactive off store** (parity Android): `endowVM.observe { render(EndowState) }` +
 >   `endowVM.loadInitial()`; `render` map `EndowStore.widgetState` → `PRMEndowView.setState`, callback
->   host (count/applied) theo transition.
+>   host qua `EndowHostNotifier` (`promotionLogic/presentation/endow`, dùng chung 2 nền tảng) — bắn
+>   `onVoucherApplied(voucherId)` khi widget **vừa vào APPLIED**, hoặc đang APPLIED mà id voucher đầu
+>   danh sách đổi khác (vd host tự gọi lại `openChoosePromotion` để "Chọn lại" khi voucher cũ vẫn còn
+>   hợp lệ) — không chỉ theo transition trạng thái như trước.
 > - **Order items dùng chung**: request `findEligible` lấy `items` từ
 >   `PromotionRequestContextProvider.getOrderItems()` (iOS: `PromotionMutableContext`).
 

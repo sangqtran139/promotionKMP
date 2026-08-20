@@ -133,7 +133,7 @@ val result = PromotionUseCases().findEligible(
     FindEligibleCampaignsRequest(
         orderId = "ORDER-123",
         orderValue = "500000",
-        items = listOf(EligibleOrderItem(skuId = "SKU-01", quantity = 1, unitPrice = "500000")),
+        items = listOf(EligibleOrderItem(skuSourceId = "SKU-01", quantity = 1, unitPrice = "500000")),
         tabCode = null,                     // null → tab mặc định của server
         section = null,                     // null → cả hai nhóm; có giá trị → chỉ load-more nhóm đó
         myPage = 0, otherPage = 0,

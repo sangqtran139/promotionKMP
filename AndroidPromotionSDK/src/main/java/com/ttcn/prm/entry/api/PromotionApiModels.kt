@@ -97,7 +97,7 @@ data class PromotionEligibleResult(
  */
 data class PromotionOrderItem(
     /** Mã SKU sản phẩm (bắt buộc). */
-    val skuId: String,
+    val skuSourceId: String,
     val productId: String? = null,
     /** Tên sản phẩm — cho rule theo tên / hiển thị. */
     val productName: String? = null,

@@ -284,13 +284,15 @@ object PromotionSDK {
      * Ghi vào [PromotionMutableContext] đang sống; không cần [initialize] lại. SDK đọc lại các giá trị này
      * ở **mỗi** request, nên gọi trước khi mở màn hoặc gọi API là đủ.
      *
-     * Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên [skuId]/[productName]/[productCategory]/[quantity]/
-     * [unitPrice] được truyền phẳng thay vì `List<PromotionOrderItem>`; SDK tự bọc lại thành
-     * `List<PromotionOrderItem>` 1 phần tử trước khi ghi vào context.
+     * Đơn hiện chỉ hỗ trợ **một** dòng sản phẩm nên [skuSourceId]/[productName]/[productCategory]/
+     * [quantity]/[unitPrice] được truyền phẳng thay vì `List<PromotionOrderItem>`; SDK tự bọc lại
+     * thành `List<PromotionOrderItem>` 1 phần tử trước khi ghi vào context.
      *
      * @param orderId Mã đơn hàng — bắt buộc.
      * @param productId Mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. Đối ứng
      * `PromotionSDK.updateOrderInfo(productId:...)` bên iOS.
+     * @param skuSourceId Mã SKU đối tác — tuỳ chọn. Bỏ trống thì SDK **không** gửi field này lên
+     * server (không gửi chuỗi rỗng), server chỉ áp rule cấp sản phẩm/đơn.
      * @param quantity Số lượng (> 0) — mặc định `1` nếu không truyền.
      * @param unitPrice Đơn giá — mặc định `"0"` nếu không truyền.
      *
@@ -303,7 +305,7 @@ object PromotionSDK {
         productId: String,
         orderValue: String? = null,
         metaData: String? = null,
-        skuId: String? = null,
+        skuSourceId: String? = null,
         productName: String? = null,
         productCategory: String? = null,
         quantity: Int? = null,
@@ -317,7 +319,7 @@ object PromotionSDK {
         ctx.metaData = metaData
         ctx.orderItems = listOf(
             PromotionOrderItem(
-                skuId = skuId.orEmpty(),
+                skuSourceId = skuSourceId.orEmpty(),
                 productId = productId,
                 productName = productName,
                 productCategory = productCategory,

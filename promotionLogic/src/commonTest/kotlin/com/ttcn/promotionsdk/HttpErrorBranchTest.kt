@@ -212,7 +212,7 @@ class HttpErrorBranchTest {
         val c = Captor()
         val req = FindEligibleCampaignsRequest(
             orderId = "O", orderValue = "1",
-            items = listOf(EligibleOrderItem(skuId = "S1", quantity = 2, unitPrice = "10", productId = "P1", productName = "N", productCategory = "C")),
+            items = listOf(EligibleOrderItem(skuSourceId = "S1", quantity = 2, unitPrice = "10", productId = "P1", productName = "N", productCategory = "C")),
         )
         FindEligibleCampaignsUseCase(repo(captor = c)).invoke(req)
         val body = c.last?.body.toString()

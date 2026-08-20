@@ -50,6 +50,21 @@ class EndowHostNotifierTest {
     }
 
     @Test
+    fun applied_firesAgainWhenVoucherIdChangesWithoutLeavingApplied() {
+        // "Chọn lại" khi widget đang APPLIED (host tự gọi openChoosePromotion từ nút riêng, không qua
+        // "Hủy" trên widget): appliedDiscounts đổi thẳng sang voucher khác, widgetState không rời
+        // APPLIED ở bất kỳ thời điểm nào. Theo dõi bằng transition trạng thái (bản cũ) sẽ bỏ lọt case
+        // này — phải so theo id.
+        val n = EndowHostNotifier()
+        val v1 = EndowState(totalVoucherCount = 2, appliedDiscounts = listOf(applied("v1")))
+        val v2 = EndowState(totalVoucherCount = 2, appliedDiscounts = listOf(applied("v2")))
+
+        assertEquals(listOf(EndowHostEvent.VoucherApplied("v1")), n.onState(v1))
+        assertEquals(listOf(EndowHostEvent.VoucherApplied("v2")), n.onState(v2), "đổi voucher dù vẫn APPLIED → phải bắn lại")
+        assertTrue(n.onState(v2).isEmpty(), "vẫn v2, render lại → không bắn nữa")
+    }
+
+    @Test
     fun applied_unavailableIsNotApplied() {
         val n = EndowHostNotifier()
         n.onState(EndowState(totalVoucherCount = 2))

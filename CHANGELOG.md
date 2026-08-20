@@ -8,6 +8,34 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Fixed — `onExpireToken()` không còn bắn nhầm khi lỗi 403
+
+`Throwable.toErrorCode()` (`domain/exception/ErrorCodeExtensions.kt`) trước đây map cả HTTP 401 **và**
+403 sang `TOKEN_EXPIRED`, khiến host nhận `onExpireToken()` cả khi lỗi thực ra là **403 — không đủ
+quyền** (token vẫn hợp lệ), không phải hết hạn/không hợp lệ. Nay chỉ 401 mới map sang `TOKEN_EXPIRED`;
+403 rơi về nhánh `errorCode`/`GENERAL` như các lỗi HTTP khác. Sửa ở tầng `promotionLogic` (dùng chung
+2 nền tảng) nên áp dụng cho cả 5 store (`MyPromotion`/`SearchMyPromotion`/`ChoosePromotion`/
+`PromotionDetail`/`Endow`) mà không cần sửa native.
+
+### Changed — **BREAKING**: `PromotionOrderItem`/`updateOrderInfo` đổi `skuId` thành `skuSourceId`; bỏ gửi chuỗi rỗng lên server
+
+Đồng nhất tên với field thật trên wire (`EligibleOrderItemDto.skuSourceId`) — trước đây model/tham số
+gọi là `skuId` còn request gửi lên `findEligible` lại là `skuSourceId`, phải tự nhớ quy đổi. Đổi cả 2
+nền tảng, cả 2 điểm chạm: `PromotionOrderItem.skuId` và tham số `skuId` của `updateOrderInfo`.
+
+Đi kèm sửa lỗi: trước đây bỏ trống `skuId` thì `updateOrderInfo` vẫn dựng `PromotionOrderItem` với
+`skuId = ""`, server nhận `"skuSourceId":""` (chuỗi rỗng) thay vì không thấy field này. Nay `skuSourceId`
+rỗng/không truyền → **field bị bỏ hẳn khỏi JSON** gửi lên `findEligible` (đúng ngữ nghĩa "không có SKU"),
+không ảnh hưởng các field khác của item (`productId`/`productName`/`quantity`/`unitPrice` vẫn gửi bình
+thường).
+
+**Host phải sửa:**
+
+| Cũ | Mới |
+|---|---|
+| `PromotionOrderItem(skuId = "SKU1", ...)` | `PromotionOrderItem(skuSourceId = "SKU1", ...)` |
+| `PromotionSDK.updateOrderInfo(orderId, productId, skuId = "SKU1", ...)` | `PromotionSDK.updateOrderInfo(orderId, productId, skuSourceId = "SKU1", ...)` |
+
 ### Changed — **BREAKING**: đổi tên field của `PromotionAvailableService` và `PromotionServiceSelection`
 
 Đồng nhất thuật ngữ với `PromotionOrderItem`/`ApplicableProductDto` — cả 2 nền tảng, cả 2 type public:

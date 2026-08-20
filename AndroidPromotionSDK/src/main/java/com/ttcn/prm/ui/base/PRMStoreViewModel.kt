@@ -41,7 +41,7 @@ internal abstract class PRMStoreViewModel<S : Any, I : Any>(
     /**
      * Sự kiện **một lần** (lỗi…). View map `errorCode` → chuỗi hiển thị.
      *
-     * `TOKEN_EXPIRED` (HTTP 401/403 — xem [PromotionErrorCodes.TOKEN_EXPIRED]) bắn thêm
+     * `TOKEN_EXPIRED` (HTTP 401 — xem [PromotionErrorCodes.TOKEN_EXPIRED]) bắn thêm
      * `onExpireToken()` ra host tại đây, một lần cho cả bốn màn kế thừa lớp này, thay vì mỗi
      * Fragment tự bắt. Effect vẫn chảy tiếp xuống view như cũ (không nuốt), UI vẫn tự quyết có hiển
      * thị lỗi hay không.

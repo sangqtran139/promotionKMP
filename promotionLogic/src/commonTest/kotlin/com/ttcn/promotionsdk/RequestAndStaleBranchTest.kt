@@ -116,7 +116,7 @@ class RequestAndStaleBranchTest {
         val full = captureBody(
             FindEligibleCampaignsRequest(
                 orderId = "O", orderValue = "1",
-                items = listOf(EligibleOrderItem(skuId = "S", quantity = 1, unitPrice = "1", orderItemId = "OI", productId = "P", productName = "Ten", productCategory = "Cat")),
+                items = listOf(EligibleOrderItem(skuSourceId = "S", quantity = 1, unitPrice = "1", orderItemId = "OI", productId = "P", productName = "Ten", productCategory = "Cat")),
             ),
         )
         assertTrue(full.contains("productName"))
@@ -125,7 +125,7 @@ class RequestAndStaleBranchTest {
         val bare = captureBody(
             FindEligibleCampaignsRequest(
                 orderId = "O", orderValue = "1",
-                items = listOf(EligibleOrderItem(skuId = "S", quantity = 1, unitPrice = "1")),
+                items = listOf(EligibleOrderItem(skuSourceId = "S", quantity = 1, unitPrice = "1")),
             ),
         )
         assertFalse(bare.contains("productName"))

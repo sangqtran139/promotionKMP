@@ -103,7 +103,7 @@ class PromotionSDKApi internal constructor(
             orderValue = orderValue,
             items = items.map {
                 EligibleOrderItem(
-                    skuId = it.skuId,
+                    skuSourceId = it.skuSourceId,
                     quantity = it.quantity,
                     unitPrice = it.unitPrice,
                     productId = it.productId,

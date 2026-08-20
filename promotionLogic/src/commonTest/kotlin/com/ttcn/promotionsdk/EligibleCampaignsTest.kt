@@ -106,7 +106,7 @@ class EligibleCampaignsTest {
             FindEligibleCampaignsRequest(
                 orderId = "o-1",
                 orderValue = "500000",
-                items = listOf(EligibleOrderItem(skuId = "SKU-1", quantity = 1, unitPrice = "500000")),
+                items = listOf(EligibleOrderItem(skuSourceId = "SKU-1", quantity = 1, unitPrice = "500000")),
             )
         )
 
@@ -161,7 +161,7 @@ class EligibleCampaignsTest {
             FindEligibleCampaignsRequest(
                 orderId = "o-1",
                 orderValue = "500000",
-                items = listOf(EligibleOrderItem(skuId = "SKU-1", quantity = 2, unitPrice = "250000")),
+                items = listOf(EligibleOrderItem(skuSourceId = "SKU-1", quantity = 2, unitPrice = "250000")),
                 tabCode = "expiring",
                 section = EligibleSection.OTHER_OFFERS,
                 otherPage = 3,
@@ -193,5 +193,28 @@ class EligibleCampaignsTest {
         val body = (captured.single().body as TextContent).text
         assertTrue("sectionCode" !in body, body)
         assertTrue("tabCode" !in body, body)
+    }
+
+    @Test
+    fun findEligible_omitsSkuSourceIdWhenBlank() = runTest {
+        // Host không truyền skuSourceId (`updateOrderInfo` không có `skuSourceId`) → item vẫn được
+        // gửi (có productId/quantity/unitPrice), nhưng KHÔNG kèm `"skuSourceId":""` — field bị bỏ
+        // hẳn khỏi JSON, không phải gửi chuỗi rỗng lên server.
+        val captured = mutableListOf<HttpRequestData>()
+        val useCases = eligibleUseCases(captured, ELIGIBLE_RESPONSE)
+
+        useCases.findEligible(
+            FindEligibleCampaignsRequest(
+                orderId = "o-1",
+                orderValue = "500000",
+                items = listOf(
+                    EligibleOrderItem(skuSourceId = "", quantity = 1, unitPrice = "500000", productId = "P1"),
+                ),
+            )
+        )
+
+        val body = (captured.single().body as TextContent).text
+        assertTrue("skuSourceId" !in body, body)
+        assertTrue("\"productId\":\"P1\"" in body, body)
     }
 }

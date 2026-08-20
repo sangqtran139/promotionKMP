@@ -28,7 +28,7 @@
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |
 | Session | `session` | ✅ | ✅ | ✅ |
 | Order động | `currentOrderId` / `currentOrderValue` / `currentServiceCode` / `currentMetaData` | ✅ | ✅ | ✅ |
-| Cập nhật context | `updateOrderInfo(orderId, productId, orderValue, metaData, skuId, productName, productCategory, quantity, unitPrice)` | ✅ | ✅ | ✅ `orderId`/`productId` **bắt buộc** (B10); đơn chỉ 1 dòng sản phẩm → field phẳng thay vì `List<PromotionOrderItem>`, SDK tự bọc lại thành list nội bộ; `serviceCode` bỏ khỏi tham số ở cả 2 bên (B8) |
+| Cập nhật context | `updateOrderInfo(orderId, productId, orderValue, metaData, skuSourceId, productName, productCategory, quantity, unitPrice)` | ✅ | ✅ | ✅ `orderId`/`productId` **bắt buộc** (B10); đơn chỉ 1 dòng sản phẩm → field phẳng thay vì `List<PromotionOrderItem>`, SDK tự bọc lại thành list nội bộ; `serviceCode` bỏ khỏi tham số ở cả 2 bên (B8); `skuId` đổi tên `skuSourceId`, để trống thì **không** gửi field này lên `findEligible` (B11) |
 | Đặt theme | `configure(theme)` | ✅ | ✅ | ✅ |
 | Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `var currentTheme` 🔧 | 🔧 iOS đổi property → hàm |
 | Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | *(thiếu)* 🔧 | 🔧 iOS bổ sung |
@@ -55,7 +55,7 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
 | `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
 | `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
-| `PromotionOrderItem` | `skuId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
+| `PromotionOrderItem` | `skuSourceId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
 > **Enum case (đã chốt):** giữ convention mỗi bên (`PROD`↔`prod`) — N1 *duy nhất được miễn* vì ánh
 > xạ 1-1 hiển nhiên. Mọi tên hàm/tham số khác đã ép trùng chữ tuyệt đối.
@@ -70,7 +70,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 |---|---|---|
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
 | `onServiceSelected(selection)` | `PromotionServiceSelection` (`voucherId, productId, productName, skuSourceId = "", iconUrl`) | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `skuSourceId` (lấy từ `PromotionAvailableService.skuSourceId` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
-| `onExpireToken()` | *(không tham số)* | Từ 2026-08-18: bắn khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget Endow) trả HTTP 401/403. `toErrorCode()` map `httpStatus` 401/403 → `PromotionErrorCodes.TOKEN_EXPIRED` (`promotionLogic`, dùng chung 5 store, cả 2 nền tảng). Android: `PRMStoreViewModel.effects` (4 màn Fragment) và `PRMEndowView.renderState` (widget) tự bắn `PromotionSDK.getCallback()?.onExpireToken()` khi thấy mã này. iOS (từ 2026-08-18): `PRMStoreViewModel.emitErrorIfNeeded` (4 màn Store-based) và `PromotionSDKImpl.render(_:on:)` (widget Endow) làm y hệt — effect/state vẫn chảy tiếp xuống UI như cũ (không nuốt lỗi). Headless (`PromotionSDKApi`) **không** đi qua callback này, xem [HeadlessAPI.md](./HeadlessAPI.md)/[PublicApi.md](./PublicApi.md). |
+| `onExpireToken()` | *(không tham số)* | Từ 2026-08-18: bắn khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget Endow) trả HTTP 401. `toErrorCode()` map `httpStatus` 401 → `PromotionErrorCodes.TOKEN_EXPIRED` (`promotionLogic`, dùng chung 5 store, cả 2 nền tảng); từ 2026-08-19 **403 không còn map sang mã này** (không đủ quyền ≠ hết hạn token) — chỉ 401. Android: `PRMStoreViewModel.effects` (4 màn Fragment) và `PRMEndowView.renderState` (widget) tự bắn `PromotionSDK.getCallback()?.onExpireToken()` khi thấy mã này. iOS (từ 2026-08-18): `PRMStoreViewModel.emitErrorIfNeeded` (4 màn Store-based) và `PromotionSDKImpl.render(_:on:)` (widget Endow) làm y hệt — effect/state vẫn chảy tiếp xuống UI như cũ (không nuốt lỗi). Headless (`PromotionSDKApi`) **không** đi qua callback này, xem [HeadlessAPI.md](./HeadlessAPI.md)/[PublicApi.md](./PublicApi.md). |
 
 **Đã loại:**
 - Android `onError(errorCode)` — iOS không có, bỏ theo lựa chọn "hợp nhất theo iOS".
@@ -245,6 +245,14 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
   `orderId`) để hai tham số bắt buộc đứng đầu chữ ký ở cả 2 bên. `PromotionOrderItem.productId` (model)
   **không đổi** — vẫn `String?`, vì type này còn dùng ở luồng widget/`findEligible` nơi `productId` vẫn
   tuỳ chọn.
+- [x] **B11.** (2026-08-19) `PromotionOrderItem.skuId` / tham số `skuId` của `updateOrderInfo` đổi tên
+  thành `skuSourceId` ở cả 2 nền tảng — khớp tên field thật trên wire
+  (`EligibleOrderItemDto.skuSourceId`), khỏi phải tự quy đổi `skuId` (host) ↔ `skuSourceId` (server).
+  Kèm sửa lỗi: `EligibleOrderItemDto.skuSourceId` đổi `String` → `String?`; mapper
+  (`EligibleCampaignsMapper.toDto()`) chỉ set khi giá trị khác rỗng — trước đây `skuId` để trống thì
+  `updateOrderInfo` vẫn dựng item với `skuId = ""` (theo B9/B10), server nhận `"skuSourceId":""`; nay
+  field bị bỏ hẳn khỏi JSON nhờ `explicitNulls = false` (`PromotionHttpClient`), các field khác của
+  item (`productId`/`productName`/`quantity`/`unitPrice`) không đổi.
 
 > ### Emission — đã cân cả 2 nền tảng ✅
 > Contract callback đối xứng tuyệt đối **và** đủ 6 sự kiện đều được phát ở cả hai bên:

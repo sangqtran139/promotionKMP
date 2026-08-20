@@ -245,13 +245,13 @@ final class PromotionSDKImpl: NSObject {
     /// Đơn chỉ hỗ trợ **một** dòng sản phẩm nên nhận field phẳng rồi tự bọc thành `[PromotionOrderItem]`
     /// 1 phần tử.
     func updateOrderInfo(orderId: String, productId: String, orderValue: String?, metaData: String?,
-                         skuId: String?, productName: String?, productCategory: String?,
+                         skuSourceId: String?, productName: String?, productCategory: String?,
                          quantity: Int?, unitPrice: String?) {
         context.orderId = orderId
         context.orderValue = orderValue
         context.metaData = metaData
         context.orderItems = [PromotionOrderItem(
-            skuId: skuId ?? "",
+            skuSourceId: skuSourceId ?? "",
             productId: productId,
             productName: productName,
             productCategory: productCategory,

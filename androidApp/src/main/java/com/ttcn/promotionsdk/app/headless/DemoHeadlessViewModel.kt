@@ -184,7 +184,7 @@ class DemoHeadlessViewModel : ViewModel() {
      */
     private fun demoOrderItems() = listOf(
         PromotionOrderItem(
-            skuId = DEMO_SKU_ID,
+            skuSourceId = DEMO_SKU_ID,
             productId = DEMO_PRODUCT_ID,
             quantity = 1,
             unitPrice = orderValue,

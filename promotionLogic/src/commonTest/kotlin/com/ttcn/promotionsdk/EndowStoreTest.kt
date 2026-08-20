@@ -80,7 +80,7 @@ class EndowStoreTest {
         override fun getOrderId(): String = "ORD-1"
         override fun getOrderValue(): String = "500000"
         override fun getOrderItems(): List<EligibleOrderItem> =
-            listOf(EligibleOrderItem(skuId = "SKU-1", quantity = 2, unitPrice = "250000"))
+            listOf(EligibleOrderItem(skuSourceId = "SKU-1", quantity = 2, unitPrice = "250000"))
     }
 
     @BeforeTest
@@ -182,7 +182,7 @@ class EndowStoreTest {
         val req = repo.lastEligibleRequest!!
         assertEquals("ORD-1", req.orderId)
         assertEquals("500000", req.orderValue)
-        assertEquals(listOf("SKU-1"), req.items.map { it.skuId })
+        assertEquals(listOf("SKU-1"), req.items.map { it.skuSourceId })
     }
 
     @Test
