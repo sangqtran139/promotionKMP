@@ -187,10 +187,15 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         //
         // NHÃN: **cố định chuỗi SDK**, KHÔNG dùng `state.actionLabel` (= `displayStatusLabel` của
         // server). Server đang trả "Sử dụng" cho mọi voucher, còn màn này muốn chuỗi riêng — đối ứng
-        // iOS `applyTitle`. Nhãn phụ thuộc [returnVoucherOnApply] (TLNV MOB_002 control #5):
-        // tắt → "Sử dụng ngay"; bật → "Áp dụng".
+        // iOS `applyTitle`. Nhãn phụ thuộc [returnVoucherOnApply]:
+        // bật → "Sử dụng ngay"; tắt → "Áp dụng".
+        //
+        // LƯU Ý: chỉ đổi CHỮ, không đổi hành vi bấm ở [onActionClick] — bật vẫn trả voucherId/đóng
+        // màn (không mở bottomsheet chọn dịch vụ). Cố ý theo yêu cầu, KHÁC với bảng nhãn/hành vi ở
+        // TLNV MOB_002 control #5 (xem docs/features/PromotionDetail.md) — nhãn không còn khớp hành
+        // vi thực tế khi bấm trong nhánh `returnVoucherOnApply = true`.
         binding.tvUse.text = getString(
-            if (returnVoucherOnApply) R.string.prm_apply else R.string.prm_use_now
+            if (returnVoucherOnApply) R.string.prm_use_now else R.string.prm_apply
         )
 
         bindDetailTabs(

@@ -65,16 +65,30 @@ class EndowHostNotifierTest {
     }
 
     @Test
-    fun applied_unavailableIsNotApplied() {
+    fun unavailable_firesTooSoHostAlwaysGetsTheVoucherId() {
+        // Host cần biết id voucher đã áp dù server trả valid = false (hết ngân sách/hết hạn giữa
+        // chừng) — không phải chỉ khi APPLIED. widgetState = UNAVAILABLE vẫn phải bắn.
         val n = EndowHostNotifier()
-        n.onState(EndowState(totalVoucherCount = 2))
+        n.onState(EndowState(totalVoucherCount = 2))                       // NOT_APPLIED
         val unavailable = EndowState(
             totalVoucherCount = 2,
             appliedDiscounts = listOf(applied("v1")),
             discountUnavailable = true,
         )
-        // widgetState = UNAVAILABLE, dù appliedDiscounts không rỗng → KHÔNG phải "vừa áp xong".
-        assertTrue(n.onState(unavailable).none { it is EndowHostEvent.VoucherApplied })
+        assertEquals(listOf(EndowHostEvent.VoucherApplied("v1")), n.onState(unavailable))
+        assertTrue(n.onState(unavailable).isEmpty(), "vẫn UNAVAILABLE cùng id, render lại → không bắn nữa")
+    }
+
+    @Test
+    fun unavailable_doesNotRefireWhenSameIdJustTurnsInvalid() {
+        // v1 đã báo lúc còn valid (APPLIED); server revalidate ra invalid nhưng vẫn cùng id v1 → id
+        // không đổi nên không bắn lại, đúng rule "so theo id".
+        val n = EndowHostNotifier()
+        val appliedState = EndowState(totalVoucherCount = 2, appliedDiscounts = listOf(applied("v1")))
+        val nowInvalid = appliedState.copy(discountUnavailable = true)
+
+        assertEquals(listOf(EndowHostEvent.VoucherApplied("v1")), n.onState(appliedState))
+        assertTrue(n.onState(nowInvalid).isEmpty())
     }
 
         // ─── Availability ─────────────────────────────────────────────────────────

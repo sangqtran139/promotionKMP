@@ -123,12 +123,20 @@ nội dung y nguyên thì tab được dùng lại, không nạp lại WebView.
 
 ### Nút hành động + điều hướng (TLNV MOB_002 control #5)
 
+> **Lệch nhãn/hành vi (cố ý theo yêu cầu sau này):** cột "Nhãn nút" dưới đây đã bị **đảo ngược** so
+> với bản gốc TLNV MOB_002 control #5 — nhãn nay chỉ đổi theo `returnVoucherOnApply` (bật →
+> "Sử dụng ngay", tắt → "Áp dụng"), còn cột "Bấm thì" (hành vi thật khi bấm, ở `onActionClick`)
+> **không đổi**. Kết quả: nhánh `returnVoucherOnApply = true` hiện nhãn "Sử dụng ngay" nhưng bấm vào
+> vẫn **áp dụng voucher và đóng màn ngay**, không mở bottomsheet chọn dịch vụ — nhãn không còn mô tả
+> đúng hành vi. Xem code: `PromotionDetailFragment.bindDetailContent` (nhãn) /
+> `PromotionDetailFragment.onActionClick` (hành vi).
+
 | Vào màn từ | Nhãn nút | Bấm thì |
 |---|---|---|
-| "Ưu đãi của tôi" / Tìm kiếm | "Sử dụng ngay" (`prm_use_now`) | Chọn dịch vụ (xem dưới) |
-| Luồng thanh toán ("Chọn ưu đãi" → Chi tiết) | "Áp dụng" (`prm_apply`) | Quay lại "Chọn ưu đãi", voucher **đã tick** |
-| **Host gọi thẳng** `openPromotionDetail(..., returnVoucherOnApply = true)` — mặc định | "Áp dụng" | Trả **object `PromotionVoucherDetail`** về `onVoucherApplied` của chính lời gọi đó, rồi đóng màn |
-| Host gọi thẳng với `returnVoucherOnApply = false` | "Sử dụng ngay" | Chọn dịch vụ, như hàng đầu |
+| "Ưu đãi của tôi" / Tìm kiếm | "Áp dụng" (`prm_apply`) | Chọn dịch vụ (xem dưới) |
+| Luồng thanh toán ("Chọn ưu đãi" → Chi tiết) | "Sử dụng ngay" (`prm_use_now`) | Quay lại "Chọn ưu đãi", voucher **đã tick** |
+| **Host gọi thẳng** `openPromotionDetail(..., returnVoucherOnApply = true)` — mặc định | "Sử dụng ngay" | Trả **object `PromotionVoucherDetail`** về `onVoucherApplied` của chính lời gọi đó, rồi đóng màn |
+| Host gọi thẳng với `returnVoucherOnApply = false` | "Áp dụng" | Chọn dịch vụ, như hàng đầu |
 
 Ai đóng màn sau khi "Áp dụng" do `hostHandlesDismiss` quyết (mặc định `false` = SDK tự pop). Bật `true`
 thì SDK báo xong **để nguyên màn**, host tự đóng — Android `PromotionDetailFragment.onActionClick`

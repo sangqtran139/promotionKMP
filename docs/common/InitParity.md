@@ -259,6 +259,7 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
 > - **iOS:** SDK callback là kênh duy nhất — phát đủ 6 (qua `PromotionSDKImpl` + facade).
 >
 > Điểm lệch emission còn lại (nhỏ): iOS phát `onVoucherApplied` sau khi validate xong ở luồng "Chọn
-> ưu đãi"; Android phát khi widget vào trạng thái APPLIED (`discountDetails` không rỗng). Ngữ nghĩa
-> tương đương, thời điểm hơi khác do kiến trúc widget khác nhau (N1).
+> ưu đãi"; Android phát khi widget vào trạng thái APPLIED hoặc UNAVAILABLE (`discountDetails` không
+> rỗng, kể cả `valid = false`). Ngữ nghĩa tương đương, thời điểm hơi khác do kiến trúc widget khác
+> nhau (N1).
 ```
