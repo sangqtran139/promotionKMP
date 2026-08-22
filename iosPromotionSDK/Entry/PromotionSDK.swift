@@ -55,20 +55,20 @@ public final class PromotionSDK {
 
     /// Khởi tạo SDK. Đối ứng `PromotionSDK.initialize(context, options)` bên Android.
     ///
-    /// **Lúc nào vào app cũng gọi `initialize` lại** — `updateSession` đã bỏ.
+    /// **Lúc nào vào app cũng gọi `initialize` lại** — không còn `updateSession`/`updateToken`.
     ///
     /// `baseUrl` / `environment` / `language` / `theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc
     /// lần đầu sau `release()`) rồi dùng lại, các lần init sau **không cần khởi tạo nữa**. Host chỉ
-    /// cần đưa `accessToken` mới. Muốn đổi thật → `release()` rồi init lại.
+    /// cần đưa `tokenSource`. Muốn đổi thật → `release()` rồi init lại.
     ///
     /// - Parameter options: session (token/baseUrl/language/environment), danh mục dịch vụ,
     ///   theme (bỏ trống = khôi phục theme đã lưu), và callback nhận sự kiện.
     public static func initialize(options: PromotionSDKOptions) {
-        // Đã có cấu hình tĩnh → dùng lại, chỉ nhận `accessToken` mới từ host.
+        // Đã có cấu hình tĩnh → dùng lại, chỉ nhận `tokenSource` mới từ host.
         let incoming: PromotionSessionConfig
         if let cfg = staticConfig {
             incoming = PromotionSessionConfig(
-                accessToken: options.session.accessToken,
+                tokenSource: options.session.tokenSource,
                 baseUrl: cfg.baseUrl, language: cfg.language, environment: cfg.environment,
             )
         } else {
@@ -93,11 +93,15 @@ public final class PromotionSDK {
         impl.notifyAvailabilityAfterInitialLoad()
     }
 
-    /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ token + baseUrl.
+    /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ nguồn token + baseUrl.
     /// `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
     /// nhận `PromotionSDKOptions`. Đối ứng overload phẳng `initialize(...)` bên Android.
+    ///
+    /// - Parameter tokenSource: nguồn token — xem `PromotionTokenSource`. SDK đọc lại token ở **mỗi**
+    ///   request nên host không phải báo gì khi token đổi. Trỏ vào kho token **cấp app**, không phải
+    ///   vào màn hình đang gọi hàm này.
     public static func initialize(
-        accessToken: String,
+        tokenSource: PromotionTokenSource,
         baseUrl: String,
         environment: PromotionEnvironment = .prod,
         language: String = "vi-VN",
@@ -107,7 +111,7 @@ public final class PromotionSDK {
     ) {
         initialize(options: PromotionSDKOptions(
             session: PromotionSessionConfig(
-                accessToken: accessToken, baseUrl: baseUrl,
+                tokenSource: tokenSource, baseUrl: baseUrl,
                 language: language, environment: environment,
             ),
             availableServices: availableServices,
@@ -116,14 +120,6 @@ public final class PromotionSDK {
         ))
     }
 
-
-    /// Refresh access token **giữa phiên** (cùng customer, không đổi login) — nhẹ hơn `updateSession`:
-    /// **giữ nguyên** cả context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout). Đối ứng
-    /// `updateToken(_:)` bên Android.
-    public static func updateToken(_ accessToken: String) {
-        guard let impl = requireImpl("updateToken(_:)") else { return }
-        impl.updateToken(accessToken)
-    }
 
     /// Giải phóng SDK. Đối ứng `PromotionSDK.release()` bên Android. Gọi khi chưa init là vô hại.
     /// **Không** xoá theme đã lưu — nó sống qua release/init.
@@ -158,7 +154,11 @@ public final class PromotionSDK {
 
     // MARK: - Context
 
-    /// Session đã truyền lúc `initialize`. `nil` khi chưa `initialize`. Đối ứng `PromotionSDK.session`.
+    /// Cấu hình phiên đã truyền lúc `initialize` (`baseUrl` / `language` / `environment` / nguồn
+    /// token). `nil` khi chưa `initialize`.
+    ///
+    /// Không có token ở đây: token không phải cấu hình mà là giá trị đổi theo thời gian — hỏi
+    /// `tokenSource` nếu cần. Đối ứng `PromotionSDK.session` bên Android.
     public static var session: PromotionSessionConfig? { impl?.context.session }
 
     /// Giá trị động hiện tại được ghi qua `updateOrderInfo`. `nil` khi chưa ghi. Đối ứng Android.

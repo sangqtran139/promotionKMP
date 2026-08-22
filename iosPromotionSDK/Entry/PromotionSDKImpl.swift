@@ -29,10 +29,9 @@ final class PromotionSDKImpl: NSObject {
 
     /// Nguồn context duy nhất: session tĩnh + order/dịch vụ động. `updateOrderInfo` ghi vào đây,
     /// lõi Kotlin đọc lại ở **mỗi** request. Thay cho `HostRequestContextProvider` + các field rời cũ.
-    /// `var` để `updateToken` thay context (session mới) mà vẫn giữ order/dịch vụ đang ghi.
-    private(set) var context: PromotionMutableContext
-
-    var token: String? { context.session.accessToken }
+    /// `let`: context sống suốt vòng đời một phiên. Không còn đường nào thay nó — token đổi thì
+    /// kho của host đổi, SDK đọc lại qua `PromotionTokenSource` chứ không dựng lại gì.
+    let context: PromotionMutableContext
 
     // Định tuyến qua context để `updateOrderInfo` (host cập nhật khi mở widget thanh toán) và luồng
     // build request dùng chung một nguồn — không phải re-init SDK, giữ 1 phiên từ lúc login.
@@ -258,52 +257,6 @@ final class PromotionSDKImpl: NSObject {
             quantity: quantity ?? 1,
             unitPrice: unitPrice ?? "0"
         )]
-    }
-
-    /// Đăng nhập user mới sau khi đã init một lần: đổi token (+ availableServices động),
-    /// giữ field cố định đã khoá. Context đơn hàng reset. Đối ứng `PromotionSDK.updateSession` bên Android.
-    func updateSession(accessToken: String, availableServices: [PromotionAvailableService]?) {
-        let old = context.session
-        let newSession = PromotionSessionConfig(
-            accessToken: accessToken, baseUrl: old.baseUrl,
-            language: old.language, environment: old.environment,
-        )
-        applySession(newSession, availableServices: availableServices ?? context.availableServices, keepOrderContext: false)
-    }
-
-    /// Refresh token giữa phiên (cùng customer, không đổi login) — giữ nguyên context đơn hàng đang
-    /// ghi (dùng khi token hết hạn giữa checkout). Đối ứng `PromotionSDK.updateToken` bên Android.
-    func updateToken(_ accessToken: String) {
-        let old = context.session
-        let newSession = PromotionSessionConfig(
-            accessToken: accessToken, baseUrl: old.baseUrl,
-            language: old.language, environment: old.environment,
-        )
-        applySession(newSession, availableServices: context.availableServices, keepOrderContext: true)
-    }
-
-    /// Dựng lại đồ thị DI với [newSession] + [availableServices]. `keepOrderContext=true` (refresh
-    /// token) thì bơm lại order/dịch vụ đang ghi; false (login mới) thì để rỗng.
-    /// **Clear trước là bắt buộc** (HttpClient token cũ nằm trong singleton lõi).
-    func applySession(_ newSession: PromotionSessionConfig, availableServices: [PromotionAvailableService], keepOrderContext: Bool) {
-        let newContext = PromotionMutableContext(session: newSession, availableServices: availableServices)
-        if keepOrderContext {
-            newContext.orderId = context.orderId
-            newContext.orderValue = context.orderValue
-            newContext.serviceCode = context.serviceCode
-            newContext.metaData = context.metaData
-            newContext.orderItems = context.orderItems
-        }
-        context = newContext
-
-        PromotionContainer.shared.clear()
-        PromotionContainer.shared.initialize(config: newContext.toCoreConfig(isDebug: PromotionSDKImpl.isDebugBuild))
-        // Callback đã được nối từ lần initialize đầu nên báo thẳng, không cần đợi như lúc init.
-        Task { @MainActor [weak self] in
-            try? await PromotionFeatureGate.shared.refresh()
-            self?.onAvailabilityUpdate?(PromotionSDKImpl.isSdkEnabled())
-        }
-        // callback + theme giữ nguyên — không đụng.
     }
 
     /// Giải phóng đồ thị DI + reset theme trong bộ nhớ. Đối ứng `PromotionSDK.release()` bên Android:

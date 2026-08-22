@@ -53,16 +53,15 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 ```kotlin
 object PromotionSDK {
     // Khởi tạo tối giản (đủ cho phần lớn host — chỉ 2 tham số bắt buộc):
-    fun initialize(context: Context, accessToken: String, baseUrl: String,
+    fun initialize(context: Context, tokenSource: PromotionTokenSource, baseUrl: String,
                    environment: PromotionEnvironment = PROD, language: String = "vi-VN",
                    availableServices: List<PromotionAvailableService> = emptyList(),
                    theme: PromotionSDKTheme? = null, callback: PromotionSDKCallback? = null)
     // Khởi tạo đầy đủ:
     fun initialize(context: Context, options: PromotionSDKOptions)
-    // Login lại (lối chính): chỉ field động; giữ field cố định đã khoá (baseUrl/env/language/theme).
-    // `updateSession` ĐÃ BỎ — lúc nào vào app cũng gọi initialize() lại. baseUrl/environment/
-    // language/theme là cấu hình TĨNH: đặt lần đầu rồi dùng lại, host chỉ đưa accessToken mới.
-    fun updateToken(accessToken: String)                        // (tuỳ chọn) refresh token giữa phiên, giữ context đơn hàng
+    // Login lại (lối chính): gọi lại initialize(). `updateSession`/`updateToken` ĐÃ BỎ.
+    // baseUrl/environment/language/theme là cấu hình TĨNH: đặt lần đầu rồi dùng lại.
+    // Token hết hạn giữa phiên: KHÔNG có API nào — SDK đọc lại tokenSource.currentToken() mỗi request.
     fun release()                                   // xoá dữ liệu phiên; GIỮ cấu hình tĩnh + theme đã lưu
     fun isInitialized(): Boolean
     fun getCallback(): PromotionSDKCallback?
@@ -169,7 +168,7 @@ PromotionSDK.initialize(
     context,
     PromotionSDKOptions(
         session = PromotionSessionConfig(
-            accessToken = token,
+            tokenSource = myTokenSource,
             baseUrl = "https://...",
             language = "vi-VN",
             environment = PromotionEnvironment.PROD,
@@ -183,7 +182,8 @@ val api = PromotionSDK.api
 ```
 
 Order/dịch vụ **động** đi qua `updateOrderInfo` (ghi vào `PromotionMutableContext`, lõi đọc lại ở **mỗi**
-request) — không cần `initialize` lại. Refresh token = `initialize` lại với session mới.
+request) — không cần `initialize` lại. Token cũng vậy: SDK đọc lại `tokenSource.currentToken()` ở mỗi
+request, host không phải gọi gì khi token đổi.
 
 ### iOS
 
@@ -191,7 +191,7 @@ request) — không cần `initialize` lại. Refresh token = `initialize` lại
 PromotionSDK.initialize(
     options: PromotionSDKOptions(
         session: PromotionSessionConfig(
-            accessToken: token,
+            tokenSource: myTokenSource,
             baseUrl: "https://...",
             language: "vi-VN",
             environment: .prod

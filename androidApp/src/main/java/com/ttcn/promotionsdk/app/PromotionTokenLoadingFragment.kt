@@ -41,9 +41,10 @@ class PromotionTokenLoadingFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val token = LoginService().login()
+                demoAccessToken = token
                 Log.d(TAG, "accessToken: $token")
 
-                initSdk(token)
+                initSdk()
                 updateDemoContext()
 
                 binding?.tvStatus?.text = "Lấy token thành công"
@@ -61,10 +62,13 @@ class PromotionTokenLoadingFragment : Fragment() {
     // Gọi THẲNG PromotionSDK — không qua wrapper.
     // `updateSession` đã bị bỏ: **lúc nào vào app cũng initialize() lại**, lần nào cũng áp đủ cấu
     // hình host truyền (kể cả baseUrl/environment/language). SDK không còn khoá field nào.
-    private fun initSdk(token: String) {
+    // `tokenSource` là cách DUY NHẤT token đi vào SDK — không có tham số `accessToken` nào nữa.
+    // [DemoTokenSource] (ở LoginService.kt) cài đặt cả hai hàm: `currentToken()` cho mọi request, và
+    // `refreshToken()` cho lúc SDK ăn 401. Xem KDoc của nó.
+    private fun initSdk() {
         PromotionSDK.initialize(
             context = requireContext(),
-            accessToken = token,
+            tokenSource = DemoTokenSource,
             baseUrl = DEMO_BASE_URL,
             availableServices = demoServices,
             callback = DemoPromotionCallback,

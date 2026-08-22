@@ -31,8 +31,11 @@ interface PromotionSDKCallback {
 
     /**
      * Gọi khi 1 API bên trong màn hình SDK (Ưu đãi của tôi, Tìm kiếm, Chi tiết, Chọn ưu đãi, widget
-     * Endow) trả về HTTP 401 — token hết hạn hoặc không hợp lệ. Host nên refresh token rồi gọi
-     * lại [com.ttcn.prm.entry.PromotionSDK.updateToken] (hoặc điều hướng user về màn đăng nhập).
+     * Endow) trả về HTTP 401 và **không cứu được** — tức
+     * [PromotionTokenSource.refreshToken] đã báo `false`, hoặc host không cài đặt nó.
+     *
+     * Nghĩa là phiên đã chết thật: host nên điều hướng user về màn đăng nhập. Host **không** cần
+     * đẩy token mới vào SDK — SDK tự đọc lại qua [PromotionTokenSource.currentToken] ở mỗi request.
      */
     fun onExpireToken() {}
 

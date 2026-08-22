@@ -20,9 +20,9 @@
 | Khái niệm | Canonical (đích) | Android hiện tại | iOS hiện tại | TT |
 |---|---|---|---|---|
 | Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
-| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, accessToken, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(accessToken:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
-| Login lại / mở lại app | **`initialize`** | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ **lối duy nhất**, `updateSession` đã bỏ. `baseUrl`/`environment`/`language`/`theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc lần đầu sau `release()`) rồi **dùng lại**, các lần init sau không khởi tạo nữa — host chỉ đưa `accessToken` mới. `release()` **giữ** cấu hình tĩnh + theme, chỉ xoá dữ liệu phiên |
-| Refresh token (giữa phiên) | **`updateToken`** | `fun updateToken(accessToken)` | `updateToken(_:)` | ✅ tuỳ chọn — cùng customer + **giữ cả** context đơn hàng đang ghi (dùng khi token hết hạn giữa checkout) |
+| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, tokenSource, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(tokenSource:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
+| Login lại / mở lại app | **`initialize`** | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ **lối duy nhất**, `updateSession`/`updateToken` đã bỏ. `baseUrl`/`environment`/`language`/`theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc lần đầu sau `release()`) rồi **dùng lại** — host chỉ đưa `tokenSource`. `release()` **giữ** cấu hình tĩnh + theme, chỉ xoá dữ liệu phiên |
+| Token hết hạn giữa phiên | — | không có API | không có API | ✅ **đã bỏ `updateToken`**: SDK đọc lại `tokenSource.currentToken()` ở mỗi request, không có gì để đẩy vào |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
 | Trạng thái | `isInitialized()` | ✅ | ✅ | ✅ |
 | Headless | `api` | ✅ `val api` | ✅ `var api` | ✅ |
@@ -51,11 +51,51 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | Type | Field / thứ tự (canonical) | Android | iOS | TT |
 |---|---|---|---|---|
 | `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
-| `PromotionSessionConfig` | `accessToken, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`** |
+| `PromotionSessionConfig` | `tokenSource, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`**. Không còn `accessToken` |
+| `PromotionTokenSource` | `currentToken()`, `refreshToken(onResult)` | `interface`, `refreshToken` có default `= onResult(false)` | `protocol`, default ở `public extension` | ✅ **nguồn token duy nhất** — xem [§Token](#token--promotiontokensource-một-khái-niệm-duy-nhất) |
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
 | `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
-| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng) |
+| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter + `refreshAccessToken` | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng). **Không có field token nào** — chỉ chuyển tiếp sang `tokenSource` |
 | `PromotionOrderItem` | `skuSourceId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
+
+### Token — `PromotionTokenSource`, một khái niệm duy nhất
+
+Token vào SDK qua **một** đường: `PromotionSessionConfig.tokenSource`. Không có `accessToken`, không
+có `updateToken`, không có bản sao nào bên trong SDK. `PromotionMutableContext` chỉ **chuyển tiếp**:
+
+```
+getAccessToken()     → session.tokenSource.currentToken()
+refreshAccessToken() → session.tokenSource.refreshToken(onResult)
+```
+
+Vì sao: token của host sống ngắn (≈15 phút) và host tự lấy token mới theo cơ chế riêng. Mọi trạng
+thái token do SDK giữ đều là một bản sao có thể lệch với host — đó chính là con bug gốc. Không giữ
+gì thì không lệch được.
+
+Lõi hỏi `getAccessToken()` ở **mỗi** request (`defaultRequest { }` trong `PromotionHttpClient`), nên
+host không phải báo gì cho SDK khi token đổi.
+
+Ăn 401 → `PromotionRemoteDataSource.apiCall` gọi `refreshAccessToken` qua `TokenRefreshGate` rồi chạy
+lại request **đúng một lần**; `false` thì để `TOKEN_EXPIRED` nổi lên và bắn `onExpireToken()`. Cổng
+gộp mọi request 401 cùng lúc thành **một** lần hỏi host (`generation` + `Mutex`), bỏ cuộc sau 15 giây
+nếu host không gọi lại callback.
+
+**Ràng buộc phải giữ đối xứng khi sửa:**
+
+1. Hai hàm **cùng tên, cùng thứ tự** hai bên: `currentToken()` rồi `refreshToken(_:)`.
+2. `refreshToken` trả **`Boolean`/`Bool`**, không phải token mới. Đổi nó thành `String?` là mở đường
+   thứ hai cho token vào SDK, kèm câu hỏi "SDK dùng chuỗi host trả hay đọc lại kho của host?" — đúng
+   thứ mơ hồ mà thiết kế này loại bỏ. Hợp đồng: host ghi vào kho của mình **rồi** báo `true`.
+3. Mặc định `refreshToken` = `false` (chịu ngay). Kotlin khai bằng default method trên interface;
+   Swift **không** thừa hưởng default của protocol Kotlin lẫn của protocol Swift khai trong protocol
+   body, nên bản mặc định iOS phải nằm ở `public extension PromotionTokenSource`.
+4. `PromotionMutableContext` **không được** cache token. Thêm bất kỳ field token nào ở đó là tái tạo
+   con bug gốc. Test khoá điều này: `PromotionMutableContextTokenTest`.
+5. `currentToken()` chạy trên **thread nền** (`ioDispatcher` bọc `apiCall` ở lõi) và nằm trên đường
+   dựng header của mọi request → phải non-blocking, thread-safe, không `@MainActor` ở Swift.
+6. `PromotionSessionConfig` chỉ còn `tokenSource, baseUrl, language, environment`. Chỗ duy nhất dựng
+   tay đủ field ở iOS là `PromotionSDK.initialize(options:)` (nhánh dùng lại `staticConfig`) —
+   Android có `copy()` nên tự mang.
 
 > **Enum case (đã chốt):** giữ convention mỗi bên (`PROD`↔`prod`) — N1 *duy nhất được miễn* vì ánh
 > xạ 1-1 hiển nhiên. Mọi tên hàm/tham số khác đã ép trùng chữ tuyệt đối.
@@ -170,10 +210,9 @@ chính SDK. Tích hợp tối thiểu:
 
 ```text
 // Sau khi login:
-PromotionSDK.initialize(context, accessToken, baseUrl)   // overload phẳng, 3 tham số
+PromotionSDK.initialize(context, tokenSource, baseUrl)   // overload phẳng, 3 tham số
 
-// Refresh token — KHÔNG cần tự init lại, SDK giữ nguyên context/services/theme/callback:
-PromotionSDK.updateToken(newToken)
+// Token hết hạn: KHÔNG cần gọi gì — SDK đọc lại tokenSource.currentToken() ở mỗi request.
 
 // Vào màn có voucher:
 PromotionSDK.updateOrderInfo(orderId, productId, orderValue)
@@ -188,7 +227,7 @@ PromotionSDK.release()
 
 Vì sao không còn cần wrapper:
 - **`initialize` phẳng** — 3 tham số bắt buộc, không phải lồng 3 constructor.
-- **`updateToken`** — SDK tự dựng lại session mới, host không phải biết "refresh = init lại".
+- **`tokenSource`** — host khai nguồn token một lần; SDK tự đọc lại, không ai phải đồng bộ gì.
 - **Callback** là interface/protocol có default method → host chỉ implement sự kiện mình cần, truyền
   thẳng qua `initialize(callback:)`. Không cần fan-out.
 - **Headless** trả DTO công khai (`PromotionApiResult`/`PromotionVoucher`…) — không rò type lõi, host

@@ -3,7 +3,7 @@
 //  PromotionSDKDemo
 //
 //  CHỈ dùng cho app demo: gọi API đăng nhập ViettelMoney để lấy `accessToken` thật rồi truyền
-//  vào SDK (`PromotionSDK.initialize(accessToken:...)`). Ngoài đời việc này do app HOST làm;
+//  vào SDK (`PromotionSDK.initialize(tokenSource:...)`). Ngoài đời việc này do app HOST làm;
 //  đây chỉ là giả lập để test SDK với token/BFF thật.
 //
 //  Luồng 2 bước (BE yêu cầu):
@@ -15,12 +15,101 @@
 //
 
 import Foundation
+import PRM
 
 enum LoginError: Error {
     case invalidResponse
     case server(code: String, message: String)   // status.code != "00"/AUT0014
     case missingRequestId                          // bước 1 không trả requestId
     case missingToken                              // bước 2 không trả accessToken
+}
+
+/// Kho token của app demo — đứng cho thứ mà host thật đã có sẵn (session manager / keychain wrapper).
+/// SDK đọc lại nó ở **mỗi** request qua `PromotionTokenSource`, nên đổi lúc nào cũng được, không phải
+/// báo gì cho SDK. Có khoá vì SDK đọc từ **thread nền** còn luồng đăng nhập ghi từ thread khác.
+/// Đối ứng `demoAccessToken` bên Android.
+enum DemoTokenStore {
+    private static let lock = NSLock()
+    private static var _token = ""
+
+    static var token: String {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _token
+        }
+        set {
+            lock.lock()
+            defer { lock.unlock() }
+            _token = newValue
+        }
+    }
+}
+
+/// Nguồn token mà app demo đưa cho SDK — cài đặt `PromotionTokenSource`.
+/// Soi gương `DemoTokenSource` bên Android (cùng hai hàm). Sửa một bên thì sửa cả hai.
+///
+/// Singleton (sống bằng tuổi process) chứ không phải property của view controller: SDK giữ object
+/// này tới tận `PromotionSDK.release()`. Trỏ vào màn hình là giữ màn hình đó vĩnh viễn.
+///
+/// - `currentToken()` — SDK gọi ở **mỗi** request. Chỉ đọc `DemoTokenStore`, không I/O, không chặn.
+/// - `refreshToken(_:)` — SDK gọi khi ăn 401. Ở app thật đây là API refresh token của bạn; demo không
+///   có nên login lại từ đầu. Điều **quan trọng** là ghi vào `DemoTokenStore` **trước** khi báo
+///   `true`: lượt thử lại của SDK đọc token qua `currentToken()` chứ không dùng giá trị nào ta trả về.
+final class DemoTokenSource: PromotionTokenSource {
+
+    static let shared = DemoTokenSource()
+    private init() {}
+
+    /// SDK đã gộp các request 401 cùng lúc thành một lần gọi; hàng đợi này chặn nốt hai màn mở cách
+    /// nhau vài giây, và bảo đảm mọi lượt chờ đều nhận đúng một callback.
+    private let lock = NSLock()
+    private var isRefreshing = false
+    private var waiters: [(Bool) -> Void] = []
+
+    func currentToken() -> String? { DemoTokenStore.token }
+
+    func refreshToken(_ onResult: @escaping (Bool) -> Void) {
+        print("[Demo] SDK ăn 401 → app đang lấy token mới…")
+
+        lock.lock()
+        waiters.append(onResult)
+        if isRefreshing {
+            lock.unlock()
+            return
+        }
+        isRefreshing = true
+        lock.unlock()
+
+        LoginService.shared.login { [weak self] result in
+            guard let self else { return }
+            var ok = false
+            switch result {
+            case .success(let login):
+                DemoTokenStore.token = login.accessToken   // ghi vào kho TRƯỚC khi báo
+                ok = true
+                print("[Demo] Đã có token mới → SDK sẽ thử lại request hỏng")
+            case .failure(let error):
+                print("[Demo] Lấy token mới thất bại: \(error) → SDK bắn onExpireToken()")
+            }
+
+            self.lock.lock()
+            let pending = self.waiters
+            self.waiters = []
+            self.isRefreshing = false
+            self.lock.unlock()
+
+            pending.forEach { $0(ok) }
+        }
+    }
+}
+
+/// **Chỉ để demo.** Ghi một chuỗi rác vào kho token để lượt gọi API kế tiếp của SDK ăn 401 — nhìn
+/// thấy cơ chế refresh chạy mà không phải ngồi chờ token thật hết hạn (~15 phút).
+/// Đối ứng `expireTokenForDemo()` bên Android.
+func expireTokenForDemo() {
+    DemoTokenStore.token = "expired-token-for-demo"
+    print("[Demo] Đã làm hỏng token trong kho app (SDK KHÔNG được báo gì)")
 }
 
 /// Kết quả đăng nhập cần cho SDK.

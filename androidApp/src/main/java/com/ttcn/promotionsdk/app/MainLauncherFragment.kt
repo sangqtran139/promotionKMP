@@ -52,6 +52,21 @@ class MainLauncherFragment : AppBaseFragment<FragmentMainLauncherBinding>() {
         binding.btnOpenPromotionDetail.setOnClickListener {
             openPromotionDetailDirect()
         }
+
+        // Demo cơ chế refresh: ghi token rác vào kho của app mà KHÔNG báo SDK, rồi mở "My promotion".
+        //
+        //   request đầu → 401 → SDK gọi DemoTokenSource.refreshToken() → app login lại → báo true
+        //                     → SDK tự chạy lại request → màn lên bình thường, KHÔNG toast lỗi
+        //
+        // Xem logcat tag LoginService để đọc lại toàn bộ chuỗi đó.
+        binding.btnExpireToken.setOnClickListener {
+            expireTokenForDemo()
+            Toast.makeText(
+                requireContext(),
+                "Token đã hỏng. Mở \"My promotion\" — SDK sẽ tự lấy token mới và thử lại.",
+                Toast.LENGTH_LONG,
+            ).show()
+        }
     }
 
     override fun onResume() {
@@ -71,6 +86,11 @@ class MainLauncherFragment : AppBaseFragment<FragmentMainLauncherBinding>() {
         // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
         DemoPromotionCallback.onService = { sel ->
             Log.d(TAG, "Đã chọn dịch vụ: ${sel.productName} (${sel.productId}) voucher: ${sel.voucherId}")
+        }
+        // Chỉ bắn khi `refreshToken` đã báo `false` — phiên chết thật. Có cơ chế refresh chạy đúng
+        // thì callback này phải HIẾM; thấy nó nổ đều là dấu hiệu refresh của app đang sai.
+        DemoPromotionCallback.onExpired = {
+            Log.w(TAG, "Token hết hạn và app không lấy lại được — nên đưa user về màn đăng nhập")
         }
     }
 

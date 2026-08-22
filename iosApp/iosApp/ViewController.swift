@@ -62,6 +62,11 @@ class ViewController: UIViewController {
         events.onApplied = { voucherId in
             print("[Demo] Voucher đã áp: \(voucherId)")
         }
+        // Chỉ bắn khi `refreshToken` đã báo `false` — phiên chết thật. Có cơ chế refresh chạy đúng
+        // thì callback này phải HIẾM; thấy nó nổ đều là dấu hiệu refresh của app đang sai.
+        events.onExpired = {
+            print("[Demo] Token hết hạn và app không lấy lại được — nên đưa user về màn đăng nhập")
+        }
         // User chọn dịch vụ trong bottom sheet → host tự điều hướng.
         events.onService = { [weak self] sel in
             self?.showAlert("Đã chọn dịch vụ", "\(sel.productName) (\(sel.productId))\nvoucher: \(sel.voucherId)")
@@ -84,6 +89,24 @@ class ViewController: UIViewController {
         stackView.addArrangedSubview(makeSeparator())
         stackView.addArrangedSubview(makeButton("▶  Headless API Demo", action: #selector(openHeadlessDemoTapped), color: .systemIndigo))
         stackView.addArrangedSubview(makeButton("🎨  Theme Playground (đổi màu từng item)", action: #selector(openThemePlaygroundTapped), color: .systemPurple))
+        stackView.addArrangedSubview(makeButton("💥  Làm hỏng token (demo 401 → tự refresh)", action: #selector(expireTokenTapped), color: .systemOrange))
+    }
+
+    /// Demo cơ chế refresh: ghi token rác vào kho của app mà KHÔNG báo SDK, rồi mở "Xem danh sách ưu đãi".
+    ///
+    ///   request đầu → 401 → SDK gọi DemoTokenSource.refreshToken() → app login lại → báo true
+    ///                     → SDK tự chạy lại request → màn lên bình thường, KHÔNG popup lỗi
+    ///
+    /// Xem log `[Demo]` ở console để đọc lại toàn bộ chuỗi đó. Đối ứng nút `btnExpireToken` bên Android.
+    @objc private func expireTokenTapped() {
+        expireTokenForDemo()
+        let alert = UIAlertController(
+            title: "Token đã hỏng",
+            message: "Mở \"Xem danh sách ưu đãi\" — SDK sẽ tự lấy token mới và thử lại.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     private func makeButton(_ title: String, action: Selector, color: UIColor = .systemBlue) -> UIButton {

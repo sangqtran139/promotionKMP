@@ -45,9 +45,12 @@ public protocol PromotionSDKCallback: AnyObject {
     /// Gọi khi màn hình SDK bị đóng (user back).
 
     /// Gọi khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget
-    /// Endow) trả về HTTP 401 — token hết hạn hoặc không hợp lệ. Host nên refresh token rồi gọi
-    /// lại `PromotionSDK.updateToken` (hoặc điều hướng user về màn đăng nhập). Đối ứng
-    /// `onExpireToken()` bên Android — xem docs/common/InitParity.md §3.
+    /// Endow) trả về HTTP 401 và **không cứu được** — tức `PromotionTokenSource.refreshToken(_:)` đã
+    /// báo `false`, hoặc host không cài đặt nó.
+    ///
+    /// Nghĩa là phiên đã chết thật: host nên điều hướng user về màn đăng nhập. Host **không** cần đẩy
+    /// token mới vào SDK — SDK tự đọc lại qua `PromotionTokenSource.currentToken()` ở mỗi request.
+    /// Đối ứng `onExpireToken()` bên Android — xem docs/common/InitParity.md §3.
     func onExpireToken()
 }
 

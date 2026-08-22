@@ -195,7 +195,7 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         // TLNV MOB_002 control #5 (xem docs/features/PromotionDetail.md) — nhãn không còn khớp hành
         // vi thực tế khi bấm trong nhánh `returnVoucherOnApply = true`.
         binding.tvUse.text = getString(
-            if (returnVoucherOnApply) R.string.prm_use_now else R.string.prm_apply
+            if (returnVoucherOnApply) R.string.prm_apply else R.string.prm_use_now
         )
 
         bindDetailTabs(

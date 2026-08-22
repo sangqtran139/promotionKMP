@@ -117,5 +117,23 @@
             app:cornerRadius="@dimen/app_launcher_btn_corner_radius"
             app:elevation="@dimen/demo_view_size_2"
             app:rippleColor="@color/app_launcher_btn_ripple" />
+
+        <!-- Chỉ để demo: ghi token rác vào kho của app để SDK ăn 401 ở lượt gọi kế tiếp, khỏi ngồi
+             chờ token thật hết hạn. Bấm nút này rồi mở "My promotion". -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExpireToken"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/demo_view_size_16"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/app_launcher_btn_min_height"
+            android:paddingVertical="@dimen/demo_view_size_14"
+            android:text="@string/app_launcher_btn_expire_token"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            app:cornerRadius="@dimen/app_launcher_btn_corner_radius" />
     </LinearLayout>
 </layout>

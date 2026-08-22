@@ -21,8 +21,10 @@ object DemoPromotionCallback : PromotionSDKCallback {
     var onCleared: (() -> Unit)? = null
     var onCountChanged: ((Int) -> Unit)? = null
     var onService: ((PromotionServiceSelection) -> Unit)? = null
+    var onExpired: (() -> Unit)? = null
 
     // Interface có default rỗng → chỉ override đúng sự kiện demo cần.
     override fun onVoucherApplied(voucherId: String) { onApplied?.invoke(voucherId) }
     override fun onServiceSelected(selection: PromotionServiceSelection) { onService?.invoke(selection) }
+    override fun onExpireToken() { onExpired?.invoke() }
 }

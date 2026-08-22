@@ -27,6 +27,28 @@ interface PromotionRequestContextProvider {
     fun getMetaData(): String? = null
 
     fun getOrderItems(): List<EligibleOrderItem> = emptyList()
+
+    /**
+     * Xin host lấy access token mới, gọi khi một request đã ăn **HTTP 401**. Host gọi lại [onResult]
+     * với `true` khi đã có token mới, `false` khi chịu (phiên chết thật). SDK thử lại request hỏng
+     * **đúng một lần** khi nhận `true`; nhận `false` thì để lỗi `TOKEN_EXPIRED` nổi lên.
+     *
+     * **`Boolean` chứ không phải token mới** là cố ý: token vào SDK theo **một** đường duy nhất là
+     * [getAccessToken]. Trả token ở đây sẽ tạo đường thứ hai, và kèm theo là câu hỏi "SDK dùng chuỗi
+     * tôi trả hay đọc lại kho của tôi?". Chữ ký này không để lại chỗ cho câu hỏi đó: host ghi token
+     * mới vào kho của mình rồi báo `true`, lượt thử lại đọc [getAccessToken] như mọi request khác.
+     *
+     * **Callback chứ không phải `suspend`** cũng là cố ý: cơ chế lấy token của host là bất đồng bộ
+     * và nằm ở tầng native, nên chữ ký này phải implement được bằng closure thường từ cả Swift lẫn
+     * Java. Lõi tự bọc lại thành coroutine.
+     *
+     * Mặc định **chịu ngay** (`onResult(false)`) — host không cài đặt thì 401 hỏng luôn, không chờ.
+     * Chi tiết luồng: [com.ttcn.promotionsdk.data.remote.TokenRefreshGate].
+     *
+     * Được gọi từ thread nền, và **tối đa một lượt refresh tại một thời điểm** cho toàn SDK dù có
+     * bao nhiêu request cùng ăn 401.
+     */
+    fun refreshAccessToken(onResult: (Boolean) -> Unit) = onResult(false)
 }
 
 /**

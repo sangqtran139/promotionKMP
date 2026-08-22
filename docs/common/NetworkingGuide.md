@@ -69,11 +69,64 @@ Dùng `appendIfNameAbsent` để không ghi đè header do caller tự đặt.
 
 | Header | Nguồn | Ghi chú |
 |---|---|---|
-| `Authorization` | `requestContextProvider.getAccessToken()` | Tự thêm tiền tố `Bearer ` nếu chưa có |
+| `Authorization` | `requestContextProvider.getAccessToken()` | Tự thêm tiền tố `Bearer ` nếu chưa có. **Đọc lại mỗi request** — xem *Token là pull* dưới đây |
 | `X-Request-ID` | `randomUuidString()` | `kotlin.uuid.Uuid`, không phải `java.util.UUID` |
 | `Accept-Language` | `getLanguage()` | Mặc định `vi-VN` |
 | `Accept` | — | `application/json` |
 | `Content-Type` | `contentType(...)` ở POST | `application/json` |
+
+#### Token là **pull**, không phải push
+
+`getAccessToken()` nằm trong `defaultRequest { }` nên nó được gọi lại ở **mỗi** request — SDK không
+bao giờ giữ một bản sao token. Đây không phải chi tiết cài đặt tuỳ tiện mà là hợp đồng: token của
+host sống ngắn (≈15 phút) và host **tự** refresh theo cơ chế riêng của nó. Nếu SDK cache token nhận
+lúc `initialize`, thì ngay sau lần refresh đầu tiên của host, SDK cầm một chuỗi đã chết trong khi
+phiên đăng nhập vẫn còn sống — mọi API trả 401 dù người dùng chưa hề đăng xuất.
+
+Tầng UI mỗi nền tảng nối nguồn token của host vào đây qua `PromotionSessionConfig.tokenSource`
+(`PromotionTokenSource` — `interface` ở Android, `protocol` ở iOS). Đó là **đường duy nhất**: không
+có tham số `accessToken`, không có bản sao token nào trong SDK. Test khoá hành vi:
+`TokenPullPerRequestTest`.
+
+**Đừng "tối ưu" bằng cách cache token vào biến lúc dựng client** — đó chính là bug mà cơ chế này
+sinh ra để chữa.
+
+#### Thử lại khi 401
+
+`apiCall` bắt **401** và chạy lại request **đúng một lần** sau khi xin được token mới từ host:
+
+```
+block()  ──401──▶  TokenRefreshGate.refresh()  ──true──▶  block()   (lần 2, token đã mới)
+                            │
+                            └──false──▶ ném tiếp → TOKEN_EXPIRED → onExpireToken()
+```
+
+- **401 tới theo hai đường** — `expectSuccess` ném `ResponseException` cho HTTP 4xx, còn envelope
+  `{"status":401}` trên HTTP 200 thì `requireData()` ném `PromotionException(httpStatus = 401)`.
+  `isUnauthorized()` phải nhận cả hai, y như `ErrorCodeExtensions` khi ra `TOKEN_EXPIRED`.
+- **Một lần, không phải vòng lặp.** Refresh xong vẫn 401 = phiên chết thật.
+- **Single-flight** — `TokenRefreshGate` đánh số `generation`, tăng sau mỗi lần refresh thành công.
+  Nơi gọi chụp số **trước khi gửi**; lúc hỏng, số đã chụp khác số hiện tại nghĩa là có người vừa
+  refresh xong → thử lại luôn, khỏi hỏi host lần nữa. Mở một màn là vài request song song, thiếu
+  chốt này là host ăn vài lần refresh cho cùng một sự kiện.
+- **Cổng trả `Boolean`, không trả token.** Token là *pull* — lượt thử lại tự đọc lại
+  `getAccessToken()`. Host ghi token mới vào kho của mình **rồi** báo `true`; không có đường thứ hai
+  để token đi vào SDK, nên không có chỗ nào để nhầm.
+- **Hai lớp chắn cho code của host** — hết 15 giây mà host chưa gọi callback thì coi như hỏng (nếu
+  không, `Mutex` treo và **mọi** API của SDK chết theo); callback gọi hai lần thì chỉ lần đầu tính.
+- `FeatureFlagRemoteDataSource` **không** thử lại: cờ tính năng fail-open, 401 ở đó chỉ rơi về cache.
+
+#### Thread — vì sao `apiCall` bọc `withContext(ioDispatcher)`
+
+Ktor chạy pipeline **phía client** trong context của coroutine gọi nó; chỉ engine mới tự nhảy sang
+thread nền. Mà store dùng chung nhận `scope` từ nền tảng và Android truyền thẳng `viewModelScope`
+(`Dispatchers.Main.immediate`). Không có `withContext`, toàn bộ `defaultRequest { }` — kể cả lambda
+cấp token của host — chạy trên **main thread** ở Android.
+
+`PromotionRemoteDataSource.apiCall` và `FeatureFlagRemoteDataSource.apiCall` vì vậy đều bọc
+`withContext(ioDispatcher)`. `ioDispatcher` là `expect`/`actual` ở `common/IoDispatcher.kt`
+(`Dispatchers.IO` không tồn tại ở `commonMain`). Hệ quả cho host: `PromotionTokenSource.currentToken()`
+được gọi từ thread nền, nên nó phải thread-safe và **không** được `@MainActor` ở Swift.
 
 ---
 
@@ -186,3 +239,5 @@ có thể bỏ trống.
 5. Mọi endpoint mới phải có test `commonTest` dùng `MockEngine`, kiểm cả **payload gửi lên** lẫn
    **kết quả map xuống**. Xem [TestingGuide.md](./TestingGuide.md).
 6. Đổi endpoint/DTO/xử lý lỗi → cập nhật file này + [HeadlessAPI.md](./HeadlessAPI.md).
+7. Hàm mới ở `PromotionRemoteDataSource` phải đi qua `apiCall { }` — nó vừa map lỗi, vừa thử lại khi
+   401, vừa giữ lời hứa "không chạm main thread". Gọi thẳng `apiService` là mất cả ba.

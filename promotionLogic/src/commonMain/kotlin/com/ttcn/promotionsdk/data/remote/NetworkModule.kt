@@ -38,6 +38,9 @@ internal object NetworkModule {
         single<PromotionRemoteDataSource> {
             PromotionRemoteDataSource(
                 apiService = get(),
+                // Cùng `PromotionRequestContextProvider` mà `HttpClient` đọc token — nhờ vậy lượt
+                // thử lại sau refresh nhặt đúng token mới. Xem [TokenRefreshGate].
+                tokenRefreshGate = TokenRefreshGate(contextProvider = get()),
             )
         }
 

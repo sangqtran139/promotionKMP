@@ -23,8 +23,11 @@ final class DemoPromotionCallback: PromotionSDKCallback {
     var onCleared: (() -> Void)?
     var onCountChanged: ((Int) -> Void)?
     var onService: ((PromotionServiceSelection) -> Void)?
+    var onExpired: (() -> Void)?
 
     // Protocol có default rỗng → chỉ hiện thực đúng sự kiện demo cần.
     func onVoucherApplied(voucherId: String) { onApplied?(voucherId) }
     func onServiceSelected(selection: PromotionServiceSelection) { onService?(selection) }
+
+    func onExpireToken() { onExpired?() }
 }

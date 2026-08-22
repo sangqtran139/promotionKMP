@@ -12,7 +12,7 @@
   không SPM, không cài Kotlin/RxSwift.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
-- Cấu hình một lần bằng `PromotionSDK.initialize(accessToken:baseUrl:)`, bơm đơn hàng bằng `updateOrderInfo(...)`, nhận
+- Cấu hình một lần bằng `PromotionSDK.initialize(tokenSource:baseUrl:)`, bơm đơn hàng bằng `updateOrderInfo(...)`, nhận
   sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -88,7 +88,7 @@ import PRM
 
 // Cách tối giản — đủ cho phần lớn host, chỉ 2 tham số bắt buộc:
 PromotionSDK.initialize(
-    accessToken: auth.accessToken,
+    tokenSource: myTokenSource,                     // xem §4.1 — nguồn token, không phải chuỗi
     baseUrl: "http://125.235.38.229:8080/",
     // tuỳ chọn:
     environment: .prod,                             // mặc định .prod
@@ -103,16 +103,16 @@ Cần cấu hình sâu hơn (theme, …) thì dùng overload nhận `PromotionSD
 
 ```swift
 PromotionSDK.initialize(options: PromotionSDKOptions(
-    session: PromotionSessionConfig(accessToken: auth.accessToken, baseUrl: baseUrl, environment: .prod),
+    session: PromotionSessionConfig(tokenSource: myTokenSource, baseUrl: baseUrl, environment: .prod),
     availableServices: services, theme: myTheme, callback: myCallback
 ))
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo (tối giản) | `PromotionSDK.initialize(accessToken:baseUrl:)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(tokenSource:baseUrl:)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(options:)` |
-| Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
+| Nguồn token | `PromotionTokenSource` — xem §4.1 |
 | Kiểm tra đã init | `PromotionSDK.isInitialized() -> Bool` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback() -> PromotionSDKCallback?` |
@@ -123,28 +123,107 @@ SDK tách hai loại field:
 
 | Tĩnh (đặt **một lần**, dùng lại) | Theo phiên (đưa mỗi lần init) |
 |---|---|
-| `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
+| `baseUrl`, `environment`, `language`, `theme` | `tokenSource`, `availableServices` |
 
 Field **tĩnh** chỉ cần truyền ở lần `initialize` đầu (hoặc lần đầu sau `release()`). Các lần sau SDK
-**dùng lại giá trị đã có, không khởi tạo lần nữa** — host chỉ cần đưa `accessToken` mới:
+**dùng lại giá trị đã có, không khởi tạo lần nữa** — host chỉ cần đưa `tokenSource`:
 
 ```swift
 // Lần đầu — khai đủ
-PromotionSDK.initialize(accessToken: token, baseUrl: baseUrl,
+PromotionSDK.initialize(tokenSource: myTokenSource, baseUrl: baseUrl,
                         availableServices: services, callback: cb)
 
 // Mỗi lần vào app / login lại — gọi y hệt; SDK dùng lại baseUrl/environment/language/theme đã có.
-PromotionSDK.initialize(accessToken: token, baseUrl: baseUrl, availableServices: services)
+PromotionSDK.initialize(tokenSource: myTokenSource, baseUrl: baseUrl, availableServices: services)
 ```
 
 - **Đổi field tĩnh thật** (vd chuyển environment): `release()` rồi `initialize(...)` lại.
 - **`release()` xoá dữ liệu phiên** (session, context đơn hàng, callback) nhưng **giữ** cấu hình tĩnh
   và theme đã lưu — đó là cấu hình tích hợp của host, không phải dữ liệu người dùng.
 
-- **Refresh token giữa phiên (cùng customer, đang checkout):** `PromotionSDK.updateToken(newToken)` —
-  tuỳ chọn, nhẹ hơn; **giữ nguyên** cả context đơn hàng đang ghi.
+- **Token hết hạn giữa phiên:** không cần gọi gì cả. SDK đọc lại `tokenSource.currentToken()` ở mỗi
+  request — xem §4.1.
 
 > `release()` khi chưa init là vô hại; không xoá theme đã lưu.
+
+### 4.1 Nguồn token — `PromotionTokenSource`
+
+Token vào SDK qua **một** đường duy nhất: `tokenSource`. Không có tham số `accessToken`, vì token là
+thứ đổi theo thời gian chứ không phải cấu hình chụp một lần.
+
+```swift
+final class MyTokenSource: PromotionTokenSource {
+    func currentToken() -> String? { auth.accessToken }   // SDK đọc lại ở MỖI request
+}
+
+PromotionSDK.initialize(
+    tokenSource: MyTokenSource.shared,
+    baseUrl: baseUrl,
+    availableServices: services,
+    callback: myCallback
+)
+```
+
+SDK không giữ bản sao token nào. App đổi token lúc nào, ở đâu, bằng cơ chế gì — SDK không cần biết
+và không cần được báo; lượt gọi API kế tiếp tự dùng giá trị mới.
+
+**Yêu cầu duy nhất với ô nhớ nguồn:** nó được đọc từ **thread nền** (lõi bọc mọi lời gọi API trong
+`withContext(ioDispatcher)`) trong khi cơ chế refresh của bạn ghi từ thread khác — nên nó phải
+thread-safe (`NSLock`, serial queue, `os_unfair_lock`…) và **không** được `@MainActor`.
+
+`currentToken()` nằm trên đường dựng header của **mọi** request nên phải **non-blocking**:
+
+```swift
+func currentToken() -> String? { auth.accessToken }           // ✅ đọc biến đã đồng bộ
+func currentToken() -> String? { try? keychain.readToken() }  // ❌ chặn mỗi request
+```
+
+Trả `nil`/rỗng → SDK gửi request **không kèm** header `Authorization`. Không có fallback nào: lỗi
+hiện ra ngay thay vì gửi một token cũ trong im lặng.
+
+### Khi SDK ăn 401 — `refreshToken(_:)`
+
+Mặc định SDK **hỏng luôn**: bắn `PromotionSDKCallback.onExpireToken()`, host đưa user về màn đăng
+nhập. Đúng cho app không có cách lấy token mới theo yêu cầu.
+
+App **có** hàm lấy token mới gọi được thì cài đặt thêm — SDK sẽ xin một lần rồi **tự chạy lại
+request hỏng**, user không thấy màn lỗi:
+
+```swift
+final class MyTokenSource: PromotionTokenSource {
+    func currentToken() -> String? { auth.accessToken }
+
+    func refreshToken(_ onResult: @escaping (Bool) -> Void) {
+        auth.refresh { newToken in
+            if let newToken { auth.accessToken = newToken }   // ghi vào kho TRƯỚC
+            onResult(newToken != nil)
+        }
+    }
+}
+```
+
+**`Bool` chứ không phải token mới** là cố ý: token vào SDK theo đúng một đường là `currentToken()`.
+Bạn ghi vào kho của mình rồi báo `true` — không có đường thứ hai để nhầm.
+
+**Ràng buộc:**
+
+- Gọi `onResult` **đúng một lần**, kể cả khi hỏng. Không gọi thì SDK chờ tối đa **15 giây** rồi coi
+  như `false`.
+- Được gọi từ **thread nền**.
+- **Thử lại đúng một lần, không phải vòng lặp.** Refresh xong mà server vẫn 401 = phiên chết thật →
+  `onExpireToken()`.
+- SDK đã gộp mọi request 401 cùng lúc thành **một** lần gọi. Nhưng cơ chế của app vẫn nên
+  single-flight: hai màn mở cách nhau vài giây vẫn có thể chạm vào hai lần.
+
+### Object này sống lâu hơn màn hình
+
+`PromotionSDK` là **singleton**: nó giữ `tokenSource` từ lúc `initialize()` tới `release()`, **không**
+theo vòng đời màn hình nào. Gọi `initialize()` trong một view controller rồi push sang màn khác thì
+object đó **vẫn sống** — vấn đề ngược với lo lắng thường gặp.
+
+Cho một `UIViewController` conform `PromotionTokenSource` rồi truyền `self` là **giữ màn hình đó vĩnh
+viễn**, và token đóng băng ở giá trị cuối — đúng cái bệnh mà cơ chế này sinh ra để chữa. Trỏ vào kho
+token **cấp app** (singleton), đừng trỏ vào màn hình.
 
 ---
 
@@ -394,10 +473,9 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(accessToken:baseUrl:)
+login thành công        → PromotionSDK.initialize(tokenSource:baseUrl:)
 vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId:productId:orderValue:...)
 mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
-refresh token giữa phiên → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
 ```

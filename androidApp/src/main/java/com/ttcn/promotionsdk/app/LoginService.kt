@@ -1,7 +1,13 @@
 package com.ttcn.promotionsdk.app
 
 import android.util.Log
+import com.ttcn.prm.entry.PromotionTokenSource
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -24,6 +30,60 @@ private const val TAG = "LoginService"
  * riêng Retrofit thì tự nối thêm.
  */
 internal const val DEMO_BASE_URL = "http://125.235.38.229:8080"
+
+/**
+ * Kho token của app demo — đứng cho thứ mà host thật đã có sẵn (session manager / repository).
+ * SDK đọc lại field này ở **mỗi** request qua `PromotionTokenSource`, nên đổi nó lúc nào cũng được,
+ * không phải báo gì cho SDK.
+ *
+ * `@Volatile` vì SDK đọc từ **thread nền** còn luồng đăng nhập ghi từ thread khác.
+ */
+@Volatile
+internal var demoAccessToken: String = ""
+
+/**
+ * Nguồn token mà app demo đưa cho SDK — cài đặt [PromotionTokenSource].
+ *
+ * `object` (sống bằng tuổi process) chứ không phải field của Fragment: SDK giữ object này tới tận
+ * `PromotionSDK.release()`. Trỏ vào màn hình là rò rỉ màn hình đó vĩnh viễn.
+ *
+ * - [currentToken] — SDK gọi ở **mỗi** request. Chỉ đọc [demoAccessToken], không I/O, không chặn.
+ * - [refreshToken] — SDK gọi khi ăn 401. Ở app thật đây là API refresh token của bạn; demo không có
+ *   nên login lại từ đầu. Điều **quan trọng** là ghi vào [demoAccessToken] **trước** khi báo `true`:
+ *   lượt thử lại của SDK đọc token qua [currentToken] chứ không dùng giá trị nào ta trả về.
+ */
+internal object DemoTokenSource : PromotionTokenSource {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** SDK đã gộp các request 401 cùng lúc thành một lần gọi; khoá này chặn nốt hai màn mở cách nhau vài giây. */
+    private val refreshMutex = Mutex()
+
+    override fun currentToken(): String = demoAccessToken
+
+    override fun refreshToken(onResult: (Boolean) -> Unit) {
+        Log.d(TAG, "SDK ăn 401 → app đang lấy token mới…")
+        scope.launch {
+            val ok = refreshMutex.withLock {
+                runCatching { LoginService().login() }
+                    .onSuccess { demoAccessToken = it }   // ghi vào kho TRƯỚC khi báo
+                    .onFailure { Log.e(TAG, "Lấy token mới thất bại: ${it.message}") }
+                    .isSuccess
+            }
+            Log.d(TAG, if (ok) "Đã có token mới → SDK sẽ thử lại request hỏng" else "Chịu → SDK bắn onExpireToken()")
+            onResult(ok)
+        }
+    }
+}
+
+/**
+ * **Chỉ để demo.** Ghi một chuỗi rác vào kho token để lượt gọi API kế tiếp của SDK ăn 401 — nhìn
+ * thấy cơ chế refresh chạy mà không phải ngồi chờ token thật hết hạn (~15 phút).
+ */
+internal fun expireTokenForDemo() {
+    demoAccessToken = "expired-token-for-demo"
+    Log.d(TAG, "Đã làm hỏng token trong kho app (SDK KHÔNG được báo gì)")
+}
 
 /**
  * Login demo (test-only) để lấy accessToken truyền vào SDK. Đối ứng `LoginService` bên iOS — cùng tên

@@ -8,6 +8,81 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### BREAKING — token vào SDK qua `PromotionTokenSource`, bỏ `accessToken` và `updateToken`
+
+Cả bề mặt token được thay bằng **một** khái niệm:
+
+```kotlin
+interface PromotionTokenSource {
+    fun currentToken(): String?                              // SDK đọc lại ở MỖI request
+    fun refreshToken(onResult: (Boolean) -> Unit) = onResult(false)   // 401 → xin 1 lần
+}
+```
+
+**Vấn đề nó chữa.** Token của host sống ~15 phút và host tự lấy lại theo cơ chế riêng. SDK thì giữ
+chuỗi token nhận lúc `initialize`, nên ngay sau lần refresh đầu tiên của host, SDK cầm một token đã
+chết trong khi phiên đăng nhập vẫn sống — mọi API của SDK trả 401 và màn ưu đãi báo lỗi dù người
+dùng chưa hề đăng xuất. Gốc rễ là **SDK giữ bản sao token**; thiết kế mới không giữ gì cả.
+
+**Ba hành vi, ánh xạ 1-1 với hai hàm trên:**
+
+1. SDK luôn dùng token mới nhất của host — `currentToken()` được gọi ở mỗi request
+   (`defaultRequest { }`), không cache, không fallback.
+2. Ăn 401 → xin token mới **đúng một lần** rồi chạy lại request — `refreshToken`.
+3. Không lấy được → hỏng luôn: `TOKEN_EXPIRED` + `PromotionSDKCallback.onExpireToken()`. Đây cũng là
+   hành vi mặc định khi host không cài đặt `refreshToken`.
+
+`refreshToken` trả `Boolean` chứ không phải token mới là cố ý: token vào SDK theo đúng một đường là
+`currentToken()`. Host ghi vào kho của mình **rồi** báo `true` — không có đường thứ hai để nhầm.
+
+**Đã xoá:**
+
+| Bỏ | Thay bằng |
+|---|---|
+| `PromotionSessionConfig.accessToken` | `tokenSource` |
+| `initialize(..., accessToken: String, ...)` | `initialize(..., tokenSource: PromotionTokenSource, ...)` |
+| `PromotionSDK.updateToken(...)` | không cần — SDK tự đọc lại mỗi request |
+| iOS `PromotionSDKImpl.updateSession` / `applySession` | (đã không còn call-site) |
+
+`PromotionSDK.session` vẫn còn nhưng không mang token nữa — nó là cấu hình phiên (`baseUrl` /
+`language` / `environment` / `tokenSource`).
+
+**Cách nâng cấp:**
+
+```kotlin
+// Trước
+PromotionSDK.initialize(ctx, auth.accessToken, BASE_URL, callback = cb)
+// … và mỗi lần app refresh token:
+PromotionSDK.updateToken(newToken)
+
+// Sau — khai nguồn một lần, không phải đẩy gì nữa
+PromotionSDK.initialize(
+    ctx,
+    tokenSource = object : PromotionTokenSource {
+        override fun currentToken() = auth.accessToken     // field @Volatile của app
+    },
+    baseUrl = BASE_URL,
+    callback = cb,
+)
+```
+
+Field nguồn phải `@Volatile` / `AtomicReference` / `StateFlow.value`: SDK đọc nó từ **thread nền**.
+Object `tokenSource` bị SDK giữ tới `release()` — trỏ vào kho token **cấp app**, không phải vào
+Fragment/ViewController đang gọi `initialize`.
+
+Chi tiết + phần iOS: `docs/AndroidIntegrationGuide.md` §4.1 / `docs/IosIntegrationGuide.md` §4.1.
+
+### Fixed — tầng data không còn chạy trên main thread (Android)
+
+`PromotionRemoteDataSource.apiCall` và `FeatureFlagRemoteDataSource.apiCall` bọc
+`withContext(ioDispatcher)` (`expect`/`actual` mới ở `promotionLogic/common/IoDispatcher.kt`).
+
+Ktor chạy pipeline **phía client** trong context của coroutine gọi nó — chỉ engine mới tự nhảy sang
+thread nền. Store dùng chung nhận `scope` từ nền tảng, và `PRMStoreViewModel` bên Android truyền
+thẳng `viewModelScope` (`Dispatchers.Main.immediate`). Nghĩa là toàn bộ `defaultRequest { }` — dựng
+header, đọc token/ngôn ngữ/context đơn hàng từ host — đang chạy trên main thread. Nay không còn, và
+đó là điều kiện để `PromotionTokenSource.currentToken()` của host chạy ngoài main thread.
+
 ### Changed — Android: mọi điều hướng nội bộ đi chung `PRMBaseFragment.addFragment()`
 
 `MyPromotionFragment.openSearchMyPromotion()` tự dựng `FragmentTransaction` riêng, chép lại đúng

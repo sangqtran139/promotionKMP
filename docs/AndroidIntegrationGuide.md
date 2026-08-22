@@ -18,7 +18,7 @@
   (+ `ui.theme.token`: `PromotionSDKTheme`, 6 token) và `ui.feature.endowview` (widget checkout:
   `PRMEndowView`, `AppliedDiscount`).
   Mọi class khác của SDK là `internal` — IDE không gợi ý, và import vào là lỗi compile.
-- Cấu hình một lần bằng `PromotionSDK.initialize(context, accessToken, baseUrl)`, bơm đơn hàng bằng `updateOrderInfo(...)`,
+- Cấu hình một lần bằng `PromotionSDK.initialize(context, tokenSource, baseUrl)`, bơm đơn hàng bằng `updateOrderInfo(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
 
 ---
@@ -116,7 +116,7 @@ import com.ttcn.prm.entry.*
 // Sau khi login thành công:
 PromotionSDK.initialize(
     context = applicationContext,
-    accessToken = auth.accessToken,
+    tokenSource = myTokenSource,                       // xem §4.1 — nguồn token, không phải chuỗi
     baseUrl = "http://125.235.38.229:8080",
     // các tham số dưới đây là TUỲ CHỌN:
     environment = PromotionEnvironment.PROD,          // mặc định PROD
@@ -131,16 +131,16 @@ Cần cấu hình sâu hơn (theme, ...) thì dùng overload nhận `PromotionSD
 
 ```kotlin
 PromotionSDK.initialize(applicationContext, PromotionSDKOptions(
-    session = PromotionSessionConfig(auth.accessToken, baseUrl, environment = PromotionEnvironment.PROD),
+    session = PromotionSessionConfig(myTokenSource, baseUrl, environment = PromotionEnvironment.PROD),
     availableServices = services, theme = myTheme, callback = myCallback,
 ))
 ```
 
 | Việc | API |
 |---|---|
-| Khởi tạo (tối giản) | `PromotionSDK.initialize(context, accessToken, baseUrl)` |
+| Khởi tạo (tối giản) | `PromotionSDK.initialize(context, tokenSource, baseUrl)` |
 | Khởi tạo (đầy đủ) | `PromotionSDK.initialize(context, options)` |
-| Refresh token giữa phiên | `PromotionSDK.updateToken(newToken)` (tuỳ chọn) |
+| Nguồn token | `PromotionTokenSource` — xem §4.1 |
 | Kiểm tra đã init | `PromotionSDK.isInitialized(): Boolean` |
 | Giải phóng (logout) | `PromotionSDK.release()` |
 | Lấy callback đã set | `PromotionSDK.getCallback(): PromotionSDKCallback?` |
@@ -151,34 +151,133 @@ SDK tách hai loại field:
 
 | Tĩnh (đặt **một lần**, dùng lại) | Theo phiên (đưa mỗi lần init) |
 |---|---|
-| `baseUrl`, `environment`, `language`, `theme` | `accessToken`, `availableServices` |
+| `baseUrl`, `environment`, `language`, `theme` | `tokenSource`, `availableServices` |
 
 Field **tĩnh** chỉ cần truyền ở lần `initialize` đầu (hoặc lần đầu sau `release()`). Các lần sau SDK
-**dùng lại giá trị đã có, không khởi tạo lần nữa** — host chỉ cần đưa `accessToken` mới:
+**dùng lại giá trị đã có, không khởi tạo lần nữa** — host chỉ cần đưa `tokenSource`:
 
 ```kotlin
 // Lần đầu — khai đủ
 PromotionSDK.initialize(
     context = applicationContext,
-    accessToken = token,
+    tokenSource = myTokenSource,
     baseUrl = BASE_URL,
     availableServices = services,
     callback = cb,
 )
 
 // Mỗi lần vào app / login lại — gọi y hệt, baseUrl vẫn phải truyền cho đúng chữ ký nhưng
-// SDK dùng lại giá trị tĩnh đã có. Chỉ `accessToken` là thật sự đổi.
-PromotionSDK.initialize(applicationContext, token, BASE_URL, availableServices = services)
+// SDK dùng lại giá trị tĩnh đã có.
+PromotionSDK.initialize(applicationContext, myTokenSource, BASE_URL, availableServices = services)
 ```
 
 - **Đổi field tĩnh thật** (vd chuyển environment): `release()` rồi `initialize(...)` lại.
 - **`release()` xoá dữ liệu phiên** (session, context đơn hàng, callback, đồ thị DI) nhưng **giữ**
   cấu hình tĩnh và theme đã lưu — đó là cấu hình tích hợp của host, không phải dữ liệu người dùng.
 
-- **Refresh token giữa phiên (cùng customer, đang checkout):** `PromotionSDK.updateToken(newToken)` —
-  tuỳ chọn, nhẹ hơn; **giữ nguyên** cả context đơn hàng đang ghi.
+- **Token hết hạn giữa phiên:** không cần gọi gì cả. SDK đọc lại `tokenSource.currentToken()` ở mỗi
+  request — xem §4.1.
 
 > `release()` khi chưa init là vô hại; không xoá theme đã lưu.
+
+### 4.1 Nguồn token — `PromotionTokenSource`
+
+Token vào SDK qua **một** đường duy nhất: `tokenSource`. Không có tham số `accessToken`, vì token là
+thứ đổi theo thời gian chứ không phải cấu hình chụp một lần.
+
+```kotlin
+PromotionSDK.initialize(
+    context = applicationContext,
+    tokenSource = object : PromotionTokenSource {
+        override fun currentToken() = auth.accessToken   // SDK đọc lại ở MỖI request
+    },
+    baseUrl = BASE_URL,
+    availableServices = services,
+    callback = myCallback,
+)
+```
+
+SDK không giữ bản sao token nào. App đổi token lúc nào, ở đâu, bằng cơ chế gì — SDK không cần biết
+và không cần được báo; lượt gọi API kế tiếp tự dùng giá trị mới.
+
+**Yêu cầu duy nhất với field nguồn:** nó phải **`@Volatile`** (hoặc `AtomicReference`, hoặc
+`StateFlow.value` — hai cái sau đã volatile sẵn bên trong).
+
+```kotlin
+object MyAuth {
+    @Volatile var accessToken: String = ""   // @Volatile, không phải `var` trần
+}
+```
+
+Không phải phòng xa: SDK đọc field này từ **thread nền** (lõi bọc mọi lời gọi API trong
+`withContext(ioDispatcher)`), còn cơ chế refresh của bạn ghi từ thread khác. `var` trần không đảm
+bảo thread đọc thấy giá trị thread khác vừa ghi — ra đúng con bug token cũ, nhưng lẻ tẻ và cực khó
+tái hiện.
+
+`currentToken()` nằm trên đường dựng header của **mọi** request nên phải **non-blocking**:
+
+```kotlin
+override fun currentToken() = auth.accessToken                       // ✅ đọc field @Volatile
+override fun currentToken() = keystore.decryptToken()                // ❌ chặn mỗi request
+override fun currentToken() = runBlocking { dataStore.token.first() } // ❌ chặn mỗi request
+```
+
+Trả `null`/rỗng → SDK gửi request **không kèm** header `Authorization`. Không có fallback nào: lỗi
+hiện ra ngay thay vì gửi một token cũ trong im lặng.
+
+### Khi SDK ăn 401 — `refreshToken`
+
+Mặc định SDK **hỏng luôn**: bắn `PromotionSDKCallback.onExpireToken()`, host đưa user về màn đăng
+nhập. Đúng cho app không có cách lấy token mới theo yêu cầu.
+
+App **có** hàm lấy token mới gọi được thì override thêm — SDK sẽ xin một lần rồi **tự chạy lại
+request hỏng**, user không thấy màn lỗi:
+
+```kotlin
+tokenSource = object : PromotionTokenSource {
+    override fun currentToken() = auth.accessToken
+
+    override fun refreshToken(onResult: (Boolean) -> Unit) {
+        auth.refresh { newToken ->
+            if (newToken != null) auth.accessToken = newToken   // ghi vào kho TRƯỚC
+            onResult(newToken != null)
+        }
+    }
+}
+```
+
+**`Boolean` chứ không phải token mới** là cố ý: token vào SDK theo đúng một đường là `currentToken()`.
+Bạn ghi vào kho của mình rồi báo `true` — không có đường thứ hai để nhầm.
+
+**Ràng buộc:**
+
+- Gọi `onResult` **đúng một lần**, kể cả khi hỏng. Không gọi thì SDK chờ tối đa **15 giây** rồi coi
+  như `false`.
+- Được gọi từ **thread nền**.
+- **Thử lại đúng một lần, không phải vòng lặp.** Refresh xong mà server vẫn 401 = phiên chết thật →
+  `onExpireToken()`.
+- SDK đã gộp mọi request 401 cùng lúc thành **một** lần gọi. Nhưng cơ chế của app vẫn nên
+  single-flight: hai màn mở cách nhau vài giây vẫn có thể chạm vào hai lần.
+
+### Object này sống lâu hơn màn hình
+
+`PromotionSDK` là **singleton `object`**: nó giữ `tokenSource` từ lúc `initialize()` tới `release()`,
+**không** theo vòng đời màn hình nào. Gọi `initialize()` trong một Fragment rồi điều hướng đi thì
+object đó **vẫn sống** — vấn đề ngược với lo lắng thường gặp:
+
+```kotlin
+// ❌ anonymous object bên trong Fragment — bắt luôn Fragment vào SDK
+tokenSource = object : PromotionTokenSource {
+    override fun currentToken() = this@LoginFragment.currentToken
+}
+```
+
+Hậu quả: Fragment bị **giữ lại vĩnh viễn** (rò rỉ bộ nhớ), và token đóng băng ở giá trị cuối — đúng
+cái bệnh mà cơ chế này sinh ra để chữa. Trỏ vào kho token **cấp app**, đừng trỏ vào màn hình.
+
+**`context` thì không phải lo:** SDK quy về `applicationContext` ở cả hai đường
+(`PromotionSDK.initialize` và `PromotionContainer.initialize`), nên truyền `requireContext()` từ
+Fragment vẫn không rò rỉ. Chỉ `tokenSource` mới là bề mặt cần chú ý.
 
 ---
 
@@ -471,11 +570,10 @@ PromotionSDK.configure(
 ## 12. Vòng đời gợi ý (khớp host thật)
 
 ```
-login thành công        → PromotionSDK.initialize(context, accessToken, baseUrl)
+login thành công        → PromotionSDK.initialize(context, tokenSource, baseUrl)
 vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId, productId, orderValue, ...)
 mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
-refresh token giữa phiên → PromotionSDK.updateToken(newToken)
 logout                   → PromotionSDK.release()
 ```
 

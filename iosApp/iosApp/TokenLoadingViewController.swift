@@ -126,7 +126,8 @@ final class TokenLoadingViewController: UIViewController {
             guard let self else { return }
             switch result {
             case .success(let login):
-                self.initSdk(token: login.accessToken)
+                DemoTokenStore.token = login.accessToken
+                self.initSdk()
                 self.updateDemoContext()
 
                 self.statusLabel.text = "Lấy token thành công"
@@ -144,12 +145,18 @@ final class TokenLoadingViewController: UIViewController {
     }
 
     /// Gọi THẲNG PromotionSDK — không qua wrapper.
-    /// `updateSession` đã bị bỏ: **lúc nào vào app cũng initialize() lại**, lần nào cũng áp đủ cấu
-    /// hình host truyền (kể cả baseUrl/environment/language). SDK không còn khoá field nào.
-    /// Đối ứng `PromotionTokenLoadingFragment.initSdk` bên Android.
-    private func initSdk(token: String) {
+    /// **Lúc nào vào app cũng initialize() lại**, lần nào cũng áp đủ cấu hình host truyền (kể cả
+    /// baseUrl/environment/language). Đối ứng `PromotionTokenLoadingFragment.initSdk` bên Android.
+    ///
+    /// `tokenSource` là cách DUY NHẤT token đi vào SDK — không có tham số `accessToken` nào nữa. SDK
+    /// gọi `currentToken()` ở mỗi request, nên app đổi token lúc nào cũng được mà không phải báo gì.
+    ///
+    /// `DemoTokenSource` (ở LoginService.swift) cài đặt cả hai hàm: `currentToken()` cho mọi request,
+    /// và `refreshToken(_:)` cho lúc SDK ăn 401. Nó là singleton sống bằng tuổi process — SDK giữ
+    /// object này tới tận `release()` nên KHÔNG được capture view controller này.
+    private func initSdk() {
         PromotionSDK.initialize(
-            accessToken: token,
+            tokenSource: DemoTokenSource.shared,
             baseUrl: Self.baseUrl,
             availableServices: demoServices,
             callback: DemoPromotionCallback.shared,

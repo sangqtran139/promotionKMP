@@ -2,6 +2,7 @@ package com.ttcn.promotionsdk.data.remote
 
 import com.ttcn.promotionsdk.data.dto.featureflag.FeatureFlagItemResponse
 import com.ttcn.promotionsdk.data.dto.featureflag.FeatureFlagRequest
+import com.ttcn.promotionsdk.common.ioDispatcher
 import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.exception.FeatureFlagException
 import com.ttcn.promotionsdk.domain.exception.NetworkException
@@ -10,6 +11,7 @@ import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withContext
 import kotlinx.io.IOException
 
 internal class FeatureFlagRemoteDataSource(
@@ -26,8 +28,10 @@ internal class FeatureFlagRemoteDataSource(
      * Khác [PromotionRemoteDataSource]: mọi lỗi HTTP đều gộp về [FeatureFlagException] không mang
      * error code — cờ tính năng không hiển thị lỗi cho người dùng, chỉ rơi về cache/mặc định.
      * Lỗi transport vẫn tách timeout / mất mạng như bản Android.
+     *
+     * `withContext(ioDispatcher)` cùng lý do như `PromotionRemoteDataSource.apiCall`.
      */
-    private suspend fun <T> apiCall(block: suspend () -> T): T =
+    private suspend fun <T> apiCall(block: suspend () -> T): T = withContext(ioDispatcher) {
         try {
             block()
         } catch (e: FeatureFlagException) {
@@ -50,6 +54,7 @@ internal class FeatureFlagRemoteDataSource(
             // `PromotionRemoteDataSource.apiCall`.
             throw FeatureFlagException()
         }
+    }
 
     private fun <T> ApiResponseTemplate<T>.requireData(): T? {
         val isHttpSuccess = status == null || status in 200..299
