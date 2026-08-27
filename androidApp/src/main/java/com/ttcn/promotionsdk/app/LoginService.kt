@@ -29,7 +29,10 @@ private const val TAG = "LoginService"
  * server khác nhau — hỏng theo kiểu rất khó đoán. Không có dấu '/' ở cuối: SDK nhận dạng này,
  * riêng Retrofit thì tự nối thêm.
  */
-internal const val DEMO_BASE_URL = "http://125.235.38.229:8080"
+/** Số nhận OTP của tài khoản demo. Đổi số thì đổi đúng một dòng này. */
+internal const val DEMO_MSISDN = "84971410156"
+
+internal const val DEMO_BASE_URL = "https://api24cdn.vtmoney.vn/uatmm"
 
 /**
  * Kho token của app demo — đứng cho thứ mà host thật đã có sẵn (session manager / repository).
@@ -61,18 +64,17 @@ internal object DemoTokenSource : PromotionTokenSource {
 
     override fun currentToken(): String = demoAccessToken
 
+    /**
+     * **Chịu ngay.** Luồng đăng nhập giờ CẦN người dùng nhập OTP, nên app không tự lấy token mới
+     * được — không có mã để điền hộ.
+     *
+     * Trả `false` để SDK để lỗi `TOKEN_EXPIRED` nổi lên và bắn `onExpireToken()`; host thật sẽ đưa
+     * người dùng về màn đăng nhập. Tự gọi lại `requestOtp` ở đây chỉ tốn một lượt OTP trong hạn 5
+     * lần rồi vẫn phải chờ người nhập.
+     */
     override fun refreshToken(onResult: (Boolean) -> Unit) {
-        Log.d(TAG, "SDK ăn 401 → app đang lấy token mới…")
-        scope.launch {
-            val ok = refreshMutex.withLock {
-                runCatching { LoginService().login() }
-                    .onSuccess { demoAccessToken = it }   // ghi vào kho TRƯỚC khi báo
-                    .onFailure { Log.e(TAG, "Lấy token mới thất bại: ${it.message}") }
-                    .isSuccess
-            }
-            Log.d(TAG, if (ok) "Đã có token mới → SDK sẽ thử lại request hỏng" else "Chịu → SDK bắn onExpireToken()")
-            onResult(ok)
-        }
+        Log.d(TAG, "SDK ăn 401 → luồng đăng nhập cần OTP, app không tự làm mới được")
+        onResult(false)
     }
 }
 
@@ -93,15 +95,23 @@ internal fun expireTokenForDemo() {
 class LoginService {
 
     private data class LoginRequest(
-        val msisdn: String = "84346801339",
-        val username: String = "84346801339",
+        val msisdn: String = DEMO_MSISDN,
+        val username: String = DEMO_MSISDN,
         val userType: String = "msisdn",
-        val pin: String = "123123",
+        val pin: String = "139200",
         val loginType: String = "BASIC",
         val notifyToken: String = "1234567899",
         val requestId: String = "",
         val typeOs: String = "ios",
-        val otp: String = "1111",
+        /**
+         * RỖNG ở bước 1 — bước đó chỉ để server gửi OTP về máy. Mã thật do **người dùng nhập** rồi
+         * truyền vào ở bước 2.
+         *
+         * Trước đây gắn cứng `"1111"`. Mã đó không còn đúng, và mỗi lượt gửi sai bị tính là một lần
+         * nhập sai: quá 5 lần liên tiếp là server khoá tài khoản một phút
+         * ("Tài khoản tạm khóa vì sai OTP quá 5 lần").
+         */
+        val otp: String = "",
         val imei: String = "1234567891"
     )
 
@@ -109,7 +119,12 @@ class LoginService {
         val status: Status?,
         val data: Data?
     ) {
-        data class Status(val code: String?, val message: String?)
+        data class Status(
+            val code: String?,
+            val message: String?,
+            /** Câu server soạn sẵn cho người dùng — ưu tiên nó hơn `message` kỹ thuật. */
+            val displayMessage: String?,
+        )
         data class Data(val requestId: String?, val accessToken: String?)
     }
 
@@ -118,7 +133,7 @@ class LoginService {
             "imei: 1231241",
             "Product: VIETTELPAY",
             "Authority-Party: APP",
-            "app-version: 6.8.8"
+            "app-version: 8.8.59"
         )
         @POST("auth/v1/authn/login")
         suspend fun login(@Body body: LoginRequest): LoginResponse
@@ -148,55 +163,75 @@ class LoginService {
      * Bước 2: gọi lại với requestId vừa nhận → nhận accessToken.
      * @throws Exception nếu server trả về lỗi.
      */
-    suspend fun login(): String = withContext(Dispatchers.IO) {
-        // ── Bước 1 ──────────────────────────────────────────────
-        val step1Body = LoginRequest()
-        Log.d(TAG, "Step 1 request: $step1Body")
+    /**
+     * Bước 1 — xin OTP. Server gửi mã về [msisdn] và trả `requestId` để bước 2 dùng lại.
+     *
+     * Gọi **đúng một lượt** mỗi lần người dùng bấm: mỗi lượt là một lần gửi OTP và server đếm số
+     * lần không hoàn tất. Đừng tự thử lại ở đây.
+     */
+    /**
+     * @param previousRequestId `requestId` còn giữ từ lần xin trước, nếu có.
+     */
+    suspend fun requestOtp(
+        msisdn: String = DEMO_MSISDN,
+        previousRequestId: String? = null,
+    ): OtpChallenge = withContext(Dispatchers.IO) {
+        val response = service.login(LoginRequest(msisdn = msisdn, username = msisdn))
+        Log.d(TAG, "Bước 1 response: $response")
 
-        val step1 = service.login(step1Body)
-        Log.d(TAG, "Step 1 response: $step1")
-
-        val code1 = step1.status?.code
-        if (code1 == "00") {
-            val token = checkNotNull(step1.data?.accessToken) {
-                "Step 1 returned 00 but accessToken is null"
-            }
-            Log.d(TAG, "accessToken (from step 1): $token")
-            return@withContext token
+        val token = response.data?.accessToken
+        if (response.status?.code == "00" && token != null) {
+            return@withContext OtpChallenge.Token(token)
         }
 
-        check(code1 == "AUT0014") {
-            "Step 1 failed — code=$code1, message=${step1.status?.message}"
-        }
+        // Mã khác AUT0014 → hỏng thật, ném câu `displayMessage` của server.
+        check(response.status?.code == "AUT0014") { response.describe() }
 
-        val requestId = checkNotNull(step1.data?.requestId) {
-            "Step 1 returned AUT0014 but requestId is null"
-        }
+        // AUT0014 nghĩa là "cần OTP" — mã ĐÃ được gửi về máy. Nhưng server chỉ cấp `requestId`
+        // MỚI khi chưa có OTP nào còn hiệu lực; xin lại quá sớm thì nó trả AUT0014 kèm
+        // `requestId` RỖNG.
+        //
+        // Rỗng KHÔNG phải lỗi: mã cũ vẫn dùng được. Nên rơi về `requestId` đang giữ thay vì báo
+        // hỏng — bản trước vứt nó đi rồi bắt người dùng bấm "Gửi lại OTP" mãi mãi, vì càng bấm
+        // càng chắc chắn rỗng.
+        val requestId = response.data?.requestId?.takeIf { it.isNotBlank() }
+            ?: previousRequestId?.takeIf { it.isNotBlank() }
+        checkNotNull(requestId) { response.describe() }
 
-        // ── Bước 2 ──────────────────────────────────────────────
-        val step2Body = LoginRequest(requestId = requestId)
-        Log.d(TAG, "Step 2 request: $step2Body")
-
-        val step2 = service.login(step2Body)
-        Log.d(TAG, "Step 2 response: $step2")
-
-        check(step2.status?.code == "00") {
-            "Step 2 failed — code=${step2.status?.code}, message=${step2.status?.message}"
-        }
-
-        val token = checkNotNull(step2.data?.accessToken) {
-            "Step 2 returned 00 but accessToken is null"
-        }
-        Log.d(TAG, "accessToken (from step 2): $token")
-        token
+        OtpChallenge.NeedOtp(requestId, response.describe())
     }
+
+    /** Bước 2 — gửi OTP người dùng vừa nhập, lấy access token. */
+    suspend fun submitOtp(requestId: String, otp: String, msisdn: String = DEMO_MSISDN): String =
+        withContext(Dispatchers.IO) {
+            val response = service.login(
+                LoginRequest(msisdn = msisdn, username = msisdn, requestId = requestId, otp = otp),
+            )
+            Log.d(TAG, "Bước 2 response: $response")
+
+            check(response.status?.code == "00") { response.describe() }
+            checkNotNull(response.data?.accessToken) {
+                "Đăng nhập thành công nhưng server không trả accessToken."
+            }
+        }
+
+    /**
+     * Câu để hiện cho người dùng. `displayMessage` của server nói đúng chuyện đang xảy ra (vd
+     * "Bạn đã nhập sai/không nhập mã OTP quá 5 lần liên tiếp. Vui lòng thực hiện lại sau 1 phút")
+     * — thứ mà thông báo tự soạn ở client không đoán nổi.
+     */
+    private fun LoginResponse.describe(): String =
+        status?.displayMessage
+            ?: status?.message
+            ?: "Mã lỗi ${status?.code ?: "(không rõ)"}"
 }
 
-/**
- * In mỗi request login ra **lệnh cURL** copy-paste được — dán thẳng vào terminal/Postman khi đối chiếu
- * với BE. Đối ứng plugin `PromotionCurlLogging` bên trong SDK (login là API của host, không đi qua
- * HttpClient của SDK nên cần interceptor riêng ở đây).
- */
+/** Kết quả bước 1: hoặc xong luôn (hiếm), hoặc cần người dùng nhập OTP. */
+sealed interface OtpChallenge {
+    data class Token(val accessToken: String) : OtpChallenge
+    data class NeedOtp(val requestId: String, val message: String) : OtpChallenge
+}
+
 private class CurlLoggingInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()

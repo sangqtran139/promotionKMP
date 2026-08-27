@@ -193,22 +193,49 @@ class VoucherMappingBranchTest {
 
         assertTrue(flags.enableAll)
         assertTrue(flags.voucherList)
+        // Server nói THẲNG `false` → tắt. Đây là đường DUY NHẤT tắt được một tính năng.
         assertFalse(flags.voucherDetail)
-        // Cờ server không trả ⇒ false (fail-closed ở tầng DTO; gate mới là nơi quyết fail-open).
-        assertFalse(flags.voucherApply)
-        assertFalse(flags.voucherRedeem)
-        assertFalse(flags.voucherSelection)
+        // Cờ server KHÔNG trả ⇒ BẬT. Kill-switch phải là hành động chủ động của server; quên khai
+        // một cờ thì tính năng vẫn chạy. Ca đã gặp thật: BFF trả ENABLE_ALL + VOUCHER_LIST nhưng
+        // thiếu VOUCHER_DETAIL, khiến bấm vào màn chi tiết bị chặn.
+        assertTrue(flags.voucherApply)
+        assertTrue(flags.voucherRedeem)
+        assertTrue(flags.voucherSelection)
     }
 
     @Test
-    fun featureFlags_emptyListGivesAllFalse() {
+    fun featureFlags_emptyListGivesAllTrue() {
+        // Response rỗng = server không tắt gì cả ⇒ bật hết, trùng với `PromotionFeatureFlags.AllEnabled`.
         val flags = emptyList<FeatureFlagItemResponse>().toPromotionFeatureFlags()
+        assertTrue(flags.enableAll)
+        assertTrue(flags.voucherList)
+        assertTrue(flags.voucherDetail)
+        assertTrue(flags.voucherApply)
+        assertTrue(flags.voucherRedeem)
+        assertTrue(flags.voucherSelection)
+    }
+
+    @Test
+    fun featureFlags_serverFalseStillWins() {
+        // Bảo vệ chiều ngược lại: nới mặc định thành BẬT không được phép làm kill-switch mất tác dụng.
+        val flags = listOf(
+            FeatureFlagItemResponse(PromotionFeatureFlag.ENABLE_ALL, false),
+        ).toPromotionFeatureFlags()
+
         assertFalse(flags.enableAll)
-        assertFalse(flags.voucherList)
-        assertFalse(flags.voucherDetail)
-        assertFalse(flags.voucherApply)
-        assertFalse(flags.voucherRedeem)
-        assertFalse(flags.voucherSelection)
+        // Công tắc tổng tắt ⇒ mọi cờ con đều tắt, dù bản thân chúng là `true` do không được trả.
+        assertFalse(flags.isEnabled(PromotionFeatureFlag.VOUCHER_DETAIL))
+        assertFalse(flags.isEnabled(PromotionFeatureFlag.VOUCHER_LIST))
+    }
+
+    @Test
+    fun featureFlags_unknownNameIsEnabled() {
+        // Tên cờ SDK chưa biết ⇒ BẬT: server chưa từng trả `false` cho nó.
+        val flags = listOf(
+            FeatureFlagItemResponse(PromotionFeatureFlag.ENABLE_ALL, true),
+        ).toPromotionFeatureFlags()
+
+        assertTrue(flags.isEnabled("PROMOTION.CO_MOI_TINH_NANG"))
     }
 
     @Test

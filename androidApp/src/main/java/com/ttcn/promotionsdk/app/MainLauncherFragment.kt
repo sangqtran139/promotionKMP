@@ -53,17 +53,22 @@ class MainLauncherFragment : AppBaseFragment<FragmentMainLauncherBinding>() {
             openPromotionDetailDirect()
         }
 
-        // Demo cơ chế refresh: ghi token rác vào kho của app mà KHÔNG báo SDK, rồi mở "My promotion".
+        // Demo nhánh 401: ghi token rác vào kho của app mà KHÔNG báo SDK, rồi mở "My promotion".
         //
-        //   request đầu → 401 → SDK gọi DemoTokenSource.refreshToken() → app login lại → báo true
-        //                     → SDK tự chạy lại request → màn lên bình thường, KHÔNG toast lỗi
+        //   request đầu → 401 → SDK gọi DemoTokenSource.refreshToken() → app báo FALSE
+        //                     → SDK để lỗi TOKEN_EXPIRED nổi lên → onExpireToken()
+        //
+        // Trước đây app tự đăng nhập lại ở bước giữa và báo `true`, nên màn vẫn lên bình thường.
+        // Không còn làm được: luồng đăng nhập nay CẦN người dùng nhập OTP, app không có mã để điền
+        // hộ. Đây cũng đúng hành vi của host thật khi không refresh được — đưa người dùng về màn
+        // đăng nhập. Xem KDoc `DemoTokenSource.refreshToken`.
         //
         // Xem logcat tag LoginService để đọc lại toàn bộ chuỗi đó.
         binding.btnExpireToken.setOnClickListener {
             expireTokenForDemo()
             Toast.makeText(
                 requireContext(),
-                "Token đã hỏng. Mở \"My promotion\" — SDK sẽ tự lấy token mới và thử lại.",
+                "Token đã hỏng. Mở \"My promotion\" — SDK sẽ báo phiên hết hạn, cần đăng nhập lại bằng OTP.",
                 Toast.LENGTH_LONG,
             ).show()
         }

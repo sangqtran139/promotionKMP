@@ -17,13 +17,15 @@ internal class FeatureFlagLocalDataSource(private val storage: PromotionPreferen
 
     fun load(): PromotionFeatureFlags {
         if (!storage.contains(KEY_HAS_CACHE)) return PromotionFeatureFlags.AllEnabled
+        // `default = true` ở mọi khoá: cache cũ được ghi bởi bản SDK trước có thể thiếu khoá (vd
+        // thêm cờ mới), và khoá thiếu KHÔNG được phép tắt tính năng — cùng luật với mapper.
         return PromotionFeatureFlags(
-            enableAll = storage.getBoolean(PromotionFeatureFlag.ENABLE_ALL),
-            voucherApply = storage.getBoolean(PromotionFeatureFlag.VOUCHER_APPLY),
-            voucherRedeem = storage.getBoolean(PromotionFeatureFlag.VOUCHER_REDEEM),
-            voucherSelection = storage.getBoolean(PromotionFeatureFlag.VOUCHER_SELECTION),
-            voucherDetail = storage.getBoolean(PromotionFeatureFlag.VOUCHER_DETAIL),
-            voucherList = storage.getBoolean(PromotionFeatureFlag.VOUCHER_LIST),
+            enableAll = storage.getBoolean(PromotionFeatureFlag.ENABLE_ALL, default = true),
+            voucherApply = storage.getBoolean(PromotionFeatureFlag.VOUCHER_APPLY, default = true),
+            voucherRedeem = storage.getBoolean(PromotionFeatureFlag.VOUCHER_REDEEM, default = true),
+            voucherSelection = storage.getBoolean(PromotionFeatureFlag.VOUCHER_SELECTION, default = true),
+            voucherDetail = storage.getBoolean(PromotionFeatureFlag.VOUCHER_DETAIL, default = true),
+            voucherList = storage.getBoolean(PromotionFeatureFlag.VOUCHER_LIST, default = true),
         )
     }
 

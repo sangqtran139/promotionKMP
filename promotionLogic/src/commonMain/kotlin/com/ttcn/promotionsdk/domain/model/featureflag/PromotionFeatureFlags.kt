@@ -24,7 +24,7 @@ data class PromotionFeatureFlags(
 ) {
     /**
      * [PromotionFeatureFlag.ENABLE_ALL] là công tắc tổng: tắt nó thì mọi cờ con đều tắt.
-     * Hỏi thẳng `ENABLE_ALL` trả về chính [enableAll]. Tên cờ lạ trả `false`.
+     * Hỏi thẳng `ENABLE_ALL` trả về chính [enableAll]. Tên cờ lạ trả `true` — xem nhánh `else`.
      */
     fun isEnabled(flag: String): Boolean {
         if (!enableAll) return false
@@ -35,7 +35,9 @@ data class PromotionFeatureFlags(
             PromotionFeatureFlag.VOUCHER_SELECTION -> voucherSelection
             PromotionFeatureFlag.VOUCHER_DETAIL -> voucherDetail
             PromotionFeatureFlag.VOUCHER_LIST -> voucherList
-            else -> false
+            // Tên cờ SDK chưa biết ⇒ BẬT. Server chưa từng trả `false` cho nó, nên không có căn cứ
+            // để tắt. Cùng luật với mapper: chỉ `enabled: false` mới tắt.
+            else -> true
         }
     }
 

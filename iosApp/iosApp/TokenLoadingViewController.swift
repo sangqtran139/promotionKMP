@@ -18,7 +18,7 @@ final class TokenLoadingViewController: UIViewController {
     // MARK: - Demo data (giả lập host cung cấp) — đối ứng `initSdk`/`updateDemoContext` bên Android
 
     /// Base URL Promotion BFF — host cấu hình.
-    private static let baseUrl = "http://125.235.38.229:8080"
+    private static let baseUrl = "https://api24cdn.vtmoney.vn/uatmm"
 
     /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ") — đối ứng `demoServices` bên Android.
     ///
@@ -72,12 +72,48 @@ final class TokenLoadingViewController: UIViewController {
         b.layer.cornerRadius = 10
         b.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         b.isHidden = true
-        b.addTarget(self, action: #selector(startLogin), for: .touchUpInside)
+        b.addTarget(self, action: #selector(primaryAction), for: .touchUpInside)
         return b
     }()
 
     /// Chạy progress bar "vô định" (UIProgressView không có chế độ indeterminate như Android).
+    /// Ô nhập OTP — ẩn cho tới khi server đã gửi mã (bước 1 xong). `textContentType = .oneTimeCode`
+    /// để iOS gợi ý mã vừa nhận từ tin nhắn ngay trên bàn phím.
+    private lazy var otpField: UITextField = {
+        let f = UITextField()
+        f.translatesAutoresizingMaskIntoConstraints = false
+        f.borderStyle = .roundedRect
+        f.textAlignment = .center
+        f.keyboardType = .numberPad
+        f.textContentType = .oneTimeCode
+        f.placeholder = "Nhập mã OTP"
+        f.font = .systemFont(ofSize: 18, weight: .medium)
+        return f
+    }()
+
+    /// `nil` = chưa xin OTP hoặc bước 1 vừa hỏng; khác nil = đã có mã, bấm "Xác nhận OTP" là gọi
+    /// bước 2 với chính `requestId` này.
+    private var otpRequestId: String?
+
+    /// Nút gọi API lần 2. Tách khỏi [retryButton] để **luôn** có đường xác nhận OTP, kể cả khi
+    /// bước 1 vừa hỏng — trước đây ô và nút cùng bị ẩn ở nhánh lỗi nên không còn thao tác nào.
+    private lazy var confirmButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.translatesAutoresizingMaskIntoConstraints = false
+        b.setTitle("Xác nhận OTP", for: .normal)
+        b.setTitleColor(.white, for: .normal)
+        b.backgroundColor = .systemGreen
+        b.layer.cornerRadius = 10
+        b.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        b.addTarget(self, action: #selector(confirmOtp), for: .touchUpInside)
+        return b
+    }()
+
     private var progressTimer: Timer?
+
+    /// Constraint dọc của cả khối nội dung. Bàn phím số không có nút Done, nên nếu nó che mất
+    /// "Xác nhận OTP" thì người dùng kẹt — phải đẩy nội dung lên thay vì trông chờ họ vuốt.
+    private var contentCenterY: NSLayoutConstraint!
 
     // MARK: - Lifecycle
 
@@ -86,20 +122,61 @@ final class TokenLoadingViewController: UIViewController {
         title = "Demo PromotionSDK"
         view.backgroundColor = .systemBackground
         setupLayout()
-        startLogin()
+        observeKeyboard()
+        view.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        )
+        askOtp()
     }
 
-    deinit { progressTimer?.invalidate() }
+    private func observeKeyboard() {
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(keyboardWillChange),
+                           name: UIResponder.keyboardWillShowNotification, object: nil)
+        center.addObserver(self, selector: #selector(keyboardWillChange),
+                           name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    /// Đẩy khối nội dung lên vừa đủ để nút "Xác nhận OTP" nằm trên mép bàn phím.
+    @objc private func keyboardWillChange(_ note: Notification) {
+        guard let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+        let duration = note.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double ?? 0.25
+
+        let showing = note.name == UIResponder.keyboardWillShowNotification
+        if showing {
+            // Khoảng cách từ đáy nút tới mép trên bàn phím; âm nghĩa là đang bị che.
+            let keyboardTop = view.bounds.height - frame.height
+            let overlap = confirmButton.frame.maxY - keyboardTop + 16
+            contentCenterY.constant = overlap > 0 ? -60 - overlap : -60
+        } else {
+            contentCenterY.constant = -60
+        }
+
+        UIView.animate(withDuration: duration) { self.view.layoutIfNeeded() }
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+
+    deinit {
+        progressTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
+    }
 
     private func setupLayout() {
         view.addSubview(progressBar)
         view.addSubview(spinner)
         view.addSubview(statusLabel)
+        view.addSubview(otpField)
+        view.addSubview(confirmButton)
         view.addSubview(retryButton)
+
+        contentCenterY = spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60)
 
         NSLayoutConstraint.activate([
             spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            spinner.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -60),
+            contentCenterY,
 
             progressBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
             progressBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
@@ -109,8 +186,18 @@ final class TokenLoadingViewController: UIViewController {
             statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             statusLabel.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 20),
 
+            otpField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
+            otpField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
+            otpField.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
+            otpField.heightAnchor.constraint(equalToConstant: 44),
+
+            confirmButton.leadingAnchor.constraint(equalTo: otpField.leadingAnchor),
+            confirmButton.trailingAnchor.constraint(equalTo: otpField.trailingAnchor),
+            confirmButton.topAnchor.constraint(equalTo: otpField.bottomAnchor, constant: 12),
+            confirmButton.heightAnchor.constraint(equalToConstant: 44),
+
             retryButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            retryButton.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 24),
+            retryButton.topAnchor.constraint(equalTo: confirmButton.bottomAnchor, constant: 12),
             retryButton.widthAnchor.constraint(equalToConstant: 140),
             retryButton.heightAnchor.constraint(equalToConstant: 44)
         ])
@@ -118,29 +205,126 @@ final class TokenLoadingViewController: UIViewController {
 
     // MARK: - Login (đối ứng `PromotionTokenLoadingFragment.startLogin`)
 
-    @objc private func startLogin() {
-        statusLabel.text = "Đang lấy token đăng nhập...."
+    /// Một nút hai vai: đang chờ OTP thì xác thực, còn lại thì xin mã mới.
+    /// Nút "Gửi OTP" / "Gửi lại OTP" — gọi API lần 1.
+    @objc private func primaryAction() {
+        askOtp()
+    }
+
+    /// Nút "Xác nhận OTP" — gọi API lần 2 với `requestId` lấy từ lần 1.
+    @objc private func confirmOtp() {
+        guard let requestId = otpRequestId else {
+            statusLabel.text = "Chưa có requestId — bấm \"Gửi OTP\" trước để server gửi mã."
+            return
+        }
+        verifyOtp(requestId: requestId)
+    }
+
+    /// Bước 1 — xin OTP. Server gửi mã về số của tài khoản demo.
+    ///
+    /// Bấm một lần là một lần gửi OTP, và server đếm số lần không hoàn tất (quá 5 lần liên tiếp thì
+    /// khoá một phút). Vì vậy không tự gọi lại ở bất kỳ nhánh lỗi nào.
+    /// Soi gương `askOtp()` bên `PromotionTokenLoadingFragment`.
+    private func askOtp() {
+        // GIỮ `otpRequestId` cũ, không xoá: nếu server không cấp mã mới (OTP trước còn hiệu lực)
+        // thì cái đang giữ vẫn là đường duy nhất để gọi bước 2.
+        statusLabel.text = "Đang gửi OTP tới \(LoginService.shared.msisdn)"
         setLoading(true)
 
-        LoginService.shared.login { [weak self] result in
+        LoginService.shared.requestOtp(previousRequestId: otpRequestId) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(.token(let login)):
+                self.finishLogin(login)
+
+            case .success(.needOtp(let requestId, let message)):
+                self.otpRequestId = requestId
+                self.statusLabel.text = message
+                self.setLoading(false)
+                self.otpField.text = ""
+                self.otpField.becomeFirstResponder()
+                self.retryButton.setTitle("Đăng nhập", for: .normal)
+                self.retryButton.isHidden = false
+
+            case .failure(let error):
+                self.showFailure(error)
+            }
+        }
+    }
+
+    /// Bước 2 — gửi mã người dùng vừa nhập.
+    private func verifyOtp(requestId: String) {
+        let otp = (otpField.text ?? "").trimmingCharacters(in: .whitespaces)
+        guard !otp.isEmpty else {
+            statusLabel.text = "Nhập mã OTP đã nhận rồi bấm Đăng nhập"
+            return
+        }
+
+        statusLabel.text = "Đang xác thực OTP"
+        setLoading(true)
+        view.endEditing(true)
+
+        LoginService.shared.submitOtp(requestId: requestId, otp: otp) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let login):
-                DemoTokenStore.token = login.accessToken
-                self.initSdk()
-                self.updateDemoContext()
+                self.finishLogin(login)
 
-                self.statusLabel.text = "Lấy token thành công"
-                self.setLoading(false)
-                self.showTokenAlert(msisdn: login.username, token: login.accessToken) { [weak self] in
-                    self?.navigateToLauncher()
-                }
             case .failure(let error):
-                print("[Demo] Login lỗi: \(error)")
-                self.statusLabel.text = "Lấy token thất bại\n\(error)"
+                // Ở LẠI màn nhập OTP: mã có thể chỉ gõ nhầm, xin mã mới là tốn thêm một lượt
+                // trong hạn 5 lần. Người dùng sửa rồi bấm lại.
+                print("[Demo] Xác thực OTP lỗi: \(error)")
+                self.statusLabel.text = Self.describe(error)
                 self.setLoading(false)
+                self.retryButton.setTitle("Đăng nhập", for: .normal)
                 self.retryButton.isHidden = false
             }
+        }
+    }
+
+    /// Soi gương `finishLogin` bên `PromotionTokenLoadingFragment`: báo thành công rồi tự vào màn
+    /// chính sau nửa giây.
+    ///
+    /// Bản trước chặn bằng một alert khoe token và bắt bấm OK — Android không có bước đó, và nó
+    /// nằm chắn giữa luồng đăng nhập nên hai bên chạy khác hẳn nhau. Token vẫn in ra console.
+    private func finishLogin(_ login: LoginResult) {
+        DemoTokenStore.token = login.accessToken
+        print("[Demo] accessToken: \(login.accessToken)")
+
+        initSdk()
+        updateDemoContext()
+
+        statusLabel.text = "Lấy token thành công"
+        setLoading(false)
+        view.endEditing(true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.navigateToLauncher()
+        }
+    }
+
+    private func showFailure(_ error: Error) {
+        print("[Demo] Login lỗi: \(error)")
+        // KHÔNG xoá `otpRequestId`: bước 1 hỏng không làm mã đã gửi mất hiệu lực.
+        statusLabel.text = Self.describe(error)
+        setLoading(false)
+        retryButton.setTitle("Gửi lại OTP", for: .normal)
+        retryButton.isHidden = false
+    }
+
+    /// `LoginError.server` đã mang sẵn `displayMessage` của server — hiện nguyên văn, đừng bọc thêm.
+    private static func describe(_ error: Error) -> String {
+        switch error {
+        case LoginError.server(_, let message):
+            return message
+        case LoginError.invalidResponse(let status, let bodyPrefix):
+            return "Server trả dữ liệu lạ (HTTP \(status))\n\(bodyPrefix)"
+        case let urlError as URLError:
+            // `.code.rawValue` là mã NSURLError — tra được thẳng, vd -1200 = lỗi TLS/ATS,
+            // -1009 = mất mạng, -1001 = timeout.
+            return "Lỗi mạng \(urlError.code.rawValue): \(urlError.localizedDescription)"
+        default:
+            return "Lấy token thất bại\n\(error)"
         }
     }
 
@@ -176,22 +360,6 @@ final class TokenLoadingViewController: UIViewController {
         )
     }
 
-    /// Popup xác nhận login THẬT đã call: hiện msisdn + token (preview) + nút Copy full token.
-    /// Tắt popup mới sang màn chính — SDK lúc này chắc chắn đã `initialize`.
-    private func showTokenAlert(msisdn: String, token: String, onDismiss: @escaping () -> Void) {
-        let preview = token.count > 60 ? "\(token.prefix(40))…\(token.suffix(12))" : token
-        let message = "msisdn: \(msisdn)\n\n"
-            + "accessToken (\(token.count) ký tự):\n\(preview)\n\n"
-            + "→ đã truyền vào SDK làm Bearer token."
-        let alert = UIAlertController(title: "Login OK — token đã lấy", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Copy token", style: .default) { _ in
-            UIPasteboard.general.string = token
-            onDismiss()
-        })
-        alert.addAction(UIAlertAction(title: "OK", style: .cancel) { _ in onDismiss() })
-        present(alert, animated: true)
-    }
-
     private func navigateToLauncher() {
         // Thay root của navigation → không back ngược lại được màn loading (giống `replace` Android).
         navigationController?.setViewControllers([ViewController()], animated: true)
@@ -201,6 +369,7 @@ final class TokenLoadingViewController: UIViewController {
 
     private func setLoading(_ loading: Bool) {
         retryButton.isHidden = true
+        confirmButton.isEnabled = !loading
         if loading {
             spinner.startAnimating()
             startProgressAnimation()
