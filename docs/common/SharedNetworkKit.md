@@ -1,10 +1,10 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC8 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> Trạng thái: **Phase 1, UC9 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
 > request builder an toàn + giải mã JSON generic + `NetworkError` cho lỗi transport +
 > `StatusCodeHandlerChain` cho lỗi nghiệp vụ + `NetworkInterceptor` cho logic trong lúc request→response
-> + debug logging tường minh (`isDebug`). File này là tài liệu sống, cập nhật sau mỗi UC (xem
-> AI_AGENT_RULES điều 8).
+> + debug logging tường minh + `NetworkClient` facade ráp toàn bộ UC1–UC8. File này là tài liệu sống,
+> cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -81,7 +81,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC6 | Sealed error cho lỗi transport | ✅ Xong — `NetworkError` + `networkCall {}`, xanh cả hai nền tảng (4 test: timeout, mất mạng, HTTP lỗi, JSON lệch) |
 | UC7 | Business status-code handler + Interceptor | ✅ Xong — `StatusCodeHandlerChain` (action-chain, sau khi decode) + `NetworkInterceptor` (trong lúc request→response, qua Ktor `HttpSend`), xanh cả hai nền tảng (12 test) |
 | UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | ✅ Xong — `isDebug` + Ktor `Logging` + `NetworkKitCurlLogging`, xanh cả hai nền tảng (8 test) |
-| UC9 | Lắp ráp `NetworkClient` facade | 🔜 |
+| UC9 | Lắp ráp `NetworkClient` facade | ✅ Xong — `NetworkClient` luôn bọc `networkCall {}`, xanh cả hai nền tảng (3 test lắp ráp end-to-end: thành công/lỗi nghiệp vụ/lỗi transport) |
 | UC10 | `:promotionLogic` tiêu thụ thử — thay `PromotionHttpClient.kt` | 🔜 |
 
 Ngoài phạm vi Phase 1: bộ tải file (`file_loader` của `network-kit-android`), mã hoá RSA cho
@@ -110,7 +110,8 @@ networkKit/
     │   ├── BusinessStatus.kt           # interface BusinessStatus + BusinessError
     │   ├── StatusCodeHandler.kt        # StatusCodeHandler (action-chain)/StatusCodeHandlerChain + checkBusinessStatus
     │   ├── NetworkInterceptor.kt       # NetworkInterceptor (fun interface) + InterceptorChain — model OkHttp Chain.proceed()
-    │   └── NetworkKitCurlLogging.kt    # buildCurlCommand() + plugin in cURL, chỉ cài khi isDebug
+    │   ├── NetworkKitCurlLogging.kt    # buildCurlCommand() + plugin in cURL, chỉ cài khi isDebug
+    │   └── NetworkClient.kt            # facade — getJson/postJson luôn bọc networkCall {}
     └── commonTest/kotlin/vn/viettelpay/networkkit/
         ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
         ├── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
@@ -118,7 +119,8 @@ networkKit/
         ├── NetworkKitErrorTest.kt      # MockEngine: timeout/IOException/HTTP lỗi/JSON lệch → đúng nhánh NetworkError
         ├── NetworkKitStatusCodeTest.kt # hai envelope khác hình dạng dùng chung handler, onMatch throw/return
         ├── NetworkKitInterceptorTest.kt # MockEngine: pass-through, retry theo tín hiệu riêng, đổi header lúc retry, thứ tự nhiều interceptor
-        └── NetworkKitCurlLoggingTest.kt # buildCurlCommand đủ nhánh (port từ PromotionCurlLoggingTest) + plugin cài/không cài theo isDebug
+        ├── NetworkKitCurlLoggingTest.kt # buildCurlCommand đủ nhánh (port từ PromotionCurlLoggingTest) + plugin cài/không cài theo isDebug
+        └── NetworkClientTest.kt        # lắp ráp end-to-end: header+token+interceptor+decode+status cùng chạy, lỗi nghiệp vụ, lỗi transport không lọt raw exception
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -321,7 +323,26 @@ làm yếu đi cả hai. Quyết định: giữ 2 cơ chế riêng, đúng ranh 
   vào client hay không (`pluginOrNull`), đúng với những gì mã nguồn `configure()` quyết định theo
   `isDebug` — không cố test lại hành vi nội bộ của Ktor.
 
-### Giới hạn: DTO phải là Kotlin, không dùng được từ Java
+### UC9 — quyết định thiết kế
+
+- **`NetworkClient` KHÔNG nhận `statusHandlers` lúc dựng**, khác mô tả ban đầu của UC9 trong kế hoạch
+  gốc — vì UC7 (sau khi review lại) đã chốt `StatusCodeHandlerChain` không đăng ký lúc tạo client, áp
+  dụng ad-hoc bất cứ đâu có response. `NetworkClient` tôn trọng đúng quyết định đó thay vì đảo ngược:
+  `checkBusinessStatus` vẫn là bước consumer tự gọi tiếp sau `getJson`/`postJson` của facade.
+- **Giá trị thật của UC9 là đóng đúng lỗ hổng đã phát hiện lúc bàn UC6**: gọi thẳng
+  `HttpClient.getJson`/`postJson` (UC4/UC5) không có gì ép phải bọc `networkCall {}` — quên bọc là lỗi
+  hoàn toàn có thể xảy ra, và lỗi transport thô của Ktor sẽ lọt thẳng ra ngoài, không phân loại.
+  `NetworkClient.getJson`/`postJson` **luôn** bọc `networkCall {}` bên trong — dùng facade thì không
+  còn cách nào quên. Test `transportErrorNeverLeaksRawKtorExceptionThroughNetworkClient` khoá đúng
+  cam kết này.
+- **`httpClient` public, không giấu đi** — escape hatch cho consumer cần gọi thẳng Ktor API mà facade
+  chưa bọc (vd một verb khác GET/POST), đúng tinh thần "cơ chế, không chính sách" — facade không ép
+  mọi thứ phải đi qua nó.
+- **Test lắp ráp (`everyMechanismParticipatesInASingleSuccessfulCall`) là trọng tâm của UC9**, không
+  phải test đơn vị: dựng MỘT request thật qua `NetworkClient` với header tĩnh + header động + token +
+  interceptor + `isDebug=true` bật đồng thời, xác nhận cả bốn đều có mặt đúng trên cùng một request
+  gửi đi, rồi giải mã + kiểm business status trên cùng kết quả đó. Từng UC đã có test riêng chứng minh
+  đúng một mình; test này chứng minh **ráp lại với nhau vẫn đúng** — hai việc khác nhau.
 
 `getJson<T>`/`postJson<T>` là `inline fun <reified T>` — đây là cơ chế **chỉ Kotlin hiểu**, hai lớp
 chặn tách biệt nhau nếu một module định nghĩa DTO bằng Java:
@@ -369,21 +390,21 @@ có consumer Java thật nào cần. Ghi lại ở đây để phase sau không 
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0–UC8), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0–UC9), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 45 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
+- `testAndroidHostTest` — 48 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
   `NetworkKitJsonTest` 7 + `NetworkKitErrorTest` 4 + `NetworkKitStatusCodeTest` 7 +
-  `NetworkKitInterceptorTest` 5 + `NetworkKitCurlLoggingTest` 8), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 45 test, 0 lỗi (kể cả timeout live-fire, kể cả interceptor tự retry
-  và đổi header giữa hai lần gửi thật).
+  `NetworkKitInterceptorTest` 5 + `NetworkKitCurlLoggingTest` 8 + `NetworkClientTest` 3), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 48 test, 0 lỗi (kể cả timeout live-fire, kể cả interceptor tự retry
+  và đổi header giữa hai lần gửi thật, kể cả lắp ráp end-to-end).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm `Logging` + `NetworkKitCurlLogging`.
+  vẫn xanh sau khi thêm `NetworkClient`.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC8 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC9 **đóng**.
 
 ---
 
