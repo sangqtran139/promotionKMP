@@ -44,7 +44,7 @@ Hai chế độ dùng SDK:
 | `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
 | `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PRM.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
-| `:networkKit` (KMP) | 🚧 Phase 1, UC4 xong — `HttpClient` factory + header tĩnh/động + token provider + request builder GET/POST an toàn, chưa parsing response, chưa tích hợp vào `promotionLogic`. Xem [common/SharedNetworkKit.md](./common/SharedNetworkKit.md). |
+| `:networkKit` (KMP) | 🚧 Phase 1, UC5 xong — `HttpClient` factory + header tĩnh/động + token provider + request builder + giải mã JSON generic, chưa tích hợp vào `promotionLogic`. Xem [common/SharedNetworkKit.md](./common/SharedNetworkKit.md). |
 | Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |
 
 ---

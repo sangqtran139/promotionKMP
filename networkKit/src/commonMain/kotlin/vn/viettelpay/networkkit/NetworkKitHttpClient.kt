@@ -3,10 +3,13 @@ package vn.viettelpay.networkkit
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.url
 import io.ktor.http.HttpHeaders
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.util.appendIfNameAbsent
+import kotlinx.serialization.json.Json
 
 /**
  * Dựng [HttpClient] theo [NetworkClientConfig] — không chỉ định engine, Ktor tự chọn theo artifact có
@@ -30,6 +33,10 @@ public object NetworkKitHttpClient {
             connectTimeoutMillis = config.timeoutMillis
             requestTimeoutMillis = config.timeoutMillis
             socketTimeoutMillis = config.timeoutMillis
+        }
+
+        install(ContentNegotiation) {
+            json(json)
         }
 
         defaultRequest {
@@ -61,4 +68,18 @@ public object NetworkKitHttpClient {
         if (startsWith(BEARER_PREFIX, ignoreCase = true)) this else "$BEARER_PREFIX$this"
 
     private const val BEARER_PREFIX = "Bearer "
+
+    /**
+     * Ba cờ dưới đây tái hiện hành vi Gson mà mọi backend trong hệ sinh thái Viettel vẫn đang phục
+     * vụ (`network-kit-android` cũ cũng dùng Gson) — cùng lý do, cùng bốn cờ như `PromotionHttpClient`
+     * của `:promotionLogic` (xem NetworkingGuide.md §2). `isLenient` quan trọng nhất: server trả số
+     * cho field tiền tệ khai kiểu String (`"originalAmount": 500000`) là chuyện thường, không phải lỗi
+     * server.
+     */
+    private val json = Json {
+        ignoreUnknownKeys = true
+        explicitNulls = false
+        encodeDefaults = true
+        isLenient = true
+    }
 }

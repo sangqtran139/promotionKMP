@@ -1,6 +1,7 @@
 package vn.viettelpay.networkkit
 
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -24,8 +25,9 @@ public suspend fun HttpClient.getRequest(
 }
 
 /**
- * POST cùng quy tắc encode path/query như [getRequest]. [body] truyền thẳng cho `setBody` — serialize
- * JSON là việc của UC5 (`ContentNegotiation`), module chưa cấu hình ở đây.
+ * POST cùng quy tắc encode path/query như [getRequest]. [body] truyền thẳng cho `setBody` —
+ * `ContentNegotiation` (cài trong [NetworkKitHttpClient.configure]) tự serialize JSON nếu [body] là
+ * kiểu `@Serializable`.
  */
 public suspend fun HttpClient.postRequest(
     vararg pathSegments: String,
@@ -36,3 +38,21 @@ public suspend fun HttpClient.postRequest(
     queryParameters.forEach { (key, value) -> parameter(key, value) }
     if (body != null) setBody(body)
 }
+
+/**
+ * [getRequest] + giải mã JSON thành [T] bằng kotlinx.serialization — [T] phải `@Serializable`.
+ * Không ép envelope cụ thể nào: [T] có thể là DTO thô của consumer, hay envelope riêng của họ
+ * (`ApiResponseTemplate<...>` của Promotion, `VDOBaseResponse`-style của SDK khác…) — đó là chính
+ * sách của consumer (xem ranh giới ở SharedNetworkKit.md §2).
+ */
+public suspend inline fun <reified T> HttpClient.getJson(
+    vararg pathSegments: String,
+    queryParameters: Map<String, String> = emptyMap(),
+): T = getRequest(*pathSegments, queryParameters = queryParameters).body()
+
+/** [postRequest] + giải mã JSON thành [T], cùng quy tắc [getJson]. */
+public suspend inline fun <reified T> HttpClient.postJson(
+    vararg pathSegments: String,
+    queryParameters: Map<String, String> = emptyMap(),
+    body: Any? = null,
+): T = postRequest(*pathSegments, queryParameters = queryParameters, body = body).body()

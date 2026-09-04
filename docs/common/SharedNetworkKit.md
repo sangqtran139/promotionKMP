@@ -1,8 +1,8 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC4 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
-> request builder GET/POST an toàn, chưa có parsing response. File này là tài liệu sống, cập nhật sau
-> mỗi UC (xem AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC5 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> request builder an toàn + giải mã JSON generic. File này là tài liệu sống, cập nhật sau mỗi UC (xem
+> AI_AGENT_RULES điều 8).
 
 ---
 
@@ -62,7 +62,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC2 | Header injection (tĩnh + động) | ✅ Xong — `NetworkClientConfig.headers`/`dynamicHeaders`, xanh cả hai nền tảng (7 test, kể cả "không ghi đè header caller tự đặt") |
 | UC3 | Token provider (auth) | ✅ Xong — `TokenProvider` + Bearer, xanh cả hai nền tảng (11 test) |
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | ✅ Xong — `getRequest`/`postRequest`, xanh cả hai nền tảng (3 test, round-trip path/query có ký tự đặc biệt) |
-| UC5 | Giải mã response generic bằng kotlinx.serialization | 🔜 |
+| UC5 | Giải mã response generic bằng kotlinx.serialization | ✅ Xong — `getJson`/`postJson` + `ContentNegotiation`, xanh cả hai nền tảng (7 test: field bắt buộc thiếu → lỗi, field có default thiếu → dùng default, field có default nhưng server trả → dùng giá trị server, field nullable không default thiếu → null) |
 | UC6 | Sealed error cho lỗi transport | 🔜 |
 | UC7 | Business status-code handler chain | 🔜 |
 | UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | 🔜 |
@@ -71,7 +71,10 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 
 Ngoài phạm vi Phase 1: bộ tải file (`file_loader` của `network-kit-android`), mã hoá RSA cho
 `X-SESSION-ID`, retry-policy phức tạp mặc định, migrate `ekyc-service`/`sdk-miniapp` sang dùng module
-này ngay.
+này ngay, và **hỗ trợ caller Java gọi thẳng `:networkKit`** (`getJson`/`postJson` chỉ Kotlin gọi được
+— xem giới hạn ở §4). Nếu phase sau có module Android thuần Java cần dùng trực tiếp (ngoài nhánh KMP),
+đó là việc của phase đó: cần một lớp adapter Kotlin mỏng expose hàm nhận `Class<T>` thay vì `reified`,
+không phải sửa API hiện có của `:networkKit`.
 
 ---
 
@@ -85,11 +88,12 @@ networkKit/
     │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders + tokenProvider
     │   ├── DynamicHeader.kt            # header tính lại giá trị mỗi request (vd X-Request-ID)
     │   ├── TokenProvider.kt            # fun interface — provideToken(): String?
-    │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
-    │   └── NetworkKitRequests.kt       # getRequest/postRequest — path segments + query an toàn
+    │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance + ContentNegotiation
+    │   └── NetworkKitRequests.kt       # getRequest/postRequest/getJson/postJson
     └── commonTest/kotlin/vn/viettelpay/networkkit/
         ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
-        └── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
+        ├── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
+        └── NetworkKitJsonTest.kt       # MockEngine: giải mã JSON — unknown field, số↔string, thiếu field
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -164,6 +168,57 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
   chưa cài (đó là UC5). Test `postSendsBodyToConfiguredPath` chỉ xác nhận method + path, không xác
   nhận nội dung body.
 
+### UC5 — quyết định thiết kế
+
+- **`Json` cấu hình cứng trong `NetworkKitHttpClient`, không lộ ra `NetworkClientConfig`** — copy
+  nguyên bốn cờ đã chứng minh đúng của `PromotionHttpClient`
+  (`ignoreUnknownKeys`/`explicitNulls`/`encodeDefaults`/`isLenient`, xem
+  [NetworkingGuide.md §2](./NetworkingGuide.md)), vì mọi backend trong hệ sinh thái Viettel đang phục
+  vụ (kể cả `network-kit-android` cũ) đều xuất phát từ Gson — bốn cờ này tái hiện đúng hành vi Gson,
+  không phải tuỳ chọn per-host. Chưa consumer nào cần khác đi; lộ ra làm config item khi có nhu cầu
+  thật (YAGNI, giống quyết định ở UC1 với `timeoutMillis`).
+- **`getJson`/`postJson` là `inline` `reified`**, gọi `HttpResponse.body<T>()` của Ktor — không tự
+  định nghĩa envelope. `T` là bất kỳ kiểu `@Serializable` nào consumer cần, kể cả envelope riêng của
+  họ (`ApiResponseTemplate<...>`) — đúng ranh giới "cơ chế, không phải chính sách" ở §2.
+- **Test khoá đúng các bẫy đã biết**, không đoán: (1) field lạ trong response không phá decode
+  (`ignoreUnknownKeys`); (2) server trả số cho field khai kiểu String không ném lỗi
+  (`isLenient` — bẫy thật đã ghi trong `NetworkingGuide.md`, không phải giả định); (3) field **không**
+  có giá trị default thiếu trong response → ném `JsonConvertException` rõ ràng (Ktor bọc
+  `MissingFieldException` của kotlinx.serialization), không phải `null`/giá trị rác âm thầm; (4) field
+  **có** giá trị default thiếu trong response → dùng default, không ném lỗi; (5) field có default
+  nhưng server **có** trả → dùng giá trị server, không lặng lẽ rơi về default.
+- **(4) không phải do `explicitNulls`** — dễ nhầm. `explicitNulls = false` chỉ nới field **nullable
+  không có default** (`val x: String?`, không `= null`) được phép vắng mặt hoàn toàn trong JSON; còn
+  "field có default value thì không bắt buộc trong JSON" là hành vi **gốc** của
+  `@Serializable`/kotlinx.serialization, độc lập với mọi cờ. `SampleDto` dùng cả 4 kiểu field trong
+  cùng một DTO để đối chiếu trực tiếp thay vì suy luận rời rạc: `id`/`name`/`amount` (không default =
+  bắt buộc), `note: String = "no-note"` (có default = tuỳ chọn, dùng default nếu thiếu), `altId:
+  String?` (nullable, không default — thiếu trong JSON thì nhờ `explicitNulls = false` mới không ném
+  lỗi, coi như `null`).
+
+### Giới hạn: DTO phải là Kotlin, không dùng được từ Java
+
+`getJson<T>`/`postJson<T>` là `inline fun <reified T>` — đây là cơ chế **chỉ Kotlin hiểu**, hai lớp
+chặn tách biệt nhau nếu một module định nghĩa DTO bằng Java:
+
+1. **`@Serializable` không áp được lên class Java.** Plugin serialization của Kotlin sinh
+   `KSerializer` lúc biên dịch **file `.kt`** — javac không chạy qua plugin này, nên một `.java` class
+   không thể có serializer, bất kể có "default value" hay không. Đây là rào chặn cứng, không phải chi
+   tiết default value như câu hỏi ban đầu.
+2. **Java không gọi được hàm `inline reified`.** `reified` chỉ tồn tại nhờ Kotlin compiler inline y
+   nguyên thân hàm vào chỗ gọi — Java không có cơ chế này, nên `getJson<T>()` không xuất hiện như một
+   API gọi được từ `.java` theo cách thông thường.
+
+Trong kiến trúc hiện tại, chuyện này không phát sinh: `:networkKit` chỉ được consumer **KMP khác**
+gọi (`:promotionLogic`, SDK KMP tương lai) — và `commonMain` của một module KMP **bắt buộc** là
+Kotlin, không có chỗ cho file Java. Chỉ trở thành vấn đề thật nếu sau này một module Android thuần
+Java (khác nhánh — không qua KMP) muốn gọi thẳng `:networkKit`; khi đó cần một lớp adapter Kotlin
+mỏng expose hàm non-generic/non-inline (nhận `Class<T>` như cách `network-kit-android` cũ từng làm),
+chứ bản thân `getJson<T>` không port được nguyên trạng.
+
+**Cố tình để ngoài phạm vi Phase 1** (đã ghi ở §3) — không thiết kế/code adapter đó bây giờ, vì chưa
+có consumer Java thật nào cần. Ghi lại ở đây để phase sau không phải khám phá lại từ đầu.
+
 ---
 
 ## 5. Toạ độ Gradle & phát hành
@@ -189,19 +244,19 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0 + UC1 + UC2 + UC3 + UC4), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0–UC5), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 11 test (`NetworkKitHttpClientTest`) + 3 test (`NetworkKitRequestsTest`), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 14 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 21 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
+  `NetworkKitJsonTest` 7), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 21 test, 0 lỗi (kể cả timeout live-fire).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm request builder.
+  vẫn xanh sau khi thêm `ContentNegotiation` + kotlinx.serialization.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1, UC2, UC3 và
-UC4 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC5 **đóng**.
 
 ---
 
