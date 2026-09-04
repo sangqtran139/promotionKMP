@@ -5,6 +5,7 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.url
+import io.ktor.util.appendIfNameAbsent
 
 /**
  * Dựng [HttpClient] theo [NetworkClientConfig] — không chỉ định engine, Ktor tự chọn theo artifact có
@@ -32,6 +33,16 @@ public object NetworkKitHttpClient {
 
         defaultRequest {
             url(config.baseUrl.ensureTrailingSlash())
+
+            // appendIfNameAbsent: chạy mỗi request (nên dynamicHeaders luôn tính giá trị mới), nhưng
+            // không ghi đè header caller đã tự đặt ở lời gọi cụ thể — cùng quy tắc PromotionHttpClient
+            // đang dùng, xem NetworkingGuide.md §2.
+            config.headers.forEach { (name, value) ->
+                headers.appendIfNameAbsent(name, value)
+            }
+            config.dynamicHeaders.forEach { dynamicHeader ->
+                headers.appendIfNameAbsent(dynamicHeader.name, dynamicHeader.currentValue())
+            }
         }
     }
 

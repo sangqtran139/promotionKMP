@@ -9,6 +9,8 @@ package vn.viettelpay.networkkit
 public data class NetworkClientConfig(
     val baseUrl: String,
     val timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
+    val headers: Map<String, String> = emptyMap(),
+    val dynamicHeaders: List<DynamicHeader> = emptyList(),
 ) {
     public companion object {
         public const val DEFAULT_TIMEOUT_MILLIS: Long = 30_000L

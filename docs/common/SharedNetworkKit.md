@@ -1,7 +1,7 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC1 xong** — dựng `HttpClient` per-instance (baseUrl + timeout), chưa có
-> header/token/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC2 xong** — `HttpClient` per-instance + header tĩnh/động, chưa có
+> token/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -58,7 +58,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 |----|----------|------------|
 | UC0 | Khung module rỗng — commonMain/androidMain/iosMain, publish mavenLocal | ✅ Xong — xanh cả Android host test lẫn iOS simulator test, publish mavenLocal xác nhận |
 | UC1 | `HttpClient` factory per-instance (baseUrl, timeout) | ✅ Xong — `NetworkKitHttpClient.create()`, xanh cả Android host test lẫn iOS simulator test (4 test, kể cả timeout live-fire qua `MockEngine`) |
-| UC2 | Header injection (tĩnh + động) | 🔜 |
+| UC2 | Header injection (tĩnh + động) | ✅ Xong — `NetworkClientConfig.headers`/`dynamicHeaders`, xanh cả hai nền tảng (7 test, kể cả "không ghi đè header caller tự đặt") |
 | UC3 | Token provider (auth) | 🔜 |
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | 🔜 |
 | UC5 | Giải mã response generic bằng kotlinx.serialization | 🔜 |
@@ -81,10 +81,11 @@ networkKit/
 ├── build.gradle.kts
 └── src/
     ├── commonMain/kotlin/vn/viettelpay/networkkit/
-    │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis — toàn bộ input của UC1, không state ẩn
+    │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders — toàn bộ input
+    │   ├── DynamicHeader.kt            # header tính lại giá trị mỗi request (vd X-Request-ID)
     │   └── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
     └── commonTest/kotlin/vn/viettelpay/networkkit/
-        └── NetworkKitHttpClientTest.kt # MockEngine: join baseUrl+path, timeout live-fire, default value
+        └── NetworkKitHttpClientTest.kt # MockEngine: join URL, timeout, header tĩnh/động, không đè header caller
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -109,6 +110,23 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
   riêng, tách sau nếu có nhu cầu thật (YAGNI). Test `requestTimesOutWhenServerIsSlowerThanConfiguredTimeout`
   xác nhận `HttpTimeout` plugin thật sự bắn `HttpRequestTimeoutException`, không chỉ kiểm tra config
   được set — dùng `MockEngine` trễ (`delay`) dài hơn timeout, chạy dưới `runTest` (thời gian ảo).
+
+### UC2 — quyết định thiết kế
+
+- **Header tĩnh (`headers: Map<String, String>`) và header động (`dynamicHeaders: List<DynamicHeader>`)
+  tách riêng** — tĩnh thì cùng giá trị suốt vòng đời client (vd `Product`, `Channel`), động thì phải
+  tính lại mỗi request (vd `X-Request-ID`). Gộp chung một chỗ sẽ buộc caller giả vờ "tĩnh" bằng cách
+  tự sinh giá trị trước rồi nhét vào Map — sai bản chất của `X-Request-ID`.
+- **`DynamicHeader` là `class` giữ lambda (`provideValue: () -> String`), không phải `abstract class`
+  bắt subclass** như `VDOFreshHeader` cũ — cùng chức năng, ít boilerplate hơn cho caller (không phải
+  tạo object riêng cho mỗi header động).
+- **Cả hai loại header đều đi qua `appendIfNameAbsent`, gắn trong `defaultRequest { }`** — chạy lại mỗi
+  request (đúng lý do header động cần) nhưng **không ghi đè header caller tự đặt ở lời gọi cụ thể**.
+  Test `callerHeaderIsNotOverriddenByStaticConfigHeader` xác nhận đúng thứ tự: `defaultRequest` chạy
+  sau khi builder của caller đã set header, nên `appendIfNameAbsent` thấy header đã có và bỏ qua —
+  đúng quy tắc `PromotionHttpClient` ghi ở [NetworkingGuide.md §2](./NetworkingGuide.md).
+- **Chưa có** validate trùng tên giữa `headers` và `dynamicHeaders`, hay giới hạn số lượng — chưa ai
+  cần, thêm khi có nhu cầu thật.
 
 ---
 
@@ -135,18 +153,18 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0 + UC1), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0 + UC1 + UC2), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 4 test (`NetworkKitHttpClientTest`), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 4 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 7 test (`NetworkKitHttpClientTest`), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 7 test, 0 lỗi (kể cả timeout live-fire).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm dependency Ktor.
+  vẫn xanh sau khi thêm dependency Ktor và header injection.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 và UC1 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1 và UC2 **đóng**.
 
 ---
 
