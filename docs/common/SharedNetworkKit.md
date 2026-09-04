@@ -1,8 +1,8 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC3 xong** — `HttpClient` per-instance + header tĩnh/động + token provider,
-> chưa có request builder/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem
-> AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC4 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> request builder GET/POST an toàn, chưa có parsing response. File này là tài liệu sống, cập nhật sau
+> mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -61,7 +61,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC1 | `HttpClient` factory per-instance (baseUrl, timeout) | ✅ Xong — `NetworkKitHttpClient.create()`, xanh cả Android host test lẫn iOS simulator test (4 test, kể cả timeout live-fire qua `MockEngine`) |
 | UC2 | Header injection (tĩnh + động) | ✅ Xong — `NetworkClientConfig.headers`/`dynamicHeaders`, xanh cả hai nền tảng (7 test, kể cả "không ghi đè header caller tự đặt") |
 | UC3 | Token provider (auth) | ✅ Xong — `TokenProvider` + Bearer, xanh cả hai nền tảng (11 test) |
-| UC4 | Request builder GET/POST an toàn (auto-encode query) | 🔜 |
+| UC4 | Request builder GET/POST an toàn (auto-encode query) | ✅ Xong — `getRequest`/`postRequest`, xanh cả hai nền tảng (3 test, round-trip path/query có ký tự đặc biệt) |
 | UC5 | Giải mã response generic bằng kotlinx.serialization | 🔜 |
 | UC6 | Sealed error cho lỗi transport | 🔜 |
 | UC7 | Business status-code handler chain | 🔜 |
@@ -85,9 +85,11 @@ networkKit/
     │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders + tokenProvider
     │   ├── DynamicHeader.kt            # header tính lại giá trị mỗi request (vd X-Request-ID)
     │   ├── TokenProvider.kt            # fun interface — provideToken(): String?
-    │   └── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
+    │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
+    │   └── NetworkKitRequests.kt       # getRequest/postRequest — path segments + query an toàn
     └── commonTest/kotlin/vn/viettelpay/networkkit/
-        └── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
+        ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
+        └── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -146,6 +148,22 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
   `tokenAlreadyPrefixedWithBearerIsNotDoubled` khoá đúng hành vi này, đúng bẫy `PromotionHttpClient`
   đã gặp và ghi trong `NetworkingGuide.md`.
 
+### UC4 — quyết định thiết kế
+
+- **Bug gốc (`VDORequest.Builder.buildPath()` nối chuỗi tay, không encode) đã tự hết** từ lúc chọn
+  Ktor ở UC1 — `parameter()` của Ktor vốn tự percent-encode. Việc UC4 thực sự thêm là **path segment**:
+  `client.get("voucher/$id")` kiểu string-interpolation KHÔNG tự encode `$id` (khác `parameter()`),
+  cùng loại rủi ro với bug cũ nhưng ở chỗ khác — `getRequest`/`postRequest` dùng
+  `url { appendPathSegments(*pathSegments) }` để mỗi segment cũng được encode có cấu trúc, không phải
+  nối chuỗi.
+- **Test xác nhận bằng round-trip, không so khớp chuỗi percent-encode cụ thể**: `queryParameterWithReservedCharactersRoundTripsCorrectly`
+  gửi `"a&b=c"` (chứa ký tự phân tách query thật) và đọc lại qua `url.parameters["q"]` — nếu encode
+  sai, giá trị đọc lại sẽ không còn nguyên vẹn hoặc bị tách thành nhiều param. Cách này bền hơn hard-code
+  chuỗi `%26`/`%3D` vì không phụ thuộc thuật toán encode cụ thể của Ktor.
+- **`postRequest.body: Any?` truyền thẳng cho `setBody`, chưa serialize JSON** — `ContentNegotiation`
+  chưa cài (đó là UC5). Test `postSendsBodyToConfiguredPath` chỉ xác nhận method + path, không xác
+  nhận nội dung body.
+
 ---
 
 ## 5. Toạ độ Gradle & phát hành
@@ -171,19 +189,19 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0 + UC1 + UC2 + UC3), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0 + UC1 + UC2 + UC3 + UC4), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 11 test (`NetworkKitHttpClientTest`), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 11 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 11 test (`NetworkKitHttpClientTest`) + 3 test (`NetworkKitRequestsTest`), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 14 test, 0 lỗi (kể cả timeout live-fire).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm token provider.
+  vẫn xanh sau khi thêm request builder.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1, UC2 và UC3
-**đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1, UC2, UC3 và
+UC4 **đóng**.
 
 ---
 
