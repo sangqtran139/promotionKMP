@@ -8,9 +8,9 @@ Biết **file nằm ở đâu** và **đặt file mới vào đâu cho đúng**.
 
 ```
 ttcn-promotion-android-sdk/
-├── settings.gradle.kts         # include :androidApp, :promotionLogic, :AndroidPromotionSDK
+├── settings.gradle.kts         # include :androidApp, :promotionLogic, :AndroidPromotionSDK, :networkKit
 ├── gradle/libs.versions.toml   # Version catalog — nguồn duy nhất của dependency
-├── gradle.properties           # SDK_VERSION / SDK_GROUP — nguồn version tập trung
+├── gradle.properties           # SDK_VERSION / SDK_GROUP / NETWORK_KIT_VERSION — nguồn version tập trung
 ├── CHANGELOG.md                # Keep a Changelog + SemVer
 ├── docs/                       # Tài liệu nền tảng (file này)
 ├── scripts/                    # build-android.sh, build-ios.sh, test-report.sh
@@ -18,18 +18,22 @@ ttcn-promotion-android-sdk/
 ├── promotionLogic/             # 📦 Lõi KMP headless — data / domain / usecase / presentation
 ├── AndroidPromotionSDK/        # 📦 SDK Android (AAR) — Fragment, XML, adapter, theme
 ├── iosPromotionSDK/            # 📦 SDK iOS (XCFramework) — UIKit, MVVM + Builder/Router
+├── networkKit/                 # 📦 Module network KMP dùng chung (Phase 1, UC0) — xem SharedNetworkKit.md
 │
 ├── androidApp/                 # App Android demo/host
 └── iosApp/                     # App iOS demo/host (Xcode)
 ```
 
-Ba module đầu là **sản phẩm phát hành**, hai module cuối chỉ để demo/thử tích hợp:
+Ba module đầu là **sản phẩm phát hành**, hai module cuối chỉ để demo/thử tích hợp. `networkKit/` là
+module mới, chưa được `promotionLogic` tiêu thụ (xem UC10 ở
+[SharedNetworkKit.md](./SharedNetworkKit.md)):
 
 | Module | Namespace / vị trí | Vai trò |
 |---|---|---|
 | `:promotionLogic` | `com.ttcn.promotionsdk` | Lõi dùng chung. **Mọi thay đổi nghiệp vụ ở đây.** Phát hành `$SDK_GROUP:promotionLogic`. |
 | `:AndroidPromotionSDK` | `com.ttcn.prm` | UI Android. Phát hành `$SDK_GROUP:promotion` (AAR). |
 | `iosPromotionSDK/` | `PRM.xcodeproj` + SPM | UI iOS. Phát hành `VDSPromotionSDK.xcframework`. |
+| `:networkKit` | `vn.viettelpay.networkkit` | Module network KMP dùng chung, **không** phụ thuộc domain feature nào. Chưa phát hành thật — xem [SharedNetworkKit.md](./SharedNetworkKit.md). |
 
 > ⚠️ `iosPromotionSDK` **không** là module Gradle — nó là project Xcode, tiêu thụ lõi qua
 > XCFramework do `:promotionLogic` sinh ra. Vì vậy `settings.gradle.kts` chỉ có 3 `include`.

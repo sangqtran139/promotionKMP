@@ -44,6 +44,7 @@ Hai chế độ dùng SDK:
 | `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
 | `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PRM.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
+| `:networkKit` (KMP) | 🚧 Phase 1, UC0 xong — khung module rỗng, chưa có logic, chưa tích hợp vào `promotionLogic`. Xem [common/SharedNetworkKit.md](./common/SharedNetworkKit.md). |
 | Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |
 
 ---
@@ -99,6 +100,7 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 | [common/InitParity.md](./common/InitParity.md) | Spec khởi tạo Android ↔ iOS: `PromotionSDK`/`Options`/`SessionConfig`/`Callback`. |
 | [common/SdkReview.md](./common/SdkReview.md) | Báo cáo rà soát & hoàn thiện SDK (UI public iOS, wrapper, terminology, kiến trúc, version) — kèm ví dụ. |
 | [common/NetworkingGuide.md](./common/NetworkingGuide.md) | Ktor client, DTO, envelope, header, xử lý response. |
+| [common/SharedNetworkKit.md](./common/SharedNetworkKit.md) | Module KMP network dùng chung mới (`:networkKit`, đang xây — Phase 1): mục tiêu, ranh giới, trạng thái từng use case. |
 | [common/DependencyInjection.md](./common/DependencyInjection.md) | Custom DI: `SdkDi`, `ComponentRegistry`, các module. |
 | [common/StorageGuide.md](./common/StorageGuide.md) | `PromotionPreferences`, cache feature flag. Vì sao không có DB. |
 | [common/ErrorHandling.md](./common/ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |

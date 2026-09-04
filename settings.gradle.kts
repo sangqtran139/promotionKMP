@@ -129,3 +129,4 @@ dependencyResolutionManagement {
 include(":androidApp")
 include(":promotionLogic")
 include(":AndroidPromotionSDK")
+include(":networkKit")

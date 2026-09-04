@@ -146,6 +146,18 @@ Kotlin 2.1.20 `kotlin.time.Clock` đã nằm sẵn trong **stdlib** — hai `act
   để mở `SharedPreferences`. Cách duy nhất cắt được là `multiplatform-settings-no-arg`, đã loại vì nó
   xoá prefs của app host (xem [StorageGuide.md §2.1](./StorageGuide.md)).
 
+### 2.4. Module dùng chung mới — `networkKit` (chưa tích hợp)
+
+`:networkKit` (KMP, package `vn.viettelpay.networkkit`) là module network **common**, đứng *dưới*
+`:promotionLogic` về mặt phụ thuộc — không phải một tầng ngang hàng, không phải phần của Promotion
+domain. Mục tiêu: rút phần cơ chế dùng chung (HttpClient factory, header/token, status-code handler
+chain, ánh xạ lỗi transport) ra khỏi `data/remote/` của `:promotionLogic`, để dùng lại được cho các
+SDK KMP khác sau này — không hardcode giả định về bất kỳ host nào.
+
+Hiện tại (Phase 1, UC0) module mới là khung rỗng, **`:promotionLogic` chưa phụ thuộc vào nó** —
+`PromotionHttpClient.kt` ở §2.1 vẫn là networking layer thật đang chạy. Việc thay thế diễn ra ở UC10.
+Chi tiết đầy đủ, ranh giới thiết kế, lộ trình use case: [SharedNetworkKit.md](./SharedNetworkKit.md).
+
 ---
 
 ## 3. Luồng một request điển hình
