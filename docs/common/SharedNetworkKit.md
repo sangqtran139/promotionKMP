@@ -1,9 +1,10 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC7 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> Trạng thái: **Phase 1, UC8 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
 > request builder an toàn + giải mã JSON generic + `NetworkError` cho lỗi transport +
-> `StatusCodeHandlerChain` cho lỗi nghiệp vụ + `NetworkInterceptor` cho logic trong lúc request→response.
-> File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
+> `StatusCodeHandlerChain` cho lỗi nghiệp vụ + `NetworkInterceptor` cho logic trong lúc request→response
+> + debug logging tường minh (`isDebug`). File này là tài liệu sống, cập nhật sau mỗi UC (xem
+> AI_AGENT_RULES điều 8).
 
 ---
 
@@ -79,7 +80,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC5 | Giải mã response generic bằng kotlinx.serialization | ✅ Xong — `getJson`/`postJson` + `ContentNegotiation`, xanh cả hai nền tảng (7 test: field bắt buộc thiếu → lỗi, field có default thiếu → dùng default, field có default nhưng server trả → dùng giá trị server, field nullable không default thiếu → null) |
 | UC6 | Sealed error cho lỗi transport | ✅ Xong — `NetworkError` + `networkCall {}`, xanh cả hai nền tảng (4 test: timeout, mất mạng, HTTP lỗi, JSON lệch) |
 | UC7 | Business status-code handler + Interceptor | ✅ Xong — `StatusCodeHandlerChain` (action-chain, sau khi decode) + `NetworkInterceptor` (trong lúc request→response, qua Ktor `HttpSend`), xanh cả hai nền tảng (12 test) |
-| UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | 🔜 |
+| UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | ✅ Xong — `isDebug` + Ktor `Logging` + `NetworkKitCurlLogging`, xanh cả hai nền tảng (8 test) |
 | UC9 | Lắp ráp `NetworkClient` facade | 🔜 |
 | UC10 | `:promotionLogic` tiêu thụ thử — thay `PromotionHttpClient.kt` | 🔜 |
 
@@ -108,14 +109,16 @@ networkKit/
     │   ├── NetworkKitErrors.kt         # networkCall {} — bọc & phân loại lỗi transport
     │   ├── BusinessStatus.kt           # interface BusinessStatus + BusinessError
     │   ├── StatusCodeHandler.kt        # StatusCodeHandler (action-chain)/StatusCodeHandlerChain + checkBusinessStatus
-    │   └── NetworkInterceptor.kt       # NetworkInterceptor (fun interface) + InterceptorChain — model OkHttp Chain.proceed()
+    │   ├── NetworkInterceptor.kt       # NetworkInterceptor (fun interface) + InterceptorChain — model OkHttp Chain.proceed()
+    │   └── NetworkKitCurlLogging.kt    # buildCurlCommand() + plugin in cURL, chỉ cài khi isDebug
     └── commonTest/kotlin/vn/viettelpay/networkkit/
         ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
         ├── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
         ├── NetworkKitJsonTest.kt       # MockEngine: giải mã JSON — unknown field, số↔string, thiếu field
         ├── NetworkKitErrorTest.kt      # MockEngine: timeout/IOException/HTTP lỗi/JSON lệch → đúng nhánh NetworkError
         ├── NetworkKitStatusCodeTest.kt # hai envelope khác hình dạng dùng chung handler, onMatch throw/return
-        └── NetworkKitInterceptorTest.kt # MockEngine: pass-through, retry theo tín hiệu riêng, đổi header lúc retry, thứ tự nhiều interceptor
+        ├── NetworkKitInterceptorTest.kt # MockEngine: pass-through, retry theo tín hiệu riêng, đổi header lúc retry, thứ tự nhiều interceptor
+        └── NetworkKitCurlLoggingTest.kt # buildCurlCommand đủ nhánh (port từ PromotionCurlLoggingTest) + plugin cài/không cài theo isDebug
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -297,6 +300,27 @@ làm yếu đi cả hai. Quyết định: giữ 2 cơ chế riêng, đúng ranh 
 - **`:networkKit` không tự làm refresh-token-rồi-retry mẫu nào** — đó là chính sách của consumer, viết
   bằng chính `NetworkInterceptor` này. Module chỉ cho cơ chế `proceed()` nhiều lần.
 
+### UC8 — quyết định thiết kế
+
+- **`isDebug: Boolean` trên `NetworkClientConfig`, không khoá theo enum môi trường** — đúng lỗi của
+  `network-kit-android` cũ: `enableHttpLog()` chỉ có tác dụng khi `appEnvironment == STAGING`, gọi ở
+  môi trường khác thì im lặng không log gì, không có cảnh báo. Ở đây `isDebug` là input duy nhất,
+  hành vi tất định — khớp cách `PromotionHttpClient` của `:promotionLogic` đã làm.
+- **`NetworkKitCurlLogging` port nguyên logic `PromotionCurlLogging`** — không viết lại, không tinh
+  chỉnh, chỉ đổi tên và bỏ nhãn "PromotionSDK". Hàm `buildCurlCommand()` đã có bộ test đầy đủ ở
+  `:promotionLogic` (6 nhánh: header, JSON body, escape dấu nháy đơn, body dạng byte array, body rỗng,
+  body không phải `OutgoingContent`) — port nguyên bộ test đó thay vì viết lại, vì logic **giống hệt**
+  không đổi gì ngoài package.
+- **Cả `Logging` (Ktor) và `NetworkKitCurlLogging` đều lộ `Authorization`** — `LogLevel.BODY` in toàn
+  bộ header/body, cURL cũng vậy (dựng lại đúng request thật để dán chạy được, kể cả token). Cả hai chỉ
+  bật khi `isDebug`, tuyệt đối không ở bản phát hành — giữ đúng cảnh báo NetworkingGuide.md §8 điều 4.
+- **Không test được `Logging.level` sau khi cài** — plugin `Logging` của Ktor dựng qua
+  `createClientPlugin`, `level` chỉ là biến cục bộ chụp trong lambda cài đặt, không lộ ra thành property
+  đọc lại được trên instance đã cài (đã tra sources jar để xác nhận, không đoán). Thay vào đó test verify
+  **hành vi quan sát được thật sự** của phần `:networkKit` tự viết: `NetworkKitCurlLogging` có được cài
+  vào client hay không (`pluginOrNull`), đúng với những gì mã nguồn `configure()` quyết định theo
+  `isDebug` — không cố test lại hành vi nội bộ của Ktor.
+
 ### Giới hạn: DTO phải là Kotlin, không dùng được từ Java
 
 `getJson<T>`/`postJson<T>` là `inline fun <reified T>` — đây là cơ chế **chỉ Kotlin hiểu**, hai lớp
@@ -345,21 +369,21 @@ có consumer Java thật nào cần. Ghi lại ở đây để phase sau không 
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0–UC7), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0–UC8), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 37 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
+- `testAndroidHostTest` — 45 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
   `NetworkKitJsonTest` 7 + `NetworkKitErrorTest` 4 + `NetworkKitStatusCodeTest` 7 +
-  `NetworkKitInterceptorTest` 5), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 37 test, 0 lỗi (kể cả timeout live-fire, kể cả interceptor tự retry
+  `NetworkKitInterceptorTest` 5 + `NetworkKitCurlLoggingTest` 8), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 45 test, 0 lỗi (kể cả timeout live-fire, kể cả interceptor tự retry
   và đổi header giữa hai lần gửi thật).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm `NetworkInterceptor`.
+  vẫn xanh sau khi thêm `Logging` + `NetworkKitCurlLogging`.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC7 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC8 **đóng**.
 
 ---
 

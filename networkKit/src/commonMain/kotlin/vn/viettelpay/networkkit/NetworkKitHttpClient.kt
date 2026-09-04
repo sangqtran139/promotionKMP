@@ -7,6 +7,8 @@ import io.ktor.client.plugins.plugin
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.url
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
@@ -45,6 +47,17 @@ public object NetworkKitHttpClient {
 
         install(ContentNegotiation) {
             json(json)
+        }
+
+        // Cờ tường minh truyền vào lúc tạo config — KHÔNG khoá cứng theo enum môi trường như
+        // network-kit-android cũ (đó gây ra silent no-op: gọi enableHttpLog() nhưng vẫn im lặng nếu
+        // appEnvironment != STAGING). Cả LogLevel.BODY và cURL đều lộ Authorization — chỉ bật khi
+        // isDebug, tuyệt đối không ở bản phát hành (NetworkingGuide.md §8 điều 4).
+        install(Logging) {
+            level = if (config.isDebug) LogLevel.BODY else LogLevel.NONE
+        }
+        if (config.isDebug) {
+            install(NetworkKitCurlLogging)
         }
 
         defaultRequest {

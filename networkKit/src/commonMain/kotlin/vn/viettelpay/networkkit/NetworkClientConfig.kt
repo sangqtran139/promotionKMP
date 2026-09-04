@@ -13,6 +13,7 @@ public data class NetworkClientConfig(
     val dynamicHeaders: List<DynamicHeader> = emptyList(),
     val tokenProvider: TokenProvider? = null,
     val interceptors: List<NetworkInterceptor> = emptyList(),
+    val isDebug: Boolean = false,
 ) {
     public companion object {
         public const val DEFAULT_TIMEOUT_MILLIS: Long = 30_000L
