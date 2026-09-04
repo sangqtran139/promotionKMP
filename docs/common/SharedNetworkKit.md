@@ -1,7 +1,8 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC2 xong** — `HttpClient` per-instance + header tĩnh/động, chưa có
-> token/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC3 xong** — `HttpClient` per-instance + header tĩnh/động + token provider,
+> chưa có request builder/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem
+> AI_AGENT_RULES điều 8).
 
 ---
 
@@ -59,7 +60,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC0 | Khung module rỗng — commonMain/androidMain/iosMain, publish mavenLocal | ✅ Xong — xanh cả Android host test lẫn iOS simulator test, publish mavenLocal xác nhận |
 | UC1 | `HttpClient` factory per-instance (baseUrl, timeout) | ✅ Xong — `NetworkKitHttpClient.create()`, xanh cả Android host test lẫn iOS simulator test (4 test, kể cả timeout live-fire qua `MockEngine`) |
 | UC2 | Header injection (tĩnh + động) | ✅ Xong — `NetworkClientConfig.headers`/`dynamicHeaders`, xanh cả hai nền tảng (7 test, kể cả "không ghi đè header caller tự đặt") |
-| UC3 | Token provider (auth) | 🔜 |
+| UC3 | Token provider (auth) | ✅ Xong — `TokenProvider` + Bearer, xanh cả hai nền tảng (11 test) |
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | 🔜 |
 | UC5 | Giải mã response generic bằng kotlinx.serialization | 🔜 |
 | UC6 | Sealed error cho lỗi transport | 🔜 |
@@ -81,11 +82,12 @@ networkKit/
 ├── build.gradle.kts
 └── src/
     ├── commonMain/kotlin/vn/viettelpay/networkkit/
-    │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders — toàn bộ input
+    │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders + tokenProvider
     │   ├── DynamicHeader.kt            # header tính lại giá trị mỗi request (vd X-Request-ID)
+    │   ├── TokenProvider.kt            # fun interface — provideToken(): String?
     │   └── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
     └── commonTest/kotlin/vn/viettelpay/networkkit/
-        └── NetworkKitHttpClientTest.kt # MockEngine: join URL, timeout, header tĩnh/động, không đè header caller
+        └── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -128,6 +130,22 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 - **Chưa có** validate trùng tên giữa `headers` và `dynamicHeaders`, hay giới hạn số lượng — chưa ai
   cần, thêm khi có nhu cầu thật.
 
+### UC3 — quyết định thiết kế
+
+- **`TokenProvider` là `fun interface` đồng bộ** (`provideToken(): String?`) — khớp đúng
+  `PromotionRequestContextProvider.getAccessToken()` hiện có của `:promotionLogic`, **không** kèm
+  refresh-token flow (host gọi lại khi 401 là chuyện `PromotionRequestContextProvider` đã có bằng
+  callback `onResult` riêng — đó là chính sách của consumer, không phải cơ chế chung; xem ranh giới
+  ở §2). Thêm biến thể `suspend` bây giờ là speculative — chưa consumer nào cần, để dành khi UC7
+  (status-code handler) thật sự đụng tới luồng refresh.
+- **Cùng `defaultRequest { }` với UC2**, cùng `appendIfNameAbsent` — token cũng là một header, không
+  cần cơ chế riêng. Token rỗng/toàn khoảng trắng bị `trim()`+`takeIf` lọc trước khi gắn, tránh gửi
+  `Authorization: Bearer ` (Bearer không kèm token).
+- **`toBearerToken()` so khớp không phân biệt hoa/thường** (`ignoreCase = true`) — token đã có sẵn
+  `Bearer `/`bearer ` thì giữ nguyên, không lặp tiền tố. Test
+  `tokenAlreadyPrefixedWithBearerIsNotDoubled` khoá đúng hành vi này, đúng bẫy `PromotionHttpClient`
+  đã gặp và ghi trong `NetworkingGuide.md`.
+
 ---
 
 ## 5. Toạ độ Gradle & phát hành
@@ -153,18 +171,19 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0 + UC1 + UC2), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0 + UC1 + UC2 + UC3), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 7 test (`NetworkKitHttpClientTest`), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 7 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 11 test (`NetworkKitHttpClientTest`), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 11 test, 0 lỗi (kể cả timeout live-fire).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm dependency Ktor và header injection.
+  vẫn xanh sau khi thêm token provider.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1 và UC2 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0, UC1, UC2 và UC3
+**đóng**.
 
 ---
 

@@ -120,11 +120,84 @@ class NetworkKitHttpClientTest {
         assertEquals("caller-value", capturedValue)
     }
 
+    @Test
+    fun tokenProviderAddsBearerAuthorizationHeader() = runTest {
+        var capturedValue: String? = null
+        val engine = MockEngine { request ->
+            capturedValue = request.headers["Authorization"]
+            respond(content = "", status = HttpStatusCode.OK)
+        }
+        val client = testClient(
+            baseUrl = "https://api.example.com",
+            engine = engine,
+            tokenProvider = TokenProvider { "abc123" },
+        )
+
+        client.get("ping")
+
+        assertEquals("Bearer abc123", capturedValue)
+    }
+
+    @Test
+    fun tokenAlreadyPrefixedWithBearerIsNotDoubled() = runTest {
+        var capturedValue: String? = null
+        val engine = MockEngine { request ->
+            capturedValue = request.headers["Authorization"]
+            respond(content = "", status = HttpStatusCode.OK)
+        }
+        val client = testClient(
+            baseUrl = "https://api.example.com",
+            engine = engine,
+            tokenProvider = TokenProvider { "bearer abc123" },
+        )
+
+        client.get("ping")
+
+        assertEquals("bearer abc123", capturedValue)
+    }
+
+    @Test
+    fun blankOrNullTokenAddsNoAuthorizationHeader() = runTest {
+        val capturedValues = mutableListOf<String?>()
+        val engine = MockEngine { request ->
+            capturedValues.add(request.headers["Authorization"])
+            respond(content = "", status = HttpStatusCode.OK)
+        }
+        val nullTokenClient = testClient(baseUrl = "https://api.example.com", engine = engine, tokenProvider = TokenProvider { null })
+        val blankTokenClient = testClient(baseUrl = "https://api.example.com", engine = engine, tokenProvider = TokenProvider { "   " })
+
+        nullTokenClient.get("ping")
+        blankTokenClient.get("ping")
+
+        assertEquals(listOf<String?>(null, null), capturedValues)
+    }
+
+    @Test
+    fun callerAuthorizationHeaderIsNotOverriddenByTokenProvider() = runTest {
+        var capturedValue: String? = null
+        val engine = MockEngine { request ->
+            capturedValue = request.headers["Authorization"]
+            respond(content = "", status = HttpStatusCode.OK)
+        }
+        val client = testClient(
+            baseUrl = "https://api.example.com",
+            engine = engine,
+            tokenProvider = TokenProvider { "config-token" },
+        )
+
+        client.get("ping") {
+            headers.append("Authorization", "Bearer caller-token")
+        }
+
+        assertEquals("Bearer caller-token", capturedValue)
+    }
+
     private fun testClient(
         baseUrl: String,
         timeoutMillis: Long = NetworkClientConfig.DEFAULT_TIMEOUT_MILLIS,
         headers: Map<String, String> = emptyMap(),
         dynamicHeaders: List<DynamicHeader> = emptyList(),
+        tokenProvider: TokenProvider? = null,
         engine: MockEngine,
     ): HttpClient {
         val config = NetworkClientConfig(
@@ -132,6 +205,7 @@ class NetworkKitHttpClientTest {
             timeoutMillis = timeoutMillis,
             headers = headers,
             dynamicHeaders = dynamicHeaders,
+            tokenProvider = tokenProvider,
         )
         return HttpClient(engine) {
             with(NetworkKitHttpClient) { configure(config) }

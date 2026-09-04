@@ -5,6 +5,7 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.url
+import io.ktor.http.HttpHeaders
 import io.ktor.util.appendIfNameAbsent
 
 /**
@@ -43,6 +44,11 @@ public object NetworkKitHttpClient {
             config.dynamicHeaders.forEach { dynamicHeader ->
                 headers.appendIfNameAbsent(dynamicHeader.name, dynamicHeader.currentValue())
             }
+
+            config.tokenProvider?.provideToken()
+                ?.trim()
+                ?.takeIf { it.isNotBlank() }
+                ?.let { headers.appendIfNameAbsent(HttpHeaders.Authorization, it.toBearerToken()) }
         }
     }
 
@@ -50,4 +56,9 @@ public object NetworkKitHttpClient {
     // của baseUrl bị THAY THẾ thay vì được nối tiếp (vd "https://a.com/base" + "sub" -> ".../sub",
     // mất "base"). Cùng bẫy `PromotionHttpClient` đã gặp.
     private fun String.ensureTrailingSlash(): String = if (endsWith("/")) this else "$this/"
+
+    private fun String.toBearerToken(): String =
+        if (startsWith(BEARER_PREFIX, ignoreCase = true)) this else "$BEARER_PREFIX$this"
+
+    private const val BEARER_PREFIX = "Bearer "
 }
