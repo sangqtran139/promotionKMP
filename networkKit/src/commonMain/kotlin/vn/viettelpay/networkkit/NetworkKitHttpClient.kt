@@ -29,6 +29,10 @@ public object NetworkKitHttpClient {
      * Tách khỏi [create] để test dựng được cùng cấu hình trên `MockEngine`.
      */
     internal fun HttpClientConfig<*>.configure(config: NetworkClientConfig) {
+        // Bắt buộc để 4xx/5xx ném ResponseException — networkCall {} (UC6) dựa vào đây để phân loại
+        // thành NetworkError.Http, thay vì consumer phải tự kiểm response.status thủ công.
+        expectSuccess = true
+
         install(HttpTimeout) {
             connectTimeoutMillis = config.timeoutMillis
             requestTimeoutMillis = config.timeoutMillis

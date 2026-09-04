@@ -1,8 +1,8 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC5 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
-> request builder an toàn + giải mã JSON generic. File này là tài liệu sống, cập nhật sau mỗi UC (xem
-> AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC6 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> request builder an toàn + giải mã JSON generic + `NetworkError` cho lỗi transport. File này là tài
+> liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -63,7 +63,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC3 | Token provider (auth) | ✅ Xong — `TokenProvider` + Bearer, xanh cả hai nền tảng (11 test) |
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | ✅ Xong — `getRequest`/`postRequest`, xanh cả hai nền tảng (3 test, round-trip path/query có ký tự đặc biệt) |
 | UC5 | Giải mã response generic bằng kotlinx.serialization | ✅ Xong — `getJson`/`postJson` + `ContentNegotiation`, xanh cả hai nền tảng (7 test: field bắt buộc thiếu → lỗi, field có default thiếu → dùng default, field có default nhưng server trả → dùng giá trị server, field nullable không default thiếu → null) |
-| UC6 | Sealed error cho lỗi transport | 🔜 |
+| UC6 | Sealed error cho lỗi transport | ✅ Xong — `NetworkError` + `networkCall {}`, xanh cả hai nền tảng (4 test: timeout, mất mạng, HTTP lỗi, JSON lệch) |
 | UC7 | Business status-code handler chain | 🔜 |
 | UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | 🔜 |
 | UC9 | Lắp ráp `NetworkClient` facade | 🔜 |
@@ -88,12 +88,15 @@ networkKit/
     │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis + headers + dynamicHeaders + tokenProvider
     │   ├── DynamicHeader.kt            # header tính lại giá trị mỗi request (vd X-Request-ID)
     │   ├── TokenProvider.kt            # fun interface — provideToken(): String?
-    │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance + ContentNegotiation
-    │   └── NetworkKitRequests.kt       # getRequest/postRequest/getJson/postJson
+    │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance + ContentNegotiation, expectSuccess=true
+    │   ├── NetworkKitRequests.kt       # getRequest/postRequest/getJson/postJson
+    │   ├── NetworkError.kt            # sealed class: Timeout/NoConnection/Http/Serialization/Unknown
+    │   └── NetworkKitErrors.kt         # networkCall {} — bọc & phân loại lỗi transport
     └── commonTest/kotlin/vn/viettelpay/networkkit/
         ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
         ├── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
-        └── NetworkKitJsonTest.kt       # MockEngine: giải mã JSON — unknown field, số↔string, thiếu field
+        ├── NetworkKitJsonTest.kt       # MockEngine: giải mã JSON — unknown field, số↔string, thiếu field
+        └── NetworkKitErrorTest.kt      # MockEngine: timeout/IOException/HTTP lỗi/JSON lệch → đúng nhánh NetworkError
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -196,6 +199,24 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
   String?` (nullable, không default — thiếu trong JSON thì nhờ `explicitNulls = false` mới không ném
   lỗi, coi như `null`).
 
+### UC6 — quyết định thiết kế
+
+- **`NetworkError` không mang error code/exception domain** — chỉ phân loại lỗi *transport*
+  (timeout/mất mạng/HTTP lỗi/JSON lệch/không rõ). Map sang exception nghiệp vụ cụ thể
+  (`PromotionException`/`ErrorCodes`…) là việc của consumer, đúng ranh giới ở §2 — `:networkKit`
+  không biết `ErrorCodes.TIMEOUT` là gì.
+- **`expectSuccess = true` bắt buộc phải bật** (thêm vào `NetworkKitHttpClient.configure()` ở UC6) để
+  4xx/5xx thực sự ném `ResponseException` — thiếu cờ này `networkCall {}` sẽ không bao giờ thấy nhánh
+  `Http`, response lỗi sẽ lặng lẽ trôi qua như thành công. Chạy lại toàn bộ 21 test của UC1–UC5 sau khi
+  bật cờ để xác nhận không có regression (không test nào dùng status ngoài 2xx mà không chủ đích).
+- **Thứ tự `catch` giữ nguyên như `apiCall {}`** của `PromotionRemoteDataSource`: ba loại timeout của
+  Ktor đều là con của `IOException` nên bắt trước; `CancellationException` luôn rethrow, không bọc
+  thành `NetworkError.Unknown` (CodingStandards §4) — nhánh này không có test tự động (ném
+  `CancellationException` trong `runTest` dễ bị hiểu nhầm thành huỷ chính coroutine của test, không an
+  toàn để assert), chỉ giữ đúng thứ tự code + comment giải thích.
+- **`Http.rawBody` đọc bằng `runCatching { … }.getOrNull()`**, không để việc đọc lại body (có thể đã
+  tiêu thụ hoặc lỗi encoding) làm hỏng luôn việc phân loại lỗi ban đầu.
+
 ### Giới hạn: DTO phải là Kotlin, không dùng được từ Java
 
 `getJson<T>`/`postJson<T>` là `inline fun <reified T>` — đây là cơ chế **chỉ Kotlin hiểu**, hai lớp
@@ -244,19 +265,19 @@ có consumer Java thật nào cần. Ghi lại ở đây để phase sau không 
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0–UC5), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0–UC6), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 21 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
-  `NetworkKitJsonTest` 7), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 21 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 25 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
+  `NetworkKitJsonTest` 7 + `NetworkKitErrorTest` 4), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 25 test, 0 lỗi (kể cả timeout live-fire).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm `ContentNegotiation` + kotlinx.serialization.
+  vẫn xanh sau khi thêm `expectSuccess = true` + `NetworkError`.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC5 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC6 **đóng**.
 
 ---
 
