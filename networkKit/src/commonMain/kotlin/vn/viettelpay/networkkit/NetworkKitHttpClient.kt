@@ -2,6 +2,8 @@ package vn.viettelpay.networkkit
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.plugins.HttpSend
+import io.ktor.client.plugins.plugin
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
@@ -21,8 +23,10 @@ import kotlinx.serialization.json.Json
  */
 public object NetworkKitHttpClient {
 
-    public fun create(config: NetworkClientConfig): HttpClient = HttpClient {
-        configure(config)
+    public fun create(config: NetworkClientConfig): HttpClient {
+        val client = HttpClient { configure(config) }
+        client.applyInterceptors(config)
+        return client
     }
 
     /**
@@ -60,6 +64,31 @@ public object NetworkKitHttpClient {
                 ?.trim()
                 ?.takeIf { it.isNotBlank() }
                 ?.let { headers.appendIfNameAbsent(HttpHeaders.Authorization, it.toBearerToken()) }
+        }
+    }
+
+    /**
+     * `HttpSend` là plugin lõi Ktor **luôn có sẵn** trên mọi `HttpClient` — không `install()` được
+     * interceptor qua `HttpClientConfig` (config block của nó chỉ có `maxSendCount`, không có
+     * `intercept()`); phải gọi `client.plugin(HttpSend).intercept { }` sau khi client đã dựng xong.
+     * Tách riêng khỏi [configure] (không gộp vào [create]) để test cũng gọi được trên client dựng
+     * bằng `MockEngine`. Danh sách rỗng (mặc định) thì không làm gì — không tốn gì thêm cho consumer
+     * không dùng tính năng này.
+     */
+    internal fun HttpClient.applyInterceptors(config: NetworkClientConfig) {
+        if (config.interceptors.isEmpty()) return
+        plugin(HttpSend).intercept { request ->
+            // Chụp lại Sender vào biến cục bộ: bên trong lambda `send` dưới đây có hai receiver ẩn
+            // cùng lồng nhau (Sender của intercept{} và HttpClient của applyInterceptors) — gọi tay
+            // qua `sender` để chắc chắn dùng Sender.execute (public), không lẫn HttpClient.execute
+            // (internal, chữ ký khác).
+            val sender = this
+            InterceptorChain(
+                request = request,
+                interceptors = config.interceptors,
+                index = 0,
+                send = { req -> sender.execute(req) },
+            ).proceed(request)
         }
     }
 

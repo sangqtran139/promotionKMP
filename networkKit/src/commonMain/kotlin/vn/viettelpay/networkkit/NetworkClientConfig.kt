@@ -12,6 +12,7 @@ public data class NetworkClientConfig(
     val headers: Map<String, String> = emptyMap(),
     val dynamicHeaders: List<DynamicHeader> = emptyList(),
     val tokenProvider: TokenProvider? = null,
+    val interceptors: List<NetworkInterceptor> = emptyList(),
 ) {
     public companion object {
         public const val DEFAULT_TIMEOUT_MILLIS: Long = 30_000L

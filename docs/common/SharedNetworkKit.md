@@ -1,8 +1,9 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC6 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
-> request builder an toàn + giải mã JSON generic + `NetworkError` cho lỗi transport. File này là tài
-> liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC7 xong** — `HttpClient` per-instance + header tĩnh/động + token provider +
+> request builder an toàn + giải mã JSON generic + `NetworkError` cho lỗi transport +
+> `StatusCodeHandlerChain` cho lỗi nghiệp vụ + `NetworkInterceptor` cho logic trong lúc request→response.
+> File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -35,6 +36,18 @@ Soi vào cách hai module đó dùng nó, thấy rõ ba vấn đề đáng sửa
 kotlinx.serialization), cấu hình **per-instance** (không singleton), và một chỗ duy nhất cho logic
 "business status code → lỗi" để các consumer không phải chép tay.
 
+**Thế hệ trước cả `network-kit-android`** — module `core/network` gốc của app Viettel Money
+(`viettelpay4-android-demo`) — cho thêm bằng chứng định hình UC7: `CoroutineCall`/`BaseCallAdapter`
+so khớp `body.status.code` thành **3 loại kết quả riêng ở cấp kiểu dữ liệu** (`Success`/
+`Unauthenticated`/`Error`, sealed class `NetworkResponse`), còn `RequestInterceptor` (OkHttp) chỉ làm
+đúng 3 việc ở tầng HTTP thô, **chưa bao giờ đọc JSON body**: gắn header, retry mù 3 lần trên bất kỳ
+status không thành công (anti-pattern, không copy), và log analytics. Không có refresh-rồi-tự-động-retry
+nào trong tầng network cả hai đời — `Unauthenticated` mặc định chỉ hiện dialog, việc refresh (nếu có)
+luôn nằm ở tầng cao hơn (ViewModel/Controller thời đó; `TokenRefreshGate` ở `:promotionLogic` hôm nay).
+Bằng chứng này xác nhận: xử lý business status (đọc body) và can thiệp transport (chưa đọc body) luôn
+là hai mối quan tâm tách biệt qua cả ba thế hệ code — UC7 giữ nguyên ranh giới đó bằng hai cơ chế riêng
+(`StatusCodeHandlerChain` và `NetworkInterceptor`), xem chi tiết ở §"UC7 — quyết định thiết kế".
+
 ---
 
 ## 2. Ranh giới: cơ chế, không phải chính sách
@@ -45,8 +58,9 @@ Module là tầng **common**, không phụ thuộc bất kỳ domain feature nà
 |---|---|
 | Cách dựng `HttpClient` theo baseUrl/timeout, per-instance | Base URL thật, giá trị header nghiệp vụ (Product, Channel…) |
 | Cách gắn header tĩnh/động, token provider | Envelope response cụ thể (`ApiResponseTemplate` của Promotion khác `VDOBaseResponse` của ekyc) |
-| Cách chạy chuỗi "business status code → lỗi" | Danh sách code nào là lỗi, message hiển thị gì |
+| Cách chạy chuỗi "business status code → lỗi" (sau khi decode) | Danh sách code nào là lỗi, message hiển thị gì, có refresh/retry hay không |
 | Cách phân loại lỗi transport (timeout/IO/HTTP/serialization) | Map lỗi transport → exception domain riêng (`PromotionException`…) |
+| Cơ chế chain-of-responsibility cho interceptor (trước khi đọc body) | Interceptor cụ thể làm gì (retry theo điều kiện, log, đo thời gian…) |
 
 `:networkKit` **không** import bất cứ thứ gì từ `:promotionLogic` hay ngược lại theo hướng phụ thuộc
 domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, không bao giờ đảo ngược.
@@ -64,7 +78,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | ✅ Xong — `getRequest`/`postRequest`, xanh cả hai nền tảng (3 test, round-trip path/query có ký tự đặc biệt) |
 | UC5 | Giải mã response generic bằng kotlinx.serialization | ✅ Xong — `getJson`/`postJson` + `ContentNegotiation`, xanh cả hai nền tảng (7 test: field bắt buộc thiếu → lỗi, field có default thiếu → dùng default, field có default nhưng server trả → dùng giá trị server, field nullable không default thiếu → null) |
 | UC6 | Sealed error cho lỗi transport | ✅ Xong — `NetworkError` + `networkCall {}`, xanh cả hai nền tảng (4 test: timeout, mất mạng, HTTP lỗi, JSON lệch) |
-| UC7 | Business status-code handler chain | 🔜 |
+| UC7 | Business status-code handler + Interceptor | ✅ Xong — `StatusCodeHandlerChain` (action-chain, sau khi decode) + `NetworkInterceptor` (trong lúc request→response, qua Ktor `HttpSend`), xanh cả hai nền tảng (12 test) |
 | UC8 | Debug logging tường minh (cờ, không khoá theo enum môi trường) | 🔜 |
 | UC9 | Lắp ráp `NetworkClient` facade | 🔜 |
 | UC10 | `:promotionLogic` tiêu thụ thử — thay `PromotionHttpClient.kt` | 🔜 |
@@ -91,12 +105,17 @@ networkKit/
     │   ├── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance + ContentNegotiation, expectSuccess=true
     │   ├── NetworkKitRequests.kt       # getRequest/postRequest/getJson/postJson
     │   ├── NetworkError.kt            # sealed class: Timeout/NoConnection/Http/Serialization/Unknown
-    │   └── NetworkKitErrors.kt         # networkCall {} — bọc & phân loại lỗi transport
+    │   ├── NetworkKitErrors.kt         # networkCall {} — bọc & phân loại lỗi transport
+    │   ├── BusinessStatus.kt           # interface BusinessStatus + BusinessError
+    │   ├── StatusCodeHandler.kt        # StatusCodeHandler (action-chain)/StatusCodeHandlerChain + checkBusinessStatus
+    │   └── NetworkInterceptor.kt       # NetworkInterceptor (fun interface) + InterceptorChain — model OkHttp Chain.proceed()
     └── commonTest/kotlin/vn/viettelpay/networkkit/
         ├── NetworkKitHttpClientTest.kt # MockEngine: URL, timeout, header, token — không đè giá trị caller
         ├── NetworkKitRequestsTest.kt   # MockEngine: path/query round-trip với ký tự đặc biệt
         ├── NetworkKitJsonTest.kt       # MockEngine: giải mã JSON — unknown field, số↔string, thiếu field
-        └── NetworkKitErrorTest.kt      # MockEngine: timeout/IOException/HTTP lỗi/JSON lệch → đúng nhánh NetworkError
+        ├── NetworkKitErrorTest.kt      # MockEngine: timeout/IOException/HTTP lỗi/JSON lệch → đúng nhánh NetworkError
+        ├── NetworkKitStatusCodeTest.kt # hai envelope khác hình dạng dùng chung handler, onMatch throw/return
+        └── NetworkKitInterceptorTest.kt # MockEngine: pass-through, retry theo tín hiệu riêng, đổi header lúc retry, thứ tự nhiều interceptor
 ```
 
 Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
@@ -217,6 +236,67 @@ Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`
 - **`Http.rawBody` đọc bằng `runCatching { … }.getOrNull()`**, không để việc đọc lại body (có thể đã
   tiêu thụ hoặc lỗi encoding) làm hỏng luôn việc phân loại lỗi ban đầu.
 
+### UC7 — quyết định thiết kế
+
+UC7 trải qua vài vòng thiết kế lại trước khi chốt — giữ lại lý do ở đây để không phải tranh luận lại
+từ đầu.
+
+**Vì sao tách 2 cơ chế thay vì 1**
+
+Bản đầu chỉ có `StatusCodeHandlerChain` với `onMatch: (BusinessStatus) -> Throwable` — tức thời
+consumer muốn "session hết hạn → refresh token → tự retry request" thì phải tự bắt lỗi ném ra rồi gọi
+lại thủ công ở nơi khác (phân mảnh logic ra ngoài). Đọc lại `core/network` gốc (§1) mới thấy: refresh
+là chuyện **trước khi có response quyết định cuối** (tầng transport), còn so khớp business code là
+chuyện **sau khi response đã decode** — hai thời điểm khác nhau, không thể gộp vào một cơ chế mà không
+làm yếu đi cả hai. Quyết định: giữ 2 cơ chế riêng, đúng ranh giới ba thế hệ code đã chứng minh.
+
+**1. `StatusCodeHandler`/`StatusCodeHandlerChain` — sau khi response đã decode**
+
+- `BusinessStatus` là interface cấu trúc tối thiểu (`code`/`message`), không phải DTO cụ thể — consumer
+  tự viết `fun MyEnvelope.toBusinessStatus(): BusinessStatus?`. Module không biết `ApiResponseTemplate<T>`
+  của Promotion hay `VDOBaseResponse`-style của SDK khác trông ra sao — đúng ranh giới ở §2, tránh lặp
+  lại lỗi `VDOBaseResponse` cũ ép mọi DTO kế thừa.
+- `StatusCodeHandler.of(vararg codes)` là phần dùng chung thật sự — đúng đoạn logic đang bị
+  `EkycStatusCodeHandler`/`ApiStatusHandler` chép tay gần giống nhau (lệch nhau ở `body = null` vs
+  `body = response as? T`, xem §1). Test `twoConsumersWithDifferentEnvelopesShareTheSameHandlerWithoutDrift`
+  dựng hai envelope khác hình dạng, xác nhận cả hai ném lỗi **giống hệt nhau** khi dùng chung một
+  handler — chứng minh trực tiếp bug lệch hành vi kiểu đó không thể xảy ra nữa.
+- **`onMatch` là `suspend (BusinessStatus) -> Unit`, không phải `-> Throwable`.** Đây là điểm chỉnh
+  quan trọng nhất sau khi review: bản `-> Throwable` ép handler chỉ được làm đúng một việc (tạo ra lỗi
+  để module ném hộ). Bản `Unit` để handler **tự quyết định và tự hành động** — ném lỗi domain riêng,
+  gọi refresh token (`suspend` cho phép await), log, hoặc return bình thường nếu không có gì để báo.
+  Test `onMatchCanReturnNormallyInsteadOfThrowing` khoá đúng khả năng "xử lý xong, không throw".
+- `checkBusinessStatus` là extension `suspend T.() -> T`, **không đăng ký lúc tạo client** — chain
+  dựng ở đâu, gọi khi nào có response cũng được (`response.checkBusinessStatus(chain) { adapter }`).
+  Cân nhắc bọc luôn vào `getJson`/`getRequest` lúc tạo `NetworkClientConfig`, nhưng vậy sẽ buộc mọi
+  request qua client đó đều phải khớp một envelope cố định — sai ranh giới "cơ chế, không chính sách".
+- `BusinessError` (ánh xạ mặc định của `.of(vararg codes)`) tách khỏi `NetworkError` (UC6) — khác loại
+  lỗi: `NetworkError` là request không đến được server đúng nghĩa hoặc HTTP lỗi; `BusinessError` là
+  response **thành công** (2xx) nhưng nội dung mang code lỗi nghiệp vụ.
+- Chain chạy tuần tự, dừng ở handler khớp đầu tiên (`onlyFirstMatchingHandlerInChainRuns`) — không có
+  state toàn cục nào để rò rỉ giữa các chain khác nhau (khác `VDOStatusCodeHandlerContainer` cũ dùng
+  `ArrayList` alias tham chiếu toàn cục, xem phát hiện #2 ở §1).
+
+**2. `NetworkInterceptor`/`InterceptorChain` — trong lúc request→response, trước khi đọc body**
+
+- Model chain-of-responsibility giống hệt OkHttp `Interceptor.Chain.proceed()` — quen thuộc với ai đã
+  quen `network-kit-android`/`core/network` cũ, và cho phép một interceptor gọi `proceed()` nhiều lần
+  để tự retry (điều `RequestInterceptor` cũ làm bằng vòng `while` mù, ở đây consumer viết điều kiện
+  riêng thay vì bị ép retry-3x-trên-mọi-lỗi).
+- Đăng ký qua `NetworkClientConfig.interceptors` **lúc tạo client**, khác `StatusCodeHandlerChain` —
+  vì interceptor cần được cài vào pipeline HTTP thật của Ktor (`HttpSend`), việc này chỉ làm được khi
+  client tồn tại, không phải thứ gọi tuỳ ý về sau.
+- **Không cài qua `install(HttpSend) { }`** — config block của `HttpSend` chỉ có `maxSendCount`,
+  không có `intercept()`. Phải gọi `client.plugin(HttpSend).intercept { }` sau khi `HttpClient` đã dựng
+  xong (`HttpSend` là plugin lõi Ktor, luôn có sẵn, không cần `install()` riêng) — tách thành hàm
+  `applyInterceptors()` riêng khỏi `configure()`, gọi từ cả `create()` lẫn test, giữ đúng lý do UC1 đã
+  tách `configure()`: test dựng được cùng cấu hình trên `MockEngine`.
+- Test `interceptorCanChangeHeaderOnRetry` là test quan trọng nhất — dựng lại chính xác kịch bản
+  "request đầu mang token cũ, phát hiện cần refresh, đổi `Authorization` trước khi gọi lại" — xác nhận
+  interceptor thật sự sửa được request và Ktor gửi lại đúng request đã sửa, không phải request cũ.
+- **`:networkKit` không tự làm refresh-token-rồi-retry mẫu nào** — đó là chính sách của consumer, viết
+  bằng chính `NetworkInterceptor` này. Module chỉ cho cơ chế `proceed()` nhiều lần.
+
 ### Giới hạn: DTO phải là Kotlin, không dùng được từ Java
 
 `getJson<T>`/`postJson<T>` là `inline fun <reified T>` — đây là cơ chế **chỉ Kotlin hiểu**, hai lớp
@@ -265,19 +345,21 @@ có consumer Java thật nào cần. Ghi lại ở đây để phase sau không 
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0–UC6), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0–UC7), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 25 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
-  `NetworkKitJsonTest` 7 + `NetworkKitErrorTest` 4), 0 lỗi.
-- `iosSimulatorArm64Test` — cùng 25 test, 0 lỗi (kể cả timeout live-fire).
+- `testAndroidHostTest` — 37 test (`NetworkKitHttpClientTest` 11 + `NetworkKitRequestsTest` 3 +
+  `NetworkKitJsonTest` 7 + `NetworkKitErrorTest` 4 + `NetworkKitStatusCodeTest` 7 +
+  `NetworkKitInterceptorTest` 5), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 37 test, 0 lỗi (kể cả timeout live-fire, kể cả interceptor tự retry
+  và đổi header giữa hai lần gửi thật).
 - `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
-  vẫn xanh sau khi thêm `expectSuccess = true` + `NetworkError`.
+  vẫn xanh sau khi thêm `NetworkInterceptor`.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC6 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 đến UC7 **đóng**.
 
 ---
 
