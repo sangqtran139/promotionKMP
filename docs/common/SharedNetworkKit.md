@@ -1,7 +1,7 @@
 # SharedNetworkKit — Module network KMP dùng chung (`:networkKit`)
 
-> Trạng thái: **Phase 1, UC0 xong** — khung module rỗng, chưa có logic networking. File này là tài
-> liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
+> Trạng thái: **Phase 1, UC1 xong** — dựng `HttpClient` per-instance (baseUrl + timeout), chưa có
+> header/token/parsing. File này là tài liệu sống, cập nhật sau mỗi UC (xem AI_AGENT_RULES điều 8).
 
 ---
 
@@ -57,7 +57,7 @@ domain — chiều phụ thuộc luôn là `:promotionLogic` → `:networkKit`, 
 | UC | Nội dung | Trạng thái |
 |----|----------|------------|
 | UC0 | Khung module rỗng — commonMain/androidMain/iosMain, publish mavenLocal | ✅ Xong — xanh cả Android host test lẫn iOS simulator test, publish mavenLocal xác nhận |
-| UC1 | `HttpClient` factory per-instance (baseUrl, timeout) | 🔜 |
+| UC1 | `HttpClient` factory per-instance (baseUrl, timeout) | ✅ Xong — `NetworkKitHttpClient.create()`, xanh cả Android host test lẫn iOS simulator test (4 test, kể cả timeout live-fire qua `MockEngine`) |
 | UC2 | Header injection (tĩnh + động) | 🔜 |
 | UC3 | Token provider (auth) | 🔜 |
 | UC4 | Request builder GET/POST an toàn (auto-encode query) | 🔜 |
@@ -74,23 +74,41 @@ này ngay.
 
 ---
 
-## 4. Cấu trúc module (UC0)
+## 4. Cấu trúc module
 
 ```
 networkKit/
 ├── build.gradle.kts
 └── src/
     ├── commonMain/kotlin/vn/viettelpay/networkkit/
-    │   └── NetworkKit.kt        # điểm neo tạm — chưa có logic, xem §3
+    │   ├── NetworkClientConfig.kt      # baseUrl + timeoutMillis — toàn bộ input của UC1, không state ẩn
+    │   └── NetworkKitHttpClient.kt     # create(config): HttpClient — factory per-instance
     └── commonTest/kotlin/vn/viettelpay/networkkit/
-        └── NetworkKitTest.kt    # xác nhận commonTest chạy được cả Android host lẫn iOS simulator
+        └── NetworkKitHttpClientTest.kt # MockEngine: join baseUrl+path, timeout live-fire, default value
 ```
 
-Chưa có `androidMain`/`iosMain`: giống `:promotionLogic`, engine Ktor sẽ tự chọn theo artifact có
-trên classpath (`ktor-client-okhttp` ở androidMain, `ktor-client-darwin` ở iosMain) khi UC1 thêm
-dependency — không cần `expect`/`actual` cho việc đó. Hai source set này chỉ xuất hiện nếu một UC sau
-thật sự cần API riêng nền tảng (xem [ProjectStructure.md](./ProjectStructure.md) — nguyên tắc "chỉ ba
-chỗ cần biết nền tảng" áp dụng tương tự ở đây).
+Vẫn chưa có `androidMain`/`iosMain` **file** nào — chỉ có khai báo dependency riêng từng nền tảng
+trong `build.gradle.kts` (`ktor-client-okhttp` cho androidMain, `ktor-client-darwin` cho iosMain).
+Ktor tự chọn engine theo artifact có trên classpath, không cần `expect`/`actual` (xem
+[ProjectStructure.md](./ProjectStructure.md) — nguyên tắc "chỉ ba chỗ cần biết nền tảng" của
+`:promotionLogic` áp dụng tương tự ở đây: engine không phải một trong ba chỗ đó).
+
+### UC1 — quyết định thiết kế
+
+- **`NetworkClientConfig` là toàn bộ input** — không có field nào đọc từ biến toàn cục. Hai
+  `NetworkClientConfig` khác nhau (hai host khác nhau) tạo ra hai `HttpClient` độc lập tuyệt đối,
+  khác hẳn `object VDONetworkSDK` của `network-kit-android` (xem phát hiện #2 ở §1).
+- **`configure()` tách khỏi `create()`** để test dựng cùng cấu hình trên `MockEngine` — đúng kỹ thuật
+  `PromotionHttpClient` của `:promotionLogic` đã dùng.
+- **`ensureTrailingSlash()`**: Ktor nối path tương đối vào URL nền theo luật URL chuẩn (RFC 3986) —
+  thiếu `/` cuối thì segment cuối của `baseUrl` bị **thay thế** thay vì được nối tiếp
+  (`"https://a.com/base"` + `"sub"` → `.../sub`, mất `base`). Test
+  `baseUrlWithoutTrailingSlashStillJoinsPathCorrectly` khoá đúng hành vi này.
+- **Timeout là một con số duy nhất** (`timeoutMillis`, áp cho cả connect/request/socket) thay vì ba
+  tham số riêng như `VDONetworkService.Builder.setTimeout(connect, read, write)` — chưa ai cần tách
+  riêng, tách sau nếu có nhu cầu thật (YAGNI). Test `requestTimesOutWhenServerIsSlowerThanConfiguredTimeout`
+  xác nhận `HttpTimeout` plugin thật sự bắn `HttpRequestTimeoutException`, không chỉ kiểm tra config
+  được set — dùng `MockEngine` trễ (`delay`) dài hơn timeout, chạy dưới `runTest` (thời gian ảo).
 
 ---
 
@@ -117,17 +135,18 @@ chỗ cần biết nền tảng" áp dụng tương tự ở đây).
 ./gradlew :networkKit:publishToMavenLocal       # publish thử vào ~/.m2
 ```
 
-**Đã xác nhận (UC0), cả hai nền tảng xanh:**
+**Đã xác nhận (UC0 + UC1), cả hai nền tảng xanh:**
 - `assemble` — AAR Android + 3 klib iOS.
-- `testAndroidHostTest` — 1 test (`versionPlaceholderIsSet`).
-- `iosSimulatorArm64Test` — cùng 1 test (`versionPlaceholderIsSet[iosSimulatorArm64]`).
-- `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`.
+- `testAndroidHostTest` — 4 test (`NetworkKitHttpClientTest`), 0 lỗi.
+- `iosSimulatorArm64Test` — cùng 4 test, 0 lỗi (kể cả timeout live-fire).
+- `publishToMavenLocal` — artifact ở `~/.m2/repository/vn/viettelpay/library/networkKit/0.1.0/`,
+  vẫn xanh sau khi thêm dependency Ktor.
 
 > Máy dev ban đầu bị chặn `iosSimulatorArm64Test` do `xcode-select` trỏ vào Command Line Tools thay vì
 > Xcode.app đầy đủ (`sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` đã sửa) — không
 > phải lỗi module, ghi lại đây phòng máy khác gặp lại.
 
-Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 **đóng**.
+Đạt chuẩn Pre-commit checklist của [AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — UC0 và UC1 **đóng**.
 
 ---
 
