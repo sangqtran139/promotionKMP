@@ -39,6 +39,26 @@ V="-PSDK_VERSION=1.0.1"
 Thiếu `-PuseMavenLocal=true` thì `~/.m2` **không** được đăng ký và app kéo bản trên Artifactory
 Viettelmoney — không lỗi, chỉ là không thấy thay đổi vừa sửa.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Trước đây: file AAR — và ba chỗ đau](#1-trước-đây-file-aar--và-ba-chỗ-đau)
+- [2. Maven sửa cái gì — bản chất](#2-maven-sửa-cái-gì--bản-chất)
+- [3. Làm như thế nào](#3-làm-như-thế-nào)
+  - [3.1. Toạ độ](#31-toạ-độ)
+  - [3.2. `:AndroidPromotionSDK` (thư viện Android thường)](#32-androidpromotionsdk-thư-viện-android-thường)
+  - [3.3. `:promotionLogic` (Kotlin Multiplatform)](#33-promotionlogic-kotlin-multiplatform)
+  - [3.4. Repo đích: `~/.m2` (dev) + JFrog Artifactory (phát hành)](#34-repo-đích-m2-dev--jfrog-artifactory-phát-hành)
+  - [3.5. Build đè lên version đã publish](#35-build-đè-lên-version-đã-publish)
+  - [3.6. `androidApp` sau khi đổi](#36-androidapp-sau-khi-đổi)
+- [4. Ràng buộc mất đi](#4-ràng-buộc-mất-đi)
+- [5. Ràng buộc vẫn còn (đừng kỳ vọng sai)](#5-ràng-buộc-vẫn-còn-đừng-kỳ-vọng-sai)
+  - [5.1. Host vẫn phải khai androidx — vì SDK phơi androidx ra public API](#51-host-vẫn-phải-khai-androidx--vì-sdk-phơi-androidx-ra-public-api)
+- [6. Liên quan](#6-liên-quan)
+<!-- /toc -->
+
+---
+
 ## 1. Trước đây: file AAR — và ba chỗ đau
 
 `androidApp/build.gradle.kts` từng tiêu thụ SDK bằng file, y như host thật:
@@ -309,7 +329,7 @@ bằng `artifactoryReleasesRepo` / `artifactorySnapshotsRepo`):
 | `libs-release-local` | `SDK_VERSION` **không** kết thúc bằng `-SNAPSHOT` | Bật **immutable/không cho ghi đè** — đẩy trùng version bị từ chối, đúng như mong muốn |
 | `libs-snapshot-local` | `SDK_VERSION` kết thúc bằng `-SNAPSHOT` | Cho ghi đè, dùng khi tích hợp thử với host |
 
-### Build đè lên version đã publish
+### 3.5. Build đè lên version đã publish
 
 `./scripts/build-android.sh publish --force` bỏ chốt cảnh báo khi version đã tồn tại. Repo release
 bật immutable thì **server vẫn từ chối** — cờ này chỉ bỏ chốt phía script, không phá được chốt phía
@@ -356,7 +376,7 @@ cho một bản snapshot.
   đó đã nằm trong `.gitignore` — nhưng đừng chép nguyên thư mục `.gradle` cho người khác, và trên
   CI thì dùng token có hạn/thu hồi được.
 
-### 3.5. `androidApp` sau khi đổi
+### 3.6. `androidApp` sau khi đổi
 
 ```kotlin
 // settings.gradle.kts — cả hai repo đều CHỈ mở cho group của SDK. Thả rông thì chúng tranh resolve

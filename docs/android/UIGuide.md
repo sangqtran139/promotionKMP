@@ -5,6 +5,23 @@ kiến trúc **MVI**. Không dùng Compose — xem [ComposeGuide.md](../common/C
 
 > Nguồn code: `AndroidPromotionSDK/` (kéo từ `ttcn-promotion-android-sdk`).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Cấu hình nền tảng](#1-cấu-hình-nền-tảng)
+- [2. Khởi tạo SDK](#2-khởi-tạo-sdk)
+- [3. Activity / Fragment](#3-activity--fragment)
+- [4. Bọc store — `PRMStoreViewModel<S, I>`](#4-bọc-store--prmstoreviewmodels-i)
+- [5. Resource & đặt tên](#5-resource--đặt-tên)
+- [6. View Binding](#6-view-binding)
+- [7. RecyclerView & Adapter](#7-recyclerview--adapter)
+- [8. Thư viện UI (tái sử dụng, không thêm mới)](#8-thư-viện-ui-tái-sử-dụng-không-thêm-mới)
+- [9. Custom View](#9-custom-view)
+- [10. Quy tắc riêng cho SDK](#10-quy-tắc-riêng-cho-sdk)
+- [11. Ảnh từ mạng & GIF](#11-ảnh-từ-mạng--gif)
+- [12. Shimmer (skeleton loading)](#12-shimmer-skeleton-loading)
+<!-- /toc -->
+
 ---
 
 ## 1. Cấu hình nền tảng
@@ -221,7 +238,7 @@ Các ô ảnh hiện có và tình trạng GIF:
 | `imgServiceIcon` (bottom sheet chọn dịch vụ) | `AppCompatImageView` | ✅ |
 
 Phần đối chiếu với iOS (kích thước, placeholder, hạn mức RAM khi decode ảnh động, quy ước ảnh rỗng 1×1
-của BFF) ở [ios/UIGuide.md §7.5](../ios/UIGuide.md).
+của BFF) ở [ios/UIGuide.md §8](../ios/UIGuide.md).
 
 ---
 

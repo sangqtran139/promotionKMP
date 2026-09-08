@@ -31,6 +31,20 @@
 > - **Order items dùng chung**: request `findEligible` lấy `items` từ
 >   `PromotionRequestContextProvider.getOrderItems()` (iOS: `PromotionMutableContext`).
 
+## Mục lục
+
+<!-- toc -->
+- [1. `PRMEndowView` — custom View](#1-prmendowview--custom-view)
+  - [1.1. Nền của widget — host quyết, SDK chỉ đỡ trường hợp trống](#11-nền-của-widget--host-quyết-sdk-chỉ-đỡ-trường-hợp-trống)
+  - [1.2. State — `EndowState` (dùng chung, ở `promotionLogic`)](#12-state--endowstate-dùng-chung-ở-promotionlogic)
+  - [1.3. Nguồn dữ liệu và feature flag](#13-nguồn-dữ-liệu-và-feature-flag)
+  - [1.4. Auto-apply hiện đang tắt](#14-auto-apply-hiện-đang-tắt)
+  - [1.5. `EndowWidgetState` (trạng thái hiển thị — dùng chung 2 nền tảng)](#15-endowwidgetstate-trạng-thái-hiển-thị--dùng-chung-2-nền-tảng)
+- [2. `confirmRedemption` — nút thanh toán của host](#2-confirmredemption--nút-thanh-toán-của-host)
+- [3. Luồng tích hợp end-to-end](#3-luồng-tích-hợp-end-to-end)
+- [4. Lưu ý khi sửa (quan trọng — đây là public-facing)](#4-lưu-ý-khi-sửa-quan-trọng--đây-là-public-facing)
+<!-- /toc -->
+
 ---
 
 ## 1. `PRMEndowView` — custom View
@@ -40,7 +54,7 @@
 - Dùng `ApplyPromotionAdapter` để hiển thị các voucher đã áp dụng.
 - Theme hoá qua `PromotionThemeRegistry` / `DiscountBadgeToken`.
 
-### Nền của widget — host quyết, SDK chỉ đỡ trường hợp trống
+### 1.1. Nền của widget — host quyết, SDK chỉ đỡ trường hợp trống
 
 `prm_view_endow.xml` không khai `android:background`, còn chữ bên trong thì cứng ở màu sáng
 (`prm_color_222_cep` = #222222). Trên host dùng theme **DayNight**, ở dark mode nền tối của host lộ
@@ -76,7 +90,7 @@ code sau khi view dựng xong thì lệnh của host chạy sau, cũng thắng.
 > chạy lại mỗi lần render — vô tác dụng vì không ai đặt nền cho `viewContainer`, nhưng là cái bẫy
 > nếu sau này nền mặc định chuyển sang `binding.root`.
 
-### State — `EndowState` (dùng chung, ở `promotionLogic`)
+### 1.2. State — `EndowState` (dùng chung, ở `promotionLogic`)
 
 Android **không còn state model riêng**. `EndowViewModel.uiState` chính là `EndowStore.state`, và
 `PRMEndowView.renderState(state: EndowState)` đọc thẳng — cùng một object với iOS.
@@ -94,21 +108,21 @@ Cùng lý do, `PRMEndowView.myVouchers` / `otherVouchers` cũng là `internal`; 
 | `hasLoadedInitial` | Đã nạp lần đầu |
 | `error` | Lỗi (nếu có) |
 
-### Nguồn dữ liệu và feature flag
+### 1.3. Nguồn dữ liệu và feature flag
 
 Widget gọi `FindEligibleCampaignsUseCase` (giống `PromotionSDKImpl` bên iOS), **không** phải
 `searchVouchers`. Nó tự ẩn (`isVisible = false`) nếu cờ `VOUCHER_SELECTION` tắt: áp cache hiện có
 ngay khi attach, rồi `PromotionFeatureGate.refresh()` và áp lại nếu giá trị đổi — đúng thứ tự của
 `applyFlag` bên iOS. Cờ tắt thì **không** gọi API.
 
-### Auto-apply hiện đang tắt
+### 1.4. Auto-apply hiện đang tắt
 
 `findEligible` chưa trả `isAutoApplied` (không có ở `EligibleOfferDto` lẫn các DTO lồng bên trong),
 nên voucher tự-áp-dụng **không chạy** ở luồng checkout — trên cả Android lẫn iOS.
 `validateAndAutoApply` vẫn nằm đó, chờ backend bổ sung field.
 Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 
-### `EndowWidgetState` (trạng thái hiển thị — dùng chung 2 nền tảng)
+### 1.5. `EndowWidgetState` (trạng thái hiển thị — dùng chung 2 nền tảng)
 - `EMPTY` — chưa có voucher.
 - `NOT_APPLIED` — có voucher nhưng chưa áp dụng.
 - `APPLIED` — đã áp dụng.

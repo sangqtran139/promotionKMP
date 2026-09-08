@@ -11,6 +11,34 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 >   **"Xem thêm/Thu gọn"** (`myExpanded` + state-machine `SeeMoreMy`, `mySeeMoreState()`/`visibleMyOffers()`)
 >   nằm trong store — dùng chung Android & iOS.
 
+## Mục lục
+
+<!-- toc -->
+  - [Quyết định hiển thị — native không tự suy](#quyết-định-hiển-thị--native-không-tự-suy)
+  - [Nút "Xem thêm/Thu gọn" — `mySeeMoreState()`](#nút-xem-thêmthu-gọn--myseemorestate)
+  - [Hai dòng chữ trên card](#hai-dòng-chữ-trên-card)
+  - [Shimmer](#shimmer)
+  - [Vạch ngăn hai nhóm](#vạch-ngăn-hai-nhóm)
+  - [Loading khi tải thêm trang](#loading-khi-tải-thêm-trang)
+  - [Tìm không ra kết quả](#tìm-không-ra-kết-quả)
+  - [Field của `findEligible` mà SDK chưa đọc](#field-của-findeligible-mà-sdk-chưa-đọc)
+  - [Cờ phân trang khi mở màn từ widget](#cờ-phân-trang-khi-mở-màn-từ-widget)
+- [1. Contract (MVI)](#1-contract-mvi)
+  - [1.1. State — `ChoosePromotionUiState`](#11-state--choosepromotionuistate)
+  - [1.2. Nguồn dữ liệu: `findEligible`](#12-nguồn-dữ-liệu-findeligible)
+  - [1.3. Action — `ChoosePromotionAction`](#13-action--choosepromotionaction)
+  - [1.4. Effect — `ChoosePromotionEffect`](#14-effect--choosepromotioneffect)
+- [2. Luồng apply (validate nằm ở `EndowStore`)](#2-luồng-apply-validate-nằm-ở-endowstore)
+  - [2.1. Chống spam nút "Áp dụng"](#21-chống-spam-nút-áp-dụng)
+- [3. Hiển thị 1 item (parity Android ↔ iOS)](#3-hiển-thị-1-item-parity-android--ios)
+  - [3.1. Dải "Chưa đủ điều kiện áp dụng" phải luồn xuống dưới card](#31-dải-chưa-đủ-điều-kiện-áp-dụng-phải-luồn-xuống-dưới-card)
+- [4. `serviceCode` đi vào request bằng đường nào](#4-servicecode-đi-vào-request-bằng-đường-nào)
+- [5. Tái sử dụng](#5-tái-sử-dụng)
+- [6. Lưu ý khi sửa](#6-lưu-ý-khi-sửa)
+<!-- /toc -->
+
+---
+
 ### Quyết định hiển thị — **native không tự suy**
 
 Mọi hàm dưới đây là extension của `ChoosePromotionState` trong `ChoosePromotionContract.kt`. Trước
@@ -168,24 +196,33 @@ chưa dùng** — đừng tưởng là sót:
 Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`, không mở đường gọi trang kế.
 > - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);
 >   validate & apply do **`EndowStore`** lo (xem [EndowView.md](./EndowView.md)).
-
----
-
 ## 1. Contract (MVI)
 
-### State — `ChoosePromotionUiState`
+### 1.1. State — `ChoosePromotionState`
+
+Ở lõi: `promotionLogic/…/presentation/choosepromotion/ChoosePromotionContract.kt`.
+
 | Nhóm | Field |
 |------|-------|
-| Trạng thái tải | `hasLoadedInitial`, `isLoading`, `isRefreshing`, `isLoadingMore`, `isLoadingMoreOther`, `isValidating`, `isEmpty` |
-| Tab & tìm kiếm | `tabs`, `selectedTabCode`, `keyword` |
-| Phân trang "my vouchers" | `page`, `size`, `isLastPage` |
-| Phân trang "other vouchers" | `otherPage`, `otherSize`, `isLastOtherPage` |
-| Dữ liệu | `vouchers`, `otherVouchers` (đều là `List<MyVoucherListItem>`) — bản **đã lọc theo từ khoá** |
+| Trạng thái tải | `hasLoadedInitial`, `isLoading`, `isRefreshing`, `isLoadingMore`, `isLoadingMoreOther`, `isEmpty` |
+| Tab & tìm kiếm | `tabs` (`MyPromotionTab`), `selectedTabCode`, `keyword` |
+| Phân trang "của tôi" | `myPage`, `mySize` (mặc định **20**), `myIsLastPage` |
+| Phân trang "ưu đãi khác" | `otherPage`, `otherSize` (**20**), `otherIsLastPage` |
+| Dữ liệu | `myOffers`, `otherOffers` — đều là `List<ChooseOffer>` |
+| Chọn ưu đãi | `isMultiSelection`, `selectedIds`, `myExpanded` — **selection do store quản**, dùng chung 2 nền tảng |
+| Lỗi | `errorCode` (một-lần) và `loadFailed` (**bền**) |
+| Khoá nút "Áp dụng" | `isApplying` |
+| Cảnh báo sắp hết hạn | `expireWarningDate` |
 
-Nguồn sự thật là hai field private `myLoaded` / `otherLoaded` kiểu `List<EligibleOffer>`; state chỉ
-giữ bản đã lọc và đã map sang model UI.
+Hai field lỗi **không** thay thế nhau: `errorCode` là một-lần (hiện xong `dispatch(ConsumeError)`),
+nên không dùng nó để quyết định "có hiện view rỗng không" — hiện được một nhịp rồi biến mất, màn
+trắng trơn. `loadFailed` mới là cờ bền cho việc đó.
 
-### Nguồn dữ liệu: `findEligible`
+`isApplying` **chỉ để khoá nút**, không phải cờ loading của màn: shimmer và pull-to-refresh không đọc
+nó. Việc validate chạy ở `EndowStore` của widget chứ không ở store này, nên native phải báo hai đầu
+bằng `ApplyStarted` / `ApplyFinished` — **quên một nhánh kết thúc là nút chết luôn**.
+
+### 1.2. Nguồn dữ liệu: `findEligible`
 
 Màn này gọi `FindEligibleCampaignsUseCase` (`POST .../redemptions/eligible`), **không** phải
 `searchVouchers`. Nhờ đó `otherOffers` (campaign công khai khách chưa nhận) mới có dữ liệu — trước
@@ -196,20 +233,28 @@ Tìm kiếm chạy **server-side** (parity Android ↔ iOS): `keyword` gửi kè
 kèm cả load-more. **Không** lọc client trong bộ nhớ — lọc client chỉ đúng trên trang đã tải và sẽ im
 lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc client qua `PRMOfferSearchFilter`, nay đã gỡ).
 
-### Action — `ChoosePromotionAction`
+### 1.3. Intent — `ChoosePromotionIntent`
 - `LoadInitial` — load lần đầu (cả hai nhóm, `section = null`).
-- `PreloadVouchers(myOffers, otherOffers)` — **nhận data đã load sẵn từ `PRMEndowView`** để tránh gọi API 2 lần; nếu cả hai rỗng thì ViewModel tự gọi API. Mang `List<EligibleOffer>` (model lõi) chứ không phải model UI để giữ nguồn sự thật ở domain, map sang UI khi publish. Cả contract này là `internal` — `EligibleOffer` thuộc lõi.
+- `Preload(myOffers, otherOffers, myIsLastPage, otherIsLastPage)` — **nhận data `PRMEndowView` đã tải** để khỏi gọi API lần hai. Mang `List<EligibleOffer>` (model lõi) chứ không phải model UI, giữ nguồn sự thật ở domain.
+- `SeedOnce(preSelectedIds, myOffers, otherOffers, …)` — seed pre-select **+** preload, chỉ chạy **một lần cho cả vòng đời store**. Không có nó thì view dựng lại sẽ ghi đè `selectedIds` về bộ ban đầu (tick mới của user biến mất) và rewind `otherOffers` về trang đầu.
+- `SetPreSelected(ids)` — seed riêng các voucher pre-select.
 - `Refresh` — làm mới.
-- `QueryChanged(keyword)` — gõ mỗi ký tự → debounce 400ms → `search()` → reload server-side kèm `keyword`.
+- `QueryChanged(keyword)` — gõ mỗi ký tự → debounce → reload server-side kèm `keyword`. Gõ trắng đã tự đi đúng đường `ClearKeyword`, native **không** cần rẽ nhánh `if keyword.isEmpty()`.
 - `Search` — bấm Enter: chạy ngay, bỏ debounce.
-- `ClearKeyword` — xoá trắng → reload danh sách đầy đủ (không gửi `keyword`).
+- `ClearKeyword` — nút "X" xoá tường minh → nạp lại danh sách đầy đủ.
 - `LoadMoreMyVouchers` / `LoadMoreOtherVouchers` — phân trang từng nhóm **độc lập** (`section = MY_OFFERS` / `OTHER_OFFERS`); response chỉ chứa nhóm được hỏi, nhóm kia là null.
-- `ValidateAndApply(selected)` — validate stackable discount cho các voucher đã chọn rồi áp dụng.
+- `ToggleSelection(id)` — chọn/bỏ chọn một ưu đãi.
+- `SeeMoreMy` — bấm "Xem thêm/Thu gọn" nhóm của tôi.
+- `ApplyStarted` / `ApplyFinished` — native báo hai đầu của lượt validate để khoá/mở khoá nút.
+- `ConsumeError` — xoá `errorCode` sau khi đã hiển thị.
 
-### Effect — `ChoosePromotionEffect`
-- `OpenVoucherDetail(voucherId)` — Fragment mở qua `openPromotionDetail()`, gác bởi cờ `VOUCHER_DETAIL`.
-- `ShowError(errorCode)`.
-- `ApplySelectedOffers(offers: List<EligibleOffer>)` — phát khi bấm "Áp dụng"; chỉ **trả offers đang chọn**, không validate.
+### 1.4. Lỗi và điều hướng — **không** có `Effect` riêng của màn
+
+`ChoosePromotionEffect` / `ChoosePromotionAction` / `ChoosePromotionUiState` **đã bị bỏ**:
+
+- **Lỗi** → `errorCode` trong state, rồi `PRMEffect.ShowError` dùng chung ở `PRMStore`.
+- **Mở chi tiết** → tầng UI tự gọi `openPromotionDetail()`, vẫn gác bởi cờ `VOUCHER_DETAIL`.
+- **Áp dụng** → validate chạy ở `EndowStore` của widget; màn này chỉ báo `ApplyStarted`/`ApplyFinished`.
 
 ---
 
@@ -229,7 +274,7 @@ Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
 > **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`
 > bên iOS (completion của `endowVM.validateAndApply`).
 
-### Chống spam nút "Áp dụng"
+### 2.1. Chống spam nút "Áp dụng"
 
 Lượt validate mất vài trăm ms tới vài giây; không khoá nút thì mỗi cú chạm là một lượt
 `validateStackableDiscounts` nữa cho **cùng một bộ voucher**, rồi n callback cùng chạy về — n popup
@@ -277,7 +322,7 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 | Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
 
-### Dải "Chưa đủ điều kiện áp dụng" phải **luồn xuống dưới card**
+### 3.1. Dải "Chưa đủ điều kiện áp dụng" phải **luồn xuống dưới card**
 
 > **Hết hạn KHÔNG hiện dải này.** Dải nói đúng một chuyện: *đơn hàng hiện tại* chưa thoả điều kiện
 > của ưu đãi (chưa đủ giá trị tối thiểu, sai sản phẩm…) — sửa đơn là dùng được. Ưu đãi **hết hạn**
@@ -320,7 +365,7 @@ không cần constraint riêng cho ca "đủ điều kiện" (và cho ca **hết
 Khuyết đáy vàng (`imgCircleNotEnoughApplyVoucher` bên Android) bật/tắt **cùng cờ với dải**: không có
 dải mà vẫn đổi khuyết sang vàng thì card hết hạn lòi một chấm vàng vô nghĩa ở cạnh dưới.
 
-## `serviceCode` đi vào request bằng đường nào
+## 4. `serviceCode` đi vào request bằng đường nào
 
 Spec `findEligible` (3.5.4 v19) **không có field `serviceCode`** ở bất kỳ cấp nào — body chỉ gồm
 `customerInfo`, `orderInfo`, `filterOptions`, `scenario`, `sectionCode`, `keyword`, `pagination`.
@@ -379,14 +424,14 @@ danh sách khác nhau, thiếu nó thì widget giữ nguyên kết quả của d
 - Bấm "Áp dụng" khi **không chọn gì** → không làm gì (không đóng màn, không gỡ ưu đãi đang áp).
   Muốn gỡ thì bấm vào widget `PRMEndowView` (`clearApplied`).
 
-## 4. Tái sử dụng
+## 5. Tái sử dụng
 
 - Dùng lại `MyVoucherListItem`, `TabItem` từ feature **My Promotion** (không định nghĩa lại model voucher).
 - `PreloadVouchers` là tối ưu quan trọng: dữ liệu được nạp ở `PRMEndowView` rồi truyền sang để **tránh double API call**.
 
 ---
 
-## 5. Lưu ý khi sửa
+## 6. Lưu ý khi sửa
 
 - Hai danh sách (mine/other) có phân trang độc lập — giữ tách biệt `page` và `otherPage`.
 - Mọi thay đổi cấu trúc request stackable discount → đồng bộ với `data/dto/stackablediscount/` và `NetworkingGuide.md`.

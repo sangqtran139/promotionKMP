@@ -1,15 +1,40 @@
 # iOS Integration Guide — Promotion SDK cho app host
 
 > Hướng dẫn **tích hợp** dành cho đội app host (bên tiêu thụ SDK). Không phải tài liệu phát triển nội
-> bộ SDK — cái đó xem [`IosUIGuide.md`](./IosUIGuide.md). Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./PublicApi.md).
-> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./InitParity.md) §6).
+> bộ SDK — cái đó xem [`ios/UIGuide.md`](./ios/UIGuide.md). Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./common/PublicApi.md).
+> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./common/InitParity.md) §6).
+
+## Mục lục
+
+<!-- toc -->
+- [0. TL;DR](#0-tldr)
+- [1. SDK đóng gói thế nào (vì sao host "sạch")](#1-sdk-đóng-gói-thế-nào-vì-sao-host-sạch)
+- [2. Yêu cầu & phân phối](#2-yêu-cầu--phân-phối)
+- [3. Thêm vào project](#3-thêm-vào-project)
+  - [3.1. Swift Package Manager — kênh chính](#31-swift-package-manager--kênh-chính)
+  - [3.2. Kéo tay (khi chưa được cấp tài khoản Artifactory)](#32-kéo-tay-khi-chưa-được-cấp-tài-khoản-artifactory)
+  - [3.3. Kiểm tra nhanh](#33-kiểm-tra-nhanh)
+- [4. Vòng đời SDK](#4-vòng-đời-sdk)
+  - [4.1. Nguồn token — `PromotionTokenSource`](#41-nguồn-token--promotiontokensource)
+  - [4.2. Khi SDK ăn 401 — `refreshToken(_:)`](#42-khi-sdk-ăn-401--refreshtoken_)
+  - [4.3. Object này sống lâu hơn màn hình](#43-object-này-sống-lâu-hơn-màn-hình)
+- [5. Bơm context đơn hàng](#5-bơm-context-đơn-hàng)
+- [6. Màn hình UI có sẵn](#6-màn-hình-ui-có-sẵn)
+- [7. Nhận sự kiện — `PromotionSDKCallback`](#7-nhận-sự-kiện--promotionsdkcallback)
+  - [7.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#71-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
+- [8. Headless API (tự dựng UI) — `PromotionSDK.api`](#8-headless-api-tự-dựng-ui--promotionsdkapi)
+- [9. Xử lý lỗi — `PromotionSDKError`](#9-xử-lý-lỗi--promotionsdkerror)
+- [10. Theming](#10-theming)
+- [11. Sai lầm thường gặp](#11-sai-lầm-thường-gặp)
+- [12. Vòng đời gợi ý (khớp host thật)](#12-vòng-đời-gợi-ý-khớp-host-thật)
+<!-- /toc -->
 
 ---
 
 ## 0. TL;DR
 
-- Kéo **một** file `Promotion.xcframework` vào project, đặt **Embed & Sign**. Xong. Không CocoaPods,
-  không SPM, không cài Kotlin/RxSwift.
+- Khai **một** `binaryTarget` Swift Package trỏ tới zip trên Artifactory nội bộ, đặt **Embed & Sign**.
+  Xong. Không CocoaPods, không cài Kotlin hay thư viện nào khác — SDK là **một** xcframework khép kín.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
 - `import PRM` là import **duy nhất** host cần.
 - Cấu hình một lần bằng `PromotionSDK.initialize(tokenSource:baseUrl:)`, bơm đơn hàng bằng `updateOrderInfo(...)`, nhận
@@ -20,15 +45,15 @@
 ## 1. SDK đóng gói thế nào (vì sao host "sạch")
 
 SDK ship dạng **một dynamic framework** đóng trong `Promotion.xcframework` (binary là Mach-O
-`DYLIB`). Kotlin (`PromotionLogic`), RxSwift, và các module UI nội bộ (`PRMPromotionUI`, `PRMDesignKit`,
+`DYLIB`). Kotlin (`PromotionLogic`) và các module UI nội bộ (`PRMPromotionUI`, `PRMDesignKit`,
 `PRMKotlinBridge`, `PRMFoundation`) đều được **link tĩnh vào bên trong** framework động này và **giấu** sau
 `@_implementationOnly`. Bằng chứng: file `.swiftinterface` công khai của framework **chỉ** import
-`Foundation / UIKit / SwiftUI / Swift` — không một dòng nào lộ Kotlin hay RxSwift.
+`Foundation / UIKit / SwiftUI / Swift` — không một dòng nào lộ Kotlin hay module nội bộ.
 
 Hệ quả cho host:
 
 - ✅ Host **không** cần thêm bất kỳ dependency nào ngoài xcframework này.
-- ✅ Host **không** thấy — và không build nhầm phải — type Kotlin/RxSwift.
+- ✅ Host **không** thấy — và không build nhầm phải — type Kotlin của lõi.
 - ✅ Public API chỉ dùng `String / Int / Bool / UIColor / UIView / UIViewController / Result` → không lo
   cross-module deserialization.
 
@@ -41,27 +66,81 @@ Hệ quả cho host:
 
 | Mục | Giá trị |
 |---|---|
-| Artifact | `Promotion.xcframework` (một file duy nhất) |
+| Artifact | `Promotion-<version>.xcframework.zip` — **một** xcframework khép kín |
+| Kênh phát hành | Artifactory nội bộ, repo generic **`vdo-ios-frameworks`**:<br>`https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/<version>/` |
+| Cách tiêu thụ | **SPM `binaryTarget`** (`url:` + `checksum:`) — xem §3.1. Kéo tay vẫn dùng được, xem §3.2 |
+| Xác thực | Basic auth qua `~/.netrc` — SwiftPM **không bao giờ hỏi mật khẩu** |
 | Module import | `import PRM` |
 | iOS tối thiểu | **iOS 13.0** |
 | Slice | `ios-arm64` (thiết bị) + `ios-arm64_x86_64-simulator` (simulator) |
 | UI | UIKit — API trả `UIViewController` / `UIView` |
-| Linking | **Dynamic framework** → bắt buộc **Embed & Sign** (dylib phải copy vào app bundle; deps Kotlin/RxSwift link tĩnh sẵn bên trong) |
+| Linking | **Dynamic framework** → bắt buộc **Embed & Sign** (dylib phải copy vào app bundle; lõi Kotlin và module nội bộ link tĩnh sẵn bên trong) |
 | Version | `SDK_VERSION` (mặc định `1.0.0`) → stamp vào `MARKETING_VERSION` = `CFBundleShortVersionString` trong Info.plist của framework |
 
-> **Gói phát hành & version.** `iosPromotionSDK/scripts/build-xcframework.sh` xuất ra thư mục `build/`:
-> `Promotion.xcframework` + `Promotion.xcframework.zip` (tên **cố định**, mang đi tích hợp luôn). Đánh version bằng
-> `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh` — version nằm trong Info.plist (host đọc lại lúc
-> runtime qua `Bundle`), không lộ ra tên file. Đối xứng property `SDK_VERSION` bên Android (ở đó version
-> nằm trong toạ độ Maven `vn.viettelpay.library:promotion:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
+> **Version nằm ở hai chỗ, đừng lẫn.** Bản dựng ra ở máy build mang tên **cố định**
+> `Promotion.xcframework.zip`; bản **đã phát hành** trên Artifactory mang tên **có version**
+> `Promotion-<version>.xcframework.zip`, mỗi version một thư mục riêng và **không cho ghi đè**. Ngoài
+> ra version còn nằm trong `Info.plist` (`CFBundleShortVersionString`) nên host đọc lại được lúc runtime
+> qua `Bundle`. Đối xứng `SDK_VERSION` bên Android (ở đó version nằm trong toạ độ Maven
+> `vn.viettelpay.library:promotion:<version>`). Chi tiết: [`Distribution.md`](./ios/Distribution.md).
+>
+> Cạnh mỗi zip có `metadata.json` chứa `download_url` + `sha256` — **lấy `checksum` từ đó**, không tự
+> tính lại.
 
 ---
 
 ## 3. Thêm vào project
 
-### 3.1. Kéo tay (Xcode)
+### 3.1. Swift Package Manager — kênh chính
 
-1. Kéo `Promotion.xcframework` vào project navigator.
+`binaryTarget` chỉ nhận `url:` khi nằm trong một Swift package, **không** khai thẳng vào
+`.xcodeproj` được. Nên tạo một package mỏng không chứa code, chỉ để trỏ tới zip:
+
+```swift
+// swift-tools-version: 5.10
+import PackageDescription
+
+let package = Package(
+    name: "PromotionRemote",
+    platforms: [.iOS(.v13)],
+    products: [
+        .library(name: "PromotionRemote", targets: ["Promotion"]),
+    ],
+    targets: [
+        // Tên target BẮT BUỘC trùng tên xcframework bên trong zip (`Promotion.xcframework`) —
+        // KHÔNG phải tên module host import (`PRM`).
+        .binaryTarget(
+            name: "Promotion",
+            url: "https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/1.0.0/Promotion-1.0.0.xcframework.zip",
+            checksum: "9da231216a057b570df3164e06ec51d5087a7fd64a74f2466f4a2da557caf065"
+        ),
+    ]
+)
+```
+
+Rồi thêm package đó vào project host và đặt sản phẩm của nó = **Embed & Sign**.
+
+**Xác thực — bước hay bị quên.** Repo Artifactory cần Basic auth, mà SwiftPM **không bao giờ hỏi mật
+khẩu**: nó đọc `~/.netrc`.
+
+```
+machine mobile-data.viettelmoney.vn login <user> password <identity token>
+```
+
+Thiếu dòng này thì Xcode chỉ báo *"failed downloading"* cụt lủn, **không** nói là 401. Máy dev mới và
+CI runner đều phải tự khai.
+
+**Nâng version** = sửa `url:` + `checksum:` (lấy từ `metadata.json` cạnh zip). Không có "resolve tự
+động lên bản mới" — `binaryTarget` ghim đúng một file.
+
+> ⚠️ **Bẫy cache.** SPM cache theo **URL**, không theo checksum, ở hai tầng: `<DerivedData>/SourcePackages/artifacts/`
+> và `~/Library/Caches/org.swift.swiftpm/artifacts/<url>` (tầng sau dùng chung mọi project trên máy).
+> Vì repo phát hành **không cho ghi đè version** nên bình thường không gặp; nếu gặp báo lỗi checksum
+> mà chắc chắn số đã đúng, xoá cả hai tầng rồi resolve lại.
+
+### 3.2. Kéo tay (khi chưa được cấp tài khoản Artifactory)
+
+1. Kéo `Promotion.xcframework` (giải nén từ zip) vào project navigator.
 2. Chọn target host → tab **General** → **Frameworks, Libraries, and Embedded Content**.
 3. Đặt `Promotion.xcframework` = **Embed & Sign**.
    > Bắt buộc "Embed" vì đây là **dynamic framework**: dylib phải được copy vào `.app/Frameworks` thì mới
@@ -69,7 +148,7 @@ Hệ quả cho host:
    > `PRMFoundation`) và các `.nib`. Để "Do Not Embed" → crash `dyld: Library not loaded` khi mở app.
 4. Build. Không cần cấu hình `OTHER_LDFLAGS` hay search path thủ công.
 
-### 3.2. Kiểm tra nhanh
+### 3.3. Kiểm tra nhanh
 
 ```swift
 import PRM
@@ -146,7 +225,7 @@ PromotionSDK.initialize(tokenSource: myTokenSource, baseUrl: baseUrl, availableS
 
 > `release()` khi chưa init là vô hại; không xoá theme đã lưu.
 
-### 4.1 Nguồn token — `PromotionTokenSource`
+### 4.1. Nguồn token — `PromotionTokenSource`
 
 Token vào SDK qua **một** đường duy nhất: `tokenSource`. Không có tham số `accessToken`, vì token là
 thứ đổi theo thời gian chứ không phải cấu hình chụp một lần.
@@ -181,7 +260,7 @@ func currentToken() -> String? { try? keychain.readToken() }  // ❌ chặn mỗ
 Trả `nil`/rỗng → SDK gửi request **không kèm** header `Authorization`. Không có fallback nào: lỗi
 hiện ra ngay thay vì gửi một token cũ trong im lặng.
 
-### Khi SDK ăn 401 — `refreshToken(_:)`
+### 4.2. Khi SDK ăn 401 — `refreshToken(_:)`
 
 Mặc định SDK **hỏng luôn**: bắn `PromotionSDKCallback.onExpireToken()`, host đưa user về màn đăng
 nhập. Đúng cho app không có cách lấy token mới theo yêu cầu.
@@ -215,7 +294,7 @@ Bạn ghi vào kho của mình rồi báo `true` — không có đường thứ 
 - SDK đã gộp mọi request 401 cùng lúc thành **một** lần gọi. Nhưng cơ chế của app vẫn nên
   single-flight: hai màn mở cách nhau vài giây vẫn có thể chạm vào hai lần.
 
-### Object này sống lâu hơn màn hình
+### 4.3. Object này sống lâu hơn màn hình
 
 `PromotionSDK` là **singleton**: nó giữ `tokenSource` từ lúc `initialize()` tới `release()`, **không**
 theo vòng đời màn hình nào. Gọi `initialize()` trong một view controller rồi push sang màn khác thì
@@ -368,7 +447,7 @@ final class MyPromotionCallback: PromotionSDKCallback {
 > Host không cần biết mấy thứ này — widget tự quản trạng thái của nó, việc bật/tắt theo cờ do SDK
 > tự xử lý.
 
-### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
+### 7.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
 
 Hai hàm mở màn nhận thêm tham số **tuỳ chọn**:
 

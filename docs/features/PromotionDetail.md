@@ -16,6 +16,22 @@ Có thêm tab nội dung qua `PrmContentDetailEndowFragment` + `PrmCustomFragmen
 > Trong lúc chờ: shimmer toàn màn (Android `showDetailLoading`, iOS `PromotionDetailShimmerView` +
 > `Display.empty`). Vì vậy `PromotionDetailStore` **không có** intent seed.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Contract](#1-contract)
+  - [1.1. State — `PromotionDetailState` (`promotionLogic`)](#11-state--promotiondetailstate-promotionlogic)
+  - [1.2. Intent — `PromotionDetailIntent` (`promotionLogic`)](#12-intent--promotiondetailintent-promotionlogic)
+  - [1.3. Phần thuần Android](#13-phần-thuần-android)
+- [2. Luồng dữ liệu](#2-luồng-dữ-liệu)
+- [3. Tab nội dung](#3-tab-nội-dung)
+- [4. API backend](#4-api-backend)
+  - [4.1. Nút hành động + điều hướng (TLNV MOB_002 control #5)](#41-nút-hành-động--điều-hướng-tlnv-mob_002-control-5)
+  - [4.2. Bottom sheet "Chọn dịch vụ" — bố cục & chiều cao](#42-bottom-sheet-chọn-dịch-vụ--bố-cục--chiều-cao)
+  - [4.3. Back khi host dùng Navigation Component (bug đã sửa 2026-08-07)](#43-back-khi-host-dùng-navigation-component-bug-đã-sửa-2026-08-07)
+- [5. Lưu ý khi sửa](#5-lưu-ý-khi-sửa)
+<!-- /toc -->
+
 ---
 
 ## 1. Contract
@@ -24,7 +40,7 @@ Màn này **không còn `UiState`/`Action`/`Effect` riêng** — nó đọc th�
 thẳng `PromotionDetailIntent` của `PromotionDetailStore` (dùng chung với iOS). Xem
 [android/UIGuide.md §4](../android/UIGuide.md).
 
-### State — `PromotionDetailState` (`promotionLogic`)
+### 1.1. State — `PromotionDetailState` (`promotionLogic`)
 | Field | Ý nghĩa |
 |-------|---------|
 | `isLoading` | Đang tải chi tiết |
@@ -34,11 +50,11 @@ thẳng `PromotionDetailIntent` của `PromotionDetailStore` (dùng chung với 
 | `actionEnabled` | Nút có cho bấm không |
 | `actionLabel` | Nhãn nút từ server (`VoucherDetail.displayStatusLabel`) — ⚠️ **native đang không đọc**, nút dùng chuỗi cứng "Sử dụng ngay" |
 
-### Intent — `PromotionDetailIntent` (`promotionLogic`)
+### 1.2. Intent — `PromotionDetailIntent` (`promotionLogic`)
 - `LoadDetail(voucherId)` — tải chi tiết voucher.
 - `ConsumeError` — xoá lỗi sau khi đã báo (Fragment không gọi tay: `viewModel.errors` tự lo).
 
-### Phần thuần Android
+### 1.3. Phần thuần Android
 - Lỗi: thu effect nhưng **không hiện gì** (`is PRMEffect.ShowError -> Unit`) — màn đã có shimmer/empty-view nói thay. SDK đã bỏ toast; cần báo thì dùng `showErrorDialog(...)`.
 - Bottom sheet "Chọn dịch vụ": `viewModel.serviceOptions()` trả thẳng list, Fragment tự mở sheet —
   không đi vòng qua effect.
@@ -121,7 +137,7 @@ nội dung y nguyên thì tab được dùng lại, không nạp lại WebView.
 > Mapper **giữ nguyên `type = EXCLUDED`** — `servicesForApplicableProducts` hiện chỉ so `productId`,
 > chưa đọc `type`, nên SKU bị loại trừ vẫn hiện như dịch vụ hợp lệ. Cần lọc thì sửa ở tầng lọc.
 
-### Nút hành động + điều hướng (TLNV MOB_002 control #5)
+### 4.1. Nút hành động + điều hướng (TLNV MOB_002 control #5)
 
 > **Lệch nhãn/hành vi (cố ý theo yêu cầu sau này):** cột "Nhãn nút" dưới đây đã bị **đảo ngược** so
 > với bản gốc TLNV MOB_002 control #5 — nhãn nay chỉ đổi theo `returnVoucherOnApply` (bật →
@@ -174,7 +190,7 @@ Khi bấm "Sử dụng ngay", số dịch vụ khả dụng quyết định hàn
 
 Nút bị **ẩn** khi voucher REDEEMED / EXPIRED / REVOKED / SUSPENDED (`actionVisible` từ store).
 
-### Bottom sheet "Chọn dịch vụ" — bố cục & chiều cao
+### 4.2. Bottom sheet "Chọn dịch vụ" — bố cục & chiều cao
 
 **Lưới 3 cột, cuộn dọc, sheet cao tối đa 60% màn hình.** Dịch vụ dư ra thì xuống hàng; vượt trần thì
 cuộn trong lưới.
@@ -196,7 +212,7 @@ cuộn trong lưới.
 > để xem thêm". Bản hiện tại đổi sang **lưới cuộn dọc** theo yêu cầu sản phẩm (2026-08-04): nhiều dịch
 > vụ thì vuốt ngang khó thấy hết. Cần chốt lại với BA nếu TLNV không được cập nhật theo.
 
-### Back khi host dùng Navigation Component (bug đã sửa 2026-08-07)
+### 4.3. Back khi host dùng Navigation Component (bug đã sửa 2026-08-07)
 
 **Triệu chứng:** host mở màn chi tiết bằng `PromotionSDK.openPromotionDetail(...)` từ một màn nằm
 trong `NavHostFragment`; bấm back thì **màn chi tiết ở lại**, còn màn host phía dưới lùi một nấc.

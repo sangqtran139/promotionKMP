@@ -15,6 +15,18 @@
 
 File này chỉ liệt kê **phần còn lệch**. Phần đã sửa xem CHANGELOG + doc tính năng tương ứng.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Lỗi nghiệp vụ: TLNV bắt Confirmation Dialog, app dùng toast — mà toast đang TẮT](#1-lỗi-nghiệp-vụ-tlnv-bắt-confirmation-dialog-app-dùng-toast--mà-toast-đang-tắt)
+- [2. Màn "Chọn ưu đãi": TLNV v39 bỏ auto-search, thêm nút "Kiểm tra"](#2-màn-chọn-ưu-đãi-tlnv-v39-bỏ-auto-search-thêm-nút-kiểm-tra)
+- [3. Chọn 1 ưu đãi phải disable các ưu đãi khác](#3-chọn-1-ưu-đãi-phải-disable-các-ưu-đãi-khác)
+- [4. Chuỗi "không tìm thấy" thiếu vế sau](#4-chuỗi-không-tìm-thấy-thiếu-vế-sau)
+- [5. "Không hết hạn": app thêm tiền tố "HSD:"](#5-không-hết-hạn-app-thêm-tiền-tố-hsd)
+- [6. Thiếu banner "Săn thêm ưu đãi"](#6-thiếu-banner-săn-thêm-ưu-đãi)
+- [7. Không tính lệch — phase sau, TLNV cũng chưa chốt](#7-không-tính-lệch--phase-sau-tlnv-cũng-chưa-chốt)
+<!-- /toc -->
+
 ---
 
 ## 1. Lỗi nghiệp vụ: TLNV bắt Confirmation Dialog, app dùng toast — mà toast đang TẮT
@@ -31,7 +43,7 @@ lỗi hiện **không hiển thị gì**. Ngoại lệ duy nhất đang hiện l
 
 ---
 
-## 5. Màn "Chọn ưu đãi": TLNV v39 bỏ auto-search, thêm nút "Kiểm tra"
+## 2. Màn "Chọn ưu đãi": TLNV v39 bỏ auto-search, thêm nút "Kiểm tra"
 
 **TLNV:** MOB_004 control 2.2 — nút "Kiểm tra" (Enable khi có từ khoá, Disable khi rỗng);
 *"Sau khi nhập từ khoá không autocomplete, chỉ search khi bấm Kiểm tra"*.
@@ -45,7 +57,7 @@ app đang đúng. Đừng sửa nhầm cả hai theo một kiểu.
 
 ---
 
-## 7. Chọn 1 ưu đãi phải disable các ưu đãi khác
+## 3. Chọn 1 ưu đãi phải disable các ưu đãi khác
 
 **TLNV:** MOB_004 control 2.4 (Phase 1) — "Cho phép chọn 1 ưu đãi trên màn hình. Khi checked 1 ưu
 đãi: **disable không cho phép chọn các ưu đãi khác**".
@@ -56,7 +68,7 @@ voucher khác thì **thay thế** lựa chọn thay vì bị chặn. Kết quả
 
 ---
 
-## 8. Chuỗi "không tìm thấy" thiếu vế sau
+## 4. Chuỗi "không tìm thấy" thiếu vế sau
 
 **TLNV:** MOB_001 bước 4-5(1) và MOB_002 bước 4(1) — *"Không tìm thấy kết quả phù hợp. **Khám phá
 thêm các đề xuất phù hợp với bạn nhé.**"*
@@ -68,7 +80,7 @@ Empty-view màn "Ưu đãi của tôi" đang dùng "Ngàn deal HOT chờ bạn" 
 
 ---
 
-## 10. "Không hết hạn": app thêm tiền tố "HSD:"
+## 5. "Không hết hạn": app thêm tiền tố "HSD:"
 
 **TLNV:** MOB_001 control 4.4 — "TH Ngày hết hạn được cấu hình 'Không hết hạn': hiển thị text
 **'Không hết hạn'**".
@@ -78,7 +90,7 @@ theo yêu cầu trực tiếp 2026-07-28. Giữ nguyên, ghi lại để không 
 
 ---
 
-## 11. Thiếu banner "Săn thêm ưu đãi"
+## 6. Thiếu banner "Săn thêm ưu đãi"
 
 **TLNV:** MOB_001 control 4.6 — banner (Image + Hyperlink) dưới danh sách, click → đi màn Ưu đãi.
 
@@ -86,7 +98,7 @@ theo yêu cầu trực tiếp 2026-07-28. Giữ nguyên, ghi lại để không 
 
 ---
 
-## Không tính lệch — phase sau, TLNV cũng chưa chốt
+## 7. Không tính lệch — phase sau, TLNV cũng chưa chốt
 
 - **MOB_003 "Đánh dấu đã sử dụng / tái sử dụng VTM"**: tài liệu **rỗng** (mọi mục còn placeholder,
   bảng luồng nghiệp vụ trống). App chưa có màn này là đúng.

@@ -4,11 +4,29 @@
 > Mọi thay đổi liên quan `PromotionSDK` / `PromotionSDKOptions` / `PromotionSessionConfig` /
 > `PromotionSDKCallback` **bắt buộc** cập nhật file này trước khi/đi kèm khi sửa code.
 
+## Mục lục
+
+<!-- toc -->
+- [0. Nguyên tắc](#0-nguyên-tắc)
+- [1. Entry `PromotionSDK` — bảng ánh xạ canonical](#1-entry-promotionsdk--bảng-ánh-xạ-canonical)
+- [2. Config types — bảng ánh xạ](#2-config-types--bảng-ánh-xạ)
+  - [2.1. Token — `PromotionTokenSource`, một khái niệm duy nhất](#21-token--promotiontokensource-một-khái-niệm-duy-nhất)
+- [3. `PromotionSDKCallback` — hợp nhất theo iOS (6 sự kiện), tên trùng cả 2 bên](#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên)
+  - [3.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#31-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
+- [4. Ngoại lệ N1 — buộc lệch (đã duyệt)](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)
+- [5. Bố cục file (target, đối xứng)](#5-bố-cục-file-target-đối-xứng)
+  - [5.1. Widget](#51-widget)
+- [6. Tích hợp trực tiếp — host không cần wrapper](#6-tích-hợp-trực-tiếp--host-không-cần-wrapper)
+- [7. Việc thực hiện — checklist theo thứ tự](#7-việc-thực-hiện--checklist-theo-thứ-tự)
+<!-- /toc -->
+
+---
+
 ## 0. Nguyên tắc
 
 1. **Ép trùng chữ tuyệt đối** tên hàm, tên tham số, thứ tự tham số, comment và vị trí file — *nơi ngôn
    ngữ cho phép*.
-2. Điểm **không thể** trùng do ràng buộc ngôn ngữ/nền tảng → liệt kê ở [§4 Ngoại lệ N1](#4-ngoại-lệ-n1--buộc-lệch)
+2. Điểm **không thể** trùng do ràng buộc ngôn ngữ/nền tảng → liệt kê ở [§4 Ngoại lệ N1](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)
    kèm lý do. Không được phát sinh ngoại lệ mới nếu không ghi vào đây.
 3. Host gọi **thẳng** `PromotionSDK` — không cần wrapper (đã bỏ khuyến nghị `PromotionServing`, xem [§6](#6-tích-hợp-trực-tiếp--host-không-cần-wrapper)).
 4. Ký hiệu: ✅ đã khớp · 🔧 phải nắn · ⚠️ cần bạn xác nhận · N1 ngoại lệ nền tảng.
@@ -39,7 +57,7 @@
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
 | *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ |
 | Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, hostHandlesDismiss = false, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:hostHandlesDismiss:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào**; cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public. `hostHandlesDismiss` = ai pop màn chi tiết sau khi "Áp dụng" (mặc định SDK tự pop) |
-| Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.3](#53-widget)) |
+| Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.1](#51-widget)) |
 
 **Callback identity:** bỏ tham số `sdk` ở **mọi** method callback trên cả 2 nền tảng (SDK là singleton →
 không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
@@ -52,13 +70,13 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 |---|---|---|---|---|
 | `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
 | `PromotionSessionConfig` | `tokenSource, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`**. Không còn `accessToken` |
-| `PromotionTokenSource` | `currentToken()`, `refreshToken(onResult)` | `interface`, `refreshToken` có default `= onResult(false)` | `protocol`, default ở `public extension` | ✅ **nguồn token duy nhất** — xem [§Token](#token--promotiontokensource-một-khái-niệm-duy-nhất) |
+| `PromotionTokenSource` | `currentToken()`, `refreshToken(onResult)` | `interface`, `refreshToken` có default `= onResult(false)` | `protocol`, default ở `public extension` | ✅ **nguồn token duy nhất** — xem [§Token](#21-token--promotiontokensource-một-khái-niệm-duy-nhất) |
 | `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
 | `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
 | `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter + `refreshAccessToken` | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng). **Không có field token nào** — chỉ chuyển tiếp sang `tokenSource` |
 | `PromotionOrderItem` | `skuSourceId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
-### Token — `PromotionTokenSource`, một khái niệm duy nhất
+### 2.1. Token — `PromotionTokenSource`, một khái niệm duy nhất
 
 Token vào SDK qua **một** đường: `PromotionSessionConfig.tokenSource`. Không có `accessToken`, không
 có `updateToken`, không có bản sao nào bên trong SDK. `PromotionMutableContext` chỉ **chuyển tiếp**:
@@ -121,7 +139,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 
 `PromotionSDKCallback` nay còn **ba** sự kiện: `onVoucherApplied`, `onServiceSelected`, `onExpireToken`.
 
-### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
+### 3.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
 
 Cả ba hàm mở màn nhận thêm tham số **tuỳ chọn**:
 
@@ -156,7 +174,7 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 | Kiểu host khi mở màn | `activity: FragmentActivity` | `from: UIViewController` | Kiểu nền tảng khác nhau. |
 | Tham số `containerViewId` | có | *(không)* | Chỉ Android có FragmentContainer. |
 | Facade/Impl | 1 `object` gộp | `PromotionSDK` + `PromotionSDKImpl` | iOS cần box giấu type để tránh cross-module deserialization (binary-interface trick). |
-| Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.3](#53-widget). |
+| Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.1](#51-widget). |
 | Enum case (nếu chọn giữ) | `PROD/STAGING` | `prod/staging` | Convention enum mỗi ngôn ngữ (đang chờ ⚠️ §2). |
 | Ràng buộc View↔ViewModel | `StateFlow` + `collectFlow` | closure `onState`/`onEffect` | Không có `Flow` trong Swift. Hình dạng đã **ép trùng**: cùng `handleAction`, cùng `UiState`/`Effect`, `onState` replay state hiện tại khi gán (mô phỏng `StateFlow`). Từ 2026-07-23 iOS **không** còn Combine. |
 | Cách hiện lỗi / thông báo | popup | popup | **Đã đồng nhất: toast bỏ hẳn ở cả 2 bên.** Cần báo user → `PRMBaseFragment.showErrorDialog` (Android, `PRMBaseConfirmDialog`) ↔ `PRMBaseViewController.showErrorDialog` (iOS, `PRMConfirmationDialog`). Màn đã có shimmer/empty-view nói thay thì **không hiện gì**. Chuỗi lỗi trùng nhau: `mapPromotionError` ↔ `PromotionUIStrings.errorMessage`. Xem [ErrorHandling.md](./ErrorHandling.md). |
@@ -187,7 +205,7 @@ qua **một** hàm dùng chung `configuredServicesFor(applicableProducts)` ở `
 > Lệch duy nhất là `isDebug` (N1: iOS không có `ApplicationInfo.FLAG_DEBUGGABLE` nên host/impl truyền vào).
 > `baseUrl` đi thẳng từ session ở **cả hai** bên — không bên nào có giá trị fallback.
 
-### 5.3 Widget
+### 5.1. Widget
 
 Giữ lệch có chủ đích: Android `PRMEndowView` (View đặt trong layout), iOS `createEndowView(from:)`.
 Wrapper phơi **một** API chung `makeCheckoutWidget(...)` để host không thấy khác biệt.
@@ -195,7 +213,7 @@ Wrapper phơi **một** API chung `makeCheckoutWidget(...)` để host không th
 **Chi tiết giảm giá (`AppliedDiscount`) — N1, đã duyệt:** chỉ **Android** phơi `AppliedDiscount` +
 `PRMEndowView.setDiscountDetails(...)` để host đọc breakdown giảm giá **trực tiếp** từ widget. **iOS
 cố tình KHÔNG phơi** type này: `createEndowView(from:)` trả `UIView` đục (che type nội bộ theo box
-binary-interface — [§4](#4-ngoại-lệ-n1--buộc-lệch)), nên host iOS chỉ nhận **id** voucher đã áp qua
+binary-interface — [§4](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)), nên host iOS chỉ nhận **id** voucher đã áp qua
 `onVoucherApplied(voucherId)`; muốn biết số tiền giảm thì gọi headless `PromotionSDK.api.validateDiscounts(...)`
 với `voucherId` đó (trả `PromotionValidationResult` — cùng dữ liệu, đi qua ranh giới DTO hợp lệ). Đây
 **không** phải thiếu sót cần "sửa": phơi `AppliedDiscount` bên iOS sẽ kéo type lõi vào `.swiftinterface`

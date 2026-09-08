@@ -12,6 +12,21 @@
 | 4 | Kiến trúc & class chủ chốt | 3 module, Clean Arch + store; luồng + đóng gói ở §4 |
 | 5 | Version | Nguồn tập trung `gradle.properties: SDK_VERSION=1.0.0`; Android 2 artifact Maven, iOS 1 xcframework |
 
+## Mục lục
+
+<!-- toc -->
+- [1. UI public trên iOS — foundation/kit có lộ ra host không?](#1-ui-public-trên-ios--foundationkit-có-lộ-ra-host-không)
+- [2. Use Case Wrapper → Tầng Store bọc UI-logic](#2-use-case-wrapper--tầng-store-bọc-ui-logic)
+- [3. Terminology (thống nhất)](#3-terminology-thống-nhất)
+- [4. Kiến trúc hiện tại & class chủ chốt](#4-kiến-trúc-hiện-tại--class-chủ-chốt)
+  - [4.1. Module & tầng](#41-module--tầng)
+  - [4.2. Class chủ chốt / dùng chung (bắt buộc nắm khi maintain)](#42-class-chủ-chốt--dùng-chung-bắt-buộc-nắm-khi-maintain)
+  - [4.3. Luồng hoạt động](#43-luồng-hoạt-động)
+  - [4.4. Đóng gói](#44-đóng-gói)
+- [5. Đánh version & Maven](#5-đánh-version--maven)
+- [6. Phụ lục — nơi kiểm chứng](#6-phụ-lục--nơi-kiểm-chứng)
+<!-- /toc -->
+
 ---
 
 ## 1. UI public trên iOS — foundation/kit có lộ ra host không?
@@ -64,7 +79,7 @@ quyết định widget-state) — **viết một lần, chạy cả Android & iO
 | `EndowStore` | Widget checkout | findEligible + **validate&apply** + widget-state |
 
 **Chuỗi bọc:** `View` → `ViewModel/Impl (mỏng)` → **`Store` (UI-logic)** → `UseCase` → `Repository` →
-`RemoteDataSource` → Ktor. Android `*ViewModel` (kế `PRMBaseViewModel`) và iOS `*ViewModel`/`PromotionSDKImpl`
+`RemoteDataSource` → Ktor. Android `*ViewModel` (kế `PRMStoreViewModel`) và iOS `*ViewModel`/`PromotionSDKImpl`
 + `EndowViewModel` chỉ **forward intent + map state → bề mặt view**.
 
 **Quan điểm "host dùng model của SDK UI, KHÔNG phải SDK Logic"** (đảm bảo host không chọc xuống tầng sâu) —
@@ -96,7 +111,7 @@ dẫn chứng bảo vệ:
 |---|---|---|
 | `PromotionSDK*` | **Bề mặt public** host gọi | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSDKConfig`, `PromotionSDKTheme` |
 | `Promotion*` (DTO) | **Model public UI** trả cho host | `PromotionVoucher`, `AppliedDiscount`, `PromotionEligibleOffer` |
-| `PRM*` | **Nội bộ** (view/base/package con) | `PRMEndowView`, `PRMBaseViewModel`, `PRMKotlinBridge` |
+| `PRM*` | **Nội bộ** (view/base/package con) | `PRMEndowView`, `PRMStoreViewModel`, `PRMKotlinBridge` |
 | `*Store` | **UI-logic dùng chung** ở `promotionLogic` | `EndowStore`, `MyPromotionStore` |
 | `*UseCase` / `*Repository` | domain / data (lõi) | `FindEligibleCampaignsUseCase` |
 
@@ -107,7 +122,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 
 ## 4. Kiến trúc hiện tại & class chủ chốt
 
-### 4.1 Module & tầng
+### 4.1. Module & tầng
 ```
 ┌───────────────────────── Host app (Android / iOS) ─────────────────────────┐
 │  chỉ chạm: PromotionSDK(.initialize/open*/makeEndowView/api) + DTO public   │
@@ -116,7 +131,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
    ▼                                                     ▼
 ┌──────────── AndroidPromotionSDK ───────────┐  ┌──────── iosPromotionSDK/PromotionSDKUI ────────┐
 │ entry PromotionSDK · Fragment/View         │  │ entry PromotionSDK · PromotionSDKImpl · VC     │
-│ · *ViewModel (kế PRMBaseViewModel) — MỎNG  │  │ · *ViewModel · EndowViewModel · PRMEndowView   │
+│ · *ViewModel (kế PRMStoreViewModel) — MỎNG │  │ · *ViewModel · EndowViewModel · PRMEndowView   │
 └───────────────────────┬─────────────────────┘  └───────────────────────┬────────────────────────┘
                         └──────────────┬─────────────────────────────────┘
                                        ▼   promotionLogic (KMP shared — Clean Arch + MVI-store)
@@ -127,7 +142,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
    data     : repository impl · RemoteDataSource · ApiService (Ktor) · dto + mapper
 ```
 
-### 4.2 Class chủ chốt / dùng chung (bắt buộc nắm khi maintain)
+### 4.2. Class chủ chốt / dùng chung (bắt buộc nắm khi maintain)
 | Class | Vai trò |
 |---|---|
 | `PromotionContainer` | DI tự viết; `initialize(config)`, `requireConfig()`, `requestContextProvider` — nguồn context duy nhất |
@@ -135,16 +150,16 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 | `*Store` (×5) | UI-logic dùng chung — `state`/`dispatch`/`watchState`/`currentState`/`clear` |
 | `PromotionRepository(Impl)` + `RemoteDataSource` + `PromotionApiService` | data layer; envelope `ApiResponseTemplate<T>` bóc qua `requireData()` |
 | `PromotionSDK` (Android/iOS) + `PromotionSDKImpl` (iOS) | facade public: init / open màn / `makeEndowView` / headless api |
-| `PRMBaseViewModel` (Android) · `EndowViewModel`/`PromotionSDKImpl` (iOS) | lớp bọc mỏng quanh store |
+| `PRMStoreViewModel` (Android) · `PRMStoreViewModel`/`PRMScreenViewModel`/`PromotionSDKImpl` (iOS) | lớp bọc mỏng quanh store |
 
-### 4.3 Luồng hoạt động
+### 4.3. Luồng hoạt động
 1. Host: `PromotionSDK.initialize(options)` → `PromotionContainer.initialize(config)` (base URL, provider…).
 2. Host mở màn: `openMyPromotion(...)` / `makeEndowView(...)` (hoặc headless `PromotionSDK.api`).
 3. `ViewModel/Impl` tạo `Store`, `dispatch(intent)`; `Store` gọi `UseCase` → `Repository` → Ktor.
 4. `Store.state` (StateFlow) phát ngược → VM map `state → bề mặt view` (Android `setState`/collect; iOS
    `watchState` → publisher). Lỗi: `state.errorCode` one-shot → VM phát effect → view map code → chuỗi.
 
-### 4.4 Đóng gói
+### 4.4. Đóng gói
 - **Android:** 2 artifact Maven — `vn.viettelpay.library:promotionLogic` (KMP AAR) + `vn.viettelpay.library:promotion`
   (UI). Host khai toạ độ `promotionSDK` (kéo theo `promotionLogic`).
 - **iOS:** 1 `Promotion.xcframework` (link tĩnh `PromotionLogic.xcframework` + 4 package `PRM*`). Build:
@@ -180,7 +195,7 @@ Host Android khai `implementation("vn.viettelpay.library:promotion:<SDK_VERSION>
 
 ---
 
-## Phụ lục — nơi kiểm chứng
+## 6. Phụ lục — nơi kiểm chứng
 | # | Nơi kiểm chứng |
 |---|---|
 | 1 | `@_implementationOnly import` trong `iosPromotionSDK/PromotionSDKUI/**`; `iosPromotionSDK/scripts/build-xcframework.sh:111`; `iosApp/iosApp/*.swift` |

@@ -6,6 +6,21 @@ viết hoặc sửa code.
 
 > ⚠️ **Trước khi bắt đầu bất kỳ task nào, hãy đọc [AI_AGENT_RULES.md](./AI_AGENT_RULES.md).**
 
+## Mục lục
+
+<!-- toc -->
+- [1. SDK này là gì](#1-sdk-này-là-gì)
+- [2. Trạng thái hiện tại](#2-trạng-thái-hiện-tại)
+- [3. Tổng quan kỹ thuật](#3-tổng-quan-kỹ-thuật)
+  - [3.1. Lõi dùng chung — `:promotionLogic`](#31-lõi-dùng-chung--promotionlogic)
+  - [3.2. UI Android (nguồn: `ttcn-promotion-android-sdk`)](#32-ui-android-nguồn-ttcn-promotion-android-sdk)
+  - [3.3. UI iOS (nguồn: `ttcn-promotion-ios-sdk`)](#33-ui-ios-nguồn-ttcn-promotion-ios-sdk)
+- [4. Danh mục tài liệu](#4-danh-mục-tài-liệu)
+- [5. Thứ tự đọc gợi ý](#5-thứ-tự-đọc-gợi-ý)
+- [6. Lệnh thường dùng](#6-lệnh-thường-dùng)
+- [7. Nguyên tắc cập nhật tài liệu](#7-nguyên-tắc-cập-nhật-tài-liệu)
+<!-- /toc -->
+
 ---
 
 ## 1. SDK này là gì
@@ -40,7 +55,7 @@ Hai chế độ dùng SDK:
 
 | Thành phần | Trạng thái |
 |---|---|
-| `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, 21 test xanh trên cả hai. |
+| `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, **43 file test / 383 case** `commonTest` chạy trên cả hai. |
 | `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
 | `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PRM.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
@@ -50,11 +65,11 @@ Hai chế độ dùng SDK:
 
 ## 3. Tổng quan kỹ thuật
 
-### Lõi dùng chung — `:promotionLogic`
+### 3.1. Lõi dùng chung — `:promotionLogic`
 
 | Hạng mục | Giá trị |
 |----------|---------|
-| Ngôn ngữ | Kotlin 2.4.0 |
+| Ngôn ngữ | Kotlin 2.2.0 |
 | Target | `android` (minSdk 24, compileSdk 36), `iosArm64`, `iosSimulatorArm64` |
 | Framework iOS | `PromotionLogic.framework` (static) |
 | Networking | **Ktor Client 3.3.0** (OkHttp engine trên Android, Darwin trên iOS) |
@@ -65,12 +80,13 @@ Hai chế độ dùng SDK:
 | Database | **Không có.** Không Room, không SQLDelight — xem [common/StorageGuide.md](./common/StorageGuide.md) |
 | Annotation processor | **Không có.** Không kapt, không KSP |
 
-### UI Android (nguồn: `ttcn-promotion-android-sdk`)
+### 3.2. UI Android (nguồn: `ttcn-promotion-android-sdk`)
 
-XML View + Data Binding + View Binding, kiến trúc **MVI** trên `PRMBaseViewModel<S, A, E>`.
+XML View + Data Binding + View Binding, kiến trúc **MVI** trên `PRMStoreViewModel<S, I>` — lớp mỏng bọc
+store dùng chung ở lõi; **không** còn `UiState`/`Action`/`Effect` riêng từng màn.
 Xem [android/UIGuide.md](./android/UIGuide.md).
 
-### UI iOS (nguồn: `ttcn-promotion-ios-sdk`)
+### 3.3. UI iOS (nguồn: `ttcn-promotion-ios-sdk`)
 
 UIKit (XIB), kiến trúc **MVVM + Builder + Router**, ràng buộc View↔VM bằng **callback thuần**, modular SPM.
 RxSwift đã được gỡ hoàn toàn (không dependency ngoài). Xem [ios/UIGuide.md](./ios/UIGuide.md).
@@ -104,6 +120,7 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 | [common/ErrorHandling.md](./common/ErrorHandling.md) | Exception, error code, `PromotionResult`, hiển thị lỗi. |
 | [common/TlnvGap.md](./common/TlnvGap.md) | **Chỗ app còn lệch tài liệu nghiệp vụ** (`docs/tlnv/`) — đọc trước khi kết luận "bug". |
 | [common/TestingGuide.md](./common/TestingGuide.md) | Test `commonTest` chạy trên cả hai nền tảng, `MockEngine`. |
+| [common/Security.md](./common/Security.md) | **Bảo mật & dữ liệu**: quyền, dữ liệu lưu, token, log, hàng rào bề mặt, danh mục kiểm cho bên an ninh. |
 | [common/CodingStandards.md](./common/CodingStandards.md) | Quy ước code Kotlin + Swift, prefix `PRM` / `VDS`. |
 | [common/Theming.md](./common/Theming.md) | Hệ thống theme/token, tùy biến brand cho host — cả hai nền tảng. |
 | [common/ComposeGuide.md](./common/ComposeGuide.md) | Trạng thái Compose Multiplatform và điều kiện áp dụng. |
@@ -128,7 +145,42 @@ Hai file gốc `AI_AGENT_RULES.md` và `README.md` đứng ngoài phân tầng (
 |------|----------|
 | [features/](./features/README.md) | Tài liệu theo tính năng, ánh xạ màn hình Android ↔ iOS ↔ use case. |
 
+**`api/`, `tlnv/` — tài liệu nguồn của đối tác (PDF, không sửa)**
+
+| Thư mục | Nội dung |
+|------|----------|
+| `api/` | Spec API backend (5 PDF: Find Eligible, Create Redemption, Validate Stackable Discounts, Search Customer Vouchers, Voucher Detail) — nguồn đối chiếu cho [common/NetworkingGuide.md](./common/NetworkingGuide.md). |
+| `tlnv/` | Tài liệu nghiệp vụ KBNV (5 PDF) — nguồn sự thật nghiệp vụ; chỗ app còn lệch ghi ở [common/TlnvGap.md](./common/TlnvGap.md). |
+
 ---
+
+**`design/` — thiết kế hợp nhất (nghiệm thu)**
+
+| File | Nội dung |
+|------|----------|
+| [design/SDD.md](./design/SDD.md) | **Tài liệu thiết kế chi tiết** — bản hợp nhất dùng để nghiệm thu: phạm vi, kiến trúc, dữ liệu, luồng nghiệp vụ, lỗi, bảo mật, ma trận truy vết yêu cầu. |
+
+**`release/` — đóng gói, phát hành & bàn giao**
+
+| File | Nội dung |
+|------|----------|
+| [release/PackagingGuide.md](./release/PackagingGuide.md) | Cách tạo gói bàn giao, nội dung gói, checksum, dSYM, sinh `.docx` + bản Confluence. |
+| [release/ReleaseChecklist.md](./release/ReleaseChecklist.md) | Danh mục kiểm bắt buộc trước khi phát hành. |
+| [release/ReleaseNotes.md](./release/ReleaseNotes.md) | Ghi chú phát hành **cho đội tích hợp phía host**. |
+| [release/CompatibilityMatrix.md](./release/CompatibilityMatrix.md) | Yêu cầu tối thiểu, công cụ build, phụ thuộc, ma trận SDK ↔ backend. |
+| [release/VersioningPolicy.md](./release/VersioningPolicy.md) | SemVer, vòng đời hỗ trợ, chính sách khai tử API. |
+| [release/MigrationGuide.md](./release/MigrationGuide.md) | Hướng dẫn nâng cấp giữa các phiên bản, từng bước. |
+| [release/TestReport.md](./release/TestReport.md) | Báo cáo kiểm thử: bộ test hiện có + biểu mẫu điền kết quả. |
+| [release/HandoverChecklist.md](./release/HandoverChecklist.md) | Danh mục bàn giao cho đối tác. |
+
+**Gốc — dành cho host**
+
+| File | Nội dung |
+|------|----------|
+| [QuickStart.md](./QuickStart.md) | Tích hợp trong 15 phút, hai nền tảng. |
+| [AndroidIntegrationGuide.md](./AndroidIntegrationGuide.md) | Hướng dẫn tích hợp đầy đủ cho app host Android. |
+| [IosIntegrationGuide.md](./IosIntegrationGuide.md) | Hướng dẫn tích hợp đầy đủ cho app host iOS. |
+| [Troubleshooting.md](./Troubleshooting.md) | Tra sự cố theo triệu chứng + FAQ. |
 
 ## 5. Thứ tự đọc gợi ý
 

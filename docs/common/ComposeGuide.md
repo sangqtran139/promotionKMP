@@ -1,6 +1,19 @@
 # ComposeGuide — Compose Multiplatform
 
-## Trạng thái hiện tại: chưa dùng, nhưng đã sẵn sàng
+## Mục lục
+
+<!-- toc -->
+- [1. Trạng thái hiện tại: chưa dùng, nhưng đã sẵn sàng](#1-trạng-thái-hiện-tại-chưa-dùng-nhưng-đã-sẵn-sàng)
+- [2. Vì sao nền tảng đã sẵn sàng](#2-vì-sao-nền-tảng-đã-sẵn-sàng)
+- [3. Điều kiện áp dụng](#3-điều-kiện-áp-dụng)
+- [4. Khung quy tắc dự kiến](#4-khung-quy-tắc-dự-kiến)
+- [5. Cái gì sẽ biến mất](#5-cái-gì-sẽ-biến-mất)
+- [6. Tóm tắt](#6-tóm-tắt)
+<!-- /toc -->
+
+---
+
+## 1. Trạng thái hiện tại: chưa dùng, nhưng đã sẵn sàng
 
 UI của Promotion SDK hiện là **native mỗi nền tảng**: XML View trên Android
 ([AndroidUIGuide.md](../android/UIGuide.md)), UIKit trên iOS ([IosUIGuide.md](../ios/UIGuide.md)).
@@ -13,7 +26,7 @@ không phải điều cấm.
 
 ---
 
-## Vì sao nền tảng đã sẵn sàng
+## 2. Vì sao nền tảng đã sẵn sàng
 
 Việc tách `:promotionLogic` thành lõi headless chính là điều kiện cần cho Compose Multiplatform:
 
@@ -33,7 +46,7 @@ Một màn hình Compose Multiplatform chỉ cần `implementation(projects.prom
 
 ---
 
-## Điều kiện áp dụng
+## 3. Điều kiện áp dụng
 
 Trước khi viết màn hình Compose Multiplatform đầu tiên:
 
@@ -46,7 +59,7 @@ Trước khi viết màn hình Compose Multiplatform đầu tiên:
 
 ---
 
-## Khung quy tắc dự kiến
+## 4. Khung quy tắc dự kiến
 
 > Phần dưới là **định hướng**, chưa áp dụng.
 
@@ -62,7 +75,7 @@ Trước khi viết màn hình Compose Multiplatform đầu tiên:
 
 ---
 
-## Cái gì sẽ biến mất
+## 5. Cái gì sẽ biến mất
 
 Khi một màn hình chuyển sang Compose Multiplatform, các thư viện Android-only sau không còn dùng cho
 màn đó: `sdp-android`, `shimmer` (Facebook), `material`, `recyclerview`,
@@ -70,7 +83,7 @@ màn đó: `sdp-android`, `shimmer` (Facebook), `material`, `recyclerview`,
 
 ---
 
-## Tóm tắt
+## 6. Tóm tắt
 
 | Câu hỏi | Trả lời |
 |---------|---------|

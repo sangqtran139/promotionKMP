@@ -44,6 +44,26 @@ lẫn phần SDK tự dùng đều ở `ui/theme/` (Android) / `PromotionSDKUI/T
 > qua `PromotionThemeDisplay.load(...)`, thứ đã ở trong `entry`. Host cần chuyển màu ↔ hex thì tự
 > viết — `ThemeHex` là nội bộ (app demo có bản riêng `DemoHex`).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Kiến trúc tổng quan](#1-kiến-trúc-tổng-quan)
+- [2. Token — đơn vị tùy biến](#2-token--đơn-vị-tùy-biến)
+- [3. JSON — một định dạng, dùng chung hai nền tảng](#3-json--một-định-dạng-dùng-chung-hai-nền-tảng)
+  - [3.1. Dùng một file JSON cho cả hai nền tảng — được](#31-dùng-một-file-json-cho-cả-hai-nền-tảng--được)
+  - [3.2. Persistence — SDK tự lưu, tự khôi phục](#32-persistence--sdk-tự-lưu-tự-khôi-phục)
+- [4. Registry & Applier](#4-registry--applier)
+  - [4.1. `PromotionThemeRegistry` (internal)](#41-promotionthemeregistry-internal)
+  - [4.2. Applier](#42-applier)
+- [5. Public API cho host](#5-public-api-cho-host)
+  - [5.1. Hai cách cấu hình theme](#51-hai-cách-cấu-hình-theme)
+- [6. Giá trị mặc định — đồng nhất hai nền tảng](#6-giá-trị-mặc-định--đồng-nhất-hai-nền-tảng)
+- [7. ⚠️ Quy tắc thứ tự bắt buộc (foot-gun)](#7--quy-tắc-thứ-tự-bắt-buộc-foot-gun)
+- [8. Giới hạn đã biết](#8-giới-hạn-đã-biết)
+- [9. Quy tắc cho lập trình viên SDK](#9-quy-tắc-cho-lập-trình-viên-sdk)
+- [10. Liên quan](#10-liên-quan)
+<!-- /toc -->
+
 ---
 
 ## 1. Kiến trúc tổng quan
@@ -124,7 +144,7 @@ PromotionThemeJson.toJson(theme)  // iOS — cùng tên type, cùng hàm
 PromotionThemeJson.fromJson(json)
 ```
 
-### 3.0. Dùng một file JSON cho cả hai nền tảng — **được**
+### 3.1. Dùng một file JSON cho cả hai nền tảng — **được**
 
 Đối tác ship **một** file `promotion_theme.json`, hai nền tảng đọc chung. Host chỉ cần đọc file
 thành chuỗi rồi `fromJson` — SDK không đọc file hộ, và **không** có API nhận đường dẫn file:
@@ -163,7 +183,7 @@ object*. Cùng cho ra bộ teal `#2CA196` để thấy hai đường đi ra mộ
 | Hai nguồn theme | `DemoThemeSource.kt` | `DemoThemeSource.swift` |
 | Nút + xử lý | `ThemePreviewFragment` | `ThemePreviewViewController` |
 
-### 3.1. Persistence — SDK tự lưu, tự khôi phục
+### 3.2. Persistence — SDK tự lưu, tự khôi phục
 
 Serialize (trên) + lưu qua `PromotionThemeStore` (giữ key `promotion_theme_config_v1`) → xuống lõi
 `PromotionContainer.preferences` (`PromotionPreferences`, `expect/actual`: SharedPreferences / UserDefaults).
@@ -181,12 +201,12 @@ key và một cơ chế cho cả hai nền tảng — đã kiểm chứng round-
 
 ## 4. Registry & Applier
 
-### `PromotionThemeRegistry` (internal)
+### 4.1. `PromotionThemeRegistry` (internal)
 - Singleton `@Volatile` giữ `PromotionSDKTheme?`.
 - `configure(theme)` ghi đè; getter trả từng token (`buttonToken()`, `discountBadgeToken()`…).
 - Token chưa cấu hình → trả `null`.
 
-### Applier
+### 4.2. Applier
 Mỗi loại view có một applier **idempotent, null-safe** (`if (token == null) return`):
 
 | Applier | Nhiệm vụ |
@@ -232,7 +252,7 @@ không cần. Tên type/hàm còn lại khớp nhau.
 > tách theme config ra khỏi `PromotionSDK` trong khi iOS đặt trên `sdk`, và có 5 hàm chết. Lifecycle
 > gộp vào `PromotionSDK` cho khớp iOS.
 
-### Hai cách cấu hình theme
+### 5.1. Hai cách cấu hình theme
 
 **Cách 1 — qua `PromotionSDKOptions.theme` khi init (khuyến nghị):**
 ```kotlin

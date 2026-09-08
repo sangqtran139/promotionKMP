@@ -23,6 +23,16 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 > chặn — kill-switch không phụ thuộc vào việc host có kiểm tra hay không. Ngoài ra host **hỏi trước
 > được** qua bốn hàm ở §3 để ẩn entry point của mình thay vì để user bấm rồi ăn toast.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Các cờ](#1-các-cờ)
+- [2. Gác ở hai tầng, một nguồn sự thật](#2-gác-ở-hai-tầng-một-nguồn-sự-thật)
+- [3. API cho host](#3-api-cho-host)
+- [4. Nguyên tắc dùng feature flag](#4-nguyên-tắc-dùng-feature-flag)
+- [5. Việc còn treo](#5-việc-còn-treo)
+<!-- /toc -->
+
 ---
 
 ## 1. Các cờ
@@ -189,9 +199,10 @@ số lõi, và khẳng định công tắc tổng tắt thì snapshot tắt hế
 
 ## 5. Việc còn treo
 
-**`ui/feature/featureflag/` (Android) là code chết** — `FeatureFlagViewModel`, `FeatureFlagUIState`,
-`FeatureFlagUIAction` không có nơi nào dùng (0 tham chiếu). Chúng là khung sót lại từ bản gốc.
-Xoá được, chờ xác nhận.
+**~~`ui/feature/featureflag/` (Android) là code chết~~ — đã xoá.** `FeatureFlagViewModel`,
+`FeatureFlagUIState`, `FeatureFlagUIAction` không còn trong source; `ui/feature/` nay chỉ còn
+`choosepromotion`, `endowview`, `ext`, `mypromotion`, `promotiondetail`, `searchmypromotion`.
+Việc gác cờ do `PromotionFeatureGate` (lõi) lo, host hỏi thêm qua `PromotionSDK.featureFlags()`.
 
 **TODO(feature-flag): schema chưa chốt.** Lõi Kotlin và bản iOS cũ parse **hai schema khác nhau**
 cho cùng endpoint `POST api/v1/vtm/feature-flag/list`:

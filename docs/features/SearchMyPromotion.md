@@ -5,6 +5,22 @@ Màn hình **tìm kiếm voucher của khách hàng** theo từ khoá, có phân
 - **Package:** `ui/feature/promotion/searchmypromotion`
 - **Thành phần:** `SearchMyPromotionFragment`, `SearchMyPromotionViewModel`, `SearchMyPromotionContract`
 
+## Mục lục
+
+<!-- toc -->
+  - [Quyết định hiển thị — native không tự suy](#quyết-định-hiển-thị--native-không-tự-suy)
+- [1. Contract (MVI)](#1-contract-mvi)
+  - [1.1. State — `SearchMyPromotionUiState`](#11-state--searchmypromotionuistate)
+  - [1.2. Action — `SearchMyPromotionAction`](#12-action--searchmypromotionaction)
+  - [1.3. Effect — `SearchMyPromotionEffect`](#13-effect--searchmypromotioneffect)
+- [2. Luồng dữ liệu](#2-luồng-dữ-liệu)
+- [3. API backend](#3-api-backend)
+- [4. Chọn dịch vụ ("Sử dụng")](#4-chọn-dịch-vụ-sử-dụng)
+- [5. Lưu ý khi sửa](#5-lưu-ý-khi-sửa)
+<!-- /toc -->
+
+---
+
 ### Quyết định hiển thị — **native không tự suy**
 
 Extension của `SearchMyPromotionState` trong `SearchMyPromotionContract.kt`:
@@ -21,51 +37,54 @@ Extension của `SearchMyPromotionState` trong `SearchMyPromotionContract.kt`:
 > chỉ vì `SearchMyPromotionStore.resetSearchResults()` set `isEmpty = false` khi xoá từ khoá — sửa
 > chỗ đó là hai bên lệch âm thầm. Hằng `MIN_KEYWORD_LENGTH = 1` đã bỏ: nó chỉ là cách viết khác của
 > "từ khoá không rỗng". Test khoá luật: `SearchMyPromotionStoreTest.showsNoResult_*`.
+## 1. Contract (dùng chung 2 nền tảng)
 
----
+Contract ở lõi: `promotionLogic/…/presentation/searchmypromotion/SearchMyPromotionContract.kt`.
 
-## 1. Contract (MVI)
-
-### State — `SearchMyPromotionUiState`
+### 1.1. State — `SearchMyPromotionState`
 | Field | Ý nghĩa |
 |-------|---------|
 | `keyword` | Từ khoá hiện tại |
-| `vouchers` | `List<MyVoucherListItem>` kết quả |
+| `vouchers` | `List<MyPromotionVoucher>` kết quả (dùng lại model của màn "Ưu đãi của tôi") |
 | `isLoading` / `isLoadingMore` | Trạng thái tải |
 | `isEmpty` | Không có kết quả |
 | `isLastPage` | Đã hết trang |
-| `page` / `pageSize` | Phân trang (`DEFAULT_PAGE_SIZE = 10`) |
-| `validationError` | Lỗi (nếu có) |
+| `page` / `pageSize` | Phân trang (mặc định `pageSize = 10`) |
+| `errorCode` | Mã lỗi một-lần; hiển thị xong `dispatch(ConsumeError)` |
 
-### Action — `SearchMyPromotionAction`
+### 1.2. Intent — `SearchMyPromotionIntent`
 - `QueryChanged(keyword)` — người dùng gõ từ khoá.
 - `Search` — thực hiện tìm kiếm.
 - `LoadMore` — tải trang tiếp.
-- `OpenServiceSelector(voucher)` — bấm "Sử dụng" trên một kết quả.
-- `ServiceSelected(voucher, service)` — đã chọn dịch vụ trong bottom sheet.
+- `ClearKeyword` — nút "X" xoá tường minh.
+- `Retry` — thử lại sau lỗi.
+- `ConsumeError` — xoá `errorCode` sau khi đã hiển thị.
 
-> Chỉ khai báo action mà màn **thật sự phát** — khớp 1-1 `SearchMyPromotionViewModel.Input` bên iOS.
-> `SearchMyPromotionIntent.ClearKeyword` / `Retry` của store hiện chưa màn nào dùng (gõ trắng đã đi
-> qua `QueryChanged("")`), nên không có action UI tương ứng.
+### 1.3. Bottom sheet "Chọn dịch vụ" — **không** đi qua store
 
-### Effect — `SearchMyPromotionEffect`
-- `ShowError(errorCode)`.
-- `ShowServiceSelector(voucher, services)`.
+Bấm "Sử dụng" trên một kết quả **không** phát Intent nào. Fragment gọi thẳng
+`viewModel.serviceOptions(voucher)` rồi `ServiceSelectorBottomSheet.present(...)`; danh sách dịch vụ
+dựng từ hàm dùng chung `presentation/serviceselector/ServiceSelector.kt`
+(`servicesForApplicableProducts` / `configuredServicesFor`). Chọn xong thì bắn thẳng
+`PromotionSDKCallback.onServiceSelected` ra host.
+
+> `SearchMyPromotionEffect` / `SearchMyPromotionAction` / `SearchMyPromotionUiState` **đã bị bỏ** —
+> lỗi đi qua `errorCode` trong state + `PRMEffect.ShowError` dùng chung.
 
 ---
 
 ## 2. Luồng dữ liệu
 
 ```
-Fragment gõ → Action.QueryChanged(keyword) → setState(keyword=...)
-Action.Search → setState(isLoading=true, page=0)
-            → launch { searchVouchersUseCase(request(keyword, page, size)) }
-            → setState(vouchers=..., isEmpty=..., isLastPage=..., isLoading=false)
-Action.LoadMore → tăng page → append vouchers
-Lỗi → onError → sendEffect(ShowError)
+Fragment gõ → dispatch(QueryChanged(keyword)) → state.copy(keyword = …)
+dispatch(Search)   → state.copy(isLoading = true, page = 0)
+                   → SearchCustomerVouchersUseCase(request(keyword, page, size))
+                   → state.copy(vouchers = …, isEmpty = …, isLastPage = …, isLoading = false)
+dispatch(LoadMore) → tăng page → nối thêm vouchers
+Lỗi → state.copy(errorCode = …) → PRMEffect.ShowError → popup → dispatch(ConsumeError)
 ```
 
-- Dùng chung use case `SearchCustomerVouchersUseCase` và model `MyVoucherListItem` (tái sử dụng từ My Promotion).
+- Dùng chung use case `SearchCustomerVouchersUseCase` và model `MyPromotionVoucher` của lõi; riêng Android map tiếp sang `MyVoucherListItem` để RecyclerView render.
 
 ---
 

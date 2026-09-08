@@ -4,6 +4,19 @@
 > của SDK — **không** đúng với repo này (không có database), và phần Room thì **chưa từng đúng** ngay
 > cả với repo gốc (xem §4). Tài liệu đó đã bị gỡ, thay bằng file này.
 
+## Mục lục
+
+<!-- toc -->
+- [1. SDK này không có database](#1-sdk-này-không-có-database)
+- [2. `PromotionPreferences`](#2-promotionpreferences)
+  - [2.1. Bắt buộc dùng module chuẩn, KHÔNG dùng `-no-arg`](#21-bắt-buộc-dùng-module-chuẩn-không-dùng--no-arg)
+  - [2.2. Vì sao KHÔNG dùng DataStore](#22-vì-sao-không-dùng-datastore)
+  - [2.3. `Context` trên Android](#23-context-trên-android)
+- [3. Cache feature flag](#3-cache-feature-flag)
+- [4. Lịch sử: Room chưa từng được dùng](#4-lịch-sử-room-chưa-từng-được-dùng)
+- [5. Quy tắc](#5-quy-tắc)
+<!-- /toc -->
+
 ---
 
 ## 1. SDK này không có database
@@ -106,7 +119,7 @@ và (2) biến mất.**
 > Nếu sau này cần **observe** thay đổi (vd theme đổi lúc runtime): dùng `ObservableSettings` của
 > thư viện hiện tại — không cần DataStore, không cần dependency mới.
 
-### `Context` trên Android
+### 2.3. `Context` trên Android
 
 `createPreferences()` phía Android lấy `applicationContext` từ `AndroidContextHolder`, được nạp bởi:
 

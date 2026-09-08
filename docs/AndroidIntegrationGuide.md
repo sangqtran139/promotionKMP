@@ -1,10 +1,38 @@
 # Android Integration Guide — Promotion SDK cho app host
 
 > Hướng dẫn **tích hợp** dành cho đội app host (bên tiêu thụ SDK). Không phải tài liệu phát triển nội
-> bộ SDK — cái đó xem [`AndroidGuide.md`](./AndroidGuide.md) / [`AndroidUIGuide.md`](./AndroidUIGuide.md).
-> Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./PublicApi.md). Phân phối Maven: [`Distribution.md`](./Distribution.md).
-> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./InitParity.md) §6).
+> bộ SDK — cái đó xem [`common/Architecture.md`](./common/Architecture.md) / [`android/UIGuide.md`](./android/UIGuide.md).
+> Bề mặt API song ánh Android↔iOS: [`PublicApi.md`](./common/PublicApi.md). Phân phối Maven: [`Distribution.md`](./android/Distribution.md).
+> Tích hợp trực tiếp — gọi thẳng `PromotionSDK`, không cần wrapper (xem [`InitParity.md`](./common/InitParity.md) §6).
 > Bản iOS đối xứng: [`IosIntegrationGuide.md`](./IosIntegrationGuide.md).
+
+## Mục lục
+
+<!-- toc -->
+- [0. TL;DR](#0-tldr)
+- [1. SDK đóng gói thế nào (vì sao host "sạch")](#1-sdk-đóng-gói-thế-nào-vì-sao-host-sạch)
+- [2. Yêu cầu & phân phối](#2-yêu-cầu--phân-phối)
+- [3. Thêm vào project](#3-thêm-vào-project)
+  - [3.1. Khai dependency (Gradle Kotlin DSL)](#31-khai-dependency-gradle-kotlin-dsl)
+  - [3.2. Kiểm tra nhanh](#32-kiểm-tra-nhanh)
+- [4. Vòng đời SDK](#4-vòng-đời-sdk)
+  - [4.1. Nguồn token — `PromotionTokenSource`](#41-nguồn-token--promotiontokensource)
+  - [4.2. Khi SDK ăn 401 — `refreshToken`](#42-khi-sdk-ăn-401--refreshtoken)
+  - [4.3. Object này sống lâu hơn màn hình](#43-object-này-sống-lâu-hơn-màn-hình)
+- [5. Bơm context đơn hàng](#5-bơm-context-đơn-hàng)
+- [6. Màn hình UI có sẵn](#6-màn-hình-ui-có-sẵn)
+  - [6.1. Màn "Ưu đãi của tôi" / "Chi tiết"](#61-màn-ưu-đãi-của-tôi--chi-tiết)
+  - [6.2. Widget checkout — `PRMEndowView`](#62-widget-checkout--prmendowview)
+  - [6.3. Feature flag — SDK tự gác, host hỏi thêm được](#63-feature-flag--sdk-tự-gác-host-hỏi-thêm-được)
+- [7. Nhận sự kiện — `PromotionSDKCallback`](#7-nhận-sự-kiện--promotionsdkcallback)
+  - [7.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#71-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
+- [8. Headless API (tự dựng UI) — `PromotionSDK.api`](#8-headless-api-tự-dựng-ui--promotionsdkapi)
+- [9. Xử lý lỗi — `PromotionSDKError`](#9-xử-lý-lỗi--promotionsdkerror)
+- [10. Theming](#10-theming)
+- [11. Sai lầm thường gặp](#11-sai-lầm-thường-gặp)
+- [12. Vòng đời gợi ý (khớp host thật)](#12-vòng-đời-gợi-ý-khớp-host-thật)
+- [13. Điểm lệch Android ↔ iOS (N1)](#13-điểm-lệch-android--ios-n1)
+<!-- /toc -->
 
 ---
 
@@ -180,7 +208,7 @@ PromotionSDK.initialize(applicationContext, myTokenSource, BASE_URL, availableSe
 
 > `release()` khi chưa init là vô hại; không xoá theme đã lưu.
 
-### 4.1 Nguồn token — `PromotionTokenSource`
+### 4.1. Nguồn token — `PromotionTokenSource`
 
 Token vào SDK qua **một** đường duy nhất: `tokenSource`. Không có tham số `accessToken`, vì token là
 thứ đổi theo thời gian chứ không phải cấu hình chụp một lần.
@@ -225,7 +253,7 @@ override fun currentToken() = runBlocking { dataStore.token.first() } // ❌ ch�
 Trả `null`/rỗng → SDK gửi request **không kèm** header `Authorization`. Không có fallback nào: lỗi
 hiện ra ngay thay vì gửi một token cũ trong im lặng.
 
-### Khi SDK ăn 401 — `refreshToken`
+### 4.2. Khi SDK ăn 401 — `refreshToken`
 
 Mặc định SDK **hỏng luôn**: bắn `PromotionSDKCallback.onExpireToken()`, host đưa user về màn đăng
 nhập. Đúng cho app không có cách lấy token mới theo yêu cầu.
@@ -259,7 +287,7 @@ Bạn ghi vào kho của mình rồi báo `true` — không có đường thứ 
 - SDK đã gộp mọi request 401 cùng lúc thành **một** lần gọi. Nhưng cơ chế của app vẫn nên
   single-flight: hai màn mở cách nhau vài giây vẫn có thể chạm vào hai lần.
 
-### Object này sống lâu hơn màn hình
+### 4.3. Object này sống lâu hơn màn hình
 
 `PromotionSDK` là **singleton `object`**: nó giữ `tokenSource` từ lúc `initialize()` tới `release()`,
 **không** theo vòng đời màn hình nào. Gọi `initialize()` trong một Fragment rồi điều hướng đi thì
@@ -316,7 +344,7 @@ SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần g�
 ## 6. Màn hình UI có sẵn
 
 Android dùng **Fragment** cho màn, và **custom View** cho widget checkout (khác iOS dùng factory
-`createEndowView` — N1, xem [`InitParity.md`](./InitParity.md) §5.3).
+`createEndowView` — N1, xem [`InitParity.md`](./common/InitParity.md) §5.1).
 
 ### 6.1. Màn "Ưu đãi của tôi" / "Chi tiết"
 
@@ -459,7 +487,7 @@ val myCallback = object : PromotionSDKCallback {
 > Host không cần biết mấy thứ này — widget tự quản trạng thái của nó, việc bật/tắt theo cờ do SDK
 > tự xử lý.
 
-### Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
+### 7.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
 
 Ba hàm mở màn nhận thêm tham số **tuỳ chọn**:
 
@@ -591,4 +619,4 @@ logout                   → PromotionSDK.release()
 | Ẩn deps | `core.*` giấu; **nhưng** Ktor/coroutines lọt classpath host | giấu tuyệt đối trong 1 framework |
 | Enum môi trường | `PROD` / `STAGING` | `.prod` / `.staging` |
 
-Xem [`InitParity.md`](./InitParity.md) là nguồn sự thật cho mọi điểm lệch.
+Xem [`InitParity.md`](./common/InitParity.md) là nguồn sự thật cho mọi điểm lệch.

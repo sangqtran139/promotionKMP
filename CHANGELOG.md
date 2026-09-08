@@ -382,7 +382,7 @@ Bản phát hành ổn định đầu tiên. Từ đây bề mặt public tuân 
 ### Kiến trúc
 - Kotlin Multiplatform: lõi Data + Domain dùng chung (`:promotionLogic`); UI native mỗi nền tảng
   (Android XML/MVI, iOS UIKit/MVVM).
-- Bề mặt SDK đối xứng 1:1 Android ↔ iOS — xem [docs/InitParity.md](./docs/InitParity.md).
+- Bề mặt SDK đối xứng 1:1 Android ↔ iOS — xem [docs/common/InitParity.md](./docs/common/InitParity.md).
 
 ### Bề mặt công khai
 - Entry `PromotionSDK`: `initialize` / `release` / `isInitialized` / `updateContext` /
@@ -395,5 +395,5 @@ Bản phát hành ổn định đầu tiên. Từ đây bề mặt public tuân 
 - Feature flag **không** phơi ra host — mọi điểm vào tự gác qua `PromotionFeatureGate`.
 
 ### Phân phối
-- Android: Maven (`com.ttcn.promotion:promotionSDK:1.0.0`) — xem [docs/Distribution.md](./docs/Distribution.md).
+- Android: Maven (`com.ttcn.promotion:promotionSDK:1.0.0`) — xem [docs/android/Distribution.md](./docs/android/Distribution.md).
 - iOS: `PRM.xcframework`.

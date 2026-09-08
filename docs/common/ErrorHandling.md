@@ -3,6 +3,24 @@
 Phân loại, lan truyền và hiển thị lỗi trong TTCN Promotion SDK. Mục tiêu: lỗi rõ ràng, không bị nuốt
 âm thầm, và host app nhận thông tin nhất quán trên cả hai nền tảng.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Phân loại exception](#1-phân-loại-exception)
+- [2. Bốn tầng lỗi](#2-bốn-tầng-lỗi)
+- [3. Ánh xạ lỗi ở data source](#3-ánh-xạ-lỗi-ở-data-source)
+  - [3.1. HTTP 401 — `TOKEN_EXPIRED` → `onExpireToken()`](#31-http-401--token_expired--onexpiretoken)
+  - [3.2. Lỗi nghiệp vụ ẩn trong HTTP 200](#32-lỗi-nghiệp-vụ-ẩn-trong-http-200)
+  - [3.3. Feature flag là ngoại lệ có chủ đích](#33-feature-flag-là-ngoại-lệ-có-chủ-đích)
+- [4. Quy tắc ở UI](#4-quy-tắc-ở-ui)
+  - [4.1. Android (MVI)](#41-android-mvi)
+  - [4.2. iOS (MVVM + callback thuần)](#42-ios-mvvm--callback-thuần)
+  - [4.3. Không còn toast — chỉ còn popup hoặc im lặng](#43-không-còn-toast--chỉ-còn-popup-hoặc-im-lặng)
+  - [4.4. PRM_MOB_021 — tính năng bị cờ chặn](#44-prm_mob_021--tính-năng-bị-cờ-chặn)
+  - [4.5. Cả hai](#45-cả-hai)
+- [5. Quy tắc](#5-quy-tắc)
+<!-- /toc -->
+
 ---
 
 ## 1. Phân loại exception
@@ -82,7 +100,7 @@ private suspend fun <T : Any> headlessCall(block: suspend () -> T?): PromotionRe
 ⚠️ **Thứ tự `catch` quan trọng.** Cả ba loại timeout của Ktor đều kế thừa `IOException`.
 Bắt `IOException` trước sẽ nuốt mất timeout và báo sai mã lỗi.
 
-### HTTP 401 — `TOKEN_EXPIRED` → `onExpireToken()`
+### 3.1. HTTP 401 — `TOKEN_EXPIRED` → `onExpireToken()`
 
 `Throwable.toErrorCode()` (`domain/exception/ErrorCodeExtensions.kt`) ưu tiên kiểm tra
 `PromotionException.httpStatus`: `401` → luôn trả `TOKEN_EXPIRED`, bất kể `errorCode` server gửi
@@ -101,7 +119,7 @@ cũ) — host tự quyết định điều hướng (thường là refresh token
 cho headless `PromotionSDKApi`** (xem `PromotionSDKError.SessionExpired`, hiện chưa wiring) — xem
 [InitParity.md §3](./InitParity.md#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên).
 
-### Lỗi nghiệp vụ ẩn trong HTTP 200
+### 3.2. Lỗi nghiệp vụ ẩn trong HTTP 200
 
 Server có thể trả HTTP 200 nhưng envelope báo lỗi. `requireData()` xử lý:
 
@@ -112,7 +130,7 @@ if (success == false || !isHttpSuccess) {
 }
 ```
 
-### Feature flag là ngoại lệ có chủ đích
+### 3.3. Feature flag là ngoại lệ có chủ đích
 
 `FeatureFlagRemoteDataSource` gộp mọi lỗi HTTP về `FeatureFlagException` trống, và
 `FeatureFlagRepositoryImpl.fetchFlags()` **nuốt luôn** lỗi đó:
@@ -128,14 +146,14 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
 
 ## 4. Quy tắc ở UI
 
-### Android (MVI)
+### 4.1. Android (MVI)
 
-- Tác vụ async chạy trong `launch { }` của `PRMBaseViewModel` (đã gắn `CoroutineExceptionHandler`).
+- Tác vụ async chạy trong `launch { }` của `PRMStoreViewModel` (đã gắn `CoroutineExceptionHandler`).
 - Override `onError(throwable)` để tắt loading + bắn `Effect` lỗi.
 - Lỗi hiển thị đi qua **Effect** (one-shot), không nhồi vào state vĩnh viễn.
 - **Không** `catch {}` rỗng.
 
-### iOS (MVVM + callback thuần)
+### 4.2. iOS (MVVM + callback thuần)
 
 - `PromotionResult.Failure` map sang `PromotionSDKError` ở tầng facade.
 - Lỗi đi qua **`onEffect(.showError(code))`** — kênh riêng, một-lần, **không** trộn vào `onState`
@@ -143,7 +161,7 @@ chưa từng có cache → bật hết. `refresh()` không bao giờ ném.
   rồi hiển thị. `state` không giữ lại lỗi.
 - ViewModel `dispatch(ConsumeError)` ngay sau khi phát để store xoá cờ lỗi.
 
-### Không còn toast — chỉ còn popup hoặc im lặng
+### 4.3. Không còn toast — chỉ còn popup hoặc im lặng
 
 SDK **đã bỏ hẳn toast** ở cả hai nền tảng. Trước đây có một cổng bật/tắt toast
 (hai cờ `isEnabled` nay đã xoá cùng lớp toast) mặc định **TẮT**, nên phần lớn lỗi
@@ -162,7 +180,7 @@ phải Fragment/VC (ví dụ `PromotionSDK` gọi từ Activity, `PRMBaseRouter`
 Đang dùng popup ở: validate hỏng khi bấm "Áp dụng", kéo-để-tải-lại hỏng (màn "Chọn ưu đãi"), và mọi
 đường bị feature flag chặn.
 
-### PRM_MOB_021 — tính năng bị cờ chặn
+### 4.4. PRM_MOB_021 — tính năng bị cờ chặn
 
 **SDK tự hiện popup, host không phải lo câu chữ.** Đây là quyết định của SDK (chính SDK tắt tính
 năng) nên thông báo cũng phải của SDK. Gom đúng một hàm mỗi nền tảng:
@@ -187,7 +205,7 @@ trên compile classpath của host), nên host chỉ còn cách hardcode `"PRM_M
 `PromotionSDKError.from(code)` cho ai nhận mã thô từ nguồn khác — nó dùng đúng bảng map mà
 `PromotionSDKApi` (headless) đang dùng, một nguồn sự thật.
 
-### Cả hai
+### 4.5. Cả hai
 
 Tra message theo `errorCode`, **không** hiển thị thẳng `message` từ server nếu đã có bản dịch cục bộ.
 `:promotionLogic` không chứa chuỗi tiếng Việt (AI_AGENT_RULES).

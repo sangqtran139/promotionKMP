@@ -4,6 +4,20 @@ Nguyên tắc chính: **logic dùng chung thì test dùng chung**. Test của `:
 trong `commonTest` và chạy trên **cả** JVM lẫn Kotlin/Native. Một test chỉ pass trên JVM không chứng
 minh được gì về iOS.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Chạy test](#1-chạy-test)
+  - [1.1. Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"](#11-luôn-kiểm-số-lượng-test-đừng-tin-build-successful)
+- [2. Cấu trúc hiện tại](#2-cấu-trúc-hiện-tại)
+- [3. Test networking bằng `MockEngine`](#3-test-networking-bằng-mockengine)
+  - [3.1. Kiểm cả hai chiều](#31-kiểm-cả-hai-chiều)
+- [4. Test storage](#4-test-storage)
+- [5. Quy tắc](#5-quy-tắc)
+- [6. 5b. Coverage — Kover](#6-5b-coverage--kover)
+- [7. Test UI](#7-test-ui)
+<!-- /toc -->
+
 ---
 
 ## 1. Chạy test
@@ -16,7 +30,7 @@ minh được gì về iOS.
 > Tên task đến từ AGP KMP plugin (`com.android.kotlin.multiplatform.library`), **không** phải
 > `testDebugUnitTest` như module Android thường.
 
-### Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"
+### 1.1. Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"
 
 Gradle báo thành công cả khi không có test nào chạy (up-to-date, hoặc bị lọc hết).
 
@@ -53,7 +67,7 @@ val client = HttpClient(engine) {
 }
 ```
 
-### Kiểm cả hai chiều
+### 3.1. Kiểm cả hai chiều
 
 Một test API tốt kiểm **payload gửi lên** lẫn **kết quả map xuống**:
 
@@ -103,7 +117,7 @@ Bản thân `SettingsPreferences` có test riêng ở `PromotionPreferencesTest.
 
 ---
 
-## 5b. Coverage — Kover
+## 6. 5b. Coverage — Kover
 
 Đo bằng [Kover](https://github.com/Kotlin/kotlinx-kover) (`org.jetbrains.kotlinx.kover`), khai ở
 `promotionLogic/build.gradle.kts`.
@@ -167,12 +181,13 @@ không thuộc `commonMain`. Đo chúng chỉ làm nhiễu con số.
 
 ---
 
-## 6. Test UI
+## 7. Test UI
 
 `:promotionLogic` không có UI nên không có test UI ở đây.
 
 - **Android** (`promotionSDK`): ViewModel test bằng JUnit + `kotlinx-coroutines-test`, fake `PromotionUseCases`.
   Instrumentation test cho Fragment nếu cần.
-- **iOS** (`promotionSDK`): XCTest cho ViewModel, dùng `RxTest`/`RxBlocking` cho stream.
+- **iOS** (`promotionSDK`): XCTest cho ViewModel. Ràng buộc View↔VM là **callback thuần** nên test
+  chỉ cần gán `onState`/`onEffect` rồi `dispatch` — không cần thư viện test cho stream.
 
 Khi hai module UI được tạo, bổ sung mục này (AI_AGENT_RULES điều 8).

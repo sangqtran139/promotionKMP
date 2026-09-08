@@ -4,6 +4,22 @@ TTCN Promotion SDK áp dụng **Clean Architecture**. Điểm khác biệt so v�
 tầng Data + Domain được chia sẻ giữa Android và iOS qua Kotlin Multiplatform, còn tầng Presentation
 **không** chia sẻ — mỗi nền tảng giữ mô hình UI native của mình.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Tổng quan](#1-tổng-quan)
+  - [1.1. Bề mặt SDK, wrapper host & DI — class chủ chốt trong luồng](#11-bề-mặt-sdk-wrapper-host--di--class-chủ-chốt-trong-luồng)
+- [2. Lõi dùng chung — `:promotionLogic`](#2-lõi-dùng-chung--promotionlogic)
+  - [2.1. Data layer — `data/`](#21-data-layer--data)
+  - [2.2. Domain layer — `domain/`](#22-domain-layer--domain)
+  - [2.3. Hạ tầng nền tảng — `expect` / `actual`](#23-hạ-tầng-nền-tảng--expect--actual)
+- [3. Luồng một request điển hình](#3-luồng-một-request-điển-hình)
+- [4. Mô hình UI — Android](#4-mô-hình-ui--android)
+- [5. Mô hình UI — iOS (MVVM + Builder/Router)](#5-mô-hình-ui--ios-mvvm--builderrouter)
+- [6. Hai chế độ sử dụng SDK](#6-hai-chế-độ-sử-dụng-sdk)
+- [7. Ràng buộc kiến trúc (không vi phạm)](#7-ràng-buộc-kiến-trúc-không-vi-phạm)
+<!-- /toc -->
+
 ---
 
 ## 1. Tổng quan
@@ -49,12 +65,8 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ HOST APP (đối tác)  — chỉ chạm PromotionManager, KHÔNG import SDK rải rác   │
+│ HOST APP (đối tác)  — gọi THẲNG PromotionSDK, không cần lớp bọc trung gian  │
 └─────────────────────────────────────┬──────────────────────────────────────┘
-                                      ▼
-  PromotionManager        (androidApp / iosApp — wrapper / anti-corruption)
-  • map model APP ⇄ model SDK   • singleton   • adapter cho PromotionSDKCallback
-  • nuốt ràng buộc: token chụp lúc init · updateOrderInfo trước màn có voucher
                                       │  gọi entry tĩnh
                                       ▼
   PromotionSDK            ← ENTRY công khai; chữ ký chỉ Foundation/UIKit (iOS) /
@@ -82,8 +94,10 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
 
 Các nút thắt cần nhớ:
 
-- **`PromotionManager`** là chỗ *duy nhất* host chạm SDK — upgrade/đổi SDK chỉ sửa một file. Hợp đồng
-  `PromotionServing` đối xứng hai nền tảng, xem [InitParity.md §6](./InitParity.md#6-wrapper-host--hợp-đồng-chung).
+- **Host không cần wrapper.** Khuyến nghị `PromotionManager` / `PromotionServing` đã bị **bỏ** — SDK
+  tự lo token (đọc lại `tokenSource` mỗi request), context đơn hàng và callback, nên một lớp bọc chỉ
+  thêm chỗ để lệch. Xem [InitParity.md §6](./InitParity.md#6-tích-hợp-trực-tiếp--host-không-cần-wrapper);
+  cả hai integration guide đều liệt "tự viết wrapper" vào mục sai lầm thường gặp.
 - **`PromotionSDK`** giữ chữ ký sạch (không lộ RxSwift/Kotlin/core type) — xem [PublicApi.md](./PublicApi.md).
 - **`PromotionSDKApi`** là *ranh giới phân phối* (map DTO), **không** phải use case — nghiệp vụ, gác cờ,
   chuẩn hoá `errorCode` đều nằm ở `PromotionUseCases` của lõi.

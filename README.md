@@ -29,7 +29,11 @@ tự dựng bằng công nghệ native của mình (Android XML View, iOS UIKit)
 | Kiến trúc | [Architecture](./docs/common/Architecture.md) |
 | File nằm ở đâu / đặt file mới vào đâu | [ProjectStructure](./docs/common/ProjectStructure.md) |
 | Public API (đổi = breaking host) | [PublicApi](./docs/common/PublicApi.md) |
+| Bắt đầu nhanh | [QuickStart](./docs/QuickStart.md) · [Troubleshooting](./docs/Troubleshooting.md) |
+| Thiết kế chi tiết (nghiệm thu) | [design/SDD](./docs/design/SDD.md) |
 | Phát hành | [android/Distribution](./docs/android/Distribution.md) · [ios/Distribution](./docs/ios/Distribution.md) |
+| Đóng gói & bàn giao | [release/PackagingGuide](./docs/release/PackagingGuide.md) · [release/ReleaseChecklist](./docs/release/ReleaseChecklist.md) · [release/HandoverChecklist](./docs/release/HandoverChecklist.md) |
+| Bảo mật & giấy phép | [common/Security](./docs/common/Security.md) · [LICENSE](./LICENSE.md) · [THIRD_PARTY_NOTICES](./THIRD_PARTY_NOTICES.md) |
 | Từng màn hình | [`docs/features/`](./docs/features/README.md) |
 
 Lịch sử thay đổi: [`CHANGELOG.md`](./CHANGELOG.md). Quy tắc cho AI agent:

@@ -9,31 +9,52 @@ Mục tiêu: giữ kiến trúc nhất quán giữa lõi dùng chung và hai UI 
 > mô tả một project Android thuần XML/Retrofit/Room. Nó cấm thêm thư viện, cấm Compose và cấm đổi
 > kiến trúc — ba điều mà việc chuyển sang KMP bắt buộc phải làm. Bản này viết lại cho đúng repo hiện tại.
 
+## Mục lục
+
+<!-- toc -->
+- [1. quy tắc cốt lõi](#1-quy-tắc-cốt-lõi)
+  - [1.1. Luôn đọc `/docs` trước khi làm task](#11-luôn-đọc-docs-trước-khi-làm-task)
+  - [1.2. Luôn kiểm chứng bằng source code, đừng tin tài liệu một cách mù quáng](#12-luôn-kiểm-chứng-bằng-source-code-đừng-tin-tài-liệu-một-cách-mù-quáng)
+  - [1.3. Luôn kiểm tra source hiện tại trước khi thêm file mới](#13-luôn-kiểm-tra-source-hiện-tại-trước-khi-thêm-file-mới)
+  - [1.4. Giữ đúng ranh giới "lõi dùng chung / UI riêng nền tảng"](#14-giữ-đúng-ranh-giới-lõi-dùng-chung--ui-riêng-nền-tảng)
+  - [1.5. 4b. Chỉ `Entry` mới public — mọi thứ khác `internal`](#15-4b-chỉ-entry-mới-public--mọi-thứ-khác-internal)
+  - [1.6. Không tự ý đổi kiến trúc](#16-không-tự-ý-đổi-kiến-trúc)
+  - [1.7. Thêm thư viện phải có lý do và được yêu cầu](#17-thêm-thư-viện-phải-có-lý-do-và-được-yêu-cầu)
+  - [1.8. Không duplicate code](#18-không-duplicate-code)
+  - [1.9. Sửa API, storage, DI hoặc kiến trúc thì phải cập nhật docs trong cùng thay đổi](#19-sửa-api-storage-di-hoặc-kiến-trúc-thì-phải-cập-nhật-docs-trong-cùng-thay-đổi)
+  - [1.10. Trước khi code phải tóm tắt rule liên quan và đưa kế hoạch](#110-trước-khi-code-phải-tóm-tắt-rule-liên-quan-và-đưa-kế-hoạch)
+  - [1.11. Android và iOS phải đồng bộ về logic và kiến trúc](#111-android-và-ios-phải-đồng-bộ-về-logic-và-kiến-trúc)
+- [2. Checklist trước khi bắt đầu (Pre-flight)](#2-checklist-trước-khi-bắt-đầu-pre-flight)
+- [3. Checklist trước khi kết thúc (Pre-commit)](#3-checklist-trước-khi-kết-thúc-pre-commit)
+- [4. Điều cấm tuyệt đối](#4-điều-cấm-tuyệt-đối)
+- [5. Về Compose Multiplatform](#5-về-compose-multiplatform)
+<!-- /toc -->
+
 ---
 
-## 10 quy tắc cốt lõi
+## 1. quy tắc cốt lõi
 
-### 1. Luôn đọc `/docs` trước khi làm task
+### 1.1. Luôn đọc `/docs` trước khi làm task
 Đọc ít nhất `Architecture.md`, `ProjectStructure.md`, và guide chuyên đề tương ứng
 (`NetworkingGuide.md`, `DependencyInjection.md`, `StorageGuide.md`, `AndroidUIGuide.md`, `IosUIGuide.md`).
 
-### 2. Luôn kiểm chứng bằng source code, đừng tin tài liệu một cách mù quáng
+### 1.2. Luôn kiểm chứng bằng source code, đừng tin tài liệu một cách mù quáng
 Tài liệu có thể lỗi thời. Trước khi kết luận "X không được dùng" hay "Y là stub", **mở file ra đọc**
 và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (điều 8), đừng sửa code cho khớp docs.
 
-### 3. Luôn kiểm tra source hiện tại trước khi thêm file mới
+### 1.3. Luôn kiểm tra source hiện tại trước khi thêm file mới
 - Tìm xem class/hàm/component đã tồn tại chưa.
 - Không tạo file mới nếu đã có file cùng vai trò.
 - Tôn trọng quy ước đặt tên và vị trí package hiện có.
 
-### 4. Giữ đúng ranh giới "lõi dùng chung / UI riêng nền tảng"
+### 1.4. Giữ đúng ranh giới "lõi dùng chung / UI riêng nền tảng"
 - Business logic (data / domain / use case) **chỉ** nằm ở `:promotionLogic`, `commonMain`.
 - `commonMain` **không** được import `android.*`, `platform.*`, hay bất kỳ API riêng nền tảng nào.
   Cần API nền tảng → dùng `expect`/`actual` (xem `SdkLock`, `PromotionPreferences`).
 - UI **không** gọi thẳng Repository/DataSource; luôn đi qua use case.
 - Domain **không** biết DTO. Data map DTO ↔ domain model trước khi trả lên.
 
-### 4b. Chỉ `Entry` mới public — mọi thứ khác `internal`
+### 1.5. 4b. Chỉ `Entry` mới public — mọi thứ khác `internal`
 - Bề mặt host là **`com.ttcn.prm.entry.**`** (Android) và **`iosPromotionSDK/Entry/**`** (iOS).
   Ngoài đó, mọi khai báo top-level phải `internal` (Kotlin) / không có `public` (Swift).
 - Host cần dùng thêm thứ gì → **dời file đó vào `entry`**, KHÔNG nới `public` tại chỗ. Kiểu trả về
@@ -42,36 +63,36 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng —
   [PublicApi.md](./common/PublicApi.md) có sẵn hai lệnh `grep` để kiểm, cả hai phải **không in ra gì**.
 
-### 5. Không tự ý đổi kiến trúc
+### 1.6. Không tự ý đổi kiến trúc
 - Giữ Clean Architecture (Data / Domain / Presentation).
-- Android UI giữ **MVI** (`PRMBaseViewModel<S, A, E>`); iOS UI giữ **MVVM + Builder/Router**, ràng buộc
+- Android UI giữ **MVI** (`PRMStoreViewModel<S, I>` bọc store dùng chung); iOS UI giữ **MVVM + Builder/Router**, ràng buộc
   View↔VM bằng **callback thuần** (`onState`/`onEffect`/`handleAction`) — **không** Combine, **không** RxSwift.
 - Không hợp nhất hai mô hình UI, không đổi sang mô hình khác, trừ khi có yêu cầu rõ ràng.
 
-### 6. Thêm thư viện phải có lý do và được yêu cầu
+### 1.7. Thêm thư viện phải có lý do và được yêu cầu
 - Không thêm dependency/plugin mới vào `libs.versions.toml` khi chưa được yêu cầu rõ ràng.
 - Ưu tiên `expect`/`actual` tự viết cho nhu cầu nhỏ thay vì kéo thêm thư viện
   (ví dụ `PromotionPreferences` thay cho `multiplatform-settings`).
 - **Không** thêm Hilt/Koin/Dagger — đã có Custom DI.
 - **Không** thêm annotation processor (kapt/KSP) vào `:promotionLogic` — sẽ vỡ target iOS.
 
-### 7. Không duplicate code
+### 1.8. Không duplicate code
 Trước khi viết logic mới, kiểm tra `common`, các mapper, use case đã có. Tách phần dùng chung
 thành hàm/extension/use case thay vì copy-paste.
 
-### 8. Sửa API, storage, DI hoặc kiến trúc thì phải cập nhật docs trong cùng thay đổi
+### 1.9. Sửa API, storage, DI hoặc kiến trúc thì phải cập nhật docs trong cùng thay đổi
 - API / networking → `NetworkingGuide.md` + `HeadlessAPI.md`
 - Storage / cache → `StorageGuide.md`
 - DI / module đăng ký → `DependencyInjection.md`
 - Kiến trúc / luồng dữ liệu → `Architecture.md` (+ `ProjectStructure.md` nếu đổi cấu trúc thư mục)
 
-### 9. Trước khi code phải tóm tắt rule liên quan và đưa kế hoạch
+### 1.10. Trước khi code phải tóm tắt rule liên quan và đưa kế hoạch
 Mỗi task, **trước khi sửa code**, trình bày ngắn gọn:
 1. **Tóm tắt rule liên quan** — những điều trong `/docs` ảnh hưởng tới task.
 2. **Kế hoạch triển khai** — các bước, file dự kiến sửa/thêm, lý do không vi phạm rule.
 3. **Hỏi ý kiến người phụ trách** trước khi làm thay đổi lớn (đổi public API, thêm thư viện, đổi kiến trúc).
 
-### 10. Android và iOS phải đồng bộ về logic và kiến trúc
+### 1.11. Android và iOS phải đồng bộ về logic và kiến trúc
 
 Hai nền tảng là **hai mặt của cùng một SDK**, không phải hai sản phẩm riêng. Bất cứ thứ gì host nhìn
 thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
@@ -94,7 +115,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 
 ---
 
-## Checklist trước khi bắt đầu (Pre-flight)
+## 2. Checklist trước khi bắt đầu (Pre-flight)
 
 - [ ] Đã đọc docs liên quan (điều 1).
 - [ ] Đã đọc source để xác minh docs còn đúng (điều 2).
@@ -104,7 +125,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 - [ ] Đã xác định component/use case tái sử dụng được (điều 7).
 - [ ] Đã trình bày tóm tắt rule + kế hoạch và hỏi ý kiến (điều 9).
 
-## Checklist trước khi kết thúc (Pre-commit)
+## 3. Checklist trước khi kết thúc (Pre-commit)
 
 - [ ] Code tuân thủ `CodingStandards.md`.
 - [ ] Lỗi được xử lý theo `ErrorHandling.md`.
@@ -119,7 +140,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 
 ---
 
-## Điều cấm tuyệt đối
+## 4. Điều cấm tuyệt đối
 
 - ❌ Import `android.*` hoặc `platform.*` trong `commonMain`.
 - ❌ Thêm kapt/KSP hoặc annotation processor vào `:promotionLogic`.
@@ -132,7 +153,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 
 ---
 
-## Về Compose Multiplatform
+## 5. Về Compose Multiplatform
 
 Compose Multiplatform **được phép trong tương lai** và là mục tiêu mở rộng đã thống nhất, nhưng
 **chưa dùng ở thời điểm này**. Xem `ComposeGuide.md`. UI hiện tại là native mỗi nền tảng:

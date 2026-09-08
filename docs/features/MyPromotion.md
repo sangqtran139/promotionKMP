@@ -6,44 +6,69 @@ Màn hình hiển thị **danh sách voucher của khách hàng** với tab, ph�
 - **Package:** `ui/feature/promotion/mypromotion`
 - **Thành phần:** `MyPromotionFragment`, `MyPromotionViewModel`, `MyPromotionContract`, `adapter/`
 
+## Mục lục
+
+<!-- toc -->
+- [1. Contract (MVI)](#1-contract-mvi)
+  - [1.1. State — `MyPromotionUiState`](#11-state--mypromotionuistate)
+  - [1.2. Action — `MyPromotionAction`](#12-action--mypromotionaction)
+  - [1.3. Effect — `MyPromotionEffect`](#13-effect--mypromotioneffect)
+- [2. Luồng dữ liệu](#2-luồng-dữ-liệu)
+- [3. UI item & mapping](#3-ui-item--mapping)
+- [4. API backend](#4-api-backend)
+- [5. 4b. Cache & prefetch tab (`MyPromotionStore`)](#5-4b-cache--prefetch-tab-mypromotionstore)
+- [6. Lưu ý khi sửa](#6-lưu-ý-khi-sửa)
+<!-- /toc -->
+
 ---
 
-## 1. Contract (MVI)
+## 1. Contract (dùng chung 2 nền tảng)
 
-### State — `MyPromotionUiState`
+Contract nằm ở **lõi**, không ở tầng UI:
+`promotionLogic/…/presentation/mypromotion/MyPromotionContract.kt`. Android và iOS đọc cùng một
+`State` và phát cùng một `Intent`.
+
+### 1.1. State — `MyPromotionState`
 | Field | Ý nghĩa |
 |-------|---------|
 | `hasLoadedInitial` | Đã load lần đầu hay chưa (tránh load lại) |
 | `isLoading` / `isRefreshing` / `isRefreshingTab` / `isLoadingMore` | Các trạng thái tải |
 | `isEmpty` | Danh sách rỗng |
-| `tabs` / `selectedTabCode` | Danh sách tab (`TabItem`) và tab đang chọn |
+| `tabs` / `selectedTabCode` | Danh sách tab (`MyPromotionTab`) và tab đang chọn |
 | `keyword` | Từ khoá tìm kiếm hiện tại |
 | `page` / `size` / `isLastPage` | Trạng thái phân trang |
-| `vouchers` | Danh sách `MyVoucherListItem` để render |
+| `vouchers` | Danh sách `MyPromotionVoucher` để render |
+| `errorCode` | Mã lỗi **một-lần**; native hiển thị rồi `dispatch(ConsumeError)` để xoá |
 
-### Action — `MyPromotionAction`
+### 1.2. Intent — `MyPromotionIntent`
 - `LoadInitialIfNeeded` — load lần đầu nếu chưa có.
 - `Refresh` — kéo làm mới.
 - `SelectTab(tabCode)` — đổi tab.
-- `SearchKeyword(keyword)` — lọc theo từ khoá.
+- `Search(keyword)` — lọc theo từ khoá.
 - `LoadMore` — tải trang kế tiếp.
+- `ConsumeError` — xoá `errorCode` sau khi đã hiển thị.
 
-### Effect — `MyPromotionEffect`
-- `OpenVoucherDetail(voucherId)` — mở màn chi tiết.
-- `ShowError(errorCode)` — hiển thị lỗi.
+### 1.3. Lỗi và điều hướng — **không** có `Effect` riêng của màn
+
+`MyPromotionEffect` / `MyPromotionAction` / `MyPromotionUiState` **đã bị bỏ**. Thay vào đó:
+
+- **Lỗi** đi qua `errorCode` trong state; `PRMStore.effects` suy ra `PRMEffect.ShowError(errorCode)`
+  dùng chung mọi màn (`presentation/base/PRMStore.kt`).
+- **Điều hướng** do tầng UI tự làm ngay tại chỗ bấm — store không phát sự kiện mở màn.
 
 ---
 
 ## 2. Luồng dữ liệu
 
 ```
-Fragment → handleAction(LoadInitialIfNeeded)
-  ViewModel: setState(isLoading=true)
-           → launch { useCases.searchVouchers(request) }  // :promotionLogic — Domain → Data → Ktor
-           → DTO map toMyVoucherListItem()/toMyVoucherTabUi()
-           → setState(vouchers=..., tabs=..., isLoading=false)
-  Lỗi → onError → setState(isLoading=false) + sendEffect(ShowError)
-Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở detail/hiển thị lỗi
+Fragment/VC → dispatch(LoadInitialIfNeeded)
+  MyPromotionStore: state = state.copy(isLoading = true)
+                  → SearchCustomerVouchersUseCase(request)   // :promotionLogic — Domain → Data → Ktor
+                  → map sang MyPromotionVoucher / MyPromotionTab
+                  → state = state.copy(vouchers = …, tabs = …, isLoading = false)
+  Lỗi → state.copy(isLoading = false, errorCode = …)
+Android: collect viewModel.state → render; collect viewModel.effects → popup lỗi
+iOS:     onState → render;  onEffect → popup lỗi  (rồi dispatch(ConsumeError))
 ```
 
 ---
@@ -65,7 +90,7 @@ Fragment: collect uiState → render danh sách/tab; collect uiEffect → mở d
 - **Không còn:** `myVouchers`/`otherVouchers`/`sectionCode` (đã bỏ từ v1.3).
 - Search keyword: free search, không giới hạn độ dài tối thiểu; rỗng/whitespace = không filter.
 
-## 4b. Cache & prefetch tab (`MyPromotionStore`)
+## 5. 4b. Cache & prefetch tab (`MyPromotionStore`)
 
 Đổi tab **không gọi API** nếu cache còn tươi. Cơ chế nằm trọn ở store dùng chung nên Android và iOS
 hưởng như nhau, native không phải sửa gì.
@@ -88,11 +113,14 @@ ghi `tabCaches`, và **nuốt lỗi im lặng** (tab user chưa bấm vào thì 
 **Đánh đổi:** mở màn bắn N request thay vì 1 (N = số tab, server trả động). User mở rồi thoát ngay là
 phí N-1; đổi lại đổi tab thành miễn phí.
 
-## 5. Lưu ý khi sửa
+## 6. Lưu ý khi sửa
 
 - Đổi tham số tìm kiếm/phân trang → đồng bộ qua use case `SearchCustomerVouchersUseCase`, **không** gọi thẳng repository.
-- Thêm trạng thái UI → thêm field vào `MyPromotionUiState` (immutable, có default).
-- Click voucher → phát `Effect.OpenVoucherDetail`, không tự điều hướng trong ViewModel.
+- Thêm trạng thái UI → thêm field vào `MyPromotionState` (immutable, có default) — ở **lõi**, để cả
+  hai nền tảng cùng có.
+- Click voucher → tầng UI tự mở màn chi tiết; store **không** phát sự kiện điều hướng.
+- Model hiển thị riêng của Android (`MyVoucherListItem`, `TabItem` ở `*UiModels.kt`) vẫn giữ — đó là
+  cách RecyclerView muốn nhìn dữ liệu, Fragment map tại chỗ dùng.
 - **Tab user vừa bấm luôn thắng.** Store lấy tab active theo thứ tự: tab client vừa yêu cầu
   (`requestTabCode`) → `SearchCustomerVouchersResult.resolveActiveTab()` → tab đầu danh sách.
   `resolveActiveTab` (rule dùng chung Android & iOS: `selectedTab` → `defaultTab` → `requestedTab` →

@@ -6,6 +6,19 @@ kapt/KSP sẽ làm vỡ target iOS.
 
 Toàn bộ DI nằm ở `:promotionLogic`, `commonMain`.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Thành phần cốt lõi](#1-thành-phần-cốt-lõi)
+- [2. DSL & cách hoạt động](#2-dsl--cách-hoạt-động)
+- [3. Thread-safety trên KMP](#3-thread-safety-trên-kmp)
+- [4. Vòng đời khởi tạo](#4-vòng-đời-khởi-tạo)
+- [5. Tổ chức Module](#5-tổ-chức-module)
+  - [5.1. Tầng UI Android — mỗi màn tự dựng ViewModel của mình](#51-tầng-ui-android--mỗi-màn-tự-dựng-viewmodel-của-mình)
+- [6. Quy tắc sử dụng DI](#6-quy-tắc-sử-dụng-di)
+- [7. Lỗi thường gặp](#7-lỗi-thường-gặp)
+<!-- /toc -->
+
 ---
 
 ## 1. Thành phần cốt lõi

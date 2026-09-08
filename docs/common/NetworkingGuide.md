@@ -6,6 +6,22 @@ TTCN Promotion SDK gọi API bằng **Ktor Client + kotlinx.serialization**. To�
 > Bản Android cũ dùng Retrofit + OkHttp + Gson; bản iOS cũ dùng Alamofire + SwiftyJSON.
 > Cả hai đều JVM/Apple-only. §7 ghi lại ánh xạ để đọc code cũ.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Engine theo nền tảng](#1-engine-theo-nền-tảng)
+- [2. Cấu hình client](#2-cấu-hình-client)
+  - [2.1. Cấu hình `Json` — hai cờ bắt buộc](#21-cấu-hình-json--hai-cờ-bắt-buộc)
+  - [2.2. Header (thay cho `ApiInterceptor` của OkHttp)](#22-header-thay-cho-apiinterceptor-của-okhttp)
+- [3. ApiService — viết tay, không sinh tự động](#3-apiservice--viết-tay-không-sinh-tự-động)
+- [4. Envelope và bóc dữ liệu](#4-envelope-và-bóc-dữ-liệu)
+- [5. Ánh xạ lỗi](#5-ánh-xạ-lỗi)
+- [6. DTO](#6-dto)
+  - [6.1. Hai bẫy khi chuyển từ Gson](#61-hai-bẫy-khi-chuyển-từ-gson)
+- [7. Ánh xạ với code cũ](#7-ánh-xạ-với-code-cũ)
+- [8. Quy tắc](#8-quy-tắc)
+<!-- /toc -->
+
 ---
 
 ## 1. Engine theo nền tảng
@@ -48,7 +64,7 @@ HttpClient {
 }
 ```
 
-### Cấu hình `Json` — hai cờ bắt buộc
+### 2.1. Cấu hình `Json` — hai cờ bắt buộc
 
 ```kotlin
 private val json = Json {
@@ -62,7 +78,7 @@ private val json = Json {
 Không có `encodeDefaults = true`, request `createRedemption` sẽ thiếu `sessionOptions` và
 `timeoutSeconds` — server nhận payload khác hẳn bản Retrofit. Có test khoá hành vi này.
 
-### Header (thay cho `ApiInterceptor` của OkHttp)
+### 2.2. Header (thay cho `ApiInterceptor` của OkHttp)
 
 `defaultRequest` chạy **mỗi request**, nên `X-Request-ID` là UUID mới mỗi lần.
 Dùng `appendIfNameAbsent` để không ghi đè header do caller tự đặt.
@@ -75,7 +91,7 @@ Dùng `appendIfNameAbsent` để không ghi đè header do caller tự đặt.
 | `Accept` | — | `application/json` |
 | `Content-Type` | `contentType(...)` ở POST | `application/json` |
 
-#### Token là **pull**, không phải push
+#### 2.2.1. Token là **pull**, không phải push
 
 `getAccessToken()` nằm trong `defaultRequest { }` nên nó được gọi lại ở **mỗi** request — SDK không
 bao giờ giữ một bản sao token. Đây không phải chi tiết cài đặt tuỳ tiện mà là hợp đồng: token của
@@ -91,7 +107,7 @@ có tham số `accessToken`, không có bản sao token nào trong SDK. Test kho
 **Đừng "tối ưu" bằng cách cache token vào biến lúc dựng client** — đó chính là bug mà cơ chế này
 sinh ra để chữa.
 
-#### Thử lại khi 401
+#### 2.2.2. Thử lại khi 401
 
 `apiCall` bắt **401** và chạy lại request **đúng một lần** sau khi xin được token mới từ host:
 
@@ -116,7 +132,7 @@ block()  ──401──▶  TokenRefreshGate.refresh()  ──true──▶  bl
   không, `Mutex` treo và **mọi** API của SDK chết theo); callback gọi hai lần thì chỉ lần đầu tính.
 - `FeatureFlagRemoteDataSource` **không** thử lại: cờ tính năng fail-open, 401 ở đó chỉ rơi về cache.
 
-#### Thread — vì sao `apiCall` bọc `withContext(ioDispatcher)`
+#### 2.2.3. Thread — vì sao `apiCall` bọc `withContext(ioDispatcher)`
 
 Ktor chạy pipeline **phía client** trong context của coroutine gọi nó; chỉ engine mới tự nhảy sang
 thread nền. Mà store dùng chung nhận `scope` từ nền tảng và Android truyền thẳng `viewModelScope`
@@ -196,7 +212,7 @@ error code — cờ tính năng không hiển thị lỗi cho người dùng, ch
 - Mỗi nhóm có `XxxMapper.kt` với hàm `toXxx()` map DTO → domain model.
 - **Domain không được thấy DTO.**
 
-### Hai bẫy khi chuyển từ Gson
+### 6.1. Hai bẫy khi chuyển từ Gson
 
 **`Any` không serialize được.** kotlinx.serialization cần kiểu tĩnh:
 

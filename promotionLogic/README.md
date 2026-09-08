@@ -8,7 +8,7 @@ Package gốc `com.ttcn.promotionsdk.*`, chia theo tầng Clean Architecture:
 `config/` · `common/` · `data/` · `domain/` · `di/` · `presentation/`
 (xem [ProjectStructure.md §2](../docs/common/ProjectStructure.md)).
 
-> Tài liệu đầy đủ ở [`/docs`](../docs/README.md). Bề mặt API: [`HeadlessAPI.md`](../docs/HeadlessAPI.md).
+> Tài liệu đầy đủ ở [`/docs`](../docs/README.md). Bề mặt API: [`HeadlessAPI.md`](../docs/common/HeadlessAPI.md).
 
 ---
 

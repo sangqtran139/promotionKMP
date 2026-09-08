@@ -29,3 +29,10 @@ node_modules/
 #   ./gradlew :promotionLogic:assemblePromotionLogicReleaseXCFramework
 *.aar
 *.xcframework/
+
+# Gói tài liệu .docx sinh ra từ Markdown (scripts/docs_to_docx.py)
+dist/
+
+# Cấu hình + token Confluence (scripts/confluence_publish.py) — KHÔNG commit
+.confluence.env
+__pycache__/

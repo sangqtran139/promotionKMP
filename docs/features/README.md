@@ -5,6 +5,18 @@ Android (MVI, XML View) và iOS (MVVM + callback thuần, UIKit).
 
 > Đọc trước: [Architecture.md](../common/Architecture.md) và [HeadlessAPI.md](../common/HeadlessAPI.md).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Ánh xạ màn hình Android ↔ iOS ↔ use case](#1-ánh-xạ-màn-hình-android--ios--use-case)
+- [2. Tài liệu chi tiết](#2-tài-liệu-chi-tiết)
+- [3. Cấu trúc chuẩn của một feature](#3-cấu-trúc-chuẩn-của-một-feature)
+  - [3.1. Lõi dùng chung (`:promotionLogic`) — nơi đặt logic](#31-lõi-dùng-chung-promotionlogic--nơi-đặt-logic)
+  - [3.2. Android (`:AndroidPromotionSDK`)](#32-android-androidpromotionsdk)
+  - [3.3. iOS (`iosPromotionSDK`)](#33-ios-iospromotionsdk)
+- [4. Khi thêm feature mới](#4-khi-thêm-feature-mới)
+<!-- /toc -->
+
 ---
 
 ## 1. Ánh xạ màn hình Android ↔ iOS ↔ use case
@@ -21,7 +33,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 | Entry point | `PromotionSDK` | `PromotionSDK` | — |
 | Callback host | `PromotionSDKCallback` | `PromotionSDKCallback` | — |
 | Theme | `PromotionSDKTheme` | `PromotionSDKTheme` | — |
-| Feature flag | `FeatureFlagViewModel` | `BaseRouter+FeatureFlag` | `featureFlags.*` |
+| Feature flag | `PromotionSDK.featureFlags()` (không có màn riêng) | `PromotionSDK.featureFlags()` | `featureFlags.*` — gác qua `PromotionFeatureGate` |
 
 > Bản iOS cũ tên `VDSPromotion`, `SelectPromotionViewController`, `SelectPromtionView` (thiếu chữ `o`).
 > Đổi tên là **breaking change** với app host iOS — cần bật major version và báo đối tác.
@@ -59,7 +71,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 
 Một feature nằm ở **ba nơi**. Logic ở nơi thứ nhất, hai nơi còn lại chỉ render.
 
-### Lõi dùng chung (`:promotionLogic`) — nơi đặt logic
+### 3.1. Lõi dùng chung (`:promotionLogic`) — nơi đặt logic
 
 ```
 presentation/<feature>/
@@ -68,7 +80,7 @@ presentation/<feature>/
 └── XxxStore.kt           # PRMStore<XxxState, XxxIntent> — gọi use case, phát State/Effect
 ```
 
-### Android (`:AndroidPromotionSDK`)
+### 3.2. Android (`:AndroidPromotionSDK`)
 
 ```
 ui/feature/<feature>/          # phẳng, KHÔNG có cấp <nhóm>
@@ -78,7 +90,7 @@ ui/feature/<feature>/          # phẳng, KHÔNG có cấp <nhóm>
 └── adapter/               # ListAdapter + DiffUtil (nếu có danh sách)
 ```
 
-### iOS (`iosPromotionSDK`)
+### 3.3. iOS (`iosPromotionSDK`)
 
 ```
 PromotionSDKUI/<Feature>/

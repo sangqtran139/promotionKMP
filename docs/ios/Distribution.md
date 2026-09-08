@@ -35,6 +35,25 @@ Bước 1 do `iosPromotionSDK/scripts/build-xcframework.sh` lo (nó tự gọi G
 `iosPromotionSDK/Frameworks/` **trước khi** archive Swift — dùng header cũ thì lỗi hiện ra tận
 `SwiftCompile` với "cannot find … in scope", rất khó lần).
 
+## Mục lục
+
+<!-- toc -->
+  - [Đánh version (đối xứng Android `SDK_VERSION`)](#đánh-version-đối-xứng-android-sdk_version)
+- [1. Mỗi bản phát hành phải lưu dSYM lại](#1-mỗi-bản-phát-hành-phải-lưu-dsym-lại)
+- [2. Slice — host không phải khai gì](#2-slice--host-không-phải-khai-gì)
+  - [2.1. Những thứ bị loại khỏi gói phát hành](#21-những-thứ-bị-loại-khỏi-gói-phát-hành)
+- [3. Đóng gói: host không phải cài thêm gì — cơ chế và ràng buộc](#3-đóng-gói-host-không-phải-cài-thêm-gì--cơ-chế-và-ràng-buộc)
+- [4. Đẩy lên Artifactory](#4-đẩy-lên-artifactory)
+  - [4.1. Credentials](#41-credentials)
+  - [4.2. Không ghi đè version đã phát hành](#42-không-ghi-đè-version-đã-phát-hành)
+- [5. App demo lấy SDK từ đâu](#5-app-demo-lấy-sdk-từ-đâu)
+  - [5.1. Cái giá phải trả (biết trước, đừng ngạc nhiên)](#51-cái-giá-phải-trả-biết-trước-đừng-ngạc-nhiên)
+  - [5.2. Đổi ngược về link cục bộ](#52-đổi-ngược-về-link-cục-bộ)
+- [6. Liên quan](#6-liên-quan)
+<!-- /toc -->
+
+---
+
 ### Đánh version (đối xứng Android `SDK_VERSION`)
 
 Truyền `SDK_VERSION` cho script (mặc định `1.0.0`, cùng mặc định với property `SDK_VERSION` bên
@@ -55,7 +74,6 @@ mang đi tích hợp ngay; version đã nằm trong Info.plist). Khác Android �
 > **Scheme `iosApp` phải là shared scheme** (`xcshareddata/xcschemes`, đã commit). Để trong
 > `xcuserdata` thì chỉ máy của người tạo mới thấy — máy khác clone về, `xcodebuild -scheme iosApp`
 > không tìm ra. Và `-derivedDataPath` bắt buộc đi kèm `-scheme`, không dùng được với `-target`.
-
 ## 1. Mỗi bản phát hành phải **lưu dSYM lại**
 
 Target framework đặt `STRIP_STYLE = non-global` (Release), nên binary giao cho host **không còn
@@ -113,7 +131,7 @@ simulator là ăn lỗi link *"building for iOS Simulator, but linking in object
 > dependency"*. Đẩy một dòng cấu hình bắt buộc sang phía host không đáng đổi lấy 9,5MB, nhất là khi
 > các tối ưu còn lại (asset/strip/abi.json, xem §2.1) đã giảm gói mà host không phải làm gì.
 
-### 2.1 Những thứ bị loại khỏi gói phát hành
+### 2.1. Những thứ bị loại khỏi gói phát hành
 
 `build-xcframework.sh` dọn sẵn, host nhận gói đã sạch:
 
@@ -133,21 +151,22 @@ quick-help của Xcode bên app host. 143 KB đổi lấy tài liệu hiện nga
 ## 3. Đóng gói: host **không phải cài thêm gì** — cơ chế và ràng buộc
 
 Bất biến của SDK iOS: host kéo **đúng một** `Promotion.xcframework`, `import PRM`,
-xong. Không khai RxSwift, không thêm SPM package, không chép resource bundle. Ba cơ chế giữ bất biến
+xong. Không khai thư viện nào, không thêm SPM package, không chép resource bundle. Ba cơ chế giữ bất biến
 này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
 1. **Mọi dependency link tĩnh vào trong framework — và nay gần như không còn dependency ngoài.**
    Các local package (`PRMFoundation`, `PRMDesignKit`, `PRMPromotionUI`, `PRMKotlinBridge`) là static
    library; khi archive target `PromotionSDKUI` (một framework, `BUILD_LIBRARY_FOR_DISTRIBUTION = YES`)
    chúng bị nhồi thẳng vào binary. Lõi Kotlin `PromotionLogic.xcframework` cũng gộp vào qua
-   `binaryTarget`. **RxSwift đã được gỡ hoàn toàn** (tầng UI dùng Combine + async/await của iOS 13+),
-   nên không còn thư viện reactive bên thứ ba nào trong gói — đã kiểm bằng `nm`: 0 symbol RxSwift trong
-   binary. → Không có framework động nào phải nhúng kèm. `build-xcframework.sh` in danh sách framework
+   `binaryTarget`. **RxSwift đã được gỡ hoàn toàn** (tầng UI ràng buộc View↔VM bằng **callback thuần**),
+   nên không còn thư viện reactive bên thứ ba nào trong gói — kiểm lại bằng `nm`: 0 symbol RxSwift trong
+   binary, và `grep -rn 'import RxSwift' --include='*.swift' iosPromotionSDK` không ra kết quả nào ngoài
+   cache `.spm/` (cache **không** nằm trong gói phát hành). → Không có framework động nào phải nhúng kèm. `build-xcframework.sh` in danh sách framework
    động ở cuối; kỳ vọng là *"(không có — mọi dependency đã link tĩnh)"*.
 
 2. **Public interface chỉ chạm UIKit/Foundation.** `Entry/PromotionSDK.swift` không phơi bất kỳ type
-   nào của RxSwift/PromotionLogic; `_impl` cất sau `NSObject`, còn `PromotionSDKImpl`/`PRMBaseViewModel`
-   dùng `@_implementationOnly import RxSwift`. → Compiler của host **không** phải nạp RxSwift hay
+   nào của PromotionLogic; `_impl` cất sau `NSObject`, còn `PromotionSDKImpl`/`PRMStoreViewModel`
+   dùng `@_implementationOnly import PRMKotlinBridge`. → Compiler của host **không** phải nạp
    PromotionLogic để suy ra layout khi build. Đây là điều kiện để "cài xong dùng luôn".
 
 3. **Resource bundle được embed vào framework** (`scripts/embed-spm-bundles.sh`, chạy như build phase).
@@ -158,16 +177,16 @@ này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
 **Ràng buộc còn lại (đừng kỳ vọng sai):**
 
-- ✅ **Không có nguy cơ trùng symbol thư viện reactive.** Tầng UI dùng Combine + async/await (thành
-  phần của iOS 13+, không link thư viện), SDK **không** mang theo thư viện reactive nào — host dùng
-  RxSwift/Combine tuỳ ý đều vô can.
+- ✅ **Không có nguy cơ trùng symbol thư viện reactive.** Tầng UI dùng **callback thuần**; vài tiện ích
+  còn chạm Combine — mà Combine là thành phần của iOS 13+, không phải thư viện phải link. SDK **không**
+  mang theo thư viện reactive nào — host dùng RxSwift/Combine tuỳ ý đều vô can.
 - Bất biến chỉ đúng khi phát hành **qua xcframework**. Nếu ai đó tích hợp bằng cách thêm trực tiếp SPM
   package của SDK vào project host thì tính đóng gói mất — **kênh phát hành hỗ trợ duy nhất là xcframework rời**.
 - Host **vẫn** tự ký framework lúc embed (`CODE_SIGNING_ALLOWED=NO` khi build SDK) — đây là thao tác
   chuẩn của Xcode, không phải "cài thêm".
 - **Sàn iOS 13 giữ nguyên.** Combine yêu cầu iOS 13; async/await back-deploy về iOS 13 (Xcode tự nhúng
-  runtime concurrency vào app host, host không cấu hình gì). RxSwift 5.1.1 vốn đã bắt iOS 13 nên không
-  có host nào bị loại. Nên **smoke-test một lần trên thiết bị iOS 13/14 thật** (back-deploy concurrency).
+  runtime concurrency vào app host, host không cấu hình gì). Sàn này không đổi khi gỡ RxSwift — bản
+  RxSwift trước đó vốn cũng đã bắt iOS 13, nên không có host nào bị loại thêm. Nên **smoke-test một lần trên thiết bị iOS 13/14 thật** (back-deploy concurrency).
 
 > Muốn CI chặn hồi quy bất biến này: cho `build-xcframework.sh` **fail** khi danh sách framework động
 > cuối cùng khác rỗng, thay vì chỉ in cảnh báo như hiện tại.
@@ -218,7 +237,7 @@ checksum lệch là thứ sai lặng lẽ nhất — SPM chỉ báo *"checksum m
 Script upload kèm header `X-Checksum-Sha256` để Artifactory tự đối chiếu; hỏng đường truyền thì nó
 từ chối thay vì âm thầm nhận file lỗi.
 
-### Credentials
+### 4.1. Credentials
 
 Không commit, đọc theo thứ tự ưu tiên:
 
@@ -226,13 +245,13 @@ Không commit, đọc theo thứ tự ưu tiên:
 2. `local.properties`: `maven.username` / `maven.password` — **cùng tài khoản** Android đang dùng để
    resolve `gradle-viettelmoney`, không phải khai thêm
 
-### Không ghi đè version đã phát hành
+### 4.2. Không ghi đè version đã phát hành
 
 Script **fail** nếu thư mục version đã tồn tại. Bản đã phát hành là thứ người khác đang build theo —
 cùng một version mà nhận hai binary khác nhau là loại lỗi tốn cả ngày để lần. Muốn ghi đè thì phải
 cố ý: `--force`.
 
-#### Build đè và bẫy cache SPM
+#### 4.2.1. Build đè và bẫy cache SPM
 
 SPM có **hai tầng cache, cả hai đánh key theo URL** — không có checksum trong key:
 
@@ -282,7 +301,7 @@ Cấu hình cũ (link thẳng `../iosPromotionSDK/build/Promotion.xcframework`) 
 > comment vào phải gỡ annotation bên trong, không thì dấu đóng đầu tiên kết thúc khối sớm và Xcode
 > báo *"project is damaged"*.
 
-### Cái giá phải trả (biết trước, đừng ngạc nhiên)
+### 5.1. Cái giá phải trả (biết trước, đừng ngạc nhiên)
 
 1. **Sửa SDK xong, app demo KHÔNG thấy gì** cho tới khi publish một version mới rồi cập nhật
    `url:` + `checksum:` trong `PromotionRemote/Package.swift`. Không có cảnh báo nào — app vẫn chạy
@@ -297,7 +316,7 @@ Cấu hình cũ (link thẳng `../iosPromotionSDK/build/Promotion.xcframework`) 
 `checksum` của SPM = **sha256 thường** của file zip (đã kiểm: `swift package compute-checksum` ra
 đúng số mà `shasum -a 256` cho), nên chép thẳng từ `metadata.json` cạnh zip.
 
-### Đổi ngược về link cục bộ
+### 5.2. Đổi ngược về link cục bộ
 
 Bỏ comment các khối `CŨ` trong `project.pbxproj` (5 chỗ: `PBXBuildFile`, `PBXFileReference`,
 `PBXFrameworksBuildPhase`, `PBXCopyFilesBuildPhase`, `FRAMEWORK_SEARCH_PATHS` ×2), rồi gỡ

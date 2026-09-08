@@ -44,11 +44,30 @@ chủ đích, không phải quy ước lỏng lẻo:
 Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi ra tới host. Nơi làm việc đó là
 `PromotionSDKApi` — xem §3.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Vòng đời](#1-vòng-đời)
+  - [1.1. Android](#11-android)
+  - [1.2. iOS](#12-ios)
+- [2. Feature flag — SDK tự gác, host hỏi thêm được](#2-feature-flag--sdk-tự-gác-host-hỏi-thêm-được)
+- [3. `PromotionSDKApi` — ranh giới, không phải use case](#3-promotionsdkapi--ranh-giới-không-phải-use-case)
+  - [3.1. Năm hàm](#31-năm-hàm)
+  - [3.2. Kết quả và lỗi](#32-kết-quả-và-lỗi)
+  - [3.3. DTO](#33-dto)
+- [4. Thành phần UI công khai (Android)](#4-thành-phần-ui-công-khai-android)
+- [5. Quy tắc khi mở rộng](#5-quy-tắc-khi-mở-rộng)
+- [6. Bịt kín ở tầng AAR (Android)](#6-bịt-kín-ở-tầng-aar-android)
+  - [6.1. Không phát hành sources.jar](#61-không-phát-hành-sourcesjar)
+  - [6.2. Resource private toàn bộ](#62-resource-private-toàn-bộ)
+  - [6.3. Dư địa đã biết](#63-dư-địa-đã-biết)
+<!-- /toc -->
+
 ---
 
 ## 1. Vòng đời
 
-### Android
+### 1.1. Android
 
 ```kotlin
 object PromotionSDK {
@@ -185,7 +204,7 @@ Order/dịch vụ **động** đi qua `updateOrderInfo` (ghi vào `PromotionMuta
 request) — không cần `initialize` lại. Token cũng vậy: SDK đọc lại `tokenSource.currentToken()` ở mỗi
 request, host không phải gọi gì khi token đổi.
 
-### iOS
+### 1.2. iOS
 
 ```swift
 PromotionSDK.initialize(
@@ -219,7 +238,7 @@ let api = PromotionSDK.api      // PromotionSDKApi
 chuỗi rỗng), các field còn lại vẫn tuỳ chọn. `ChoosePromotionStore` và `EndowStore` đọc lại qua
 `PromotionRequestContextProvider.getOrderItems()`. iOS còn giữ thêm overload tiện tay
 `createEndowView(from:orderId:orderValue:orderItems:)` (N1 — widget iOS là factory, xem
-[InitParity §5.3](./InitParity.md#53-widget)).
+[InitParity §5.1](./InitParity.md#51-widget)).
 
 ---
 
@@ -364,7 +383,7 @@ Hai quy ước đã chốt, đừng đảo lại:
 | `PromotionSDK.openChoosePromotion(activity, endowView, containerViewId)` | Widget tự gọi hàm này khi user bấm. Public để host tự kích hoạt màn "Chọn ưu đãi" từ nơi khác nếu cần (vd nút riêng ngoài widget) — cùng khuôn `openMyPromotion`/`openPromotionDetail`. |
 | `PRMEndowView.confirmRedemption(onSuccess, onError)` | Gọi khi bấm nút thanh toán của host. iOS: `PromotionSDK.confirmRedemption(onSuccess:onError:)`. |
 | `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` | Trạng thái widget, đọc qua `PRMEndowView.getCurrentState()`. |
-| `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). Nay là **`typealias` → `com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount`** (kiểu thật ở `promotionLogic`, dùng chung với iOS): host Kotlin **không phải đổi gì**, host **Java** phải dùng tên đầy đủ `EndowAppliedDiscount` vì Java không thấy typealias. **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.3](./InitParity.md#53-widget). |
+| `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` | Ưu đãi đã validate. Đi qua callback của `PRMEndowView` và `PRMEndowView.setDiscountDetails` (chi tiết giảm giá **không** qua `PromotionSDKCallback`). Nay là **`typealias` → `com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount`** (kiểu thật ở `promotionLogic`, dùng chung với iOS): host Kotlin **không phải đổi gì**, host **Java** phải dùng tên đầy đủ `EndowAppliedDiscount` vì Java không thấy typealias. **Android-only, N1:** iOS không phơi type này — host iOS nhận `onVoucherApplied(voucherId)` rồi gọi `api.validateDiscounts(...)` nếu cần breakdown. Xem [InitParity.md §5.1](./InitParity.md#51-widget). |
 | `PromotionSDKCallback` | Thống nhất với iOS, còn **3 sự kiện**: `onVoucherApplied(voucherId)` / `onServiceSelected` / `onExpireToken()`. Bốn cái cũ (`onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed`) đã bỏ — host không cần biết. `onExpireToken()` bắn khi 1 API bên trong màn SDK trả HTTP 401 (chưa áp dụng cho headless `PromotionSDKApi`). Xem [InitParity.md §3](./InitParity.md). |
 | `PromotionTheme` | Đổi theme sau `init`. Xem [Theming.md](./Theming.md). |
 
@@ -395,7 +414,7 @@ widget) thì gọi thẳng `PromotionSDK.openChoosePromotion(activity, endowView
    phải thấy `Unresolved reference`.
 2. **Mặc định là `internal`.** Không chỉ model MVI / adapter / ViewModel — mọi khai báo top-level
    ngoài `entry` đều `internal`: widget (`PRMButton`, `PRMSearchField`…), base class
-   (`PRMBaseFragment`, `PRMBaseActivity`, `PRMBaseViewModel`), extension trong `ui/utils/`, cả năm
+   (`PRMBaseFragment`, `PRMBaseActivity`, `PRMStoreViewModel`), extension trong `ui/utils/`, cả năm
    Fragment nghiệp vụ, và nhóm theme nội bộ (`PromotionThemeRegistry` / `Store` / `Defaults` /
    `ThemeHex` / `applier` / `applytoken`). Bên iOS là "không viết `public`" ngoài `Entry/`.
 2b. **Host cần thêm thứ gì thì DỜI vào `entry`, đừng nới `public` tại chỗ.** Nới tại chỗ là cách

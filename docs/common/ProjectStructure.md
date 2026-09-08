@@ -2,6 +2,19 @@
 
 Biết **file nằm ở đâu** và **đặt file mới vào đâu cho đúng**.
 
+## Mục lục
+
+<!-- toc -->
+- [1. Repo hiện tại](#1-repo-hiện-tại)
+  - [1.1. Cấu trúc hai module UI](#11-cấu-trúc-hai-module-ui)
+- [2. Cấu trúc `promotionLogic`](#2-cấu-trúc-promotionlogic)
+  - [2.1. Vì sao chia như vậy](#21-vì-sao-chia-như-vậy)
+- [3. Quy ước đặt file mới](#3-quy-ước-đặt-file-mới)
+- [4. Quy ước đặt tên](#4-quy-ước-đặt-tên)
+- [5. Nơi KHÔNG nên chạm nếu không cần](#5-nơi-không-nên-chạm-nếu-không-cần)
+- [6. Repo nguồn (chỉ đọc)](#6-repo-nguồn-chỉ-đọc)
+<!-- /toc -->
+
 ---
 
 ## 1. Repo hiện tại

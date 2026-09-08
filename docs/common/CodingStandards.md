@@ -3,6 +3,22 @@
 Quy ước code cho TTCN Promotion SDK. Tuân thủ trước khi commit (AI_AGENT_RULES checklist Pre-commit).
 Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và **Swift** (UI iOS).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Kotlin — style chung](#1-kotlin--style-chung)
+  - [1.1. Riêng cho `commonMain`](#11-riêng-cho-commonmain)
+- [2. Quy ước đặt tên — Kotlin](#2-quy-ước-đặt-tên--kotlin)
+  - [2.1. Tiền tố](#21-tiền-tố)
+- [3. MVI contract (UI Android)](#3-mvi-contract-ui-android)
+- [4. Coroutines & Flow](#4-coroutines--flow)
+- [5. Visibility](#5-visibility)
+- [6. Swift — tóm tắt](#6-swift--tóm-tắt)
+- [7. Comment & tài liệu](#7-comment--tài-liệu)
+- [8. Resource (XML) — tóm tắt](#8-resource-xml--tóm-tắt)
+- [9. Format & build](#9-format--build)
+<!-- /toc -->
+
 ---
 
 ## 1. Kotlin — style chung
@@ -12,10 +28,10 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
 - Ưu tiên `val` hơn `var`; UI state là **immutable** (`data class` + `copy()`).
 - Tránh `!!`. Dùng `?.`, `?:`, `requireNotNull`, hoặc xử lý null tường minh.
 - Hàm ngắn, đơn nhiệm. Tách logic dùng chung thành extension/use case (AI_AGENT_RULES điều 7).
-- Kotlin 2.4, JVM target 11 cho `:promotionLogic` — dùng được `sealed interface`, `data object`,
+- Kotlin 2.2, JVM target 17 cho `:promotionLogic` — dùng được `sealed interface`, `data object`,
   `kotlin.uuid.Uuid`, `kotlin.concurrent.Volatile`.
 
-### Riêng cho `commonMain`
+### 1.1. Riêng cho `commonMain`
 
 - **Không** import `android.*` hay `platform.*`. Cần API nền tảng → `expect`/`actual`.
 - **Không** dùng `java.util.*`, `java.io.*`, `synchronized`, `@Volatile` (của JVM).
@@ -39,7 +55,7 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
 | DI module | hậu tố `Module` | `NetworkModule` |
 | MVI contract | `XxxUiState` / `XxxAction` / `XxxEffect` | `MyPromotionUiState` |
 
-### Tiền tố
+### 2.1. Tiền tố
 
 **`PRM` là tên của package/module, KHÔNG phải tiền tố dán vào mọi class.** Việc tránh trùng tên khi
 nhúng vào host do **namespace** lo, nên tên type giữ nguyên nghĩa, dễ đọc:
@@ -101,7 +117,7 @@ sealed interface MyPromotionEffect {
 
 ## 4. Coroutines & Flow
 
-- UI Android dùng `launch { }` của `PRMBaseViewModel` (đã có `CoroutineExceptionHandler`).
+- UI Android dùng `launch { }` của `PRMStoreViewModel` (đã có `CoroutineExceptionHandler`).
 - Use case / repository / data source đều `suspend`. Không block main thread.
 - UI quan sát `StateFlow` (state) và `SharedFlow` (effect) qua `repeatOnLifecycle`.
 - Không `GlobalScope`. Không nuốt exception trong coroutine.

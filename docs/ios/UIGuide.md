@@ -15,6 +15,27 @@ Hướng dẫn UI cho `promotionSDK` (iOS). Giao diện làm bằng **UIKit (XIB
 >
 > SDK vẫn **không link thư viện ngoài** nào (RxSwift đã gỡ từ trước — xem [Distribution (iOS) §3](./Distribution.md)).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Cấu hình nền tảng](#1-cấu-hình-nền-tảng)
+- [2. Pattern: MVVM + Builder + Router](#2-pattern-mvvm--builder--router)
+- [3. State management — callback thuần, soi gương Android](#3-state-management--callback-thuần-soi-gương-android)
+- [4. Gọi lõi Kotlin từ Swift](#4-gọi-lõi-kotlin-từ-swift)
+  - [4.1. Gọi use case: async/await trực tiếp (không còn adapter Rx)](#41-gọi-use-case-asyncawait-trực-tiếp-không-còn-adapter-rx)
+- [5. Public API & "NSObject box"](#5-public-api--nsobject-box)
+- [6. Module SPM (`iosPromotionSDK/Packages/`)](#6-module-spm-iospromotionsdkpackages)
+  - [6.1. Nơi đặt code mới](#61-nơi-đặt-code-mới)
+  - [6.2. Tên class đồng nhất với Android](#62-tên-class-đồng-nhất-với-android)
+- [7. Feature flag](#7-feature-flag)
+  - [7.1. Không phơi API hỏi cờ ra host](#71-không-phơi-api-hỏi-cờ-ra-host)
+  - [7.2. `PromotionSDKApi` — ranh giới, không phải use case](#72-promotionsdkapi--ranh-giới-không-phải-use-case)
+- [8. Ảnh từ mạng (`UIImageView.setImage`)](#8-ảnh-từ-mạng-uiimageviewsetimage)
+  - [8.1. Kích thước & cách fill — phải trùng số giữa hai nền tảng](#81-kích-thước--cách-fill--phải-trùng-số-giữa-hai-nền-tảng)
+  - [8.2. Ảnh động decode 2 chặng](#82-ảnh-động-decode-2-chặng)
+- [9. Quy tắc](#9-quy-tắc)
+<!-- /toc -->
+
 ---
 
 ## 1. Cấu hình nền tảng
@@ -44,7 +65,7 @@ Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK
 |-----------|-----------|-------------|
 | **Builder** | `PRMBaseBuilder<VC, VM, R, Dependency>` | Lắp ráp VC + VM + Router, inject dependency |
 | **Router** | `PRMBaseRouter<VC: UIViewController>` (adopt `PRMBaseRouterProtocol`) | Điều hướng: push/pop/present; giữ `viewController` + `navigator` (weak) |
-| **ViewModel** | `PRMBaseViewModel<R: PRMBaseRouterProtocol>` | Bọc store dùng chung; phơi `onState`/`onEffect`/`handleAction` |
+| **ViewModel** | `PRMStoreViewModel<Store: PRMStoreBridge>` (bản có router: `PRMScreenViewModel<R: PRMBaseRouterProtocol, Store>`) | Bọc store dùng chung; phơi `state` / `onEffect` / `dispatch(_:)` |
 | **ViewController** | `PRMBaseViewController<VM>` | Load XIB, `setupUI()` + `bindViewModel()` |
 
 > Toàn bộ base class mang tiền tố `PRM` (điều 3 [CodingStandards.md](../common/CodingStandards.md)) — đây là tên thật
@@ -146,7 +167,7 @@ Task { @MainActor in
 }
 ```
 
-### Gọi use case: async/await trực tiếp (không còn adapter Rx)
+### 4.1. Gọi use case: async/await trực tiếp (không còn adapter Rx)
 
 ViewModel/Impl gọi thẳng use case trong `Task`, không qua adapter reactive nào:
 
@@ -223,7 +244,7 @@ mọi thứ trong `Promotion.xcframework` là code của SDK + hệ điều hàn
 
 Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dưới.
 
-### Nơi đặt code mới
+### 6.1. Nơi đặt code mới
 
 | Bạn muốn thêm... | Đặt ở |
 |------------------|-------|
@@ -234,7 +255,7 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 | Public method cho đối tác | `PromotionSDK` / `PromotionSDKApi` — chỉ Foundation/UIKit type ở chữ ký |
 | Extension/helper chung | `PRMFoundation` |
 
-### Tên class đồng nhất với Android
+### 6.2. Tên class đồng nhất với Android
 
 `PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKTheme`, `MyPromotionViewController`,
 `ChoosePromotionViewController`, `PromotionDetailViewController`, `SearchMyPromotionViewController`,
@@ -268,7 +289,7 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 **Không** gọi thẳng `PromotionFeatureFlagUseCases()` từ tầng UI. Thêm màn mới thì thêm một hàm
 `canOpen…` vào `PromotionFeatureGate` bên Kotlin — cả hai nền tảng cùng được.
 
-### Không phơi API hỏi cờ ra host
+### 7.1. Không phơi API hỏi cờ ra host
 
 `PromotionSDKFeature` đã bị xoá, và **không có** enum thay thế. Host không cần biết cờ nào đang bật:
 `openMyPromotion` / `openPromotionDetail` / widget đều tự gác qua `PromotionFeatureGate` của
@@ -286,7 +307,7 @@ giữ cache), nên `try? await gate.refresh()` là đúng.
 > `@_implementationOnly`. Đây cũng chính là lý do `PromotionSDKApi` phải map model Kotlin → DTO Swift
 > chứ không trả thẳng — xem mục dưới.
 
-### `PromotionSDKApi` — ranh giới, không phải use case
+### 7.2. `PromotionSDKApi` — ranh giới, không phải use case
 
 Tên cũ là `PromotionSDKUseCases`, gây hiểu lầm: nó **không** chứa nghiệp vụ. Gác cờ, bắt lỗi, chuẩn
 hoá `errorCode` đều nằm trong `PromotionUseCases` của lõi (dùng chung với Android). Lớp này chỉ uỷ
@@ -314,7 +335,7 @@ Ba file API bên iOS đặt ở `iosPromotionSDK/Entry/API/`, đối ứng `entr
 
 ---
 
-## 7.5. Ảnh từ mạng (`UIImageView.setImage`)
+## 8. Ảnh từ mạng (`UIImageView.setImage`)
 
 > **LUẬT: mọi chỗ có ảnh phải hiển thị được GIF động — cả iOS lẫn Android.** Thêm ô ảnh mới thì test
 > bằng URL GIF động, không chỉ PNG/JPEG. Bẫy phía Android xem
@@ -341,7 +362,7 @@ xem §1.
 > crossfade — crossfade do `.transition()` quyết định. Gọi nó thì GIF đã cache hiện tĩnh 1 frame còn
 > GIF tải mới lại chạy: cùng một logo mà lần đầu chạy, vào lại thì đứng.
 
-### Kích thước & cách fill — phải trùng số giữa hai nền tảng
+### 8.1. Kích thước & cách fill — phải trùng số giữa hai nền tảng
 
 | Ảnh | Kích thước (cả 2 bên) | iOS | Android |
 |---|---|---|---|
@@ -369,7 +390,7 @@ Hai luật rút ra từ lần lệch trước:
 5. **Không transition.** Fade 300 ms của `withCrossFade()` cộng vào thời gian tải khiến Android "lên
    chậm" hơn iOS thấy rõ. Muốn có fade thì thêm ở cả hai bên (`UIView.transition`), đừng bật một bên.
 
-### Ảnh động decode 2 chặng
+### 8.2. Ảnh động decode 2 chặng
 
 Dựng ảnh động phải giải nén **mọi** frame trước khi vẽ được gì. Đo trên Mac (máy thật chậm hơn 2–4 lần):
 
@@ -426,7 +447,7 @@ này trước, đừng đoán. Riêng ảnh trên host HTTP: app host phải t�
 
 ---
 
-## 8. Quy tắc
+## 9. Quy tắc
 
 1. **Business logic không được viết bằng Swift.** Mọi nghiệp vụ mới thuộc `:promotionLogic`.
    `PromotionSDKApi` chỉ là lớp mỏng chuyển `PromotionResult` → `PromotionApiResult`.

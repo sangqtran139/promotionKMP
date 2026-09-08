@@ -9,6 +9,24 @@ Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionRe
 > Thứ host gọi là `PromotionSDK.api` (`PromotionSDKApi`), nó uỷ quyền xuống đây rồi map sang DTO.
 > Xem [PublicApi.md](./PublicApi.md).
 
+## Mục lục
+
+<!-- toc -->
+- [1. Khởi tạo](#1-khởi-tạo)
+- [2. `PromotionResult`](#2-promotionresult)
+- [3. Năm use case nghiệp vụ — `PromotionUseCases()`](#3-năm-use-case-nghiệp-vụ--promotionusecases)
+  - [3.1. `searchVouchers`](#31-searchvouchers)
+  - [3.2. `getVoucherDetail`](#32-getvoucherdetail)
+  - [3.3. `findEligible`](#33-findeligible)
+  - [3.4. `validateDiscounts`](#34-validatediscounts)
+  - [3.5. `createRedemption`](#35-createredemption)
+- [4. Feature flag — `PromotionFeatureFlagUseCases()`](#4-feature-flag--promotionfeatureflagusecases)
+  - [4.1. Gác ở đâu](#41-gác-ở-đâu)
+- [5. Ánh xạ với SDK cũ](#5-ánh-xạ-với-sdk-cũ)
+- [6. Quy tắc khi mở rộng API](#6-quy-tắc-khi-mở-rộng-api)
+- [7. Màn demo headless (app demo, không thuộc SDK)](#7-màn-demo-headless-app-demo-không-thuộc-sdk)
+<!-- /toc -->
+
 ---
 
 ## 1. Khởi tạo
