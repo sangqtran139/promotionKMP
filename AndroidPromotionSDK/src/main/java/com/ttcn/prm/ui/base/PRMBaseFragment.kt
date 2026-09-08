@@ -1,13 +1,11 @@
 package com.ttcn.prm.ui.base
 
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowManager
 import androidx.annotation.IdRes
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -74,96 +72,129 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
     }
 
     /**
-     * Cộng thêm chiều cao navigation bar hệ thống vào `marginBottom` sẵn có của [anchor] — chỉ khi
-     * [anchor] thật sự đang bị navigation bar che (xem [isOverlappedByNavigationBar]).
+     * Cộng thêm chiều cao navigation bar hệ thống vào `marginBottom` sẵn có của [anchor] — CHỈ khi
+     * [anchor] **thật sự còn** tràn xuống dưới navigation bar sau khi mọi ancestor (kể cả host) đã áp
+     * xong padding/insets của họ.
      *
-     * **Gọi đúng lúc [anchor] đã hiển thị** (sau khi set `visibility = VISIBLE`) — view `GONE` không
-     * được layout nên toạ độ đo được không đáng tin; hàm chỉ đợi đúng một layout pass kế tiếp qua
-     * [View.doOnNextLayout] để đọc toạ độ thật, không tự dò theo vòng đời hay sự kiện nào khác.
+     * KHÔNG tin thẳng giá trị insets nhận được ở [anchor] — dù đây là insets "chưa bị host consume",
+     * một host hoàn toàn có thể tự pad container theo `navigationBars()` (pattern edge-to-edge rất
+     * phổ biến, xem `MainActivity` app demo) mà KHÔNG gọi API "consume" insets, nên giá trị gốc vẫn
+     * truyền nguyên xuống tới đây dù host đã lo xong rồi — tin nó thì cộng dư lần nữa, đẩy [anchor]
+     * lên cao hơn mức cần (bug thật đã gặp, xác nhận bằng số đo trên máy).
      *
-     * Idempotent với việc gọi lại nhiều lần trên cùng 1 view instance (vd Fragment không bị huỷ view
-     * mà chỉ ẩn/hiện lại) — xem [R.id.prm_tag_nav_bar_inset_margin].
+     * Cũng KHÔNG tự đo `getLocationOnScreen` (toạ độ tuyệt đối trên display) so với kích thước window
+     * (cách cũ hơn nữa, xem lịch sử git) — hai hệ toạ độ đó chỉ trùng khi window nằm đúng góc (0,0)
+     * của display, lệch nhau ở một số OEM/kiểu windowing.
+     *
+     * Cách đúng: dùng giá trị insets chỉ để biết **có nav bar hay không và cao bao nhiêu**, rồi xác
+     * nhận lại bằng toạ độ THẬT của [anchor] SAU KHI layout ổn định (window-relative:
+     * `getLocationInWindow` so với chiều cao [View.getRootView] — cùng hệ toạ độ, không lệch theo
+     * multi-window/split-screen) — chỉ cộng margin khi toạ độ đó xác nhận [anchor] còn nằm trong vùng
+     * nav bar. Vì vậy đúng trong MỌI trường hợp: host tự pad hay không, có nav bar hay không, và tự
+     * cập nhật lại mỗi khi insets đổi (xoay màn hình, gập/mở máy gập, bật/tắt gesture nav...).
+     *
+     * Bắt `baseMargin` (giá trị margin gốc khai trong XML) **một lần duy nhất** tại thời điểm gọi —
+     * không đọc lại `layoutParams.bottomMargin` mỗi lần insets đổi, vì lúc đó nó đã bị chính lần áp
+     * trước ghi đè. Gọi lại hàm này nhiều lần trên cùng 1 view (Fragment không huỷ view, chỉ ẩn/hiện
+     * lại) là no-op nhờ tag đánh dấu — tránh bắt nhầm `baseMargin` từ giá trị đã cộng dồn.
+     *
+     * ⚠️ [anchor] PHẢI luôn được layout (`visibility = INVISIBLE`, KHÔNG `GONE`) trong suốt vòng đời
+     * view — view `GONE` không được đo/layout nên [View.doOnNextLayout] không có cơ hội chạy tới khi
+     * nó lại `VISIBLE`, mất luôn margin tránh nav bar. Đã dính đúng bug này ở
+     * `ChoosePromotionFragment.ctlApplyVoucher` (ẩn qua `GONE` lúc shimmer) — fix ở phía đó (đổi sang
+     * `INVISIBLE`), không phải sửa hàm này.
+     *
+     * ⚠️ Set `bottomMargin` phải qua [View.post] (traversal MỚI, tách khỏi traversal hiện tại) —
+     * KHÔNG set thẳng trong [View.doOnNextLayout]. Set thẳng trong đó vẫn đang nằm giữa traversal do
+     * chính [View.requestLayout] gọi trước đó gây ra (Android tự chạy thêm một vòng measure/layout
+     * NGAY TRONG cùng traversal khi có `requestLayout()` giữa chừng) — với parent là
+     * `ConstraintLayout`, vòng "trong cùng traversal" này KHÔNG re-solve theo margin mới (đã xác nhận
+     * bằng log đo trên máy thật: `bottomMargin` trong `LayoutParams` đổi đúng nhưng bounds cuối cùng
+     * không đổi). Set trong `post {}` đẩy việc này sang một traversal HOÀN TOÀN mới, buộc
+     * `ConstraintLayout` solve lại từ đầu với margin đúng.
+     *
+     * ⚠️ [isOverlappedByNavigationBar] đo **view CHA** của [anchor], KHÔNG đo chính [anchor] — đo
+     * chính nó là tự ăn đuôi mình: `bottomMargin` mình vừa cộng làm chính [anchor] dịch lên, lần đo
+     * SAU đó (do chính [View.requestLayout] ở đây kéo theo một lượt insets dispatch mới trên một số
+     * máy/API cũ — model dispatch insets cũ gắn liền với layout pass, khác Pixel/API 30+) thấy "hết
+     * bị che" → gỡ margin → lại bị che → đo lại → cộng lại... nút nhảy vị trí liên tục (bug thật gặp
+     * trên Samsung Note 8). View cha (`ConstraintLayout` chứa [anchor]) có kích thước không phụ thuộc
+     * margin của con, nên phép đo trên nó ổn định bất kể lặp lại bao nhiêu lần.
      */
     protected fun applyNavigationBarInset(anchor: View) {
-        anchor.doOnNextLayout {
-            val previouslyApplied = anchor.getTag(R.id.prm_tag_nav_bar_inset_margin) as? Int
-            // Lần gọi THỨ HAI trở đi (Fragment không huỷ view, chỉ ẩn/hiện lại): toạ độ đọc được lúc
-            // này đã bị chính lần áp trước đẩy lên rồi, đo lại theo `isOverlappedByNavigationBar` sẽ
-            // LUÔN ra "không overlap" (vì đã dịch lên khỏi vùng nav bar) → tính nhầm `toApply = 0` →
-            // set `bottomMargin` về đúng giá trị GỐC, xoá mất margin đã áp — nút lại bị nav bar đè.
-            // Fix: giữ nguyên quyết định của lần đo ĐẦU (khi toạ độ còn nguyên bản, chưa bị sửa),
-            // không đo lại từ toạ độ đã dịch.
-            val toApply = previouslyApplied
-                ?: run {
-                    val navBarInset = currentNavigationBarInset(anchor)
-                    if (navBarInset > 0 && isOverlappedByNavigationBar(anchor, navBarInset)) navBarInset else 0
+        if (anchor.getTag(R.id.prm_tag_nav_bar_inset_margin) != null) return
+        val baseMargin = (anchor.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin ?: 0
+        anchor.setTag(R.id.prm_tag_nav_bar_inset_margin, baseMargin)
+        ViewCompat.setOnApplyWindowInsetsListener(anchor) { view, insets ->
+            val navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            if (navBarInset <= 0) {
+                view.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = baseMargin }
+            } else {
+                // Đợi layout pass kế tiếp: cần toạ độ SAU KHI padding của ancestor (nếu có) đã áp —
+                // đọc ngay trong callback này là toạ độ CŨ, còn từ trước khi ancestor kịp layout lại.
+                view.doOnNextLayout {
+                    val toApply = if (isOverlappedByNavigationBar(view, navBarInset)) navBarInset else 0
+                    view.post {
+                        view.updateLayoutParams<ViewGroup.MarginLayoutParams> { bottomMargin = baseMargin + toApply }
+                    }
                 }
-            val baseMargin = ((anchor.layoutParams as? ViewGroup.MarginLayoutParams)?.bottomMargin ?: 0) - (previouslyApplied ?: 0)
-            anchor.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = baseMargin + toApply
+                view.requestLayout()
             }
-            anchor.setTag(R.id.prm_tag_nav_bar_inset_margin, toApply)
+            insets
         }
+        ViewCompat.requestApplyInsets(anchor)
     }
 
     /**
-     * Cộng thêm chiều cao navigation bar hệ thống vào `paddingBottom` sẵn có của [scrollable] — cũng
-     * chỉ khi [scrollable] thật sự đang bị navigation bar che, dùng cho nội dung cuộn được
-     * (`RecyclerView`...) thay vì [applyNavigationBarInset], để item cuối cùng không bị navigation bar
-     * che khi cuộn hết cỡ trên các thiết bị navigation bar to (3 nút).
+     * Cộng thêm chiều cao navigation bar hệ thống vào `paddingBottom` sẵn có của [scrollable] — dùng
+     * cho nội dung cuộn được (`RecyclerView`...) thay vì [applyNavigationBarInset], để item cuối cùng
+     * không bị navigation bar che khi cuộn hết cỡ trên các thiết bị navigation bar to (3 nút). Cùng
+     * cơ chế xác nhận bằng toạ độ thật như [applyNavigationBarInset] — xem KDoc ở đó.
      *
      * Tự bật `clipToPadding = false` nếu [scrollable] là `ViewGroup` — phần padding thêm chỉ nới rộng
      * vùng cuộn, không cắt mất nội dung item cuối khi nó cuộn vào đúng vùng padding đó.
-     *
-     * Gọi đúng lúc [scrollable] đã hiển thị, cùng lý do với [applyNavigationBarInset]. Idempotent
-     * tương tự — xem [R.id.prm_tag_nav_bar_inset_padding].
      */
     protected fun applyNavigationBarInsetAsScrollPadding(scrollable: View) {
+        if (scrollable.getTag(R.id.prm_tag_nav_bar_inset_padding) != null) return
         if (scrollable is ViewGroup) scrollable.clipToPadding = false
-        scrollable.doOnNextLayout {
-            val previouslyApplied = scrollable.getTag(R.id.prm_tag_nav_bar_inset_padding) as? Int
-            // Cùng bug/fix với `applyNavigationBarInset` — xem comment ở đó. Lần gọi lại sau khi đã áp
-            // padding thì toạ độ đo được đã dịch lên rồi, không đo lại được nữa.
-            val toApply = previouslyApplied
-                ?: run {
-                    val navBarInset = currentNavigationBarInset(scrollable)
-                    if (navBarInset > 0 && isOverlappedByNavigationBar(scrollable, navBarInset)) navBarInset else 0
+        val basePadding = scrollable.paddingBottom
+        scrollable.setTag(R.id.prm_tag_nav_bar_inset_padding, basePadding)
+        ViewCompat.setOnApplyWindowInsetsListener(scrollable) { view, insets ->
+            val navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            if (navBarInset <= 0) {
+                view.updatePadding(bottom = basePadding)
+            } else {
+                view.doOnNextLayout {
+                    val toApply = if (isOverlappedByNavigationBar(view, navBarInset)) navBarInset else 0
+                    view.updatePadding(bottom = basePadding + toApply)
                 }
-            val basePadding = scrollable.paddingBottom - (previouslyApplied ?: 0)
-            scrollable.updatePadding(bottom = basePadding + toApply)
-            scrollable.setTag(R.id.prm_tag_nav_bar_inset_padding, toApply)
+                view.requestLayout()
+            }
+            insets
         }
+        ViewCompat.requestApplyInsets(scrollable)
     }
-
-    private fun currentNavigationBarInset(view: View): Int =
-        ViewCompat.getRootWindowInsets(view)
-            ?.getInsets(WindowInsetsCompat.Type.navigationBars())
-            ?.bottom ?: 0
 
     /**
-     * So toạ độ tuyệt đối trên màn hình của [view] với vùng navigation bar hệ thống — cách duy nhất
-     * biết chắc view đang bị che thật hay chỉ đang được đo "phòng hờ": container SDK nhận được có
-     * tràn xuống dưới navigation bar hay không phụ thuộc host, không suy luận được từ layout params.
+     * So toạ độ của **view cha trực tiếp** của [view] với vùng navigation bar hệ thống, SAU KHI
+     * layout đã ổn định — cách duy nhất biết chắc container đang bị che thật hay khoảng đó đã được
+     * ancestor (host) chừa sẵn rồi.
      *
-     * Lấy chiều cao **window thật chứa [view]** ([WindowManager.currentWindowMetrics], API 30+) thay
-     * vì `resources.displayMetrics.heightPixels` (chiều cao *display*) — hai giá trị lệch nhau ở
-     * multi-window/split-screen/desktop windowing (Android 16 đẩy mạnh trên tablet/Chromebook), lúc
-     * đó app chỉ chiếm một phần màn hình nên so với chiều cao display sẽ luôn sai.
+     * Đo view CHA, KHÔNG đo chính [view] — xem cảnh báo trong KDoc của [applyNavigationBarInset] về
+     * vòng lặp tự ăn đuôi mình nếu đo chính view đang được cộng margin/padding.
+     *
+     * `getLocationInWindow` + chiều cao [View.getRootView] — **cùng một hệ toạ độ (window-relative)**,
+     * đúng trong mọi kiểu windowing (multi-window/split-screen/freeform), không như
+     * `getLocationOnScreen` (toạ độ tuyệt đối trên display) so với kích thước window — hai hệ đó chỉ
+     * trùng khi window nằm đúng góc (0,0) của display.
      */
     private fun isOverlappedByNavigationBar(view: View, navBarInset: Int): Boolean {
+        val reference = view.parent as? View ?: view
         val location = IntArray(2)
-        view.getLocationOnScreen(location)
-        val viewBottomOnScreen = location[1] + view.height
-        val windowHeight = windowHeightOf(view)
-        return viewBottomOnScreen > windowHeight - navBarInset
-    }
-
-    private fun windowHeightOf(view: View): Int {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val windowManager = view.context.getSystemService(WindowManager::class.java)
-            if (windowManager != null) return windowManager.currentWindowMetrics.bounds.height()
-        }
-        return view.resources.displayMetrics.heightPixels
+        reference.getLocationInWindow(location)
+        val referenceBottomInWindow = location[1] + reference.height
+        val windowHeight = view.rootView.height
+        return referenceBottomInWindow > windowHeight - navBarInset
     }
 
     /** Chỉ chặn back khi màn này đang hiện trên cùng → wrap ở `onResume`, gỡ ở `onPause`. */

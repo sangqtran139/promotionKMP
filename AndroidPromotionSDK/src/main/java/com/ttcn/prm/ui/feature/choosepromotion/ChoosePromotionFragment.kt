@@ -1,6 +1,7 @@
 package com.ttcn.prm.ui.feature.choosepromotion
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -135,10 +136,14 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             // Ẩn cả thanh "Áp dụng" trong lúc shimmer — khớp iOS, nơi shimmer bám bounds của table
             // (chạy tới tận đáy màn) nên phủ luôn vùng nút.
             //
-            // Ẩn view chứ không trông vào z-order: shimmer là con ĐẦU TIÊN của `ctlMain`, còn
-            // `ctlApplyVoucher` là CardView đứng sau **và có elevation** — nó luôn vẽ đè lên shimmer
-            // dù shimmer đã kéo dài tới `parent` bottom.
-            binding.ctlApplyVoucher.isVisible = !showShimmer
+            // `INVISIBLE`, KHÔNG `GONE`: ẩn view chứ không trông vào z-order — shimmer là con ĐẦU
+            // TIÊN của `ctlMain`, còn `ctlApplyVoucher` là CardView đứng sau **và có elevation** — nó
+            // luôn vẽ đè lên shimmer dù shimmer đã kéo dài tới `parent` bottom, `INVISIBLE` vẫn chặn
+            // được việc đó (view không được vẽ). Không dùng `GONE` (như trước) vì `applyNavigationBarInset`
+            // cần view LUÔN được layout để đo toạ độ thật lúc xác nhận có bị nav bar che hay không —
+            // GONE thì không được layout, callback đo toạ độ không có cơ hội chạy đúng lúc, nút mất
+            // margin tránh nav bar. Cùng lý do `tvUse` ở `PromotionDetailFragment` cũng dùng INVISIBLE.
+            binding.ctlApplyVoucher.visibility = if (showShimmer) View.INVISIBLE else View.VISIBLE
 
             updateApplyButtonState(state)
             rebuildList(state)

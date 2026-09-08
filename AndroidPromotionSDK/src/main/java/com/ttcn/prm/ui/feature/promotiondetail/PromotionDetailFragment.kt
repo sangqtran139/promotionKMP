@@ -80,9 +80,15 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         get() = arguments?.getBoolean(KEY_HOST_HANDLES_DISMISS) ?: false
 
     override fun setupUI() {
-        // `tvUse` là `invisible` (không `gone`) ngay từ XML — có toạ độ thật từ layout pass đầu
-        // tiên này, không cần đợi data load hay bắt transition visibility nào về sau.
+        // `tvUse` là `invisible` (không `gone`) ngay từ XML — luôn được layout đúng chỗ (đóng góp vào
+        // constraint `ctlContent`) kể cả lúc chưa có data, không phải đợi data load hay bắt transition
+        // visibility nào về sau mới gọi được `applyNavigationBarInset`.
         applyNavigationBarInset(binding.tvUse)
+        // `shimmer_button` (placeholder nút "Sử dụng ngay" trong lúc tải) neo đáy CỐ ĐỊNH, không tự
+        // né nav bar như `tvUse` thật — thiếu dòng này, trên host không tự chừa chỗ (edge-to-edge
+        // trần) placeholder sẽ bị nav bar đè lúc đang shimmer, rồi "nhảy" vị trí đột ngột khi data về
+        // và `tvUse` thật hiện ra ở chỗ đúng. Cùng cơ chế, cùng anchor logic — chỉ khác view đích.
+        applyNavigationBarInset(binding.shimmerProvider.shimmerButton)
         binding.imgBack.setOnClickListener { goBack() }
         binding.tvUse.setOnClickListener { onActionClick() }
         setupDetailTabs()
