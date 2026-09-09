@@ -14,6 +14,7 @@
 #   ./scripts/build-ios.sh local                    # dựng xcframework → build app demo
 #   ./scripts/build-ios.sh local --run              # build → cài → mở trên simulator
 #   ./scripts/build-ios.sh local --skip-app         # chỉ dựng Promotion.xcframework
+#   ./scripts/build-ios.sh local --env product      # app demo trỏ môi trường product (mặc định staging)
 #   ./scripts/build-ios.sh publish                  # hỏi version rồi đẩy lên Viettelmoney
 #   ./scripts/build-ios.sh publish -v 1.2.0 --yes   # cho CI, không hỏi gì
 #   ./scripts/build-ios.sh publish --dry-run        # dựng + kiểm tra, không gửi gì lên
@@ -24,7 +25,7 @@
 #       --skip-app      bỏ qua bước build app demo
 #   -h, --help          in phần này
 #
-# Riêng `local`:   --run, --device 'iPhone 17 Pro'
+# Riêng `local`:   --run, --device 'iPhone 17 Pro', --env staging|uat|product
 # Riêng `publish`: --yes, --dry-run
 #
 #   -f, --force         ĐÈ thẳng bản đã có trên Artifactory, khỏi hỏi. Xem mục "Build đè" bên dưới.
@@ -88,6 +89,11 @@ cd "$(dirname "$0")/.."   # luôn chạy từ gốc repo, gọi script từ đâ
 MODE=""
 SDK_VERSION=""
 SKIP_APP=false
+
+# Môi trường của APP DEMO (configuration + scheme trong iosApp.xcodeproj). KHÔNG liên quan tới nơi
+# PUBLISH SDK — hai khái niệm khác nhau. Đối ứng cờ `--env` của scripts/build-android.sh.
+# Mặc định `staging`: chạy nhầm vào production thì tốn tiền thật, còn chạy nhầm vào staging thì không.
+APP_ENV="staging"
 DO_CLEAN=false
 DO_RUN=false
 DEVICE=""
@@ -101,7 +107,7 @@ APP_NAME="iosApp.app"
 XCFRAMEWORK="iosPromotionSDK/build/Promotion.xcframework"
 ARTIFACTORY_DIR="https://mobile-data.viettelmoney.vn/artifactory/api/storage/vdo-ios-frameworks/Martech/Promotion"
 
-usage() { sed -n '3,43p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '3,44p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # ─── Tham số ─────────────────────────────────────────────────────────────────────────────────
 # Chế độ là tham số vị trí ĐẦU TIÊN. Bắt riêng trước vòng lặp để `local`/`publish` không bị nhầm
@@ -115,6 +121,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         -v|--version) SDK_VERSION="${2:-}"; shift 2 ;;
         --skip-app)   SKIP_APP=true; shift ;;
+        --env)        APP_ENV="${2:-}"; shift 2 ;;
         --clean)      DO_CLEAN=true; shift ;;
         --run)        DO_RUN=true; shift ;;
         --device)     DEVICE="${2:-}"; shift 2 ;;
@@ -320,14 +327,25 @@ if [[ "$SKIP_APP" == true || "$MODE" == "publish" ]]; then
     echo "✓ Xong: $XCFRAMEWORK"
     [[ "$MODE" == "local" ]] && exit 0
 else
-    # Dùng `-scheme` (không phải `-target`): `-derivedDataPath` bắt buộc đi kèm scheme. Scheme `iosApp`
-    # đã được **shared** (xcshareddata/xcschemes) nên máy khác clone về là có ngay — để trong xcuserdata
-    # thì chỉ máy của người tạo mới thấy.
-    echo "▸ Build app demo (simulator)"
+    # Tên configuration/scheme viết hoa chữ đầu: uat → Uat → scheme `iosApp-Uat`.
+    case "$APP_ENV" in
+        staging|uat|product) ;;
+        *) echo "--env không hợp lệ: '$APP_ENV' (nhận: staging | uat | product)" >&2; exit 1 ;;
+    esac
+    APP_CONFIG="$(tr '[:lower:]' '[:upper:]' <<< "${APP_ENV:0:1}")${APP_ENV:1}"
+
+    # Dùng `-scheme` (không phải `-target`): `-derivedDataPath` bắt buộc đi kèm scheme. Bốn scheme
+    # (`iosApp` + ba scheme môi trường) đều **shared** (xcshareddata/xcschemes) nên máy khác clone về
+    # là có ngay — để trong xcuserdata thì chỉ máy của người tạo mới thấy.
+    #
+    # Truyền cả `-scheme` lẫn `-configuration` dù scheme đã trỏ đúng configuration: `xcodebuild` lấy
+    # configuration theo **action** của scheme, mà `build` không phải action nào trong số đó — nói
+    # tường minh thì không phải đoán.
+    echo "▸ Build app demo (simulator) — môi trường $APP_ENV"
     if ! xcodebuild build \
         -project iosApp/iosApp.xcodeproj \
-        -scheme iosApp \
-        -configuration Debug \
+        -scheme "iosApp-$APP_CONFIG" \
+        -configuration "$APP_CONFIG" \
         -sdk iphonesimulator \
         -derivedDataPath "$DERIVED" \
         CODE_SIGNING_ALLOWED=NO \

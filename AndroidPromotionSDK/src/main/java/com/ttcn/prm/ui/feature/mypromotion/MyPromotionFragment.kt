@@ -20,7 +20,7 @@ import com.ttcn.prm.ui.feature.searchmypromotion.SearchMyPromotionFragment
 import com.ttcn.promotionsdk.presentation.base.PRMEffect
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionIntent
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionState
-import timber.log.Timber
+import com.ttcn.prm.ui.utils.PRMLog
 
 internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBinding>() {
 
@@ -118,8 +118,10 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
             )
             adapterItems.forEachIndexed { index, item ->
                 if (item is MyPromotionListItem.Endow) {
-                    Timber.tag(TAG_VOUCHER_DIFF_DEBUG)
-                        .d("index=$index voucherId=${item.data.voucherId} rowKey=${item.rowKey} title=${item.data.title}")
+                    PRMLog.d(
+                        TAG_VOUCHER_DIFF_DEBUG,
+                        "index=$index voucherId=${item.data.voucherId} rowKey=${item.rowKey} title=${item.data.title}",
+                    )
                 }
             }
 

@@ -33,8 +33,16 @@ Tương đương chạy tay:
 ```bash
 V="-PSDK_VERSION=1.0.1"
 ./gradlew :promotionLogic:publishToMavenLocal :AndroidPromotionSDK:publishToMavenLocal $V
-./gradlew :androidApp:assembleDebug -PuseMavenLocal=true $V
+./gradlew :androidApp:assembleUatDebug -PuseMavenLocal=true $V
 ```
+
+`assembleUatDebug` chứ không phải `assembleDebug`: `:androidApp` có product flavor môi trường
+(`staging` / `uat` / `product`), nên `assembleDebug` là task **gộp** — build cả ba. Script nhận
+`--env staging|uat|product`, mặc định **`staging`**.
+
+Trong IDE, flavor `staging` khai `isDefault = true`. Bỏ dòng đó là AGP rơi về flavor đầu theo
+alphabet — `product` — và mỗi lần Gradle sync là Android Studio lặng lẽ đưa Build Variant về
+production.
 
 Thiếu `-PuseMavenLocal=true` thì `~/.m2` **không** được đăng ký và app kéo bản trên Artifactory
 Viettelmoney — không lỗi, chỉ là không thấy thay đổi vừa sửa.

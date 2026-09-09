@@ -213,6 +213,10 @@ class DemoHeadlessViewModel : ViewModel() {
         PromotionSDKError.Timeout -> "timeout"
         PromotionSDKError.ParseFailed -> "parseFailed"
         PromotionSDKError.FeatureDisabled -> "featureDisabled"
+        // Hai nhánh mới: lỗi NGHIỆP VỤ của server (trước đây bị nhét vào `networkFailure` với
+        // `message = errorCode`), và ca gọi `api` trước `initialize` (trước đây ném/crash).
+        is PromotionSDKError.BusinessRule -> "businessRule(${error.code})"
+        PromotionSDKError.NotInitialized -> "notInitialized"
         is PromotionSDKError.Unknown -> "unknown"
     }
 

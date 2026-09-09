@@ -3,6 +3,7 @@ package com.ttcn.promotionsdk.presentation.choosepromotion
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.common.daysUntil
 import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
+import com.ttcn.promotionsdk.presentation.common.RejectedOffer
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
 
 /**
@@ -53,6 +54,34 @@ data class ChoosePromotionState(
      * bằng [ChoosePromotionIntent.ApplyStarted] / [ChoosePromotionIntent.ApplyFinished].
      */
     val isApplying: Boolean = false,
+    /**
+     * Id các ưu đãi bị `validateStackableDiscounts` **từ chối** ở một lượt bấm "Áp dụng" trước đó.
+     *
+     * Hệ quả **duy nhất**: ưu đãi đó `isUsable = false` (mờ đi, mất ô tick, bấm không ăn) và bị bỏ
+     * khỏi [selectedIds]. **Không** gắn thêm trạng thái "Chưa đủ điều kiện áp dụng" lên card — đó là
+     * trạng thái của `findEligible` (`usable = false`, kèm `unmatchedRules`), nói về điều kiện đơn
+     * hàng; bị từ chối lúc validate là chuyện khác và lý do đã hiện ở popup ([applyMessage]).
+     *
+     * Chỉ giữ **id**, không giữ câu lý do: câu đó chỉ dùng một lần cho popup, giữ lại theo từng item
+     * là mời gọi đem nó ra hiển thị lên card.
+     *
+     * Đây là **override cục bộ của màn**, không phải dữ liệu server trả trong `findEligible`: server
+     * vẫn đánh `usable = true` cho ưu đãi này (nó đủ điều kiện *về nguyên tắc*), chỉ khi ghép với bộ
+     * ưu đãi đang chọn + đơn hàng hiện tại mới hỏng. Vì vậy nó phải **sống qua mọi lượt nạp lại**
+     * trong màn (kể cả kéo-để-tải-lại): xoá đi là ưu đãi vừa báo hỏng lại sáng lên chọn được.
+     *
+     * Chết theo store, tức theo màn — mở lại màn "Chọn ưu đãi" là hỏi lại server từ đầu.
+     */
+    val rejectedIds: List<String> = emptyList(),
+    /**
+     * Câu báo lỗi **một-lần** của lượt "Áp dụng" vừa bị từ chối — native hiện popup rồi
+     * `dispatch(ConsumeApplyMessage)`.
+     *
+     * Tách khỏi [errorCode]: [errorCode] là **mã** để native map sang chuỗi tài nguyên
+     * (`mapPromotionError` / `PromotionUIStrings.errorMessage`), còn đây là **chuỗi thô của server**
+     * — map nó qua bảng mã là vứt đúng cái thông tin user cần.
+     */
+    val applyMessage: String? = null,
 )
 
 sealed interface ChoosePromotionIntent {
@@ -80,20 +109,20 @@ sealed interface ChoosePromotionIntent {
     /** Seed các voucher pre-select (từ discount đang áp trước đó). */
     data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
     /**
-     * Seed pre-select + preload **đúng một lần cho cả vòng đời store**.
+     * Seed pre-select rồi **nạp lại danh sách từ server**, đúng một lần cho cả vòng đời store.
      *
-     * Android gọi `SetPreSelected` + `Preload` trong `observeData()` (chạy ở `onViewCreated`), nên
-     * view dựng lại là ghi đè `selectedIds` về bộ đã áp ban đầu — tick mới của user biến mất — và
-     * `preload()` rewind `otherOffers` về trang đầu, xoá các trang đã cuộn. iOS chặn bằng cờ
-     * `didStart` trong VM. Nay cờ nằm ở store nên hai bên không thể lệch.
+     * Cờ gác vẫn cần: Android gọi trong `observeData()` (chạy ở `onViewCreated`), nên view dựng lại
+     * là bắn thêm lần nữa — ghi đè `selectedIds` về bộ đã áp ban đầu (tick mới của user biến mất) và
+     * gọi thừa một lượt `findEligible`. iOS từng chặn bằng cờ `didStart` riêng trong VM; nay cờ nằm
+     * ở store nên hai bên không thể lệch.
+     *
+     * **Không còn nhận danh sách preload.** Trước đây intent này ôm cả `myOffers`/`otherOffers` +
+     * cờ phân trang mà widget đã nạp, và store dùng thẳng chúng thay vì gọi mạng — mở màn ra là thấy
+     * dữ liệu của thời điểm widget nạp, có thể đã cũ (ngân sách hết, voucher vừa bị dùng ở thiết bị
+     * khác). Nay **luôn** gọi `findEligible`, nên cờ phân trang cũng lấy từ chính response đó.
+     * [Preload] vẫn còn cho nơi nào thật sự có dữ liệu sẵn và không muốn gọi mạng.
      */
-    data class SeedOnce(
-        val preSelectedIds: List<String>,
-        val myOffers: List<EligibleOffer>,
-        val otherOffers: List<EligibleOffer>,
-        val myIsLastPage: Boolean,
-        val otherIsLastPage: Boolean,
-    ) : ChoosePromotionIntent
+    data class SeedOnce(val preSelectedIds: List<String>) : ChoosePromotionIntent
     /** Chọn/bỏ chọn 1 ưu đãi theo id. */
     data class ToggleSelection(val id: String) : ChoosePromotionIntent
     /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
@@ -110,6 +139,22 @@ sealed interface ChoosePromotionIntent {
 
     /** Lượt validate đã có kết quả (thành công hay lỗi đều tính) → mở khoá nút. */
     data object ApplyFinished : ChoosePromotionIntent
+
+    /**
+     * `validateStackableDiscounts` trả `valid = false` cho [items] → **disable tại chỗ** những ưu đãi
+     * đó (kèm câu của server) và bỏ tick chúng; màn KHÔNG đóng.
+     *
+     * Bao luôn phần việc của [ApplyFinished] (mở khoá nút), nên native chỉ bắn một intent cho nhánh
+     * này — bắn cả hai cũng vô hại nhưng thừa.
+     *
+     * Vì sao là intent chứ không phải store tự biết: lượt validate chạy ở `EndowStore` (widget), y
+     * như [ApplyStarted]/[ApplyFinished]. `EndowStore.validateAndApply` trả
+     * `EndowApplyOutcome.Rejected` và native chuyển thẳng danh sách sang đây.
+     */
+    data class ApplyRejected(val items: List<RejectedOffer>) : ChoosePromotionIntent
+
+    /** Đã hiện xong [ChoosePromotionState.applyMessage] → xoá, để lượt sau không thấy câu cũ. */
+    data object ConsumeApplyMessage : ChoosePromotionIntent
 }
 
 /**
@@ -191,7 +236,8 @@ fun ChoosePromotionState.showsSelectedCount(): Boolean =
  *    cho cùng một bộ voucher, và n callback cùng chạy về (n popup lỗi, hoặc pop màn nhiều lần).
  *
  * Xét [ChooseOffer.isUsable] chứ không phải cờ thô `source.usable`: `isUsable` đã gộp cả **hết hạn**
- * (xem [toChooseOffer]). Voucher vừa hết hạn ngay lúc nạp lại thì `source.usable` vẫn `true`, chỉ
+ * và cả ưu đãi vừa bị server từ chối ở lượt "Áp dụng" trước ([ChoosePromotionState.rejectedIds]
+ * — xem [toChooseOffer]). Voucher vừa hết hạn ngay lúc nạp lại thì `source.usable` vẫn `true`, chỉ
  * `isUsable` bắt được.
  */
 fun ChoosePromotionState.canApply(): Boolean {
@@ -242,6 +288,15 @@ data class ChooseOffer(
      * cờ này thì item hết hạn hiện badge RỖNG (nhãn bên Android bám `source.usable`, vẫn là true).
      */
     val isExpired: Boolean,
+    /**
+     * Ưu đãi này vừa bị `validateStackableDiscounts` từ chối ở một lượt "Áp dụng" — **lý do thứ ba**
+     * làm [isUsable] = false, bên cạnh `usable` của server và hết hạn.
+     *
+     * Native dùng nó để **không** hiện nhãn trạng thái nào: card chỉ mờ đi. Ba lý do khác nhau về
+     * cách hiển thị — hết hạn có nhãn "Đã hết hạn", `usable = false` có dải "Chưa đủ điều kiện áp
+     * dụng" + câu `unmatchedRules`, còn bị từ chối thì **không nhãn nào cả** (lý do đã nói ở popup).
+     */
+    val isRejected: Boolean = false,
 )
 
 /**
@@ -254,11 +309,18 @@ data class ChooseOffer(
  * client tự tính, nên bám vào nó là ưu đãi hết hạn cũng bị treo dải — sai nghĩa, vì hết hạn thì sửa
  * đơn kiểu gì cũng vô ích. Hết hạn đi đường riêng: mờ card + badge "Đã hết hạn" ([ChooseOffer.isExpired]).
  *
+ * **Không** dùng [ChooseOffer.isRejected] ở đây: ưu đãi bị validate từ chối chỉ mờ đi, không đeo
+ * thêm nhãn trạng thái nào — lý do đã hiện ở popup ([ChoosePromotionState.applyMessage]). Gắn dải
+ * này vào là nói với user "đơn hàng chưa thoả điều kiện", trong khi đơn hàng không đổi gì.
+ *
  * Quyết định nằm ở **một chỗ duy nhất** này, Fragment/Cell chỉ đọc.
  */
 fun ChooseOffer.showsIneligibleWarning(): Boolean = !source.usable
 
-internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
+internal fun EligibleOffer.toChooseOffer(
+    expireWarningDate: Int?,
+    rejectedIds: Set<String> = emptySet(),
+): ChooseOffer {
     // Xem chú thích cùng nội dung ở `VoucherItem.toMyPromotionVoucher`.
     ExpiryWarning.remember(expireWarningDate)
 
@@ -270,7 +332,11 @@ internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
     // Mốc là `< 0`, KHÔNG phải `<= 0`: `daysUntil` làm tròn lên nên 0 nghĩa là "hết hạn trong hôm
     // nay" — vẫn dùng được, và đó cũng là ngày đầu của dải "sắp hết hạn" (`it in 0..warn`).
     val expired = daysUntil(expireDate)?.let { it < 0 } == true
-    val enabled = usable && !expired
+    // Lý do thứ ba: lượt "Áp dụng" trước đó server đã từ chối đúng ưu đãi này. Phải áp lại ở MỌI lần
+    // map — kể cả trang kế và lượt kéo-để-tải-lại — nếu không nó sáng lên chọn được ngay sau khi
+    // user kéo màn, và bấm "Áp dụng" lần nữa lại nhận đúng câu từ chối cũ.
+    val rejected = id in rejectedIds
+    val enabled = usable && !expired && !rejected
 
     // Ngưỡng "sắp hết hạn": [ExpiryWarning] ưu tiên giá trị vừa `remember` ở trên, thiếu thì lùi về
     // bản nhớ gần nhất. Cần cái lùi này vì luồng THƯỜNG của màn Chọn là nhận dữ liệu preload từ
@@ -278,5 +344,11 @@ internal fun EligibleOffer.toChooseOffer(expireWarningDate: Int?): ChooseOffer {
     // dòng "HSD còn X ngày" không bao giờ hiện.
     val days = ExpiryWarning.daysIfExpiringSoon(expireDate, enabled)
 
-    return ChooseOffer(source = this, isUsable = enabled, expiringInDays = days, isExpired = expired)
+    return ChooseOffer(
+        source = this,
+        isUsable = enabled,
+        expiringInDays = days,
+        isExpired = expired,
+        isRejected = rejected,
+    )
 }

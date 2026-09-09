@@ -1,32 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
+<!--
+  `paddingBottom` bằng `paddingVertical` của `item_choose_promotion.xml`: vạch ngăn bên dưới
+  (`prm_item_section_divider.xml`) nhờ vậy cách nhóm trên đúng 8dp dù hàng "Xem thêm" có hiện
+  hay không.
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingTop="@dimen/prm_5sdp"
+    android:paddingBottom="@dimen/prm_6sdp">
 
-    <!--
-      `paddingBottom` bằng `paddingVertical` của `item_choose_promotion.xml`: vạch ngăn bên dưới
-      (`prm_item_section_divider.xml`) nhờ vậy cách nhóm trên đúng 8dp dù hàng "Xem thêm" có hiện
-      hay không.
-    -->
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/txtTitleEndow"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:paddingTop="@dimen/_5sdp"
-        android:paddingBottom="@dimen/_6sdp">
+        style="@style/PRMFontDisPlayRegular14"
+        android:textColor="@color/prm_color_7A7A7A"
+        android:text="@string/prm_see_more"/>
 
-        <TextView
-            android:id="@+id/txtTitleEndow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            style="@style/PRMFontDisPlayRegular14"
-            android:textColor="@color/prm_color_7A7A7A"
-            android:text="@string/prm_see_more"/>
-
-        <ImageView
-            android:id="@+id/imgArrow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/_5sdp"
-            android:src="@drawable/prm_ic_down_arrow_16_dark60"/>
-    </LinearLayout>
-
-</layout>
+    <ImageView
+        android:id="@+id/imgArrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/prm_5sdp"
+        android:src="@drawable/prm_ic_down_arrow_16_dark60"
+        android:importantForAccessibility="no" />
+</LinearLayout>

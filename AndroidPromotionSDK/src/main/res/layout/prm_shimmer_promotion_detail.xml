@@ -1,216 +1,213 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<com.facebook.shimmer.ShimmerFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/shimmer_detail"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/prm_color_FBFBFB"
+    app:shimmer_base_color="@color/prm_colorWhite"
+    app:shimmer_colored="false"
+    app:shimmer_duration="@integer/prm_shimmer_duration"
+    app:shimmer_highlight_color="@color/prm_colorWhite"
+    app:shimmer_repeat_delay="@integer/prm_shimmer_repeat_delay">
 
-    <com.facebook.shimmer.ShimmerFrameLayout
-        android:id="@+id/shimmer_detail"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/prm_color_FBFBFB"
-        app:shimmer_base_color="@color/prm_colorWhite"
-        app:shimmer_colored="false"
-        app:shimmer_duration="@integer/prm_shimmer_duration"
-        app:shimmer_highlight_color="@color/prm_colorWhite"
-        app:shimmer_repeat_delay="@integer/prm_shimmer_repeat_delay">
+        android:layout_height="match_parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <View
+            android:id="@+id/shimmer_banner"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="@dimen/prm_detail_banner_height"
+            android:background="@drawable/prm_background_shimmer"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <View
-                android:id="@+id/shimmer_banner"
+        <!-- Card: soi gương `cardViewTop` — lề 20, đè đáy banner -32dp, không translationY. -->
+        <com.ttcn.prm.ui.widget.PRMCardView
+            android:id="@+id/shimmer_card"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/prm_view_size_20"
+            android:layout_marginTop="-32dp"
+            android:layout_marginEnd="@dimen/prm_view_size_20"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/shimmer_banner"
+            app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
+            app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvTopRightRadius="@dimen/prm_view_size_16"
+            app:prmSvBackgroundType="fill_stroke"
+            app:prmSvStrokeColor="@color/prm_color_D3D3D3"
+            app:prmSvStrokeWidth="0.5dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/prm_detail_banner_height"
-                android:background="@drawable/prm_background_shimmer"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <!-- Card: soi gương `cardViewTop` — lề 20, đè đáy banner -32dp, không translationY. -->
-            <com.ttcn.prm.ui.widget.PRMCardView
-                android:id="@+id/shimmer_card"
-                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/prm_view_size_20"
-                android:layout_marginTop="-32dp"
-                android:layout_marginEnd="@dimen/prm_view_size_20"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/shimmer_banner"
-                app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
-                app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
-                app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
-                app:prmCvTopRightRadius="@dimen/prm_view_size_16"
-                app:prmSvBackgroundType="fill_stroke"
-                app:prmSvStrokeColor="@color/prm_color_D3D3D3"
-                app:prmSvStrokeWidth="0.5dp">
+                android:paddingBottom="@dimen/prm_view_size_16">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingBottom="@dimen/prm_view_size_16">
-
-                    <!-- 44dp = `circleLogo` thật (`@dimen/prm_view_size_44`). Trước đây 24dp → logo nhảy
-                         to gần gấp đôi lúc dữ liệu về. -->
-                    <View
-                        android:id="@+id/shimmer_logo"
-                        android:layout_width="@dimen/prm_view_size_44"
-                        android:layout_height="@dimen/prm_view_size_44"
-                        android:layout_marginStart="@dimen/prm_view_size_16"
-                        android:layout_marginTop="@dimen/prm_view_size_20"
-                        android:background="@drawable/prm_background_shimmer_circle"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <View
-                        android:id="@+id/shimmer_merchant"
-                        android:layout_width="@dimen/prm_view_size_80"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:layout_marginStart="@dimen/prm_view_size_8"
-                        android:background="@drawable/prm_background_shimmer"
-                        app:layout_constraintBottom_toBottomOf="@+id/shimmer_logo"
-                        app:layout_constraintStart_toEndOf="@+id/shimmer_logo"
-                        app:layout_constraintTop_toTopOf="@+id/shimmer_logo" />
-
-                    <View
-                        android:id="@+id/shimmer_title"
-                        android:layout_width="0dp"
-                        android:layout_height="@dimen/prm_view_size_16"
-                        android:layout_marginTop="@dimen/prm_view_size_7"
-                        android:layout_marginEnd="@dimen/prm_view_size_8"
-                        android:background="@drawable/prm_background_shimmer"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
-                        app:layout_constraintTop_toBottomOf="@+id/shimmer_logo" />
-
-                    <View
-                        android:id="@+id/shimmer_title2"
-                        android:layout_width="0dp"
-                        android:layout_height="@dimen/prm_view_size_16"
-                        android:layout_marginTop="@dimen/prm_view_size_6"
-                        android:layout_marginEnd="@dimen/prm_view_size_60"
-                        android:background="@drawable/prm_background_shimmer"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
-                        app:layout_constraintTop_toBottomOf="@+id/shimmer_title" />
-
-                    <View
-                        android:id="@+id/shimmer_date"
-                        android:layout_width="@dimen/prm_view_size_120"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:layout_marginTop="@dimen/prm_view_size_7"
-                        android:background="@drawable/prm_background_shimmer"
-                        app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
-                        app:layout_constraintTop_toBottomOf="@+id/shimmer_title2" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.ttcn.prm.ui.widget.PRMCardView>
-
-            <!--
-              Hàng tab: lề 20 = lề `ctlContent` thật, KHÔNG thụt thêm (bản thật đã bỏ
-              `marginHorizontal="_10sdp"` để khớp `UnderlinedSegmentControlView` iOS ghim đúng lề 20).
-              Cao 48dp = chiều cao thực tế của `TabLayout` tab-chữ (trước đây 36dp).
-            -->
-            <LinearLayout
-                android:id="@+id/shimmer_tabs"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/prm_view_size_20"
-                android:layout_marginEnd="@dimen/prm_view_size_20"
-                android:orientation="horizontal"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/shimmer_card">
+                <!-- 44dp = `circleLogo` thật (`@dimen/prm_view_size_44`). Trước đây 24dp → logo nhảy
+                     to gần gấp đôi lúc dữ liệu về. -->
+                <View
+                    android:id="@+id/shimmer_logo"
+                    android:layout_width="@dimen/prm_view_size_44"
+                    android:layout_height="@dimen/prm_view_size_44"
+                    android:layout_marginStart="@dimen/prm_view_size_16"
+                    android:layout_marginTop="@dimen/prm_view_size_20"
+                    android:background="@drawable/prm_background_shimmer_circle"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <View
+                    android:id="@+id/shimmer_merchant"
+                    android:layout_width="@dimen/prm_view_size_80"
+                    android:layout_height="@dimen/prm_view_size_14"
+                    android:layout_marginStart="@dimen/prm_view_size_8"
+                    android:background="@drawable/prm_background_shimmer"
+                    app:layout_constraintBottom_toBottomOf="@+id/shimmer_logo"
+                    app:layout_constraintStart_toEndOf="@+id/shimmer_logo"
+                    app:layout_constraintTop_toTopOf="@+id/shimmer_logo" />
+
+                <View
+                    android:id="@+id/shimmer_title"
                     android:layout_width="0dp"
-                    android:layout_height="@dimen/prm_view_size_48"
+                    android:layout_height="@dimen/prm_view_size_16"
+                    android:layout_marginTop="@dimen/prm_view_size_7"
                     android:layout_marginEnd="@dimen/prm_view_size_8"
-                    android:layout_weight="1"
+                    android:background="@drawable/prm_background_shimmer"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                    app:layout_constraintTop_toBottomOf="@+id/shimmer_logo" />
+
+                <View
+                    android:id="@+id/shimmer_title2"
+                    android:layout_width="0dp"
+                    android:layout_height="@dimen/prm_view_size_16"
+                    android:layout_marginTop="@dimen/prm_view_size_6"
+                    android:layout_marginEnd="@dimen/prm_view_size_60"
+                    android:background="@drawable/prm_background_shimmer"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                    app:layout_constraintTop_toBottomOf="@+id/shimmer_title" />
+
+                <View
+                    android:id="@+id/shimmer_date"
+                    android:layout_width="@dimen/prm_view_size_120"
+                    android:layout_height="@dimen/prm_view_size_14"
+                    android:layout_marginTop="@dimen/prm_view_size_7"
+                    android:background="@drawable/prm_background_shimmer"
+                    app:layout_constraintStart_toStartOf="@+id/shimmer_logo"
+                    app:layout_constraintTop_toBottomOf="@+id/shimmer_title2" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.ttcn.prm.ui.widget.PRMCardView>
+
+        <!--
+          Hàng tab: lề 20 = lề `ctlContent` thật, KHÔNG thụt thêm (bản thật đã bỏ
+          `marginHorizontal="_10sdp"` để khớp `UnderlinedSegmentControlView` iOS ghim đúng lề 20).
+          Cao 48dp = chiều cao thực tế của `TabLayout` tab-chữ (trước đây 36dp).
+        -->
+        <LinearLayout
+            android:id="@+id/shimmer_tabs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/prm_view_size_20"
+            android:layout_marginEnd="@dimen/prm_view_size_20"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/shimmer_card">
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/prm_view_size_48"
+                android:layout_marginEnd="@dimen/prm_view_size_8"
+                android:layout_weight="1"
+                android:background="@drawable/prm_background_shimmer" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="@dimen/prm_view_size_48"
+                android:layout_weight="1"
+                android:background="@drawable/prm_background_shimmer" />
+
+        </LinearLayout>
+
+        <!--
+          Nội dung tab thật là một `PRMCardView` bo 16 cao `match_parent` (xem
+          `fragment_content_detail_endow_prm.xml`) chứ không phải mấy dòng chữ trần trên nền màn.
+          Shimmer phải có cùng cái card đó — thiếu nó thì lúc dữ liệu về tự nhiên "mọc" ra một
+          khối trắng bo góc. Card căng từ đáy hàng tab tới đỉnh nút, y như bản thật.
+        -->
+        <com.ttcn.prm.ui.widget.PRMCardView
+            android:id="@+id/shimmer_content"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="@dimen/prm_view_size_20"
+            android:layout_marginEnd="@dimen/prm_view_size_20"
+            android:layout_marginBottom="@dimen/prm_view_size_16"
+            app:layout_constraintBottom_toTopOf="@+id/shimmer_button"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/shimmer_tabs"
+            app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
+            app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
+            app:prmCvTopRightRadius="@dimen/prm_view_size_16"
+            app:prmSvBackgroundType="fill_stroke"
+            app:prmSvStrokeColor="@color/prm_color_D3D3D3"
+            app:prmSvStrokeWidth="0.5dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/prm_view_size_16"
+                android:paddingTop="@dimen/prm_view_size_16">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/prm_view_size_14"
                     android:background="@drawable/prm_background_shimmer" />
 
                 <View
-                    android:layout_width="0dp"
-                    android:layout_height="@dimen/prm_view_size_48"
-                    android:layout_weight="1"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/prm_view_size_14"
+                    android:layout_marginTop="@dimen/prm_view_size_8"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/prm_view_size_14"
+                    android:layout_marginTop="@dimen/prm_view_size_8"
+                    android:background="@drawable/prm_background_shimmer" />
+
+                <View
+                    android:layout_width="@dimen/prm_150sdp"
+                    android:layout_height="@dimen/prm_view_size_14"
+                    android:layout_marginTop="@dimen/prm_view_size_8"
                     android:background="@drawable/prm_background_shimmer" />
 
             </LinearLayout>
 
-            <!--
-              Nội dung tab thật là một `PRMCardView` bo 16 cao `match_parent` (xem
-              `fragment_content_detail_endow_prm.xml`) chứ không phải mấy dòng chữ trần trên nền màn.
-              Shimmer phải có cùng cái card đó — thiếu nó thì lúc dữ liệu về tự nhiên "mọc" ra một
-              khối trắng bo góc. Card căng từ đáy hàng tab tới đỉnh nút, y như bản thật.
-            -->
-            <com.ttcn.prm.ui.widget.PRMCardView
-                android:id="@+id/shimmer_content"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_marginStart="@dimen/prm_view_size_20"
-                android:layout_marginEnd="@dimen/prm_view_size_20"
-                android:layout_marginBottom="@dimen/prm_view_size_16"
-                app:layout_constraintBottom_toTopOf="@+id/shimmer_button"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/shimmer_tabs"
-                app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
-                app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
-                app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
-                app:prmCvTopRightRadius="@dimen/prm_view_size_16"
-                app:prmSvBackgroundType="fill_stroke"
-                app:prmSvStrokeColor="@color/prm_color_D3D3D3"
-                app:prmSvStrokeWidth="0.5dp">
+        </com.ttcn.prm.ui.widget.PRMCardView>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="@dimen/prm_view_size_16"
-                    android:paddingTop="@dimen/prm_view_size_16">
+        <!-- `tokenSizing48` = đúng chiều cao `PRMButton` size large (PRMCoreButtonSize.LARGE →
+             tokenSizing48). Trước đây shimmer dùng tokenSizing56 → nút "thấp xuống" khi hiện thật. -->
+        <View
+            android:id="@+id/shimmer_button"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/prm_tokenSizing48"
+            android:layout_marginStart="@dimen/prm_view_size_16"
+            android:layout_marginEnd="@dimen/prm_view_size_16"
+            android:layout_marginBottom="@dimen/prm_tokenSpacing12"
+            android:background="@drawable/prm_background_shimmer"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:background="@drawable/prm_background_shimmer" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:layout_marginTop="@dimen/prm_view_size_8"
-                        android:background="@drawable/prm_background_shimmer" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:layout_marginTop="@dimen/prm_view_size_8"
-                        android:background="@drawable/prm_background_shimmer" />
-
-                    <View
-                        android:layout_width="@dimen/_150sdp"
-                        android:layout_height="@dimen/prm_view_size_14"
-                        android:layout_marginTop="@dimen/prm_view_size_8"
-                        android:background="@drawable/prm_background_shimmer" />
-
-                </LinearLayout>
-
-            </com.ttcn.prm.ui.widget.PRMCardView>
-
-            <!-- `tokenSizing48` = đúng chiều cao `PRMButton` size large (PRMCoreButtonSize.LARGE →
-                 tokenSizing48). Trước đây shimmer dùng tokenSizing56 → nút "thấp xuống" khi hiện thật. -->
-            <View
-                android:id="@+id/shimmer_button"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/prm_tokenSizing48"
-                android:layout_marginStart="@dimen/prm_view_size_16"
-                android:layout_marginEnd="@dimen/prm_view_size_16"
-                android:layout_marginBottom="@dimen/prm_tokenSpacing12"
-                android:background="@drawable/prm_background_shimmer"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </com.facebook.shimmer.ShimmerFrameLayout>
-
-</layout>
+</com.facebook.shimmer.ShimmerFrameLayout>

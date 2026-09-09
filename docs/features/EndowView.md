@@ -13,9 +13,10 @@
 > và quyết định **widget-state** (`EMPTY`/`NOT_APPLIED`/`APPLIED`/`UNAVAILABLE`) — nay nằm ở
 > **`EndowStore`** (`promotionLogic/presentation/endow`), dùng chung Android & iOS.
 > `PRMEndowViewModel` (Android) và `EndowViewModel` (iOS) đều là **lớp bọc mỏng** quanh store.
-> - Validate&apply đi qua `EndowStore.ValidateAndApply(offers)`. Màn "Chọn ưu đãi" chỉ **trả offers
->   đang chọn** (`ApplySelectedOffers` /
->   `onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate.
+> - Validate&apply đi qua `EndowStore.validateAndApply(offers)`. Màn "Chọn ưu đãi" chỉ **trả offers
+>   đang chọn** (`onApplySelectedOffers` → `PRMEndowView.applySelectedOffers`), store lo validate và
+>   **trả về `EndowApplyOutcome`** (`Applied` / `Rejected(items)` / `Failed(errorCode)`) — xem
+>   [1.6](#16-endowapplyoutcome--kết-cục-một-lượt-áp).
 > - Kết quả validate dùng model shared `EndowAppliedDiscount`. Bên Android `AppliedDiscount` nay là
 >   **`typealias` trỏ thẳng vào nó** (không còn data class chép lại + hai hàm map qua lại): host giữ
 >   nguyên import `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` và vẫn dựng `AppliedDiscount(...)`
@@ -40,6 +41,7 @@
   - [1.3. Nguồn dữ liệu và feature flag](#13-nguồn-dữ-liệu-và-feature-flag)
   - [1.4. Auto-apply hiện đang tắt](#14-auto-apply-hiện-đang-tắt)
   - [1.5. `EndowWidgetState` (trạng thái hiển thị — dùng chung 2 nền tảng)](#15-endowwidgetstate-trạng-thái-hiển-thị--dùng-chung-2-nền-tảng)
+  - [1.6. `EndowApplyOutcome` — kết cục một lượt áp](#16-endowapplyoutcome--kết-cục-một-lượt-áp)
 - [2. `confirmRedemption` — nút thanh toán của host](#2-confirmredemption--nút-thanh-toán-của-host)
 - [3. Luồng tích hợp end-to-end](#3-luồng-tích-hợp-end-to-end)
 - [4. Lưu ý khi sửa (quan trọng — đây là public-facing)](#4-lưu-ý-khi-sửa-quan-trọng--đây-là-public-facing)
@@ -126,7 +128,37 @@ Xem `TODO(auto-apply)` ở `PromotionUiMapper.kt` và `PRMEndowViewModel.kt`.
 - `EMPTY` — chưa có voucher.
 - `NOT_APPLIED` — có voucher nhưng chưa áp dụng.
 - `APPLIED` — đã áp dụng.
-- `UNAVAILABLE` — có voucher nhưng không đủ điều kiện (hết hạn/không hợp lệ với đơn).
+- `UNAVAILABLE` — voucher **đang áp** nhưng không còn hợp lệ với đơn.
+
+> ⚠️ `UNAVAILABLE` nay chỉ đến từ **hai** đường: ưu đãi đang áp hỏng giữa chừng
+> (`revalidateAfterBudgetError`, khi `createRedemption` báo hết ngân sách) và host tự đưa kết quả vào
+> (`EndowIntent.SetApplied` / `MarkUnavailable`, tức `PRMEndowView.setDiscountDetails` /
+> `markAppliedVoucherUnavailable`).
+>
+> Đường thứ ba **đã bỏ**: trước đây bấm "Áp dụng" ở màn chọn mà server trả `valid = false` thì
+> `validateAndApply` vẫn ghi `appliedDiscounts` + `discountUnavailable = true`, widget nhảy sang
+> `UNAVAILABLE` còn màn chọn thì đóng như đã áp xong. Nay nhánh đó là
+> `EndowApplyOutcome.Rejected` — **không commit gì**, và màn chọn ở lại để user chọn cái khác (xem
+> [ChoosePromotion.md §2.2](./ChoosePromotion.md#22-server-từ-chối-ưu-đãi--disable-tại-chỗ)).
+
+### 1.6. `EndowApplyOutcome` — kết cục một lượt áp
+
+`EndowStore.validateAndApply(offers)` là `suspend` và trả **kết cục của đúng lượt gọi đó**, không phải
+`EndowState`:
+
+| Kết cục | Khi nào | `appliedDiscounts` | Nơi gọi làm gì |
+|---|---|---|---|
+| `Applied` | tất cả `valid = true` (hoặc `offers` rỗng = xoá áp) | **ghi bộ mới** | đóng màn chọn |
+| `Rejected(items)` | có ít nhất một `valid = false` | **giữ nguyên** | ở lại + disable ưu đãi + popup câu server |
+| `Failed(errorCode)` | mạng/HTTP hỏng, hoặc HTTP 200 mà `data` rỗng (`NO_RESULT`) | giữ nguyên | ở lại + popup câu lỗi chung |
+
+`items` là `List<RejectedOffer>` (`presentation/common`) — `objectId` + `message` lấy từ
+`ValidateDiscountsResult.reasonFor()` (ưu tiên `validationMessages` cấp dòng, lùi về
+`businessRuleViolations` cấp đơn). `message` **có thể rỗng** khi server từ chối mà không nói lý do;
+lõi không dựng chuỗi tiếng Việt, native tự lùi về câu lỗi chung.
+
+`Rejected` cố ý **không** set `errorCode`: đây không phải lỗi kỹ thuật, và câu giải thích đi kèm
+outcome chứ không qua bảng mã lỗi.
 
 ---
 
@@ -169,9 +201,12 @@ Nghiệp vụ nằm ở **`EndowStore.confirmRedemption`** (`promotionLogic`) n�
 
 ```
 Host nhúng <PRMEndowView/> vào layout thanh toán
-   → PRMEndowView nạp voucher (myVouchers/otherVouchers)
-   → User mở Choose Promotion (nhận PreloadVouchers từ Endow để tránh double API)
-   → chọn & validate → ApplyValidatedVouchers → Endow cập nhật discountDetails + EndowWidgetState.APPLIED
+   → PRMEndowView nạp voucher (findEligible qua EndowStore)
+   → User mở Choose Promotion (chỉ nhận preSelectedVoucherIds; màn đó TỰ gọi findEligible)
+   → chọn & bấm "Áp dụng" → EndowStore.validateAndApply → EndowApplyOutcome
+        Applied  → Endow cập nhật discountDetails + EndowWidgetState.APPLIED, màn chọn đóng
+        Rejected → Endow KHÔNG đổi, màn chọn ở lại và disable ưu đãi đó
+        Failed   → Endow KHÔNG đổi, màn chọn ở lại + popup lỗi
 Host bấm thanh toán
    → PRMEndowView.confirmRedemption() / PromotionSDK.confirmRedemption()
         → EndowStore.confirmRedemption()
@@ -185,6 +220,11 @@ Host bấm thanh toán
 ## 4. Lưu ý khi sửa (quan trọng — đây là public-facing)
 
 - `PRMEndowView` là **bề mặt tích hợp với host** — đổi API = breaking. Cập nhật [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) §6.2 + [`PublicApi.md`](../common/PublicApi.md) (AI_AGENT_RULES điều 7). `INTEGRATION.md` ở gốc repo chỉ là trang điện, **đừng** viết nội dung vào đó.
-- Giữ tối ưu `PreloadVouchers` để không gọi API trùng giữa Endow và Choose Promotion.
+- **Tối ưu `PreloadVouchers` đã bỏ**: màn "Chọn ưu đãi" luôn tự gọi `findEligible` khi mở, nên
+  `PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage` (đều `internal`) cũng đã
+  xoá. Widget vẫn giữ danh sách trong `EndowState` cho lượt nạp của chính nó.
+- Thêm nhánh mới cho `EndowApplyOutcome` → cập nhật cả `ChoosePromotionFragment.onApplyClicked`
+  (Android) lẫn `ChoosePromotionViewController.handleApplyOutcome` (iOS); bên Swift dùng `as?` nên
+  **không** báo lỗi biên dịch khi thiếu nhánh.
 - Mã lỗi trả về `onError` lấy từ `ErrorCodes` / `PromotionException` (xem `../ErrorHandling.md`).
 - Liên quan: [ChoosePromotion.md](./ChoosePromotion.md).

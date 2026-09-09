@@ -16,38 +16,38 @@ internal enum class PRMShadowType(
     TokenNone,
     TokenShadowsCard(
         colorRes = R.color.prm_tokenShadowsCardColor,
-        yOffset = com.intuit.sdp.R.dimen._3sdp,
-        blurRadius = com.intuit.sdp.R.dimen._10sdp,
-        cornerRes = com.intuit.sdp.R.dimen._6sdp
+        yOffset = R.dimen.prm_3sdp,
+        blurRadius = R.dimen.prm_10sdp,
+        cornerRes = R.dimen.prm_6sdp
     ),
     TokenShadowsBottomTab(
         colorRes = R.color.prm_tokenShadowsCardColor,
-        yOffset = com.intuit.sdp.R.dimen._minus3sdp,
-        blurRadius = com.intuit.sdp.R.dimen._10sdp
+        yOffset = R.dimen.prm_minus3sdp,
+        blurRadius = R.dimen.prm_10sdp
     ),
     TokenShadowsButtonLarge(
         colorRes = R.color.prm_tokenShadowsButtonColor,
-        yOffset = com.intuit.sdp.R.dimen._5sdp,
-        blurRadius = com.intuit.sdp.R.dimen._11sdp,
-        cornerRes = com.intuit.sdp.R.dimen._38sdp
+        yOffset = R.dimen.prm_5sdp,
+        blurRadius = R.dimen.prm_11sdp,
+        cornerRes = R.dimen.prm_38sdp
     ),
     TokenShadowsButtonMedium(
         colorRes = R.color.prm_tokenShadowsButtonColor,
-        yOffset = com.intuit.sdp.R.dimen._3sdp,
-        blurRadius = com.intuit.sdp.R.dimen._10sdp,
-        cornerRes = com.intuit.sdp.R.dimen._26sdp
+        yOffset = R.dimen.prm_3sdp,
+        blurRadius = R.dimen.prm_10sdp,
+        cornerRes = R.dimen.prm_26sdp
     ),
     TokenShadowsButtonSmall(
         colorRes = R.color.prm_tokenShadowsButtonColor,
-        yOffset = com.intuit.sdp.R.dimen._2sdp,
-        blurRadius = com.intuit.sdp.R.dimen._8sdp,
-        cornerRes = com.intuit.sdp.R.dimen._19sdp
+        yOffset = R.dimen.prm_2sdp,
+        blurRadius = R.dimen.prm_8sdp,
+        cornerRes = R.dimen.prm_19sdp
     ),
     TokenShadowsVoucher(
         colorRes = R.color.prm_tokenShadowsVoucher,
-        yOffset = com.intuit.sdp.R.dimen._1sdp,
-        blurRadius = com.intuit.sdp.R.dimen._5sdp,
-        cornerRes = com.intuit.sdp.R.dimen._13sdp
+        yOffset = R.dimen.prm_1sdp,
+        blurRadius = R.dimen.prm_5sdp,
+        cornerRes = R.dimen.prm_13sdp
     );
 
     fun apply(

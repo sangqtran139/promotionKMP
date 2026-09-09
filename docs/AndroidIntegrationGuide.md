@@ -121,6 +121,39 @@ Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppComp
 đã compile. **Không** cần khai tay từng lib. (Cách cũ dùng file-AAR thì host phải tự `implementation(libs.ktor…)`
 — đã bỏ; xem [`android/Distribution.md`](./android/Distribution.md) §2.)
 
+#### Hai thứ host **thấy được** trên compile classpath
+
+SDK khai `api` cho đúng hai artifact, vì chúng nằm trong **chữ ký public**:
+
+| Artifact | Vì sao |
+|---|---|
+| `androidx.fragment:fragment-ktx` | `PromotionSDK.openMyPromotion(activity: FragmentActivity)` và 5 hàm khác nhận `FragmentActivity` |
+| `androidx.constraintlayout` | `PRMEndowView` kế thừa `ConstraintLayout`; compiler của host cần chuỗi supertype để resolve member |
+
+Host **không phải khai lại** hai thứ này (trước đây phải, vì SDK khai `implementation` — host không
+thấy lúc biên dịch và phải tự đoán ra). Mọi dependency còn lại của SDK là `implementation`: chúng ở
+runtime classpath nhưng không lọt vào compile classpath của host.
+
+#### ⚠️ SDK mang theo Glide 5.0.5
+
+`implementation` giữ Glide ngoài compile classpath của host, nhưng **không** giữ nó ngoài **runtime
+classpath**: Gradle hợp nhất version và luôn chọn bản **cao nhất**. Host đang ở **Glide 4.x** mà tích
+hợp SDK là cả app bị nâng lên 5.x — và Glide 4→5 có breaking change.
+
+Kiểm bằng một lệnh trước khi tích hợp:
+
+```bash
+./gradlew :app:dependencies --configuration releaseRuntimeClasspath | grep glide
+```
+
+- Ra `4.x -> 5.0.5` → app bạn **đang bị nâng version**. Chốt với bên cấp SDK: hoặc bạn lên 5.x cùng
+  lượt, hoặc SDK hạ về nhánh 4.x (API mà SDK dùng có ở cả hai nhánh).
+- Ra `5.x` → không có gì phải làm.
+
+SDK **không bỏ được** Glide: mọi ô ảnh phải chạy GIF động (luật ở
+[`android/UIGuide.md`](./android/UIGuide.md) §11), mà Android chỉ decode GIF động qua Glide —
+`AnimatedImageDrawable` của hệ điều hành chỉ có từ API 28, còn `minSdk` của SDK là 24.
+
 ### 3.2. Kiểm tra nhanh
 
 ```kotlin

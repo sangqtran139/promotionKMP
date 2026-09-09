@@ -5,6 +5,10 @@
 
 import UIKit
 
+/// `@MainActor`: builder dựng ViewController và ViewModel — cả hai đều MainActor-isolated. Đây là
+/// hệ quả kéo theo của `@MainActor` trên `PromotionSDK`/`PRMStoreViewModel`, không phải ràng buộc
+/// mới: builder vốn chỉ được gọi từ luồng điều hướng, tức main.
+@MainActor
 class PRMBaseBuilder<VC: UIViewController, VM, R, Dependency> {
 
     init() {}

@@ -19,6 +19,8 @@ kiến trúc **MVI**. Không dùng Compose — xem [ComposeGuide.md](../common/C
 - [9. Custom View](#9-custom-view)
 - [10. Quy tắc riêng cho SDK](#10-quy-tắc-riêng-cho-sdk)
 - [11. Ảnh từ mạng & GIF](#11-ảnh-từ-mạng--gif)
+  - [11.0. Hai nền tảng: khác cơ chế, phải giống **hành vi**](#110-hai-nền-tảng-khác-cơ-chế-phải-giống-hành-vi)
+  - [11.0.1. ⚠️ Glide 5 đi vào đồ thị dependency của host](#1101-️-glide-5-đi-vào-đồ-thị-dependency-của-host)
 - [12. Shimmer (skeleton loading)](#12-shimmer-skeleton-loading)
 <!-- /toc -->
 
@@ -210,6 +212,45 @@ Không thêm thư viện UI mới nếu chưa được yêu cầu (AI_AGENT_RULE
 Mọi ảnh remote đi qua **một cửa**: `ui/utils/PRMImageExt.kt`
 (`loadPromotionVoucherLogo` / `loadPromotionVoucherBanner`) → Glide. Không gọi `Glide.with(...)` rải rác
 ở fragment/adapter.
+
+### 11.0. Hai nền tảng: khác cơ chế, phải giống **hành vi**
+
+Android dùng Glide, iOS tự viết (`UIImageView+Remote` + `RemoteImageCache`). Hai cơ chế sẽ **mãi**
+khác nhau — Glide không có bản Swift. Thứ phải khoá lại là **hành vi**, và đây là bảng chốt:
+
+| Hành vi | Android (Glide 5) | iOS (tự viết) |
+|---|---|---|
+| Cache RAM | Glide tự quản theo kích thước màn | `NSCache`, `totalCostLimit` 32 MB + `countLimit` 120 |
+| Cache đĩa | có | có — `Library/Caches/PRMRemoteImage`, cap 50 MB, xoá LRU |
+| Gộp request trùng URL | có | có — `RemoteImageCache.loadData` |
+| GIF động | `GifDrawable` | `UIImage.animatedImage`, 2 chặng (frame đầu → animation) |
+| Chống ảnh nhảy khi tái sử dụng cell | `Glide.with(view)` theo vòng đời | đối chiếu `currentImageURL` lúc gán |
+| Ảnh 1×1 (server không có ảnh thật) | `PRMEmptyImageTransformation` → giữ nền xám | `prmIsRenderable` → giữ nền xám |
+
+> Ba dòng đầu từng **lệch**: iOS chỉ có `NSCache` không giới hạn, không đĩa, không gộp. Nghĩa là mở
+> lại màn "Ưu đãi của tôi" thì Android lấy từ đĩa còn iOS tải lại toàn bộ. Đây là loại lệch mà rà
+> soát từng nền tảng riêng không bao giờ thấy — nó chỉ hiện ra khi đặt hai bên cạnh nhau. Thêm hành
+> vi mới cho tầng ảnh thì **thêm một dòng vào bảng này trước**, rồi mới làm cả hai bên.
+
+### 11.0.1. ⚠️ Glide 5 đi vào đồ thị dependency của host
+
+SDK khai `glide = "5.0.5"` ở `implementation`. `implementation` giữ Glide ngoài **compile classpath**
+của host, nhưng **không** giữ nó ngoài **runtime classpath**: Gradle hợp nhất version và luôn chọn
+bản **cao nhất**. Host đang ở Glide 4.x mà tích hợp SDK là cả app bị nâng lên 5.x — và Glide 4→5 có
+breaking change.
+
+**Không gỡ Glide được.** Luật GIF ở §11 là bắt buộc, mà Android chỉ decode được GIF động qua Glide:
+`AnimatedImageDrawable` của hệ điều hành chỉ có từ **API 28**, còn `minSdk` của SDK là **24**.
+
+Vì vậy đây là việc phải **chốt với team app host**, không phải việc sửa trong SDK:
+- Host đã ở Glide 5.x → không cần làm gì, ghi lại là đã xác nhận.
+- Host còn ở Glide 4.x → hoặc host lên 5.x cùng lượt tích hợp, hoặc SDK hạ về nhánh 4.x
+  (`com.github.bumptech.glide:glide:4.16.0`) — API mà SDK dùng (`Glide.with().load().into()`,
+  `CircleCrop`, `Transformation`) có ở cả hai nhánh nên hạ version là đổi đúng một dòng trong
+  `libs.versions.toml`.
+
+Chốt xong thì ghi vào [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) để người tích hợp
+sau biết ngay, đừng để họ phát hiện lúc build.
 
 > **LUẬT: mọi chỗ có ảnh phải hiển thị được GIF động — cả Android lẫn iOS.**
 > Thêm một ô ảnh mới thì phải test bằng một URL GIF động, không chỉ PNG/JPEG.

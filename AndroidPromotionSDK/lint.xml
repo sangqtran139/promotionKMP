@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rule cho tầng UI của SDK Android.
+
+  Chọn theo **vi phạm đã đo trong repo**, không phải rule set mặc định copy về. Hiện trạng lúc bật
+  (2026-09-10): 24 layout, 0 `android:text` hardcode, 0 màu `#xxxxxx`, 0 `textSize` dùng `dp`.
+  Mục đích của file này là **giữ nguyên trạng sạch đó**, không phải để đi sửa một loạt.
+
+  Vì sao library cần nghiêm hơn app: resource của Android library **merge thẳng vào app host**. Một
+  `dimens` lỡ tay đặt là `padding_small` sẽ ghi đè resource cùng tên của host, hoặc làm AAPT báo
+  duplicate. Đó là loại lỗi chỉ hiện ra ở phía host, sau khi đã tích hợp — muộn nhất có thể.
+-->
+<lint>
+    <!-- ─── Rò rỉ sang app host — nhóm nghiêm trọng nhất với library ─────────────── -->
+
+    <!--
+      Cần `resourcePrefix` trong build.gradle.kts mới có tác dụng. CHƯA bật `resourcePrefix` được:
+      38 `<style>` và 16 `<declare-styleable>` đang dùng `PRM` HOA (`PRMBaseTheme`, `PRMEditText`)
+      trong khi 446 resource còn lại dùng `prm` thường. `resourcePrefix` chỉ nhận MỘT chuỗi và so
+      bằng `startsWith` trên chuỗi thô, nên không tiền tố nào phủ được cả hai. Xem UI-1 trong bản rà
+      soát: phải đổi tên 54 chỗ đó trước, rồi mới bật.
+    -->
+    <issue id="ResourceName" severity="warning" />
+
+    <!-- Resource chết vẫn nằm trong AAR và vẫn merge vào host. -->
+    <issue id="UnusedResources" severity="error" />
+
+    <!-- ─── Giữ hệ theme token không bị bypass (hiện 0 vi phạm) ──────────────────── -->
+    <issue id="HardcodedText" severity="error" />
+    <issue id="SpUsage" severity="error" />
+
+    <!-- ─── Vòng đời & rò rỉ bộ nhớ — SDK sống trong process của host ────────────── -->
+    <issue id="StaticFieldLeak" severity="error" />
+    <issue id="Recycle" severity="error" />
+
+    <!-- ─── Accessibility ────────────────────────────────────────────────────────── -->
+    <!--
+      Đã xử lý hết ImageView trang trí bằng `importantForAccessibility="no"` (đúng cách — nó bảo
+      TalkBack bỏ qua, khác `tools:ignore` chỉ làm im lint). Giữ `error` để không quay lại.
+    -->
+    <issue id="ContentDescription" severity="error" />
+    <issue id="LabelFor" severity="warning" />
+
+    <!-- ─── Tắt có chủ đích ─────────────────────────────────────────────────────── -->
+    <!-- Ồn, và với SDK thì nền do host quyết (xem docs/features/EndowView.md §1.1). -->
+    <issue id="Overdraw" severity="ignore" />
+    <!-- SDK chỉ có vi-VN — xem CODE-3 trong bản rà soát. -->
+    <issue id="MissingTranslation" severity="ignore" />
+</lint>

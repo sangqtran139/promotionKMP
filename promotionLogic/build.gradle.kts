@@ -61,6 +61,17 @@ afterEvaluate {
 kotlin {
     withSourcesJar(publish = false)
 
+    // Bắt buộc khai visibility tường minh cho mọi khai báo top-level của lõi.
+    //
+    // Vì sao lõi cần cái này hơn tầng UI: mọi thứ `public` ở `promotionLogic` đều **lọt ra header
+    // `PromotionLogic.h`** của xcframework, tức thành bề mặt mà iOS nhìn thấy — và không có gì báo
+    // khi lỡ tay. Kotlin mặc định là `public`, nên quên gõ `internal` là đã phát hành API mới.
+    //
+    // `Warning` chứ chưa `Strict`: bật Strict là build đỏ ngay, còn ở mức này thì mỗi khai báo
+    // thiếu visibility hiện thành một cảnh báo — đó chính là danh sách cần rà. Nâng lên
+    // `explicitApi()` sau khi danh sách đó về 0.
+    explicitApiWarning()
+
     compilerOptions {
         // SdkLock là expect/actual class; cảnh báo Beta không có giá trị ở đây.
         freeCompilerArgs.add("-Xexpect-actual-classes")

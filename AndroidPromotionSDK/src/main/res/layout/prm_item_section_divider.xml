@@ -1,20 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Vạch ngăn giữa nhóm "Ưu đãi của tôi" và "Ưu đãi khác": tràn hết bề ngang, cao 16dp, nền #FBFBFB,
-  cách nhóm trên và nhóm dưới đúng 8dp.
-
-  Dùng `dp` chứ không `sdp` vì đây là kích thước chốt cứng theo thiết kế, phải bằng nhau trên mọi
-  máy và bằng đúng bản iOS (`ChoosePromotionViewController` footer 32pt = 8 + 16 + 8).
-
-  Khoảng 8dp phía trên chỉ đúng khi phần tử ngay trên nó kết thúc bằng cùng một khoảng đệm — xem
-  `prm_item_see_more.xml` (paddingBottom bằng paddingVertical của `item_choose_promotion.xml`).
--->
-<layout xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="16dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        android:background="@color/prm_color_FBFBFB" />
-</layout>
+<View
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    android:background="@color/prm_color_FBFBFB" />

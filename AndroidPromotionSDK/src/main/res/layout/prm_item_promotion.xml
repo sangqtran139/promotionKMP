@@ -1,189 +1,187 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/prm_color_FBFBFB"
+    android:paddingVertical="@dimen/prm_6sdp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <androidx.cardview.widget.CardView
+        android:id="@+id/ctlTop"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/prm_color_FBFBFB"
-        android:paddingVertical="@dimen/_6sdp">
+        android:layout_height="@dimen/prm_82sdp"
+        android:layout_marginHorizontal="@dimen/prm_15sdp"
+        android:background="@color/prm_white"
+        app:cardCornerRadius="@dimen/prm_12sdp"
+        app:cardElevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/ctlTop"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="@dimen/_82sdp"
-            android:layout_marginHorizontal="@dimen/_15sdp"
-            android:background="@color/prm_white"
-            app:cardCornerRadius="@dimen/_12sdp"
-            app:cardElevation="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="match_parent">
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:id="@+id/ctlPartOne"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.24">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/ctlPartOne"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintWidth_percent="0.24">
-
-                    <!--
-                        Không bọc view mask hình tròn: Glide đã `CircleCrop` từng frame
-                        (PRMImageExt.loadPromotionVoucherLogo) nên bitmap vào đây đã tròn sẵn.
-                        `src` phải là bản TRÒN — placeholder/error của Glide cũng là bản này.
-                    -->
-                    <com.ttcn.prm.ui.widget.PRMImageView
-                        android:id="@+id/imgVoucher"
-                        android:layout_width="@dimen/prm_view_size_48"
-                        android:layout_height="@dimen/prm_view_size_48"
-                        android:src="@drawable/prm_bg_image_placeholder_circle"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
+                <!--
+                    Không bọc view mask hình tròn: Glide đã `CircleCrop` từng frame
+                    (PRMImageExt.loadPromotionVoucherLogo) nên bitmap vào đây đã tròn sẵn.
+                    `src` phải là bản TRÒN — placeholder/error của Glide cũng là bản này.
+                -->
                 <com.ttcn.prm.ui.widget.PRMImageView
-                    android:id="@+id/imgCircleTop"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_minus7sdp"
-                    android:src="@drawable/prm_bg_circle_gray"
-                    app:layout_constraintEnd_toEndOf="@id/imgLine"
-                    app:layout_constraintStart_toStartOf="@id/imgLine"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <com.ttcn.prm.ui.widget.PRMImageView
-                    android:id="@+id/imgCircleBottom"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/_minus7sdp"
-                    android:src="@drawable/prm_bg_circle_gray"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="@id/imgLine"
-                    app:layout_constraintStart_toStartOf="@id/imgLine" />
-
-                <com.ttcn.prm.ui.widget.PRMImageView
-                    android:id="@+id/imgLine"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_marginVertical="@dimen/_7sdp"
-                    android:background="@drawable/prm_bg_line_my_endow"
-                    app:layout_constraintStart_toEndOf="@+id/ctlPartOne" />
-
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:paddingHorizontal="@dimen/_11sdp"
-                    android:paddingTop="@dimen/_9sdp"
+                    android:id="@+id/imgVoucher"
+                    android:layout_width="@dimen/prm_view_size_48"
+                    android:layout_height="@dimen/prm_view_size_48"
+                    android:src="@drawable/prm_bg_image_placeholder_circle"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgCircleTop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/prm_minus7sdp"
+                android:src="@drawable/prm_bg_circle_gray"
+                app:layout_constraintEnd_toEndOf="@id/imgLine"
+                app:layout_constraintStart_toStartOf="@id/imgLine"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgCircleBottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/prm_minus7sdp"
+                android:src="@drawable/prm_bg_circle_gray"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="@id/imgLine"
+                app:layout_constraintStart_toStartOf="@id/imgLine" />
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgLine"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginVertical="@dimen/prm_7sdp"
+                android:background="@drawable/prm_bg_line_my_endow"
+                app:layout_constraintStart_toEndOf="@+id/ctlPartOne" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:paddingHorizontal="@dimen/prm_11sdp"
+                android:paddingTop="@dimen/prm_9sdp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.76">
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/txtVoucherName"
+                    style="@style/PRMFontRegular12"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/prm_tokenDark60"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintWidth_percent="0.76">
+                    tools:text="Viễn Thông" />
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvContent"
+                    style="@style/PRMFontMedium16"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/prm_5sdp"
+                    android:ellipsize="end"
+                    android:lines="2"
+                    android:maxLines="2"
+                    android:textColor="@color/prm_color_222_cep"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
+                    app:layout_constraintTop_toBottomOf="@+id/txtVoucherName"
+                    tools:text="Tặng 1 trà sen vàng cho hoá đơn từ 59khjshvjkfshaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvEndDate"
+                    style="@style/PRMFontRegular12"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/prm_3sdp"
+                    android:layout_marginBottom="@dimen/prm_4sdp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/prm_tokenDark60"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/brExpired"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/tvContent"
+                    tools:text="HSD 18/10/2023" />
+
+                <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/brExpired"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="start"
+                    app:constraint_referenced_ids="txtExpired, lnDetail" />
+
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/txtExpired"
+                    style="@style/PRMFontSfDisplayBold11"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/prm_2sdp"
+                    android:background="@drawable/prm_bg_item_endow_expired"
+                    android:paddingHorizontal="@dimen/prm_5sdp"
+                    android:paddingVertical="@dimen/prm_1sdp"
+                    android:text="@string/prm_is_used"
+                    app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvEndDate" />
+
+                <LinearLayout
+                    android:id="@+id/lnDetail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone"
+                    app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tvEndDate">
 
                     <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/txtVoucherName"
-                        style="@style/PRMFontRegular12"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:textColor="@color/prm_tokenDark60"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        tools:text="Viễn Thông" />
-
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/tvContent"
-                        style="@style/PRMFontMedium16"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/_5sdp"
-                        android:ellipsize="end"
-                        android:lines="2"
-                        android:maxLines="2"
-                        android:textColor="@color/prm_color_222_cep"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
-                        app:layout_constraintTop_toBottomOf="@+id/txtVoucherName"
-                        tools:text="Tặng 1 trà sen vàng cho hoá đơn từ 59khjshvjkfshaaaaaaaaaaaaaaaaaaaaaaaaaaaa" />
-
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/tvEndDate"
-                        style="@style/PRMFontRegular12"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="@dimen/_3sdp"
-                        android:layout_marginBottom="@dimen/_4sdp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:textColor="@color/prm_tokenDark60"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/brExpired"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/tvContent"
-                        tools:text="HSD 18/10/2023" />
-
-                    <androidx.constraintlayout.widget.Barrier
-                        android:id="@+id/brExpired"
+                        android:id="@+id/tvUse"
+                        style="@style/PRMFontBold14"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        app:barrierDirection="start"
-                        app:constraint_referenced_ids="txtExpired, lnDetail" />
+                        android:gravity="center"
+                        android:text="@string/prm_use"
+                        android:textColor="@color/prm_color_EE0033" />
 
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/txtExpired"
-                        style="@style/PRMFontSfDisplayBold11"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/_2sdp"
-                        android:background="@drawable/prm_bg_item_endow_expired"
-                        android:paddingHorizontal="@dimen/_5sdp"
-                        android:paddingVertical="@dimen/_1sdp"
-                        android:text="@string/prm_is_used"
-                        app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tvEndDate" />
-
-                    <LinearLayout
-                        android:id="@+id/lnDetail"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:visibility="gone"
-                        app:layout_constraintBottom_toBottomOf="@id/tvEndDate"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tvEndDate">
-
-                        <com.ttcn.prm.ui.widget.PRMTextView
-                            android:id="@+id/tvUse"
-                            style="@style/PRMFontBold14"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="@string/prm_use"
-                            android:textColor="@color/prm_color_EE0033" />
-
-                        <com.ttcn.prm.ui.widget.PRMImageView
-                            android:id="@+id/tvArrowDetail"
-                            android:layout_width="@dimen/_12sdp"
-                            android:layout_height="@dimen/_12sdp"
-                            android:layout_gravity="bottom"
-                            android:padding="@dimen/_2sdp"
-                            android:src="@drawable/prm_ic_right_arrow_16_red" />
-                    </LinearLayout>
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                    <com.ttcn.prm.ui.widget.PRMImageView
+                        android:id="@+id/tvArrowDetail"
+                        android:layout_width="@dimen/prm_12sdp"
+                        android:layout_height="@dimen/prm_12sdp"
+                        android:layout_gravity="bottom"
+                        android:padding="@dimen/prm_2sdp"
+                        android:src="@drawable/prm_ic_right_arrow_16_red" />
+                </LinearLayout>
 
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</layout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -58,6 +58,9 @@ final class ChoosePromotionViewModel:
         /// Nút "Áp dụng" bấm được chưa — luật ở store (`canApply()`), đối ứng
         /// `binding.btnApply.isEnabled` bên Android. Trước đây VC tự suy `selectedCount > 0`.
         var canApply = false
+        /// Câu server trả khi vừa từ chối ưu đãi ở lượt "Áp dụng" — **một-lần**, VC hiện popup rồi
+        /// `ConsumeApplyMessage`. Đối ứng `ChoosePromotionFragment.showApplyMessageIfAny` bên Android.
+        var applyMessage: String?
     }
 
     let data: ChoosePromotionBuilder.DataModel
@@ -85,19 +88,16 @@ final class ChoosePromotionViewModel:
         onState = { [weak self] state in self?.render(state) }
     }
 
-    /// Seed pre-select rồi preload/fetch — đối ứng `ChoosePromotionFragment.observeData`
-    /// (SetPreSelected → Preload). `didStart` chặn chạy lại khi màn được bind lại.
+    /// Seed pre-select rồi **gọi `findEligible`** — đối ứng `ChoosePromotionFragment.observeData`.
+    ///
+    /// Cờ gác nay ở STORE (`SeedOnce`), không phải `didStart` của VM: Android không có cờ tương ứng
+    /// nên `observeData()` bắn lại mỗi lần view dựng lại và ghi đè tick của user. Một cờ dùng chung
+    /// thì hai bên không thể lệch.
+    ///
+    /// Không còn truyền danh sách preload của widget: vào màn là dữ liệu phải mới (ngân sách có thể
+    /// đã hết, voucher có thể vừa bị dùng ở thiết bị khác).
     func loadInitialIfNeeded() {
-        // Cờ gác nay ở STORE (`SeedOnce`), không phải `didStart` của VM: Android không có cờ tương
-        // ứng nên `observeData()` bắn lại mỗi lần view dựng lại và ghi đè tick của user. Một cờ dùng
-        // chung thì hai bên không thể lệch.
-        dispatch(ChoosePromotionIntentSeedOnce(
-            preSelectedIds: data.preSelectedVoucherIds,
-            myOffers: data.preloadedMy,
-            otherOffers: data.preloadedOther,
-            myIsLastPage: data.myIsLastPage,
-            otherIsLastPage: data.otherIsLastPage
-        ))
+        dispatch(ChoosePromotionIntentSeedOnce(preSelectedIds: data.preSelectedVoucherIds))
     }
 
     /// Gõ trắng **không** cần rẽ nhánh sang `ClearKeyword`: store đã xử đúng đường đó trong
@@ -145,7 +145,8 @@ private extension ChoosePromotionState {
             showsEmptyView: showsEmptyView(),
             showsSelectedCount: showsSelectedCount(),
             selectedCount: selectedIds.count,
-            canApply: canApply()
+            canApply: canApply(),
+            applyMessage: applyMessage
         )
     }
 
@@ -161,7 +162,16 @@ private extension ChoosePromotionState {
                 isEnabled: offer.isUsable,
                 // Dải cảnh báo bám luật riêng ở store, KHÔNG phải `!isUsable`: ca hết hạn không có dải.
                 showsIneligibleWarning: offer.showsIneligibleWarning(),
-                buttonTitle: PromotionUIStrings.detail,
+                // Không dùng được → giấu luôn nút "Chi tiết", đối ứng Android
+                // `lnDetail.isVisible = canUse`.
+                //
+                // Với ca HẾT HẠN / `usable = false` thì `MyPromotionCell` đã tự bỏ nút (hai nhánh
+                // `.expired`/`.ineligible` gán `derivedButtonTitle = nil`), nhưng ca bị
+                // `validateStackableDiscounts` TỪ CHỐI thì không: server vẫn đánh `usable = true` nên
+                // `displayState()` ra `.usable` và nút ở lại — card mờ mà vẫn bấm được vào "Chi tiết",
+                // trong khi Android đã ẩn. `PromotionCardView` cũng chỉ chặn tap lên CARD
+                // (`toggleCheckbox` có `guard !model.isDisabled`), không chặn tap lên nút.
+                buttonTitle: offer.isUsable ? PromotionUIStrings.detail : nil,
                 // Không chọn được (hết hạn HOẶC chưa đủ điều kiện) → giấu luôn ô tick, không chỉ làm
                 // mờ. Đối ứng Android `ChoosePromotionMainAdapter`: `cbUseVoucher.visibility = INVISIBLE`.
                 // Trước đây luôn `true` nên ô tick vẫn lòi ra sau lớp phủ mờ trong khi Android đã ẩn.
@@ -172,6 +182,12 @@ private extension ChoosePromotionState {
                 isChecked: state.isSelected(id: offer.source.id),
                 // Hết hạn có chuỗi riêng. Không truyền thì cell rơi vào nhánh mặc định
                 // `unmatchedRules.first ?? .ineligible` → hiện "Không đủ điều kiện", sai nghĩa.
+                //
+                // Ưu đãi bị `validateStackableDiscounts` từ chối (`offer.isRejected`) KHÔNG cần nhánh
+                // riêng ở đây: card chỉ mờ đi, không nhãn nào cả — lý do đã hiện ở popup. Nó tự đúng
+                // vì `MyPromotionCell` suy nhãn theo `voucher.displayState()`, tức theo `usable` của
+                // SERVER, mà server vẫn đánh ưu đãi này `usable = true`. Đối ứng vế `!isRejected` mà
+                // Android phải thêm vào adapter (badge bên đó bật theo `!isEnabled` nên không tự đúng).
                 stateText: offer.isExpired ? PromotionUIStrings.expired : nil,
                 checkedImage: UIImage.sdk("prm_ic_circle_check"),
                 uncheckedImage: UIImage.sdk("prm_ic_circle_uncheck"),

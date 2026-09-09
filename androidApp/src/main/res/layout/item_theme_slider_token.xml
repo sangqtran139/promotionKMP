@@ -1,107 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/demo_view_size_16"
+    android:paddingBottom="@dimen/demo_view_size_8">
+
+    <TextView
+        android:id="@+id/txtSliderLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/prm_theme_label_text"
+        android:textSize="@dimen/demo_text_size_14"
+        tools:text="cornerRadius · dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/demo_view_size_16"
-        android:paddingBottom="@dimen/demo_view_size_8">
-
-        <TextView
-            android:id="@+id/txtSliderLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif"
-            android:textColor="@color/prm_theme_label_text"
-            android:textSize="@dimen/demo_text_size_14"
-            tools:text="cornerRadius · dp" />
+        android:layout_marginTop="@dimen/demo_view_size_8"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/demo_view_size_4"
+        android:paddingEnd="@dimen/demo_view_size_4">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/demo_view_size_8"
-            android:baselineAligned="false"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="@dimen/demo_view_size_4"
-            android:paddingEnd="@dimen/demo_view_size_4">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:text="@string/prm_theme_slider_caption_min"
-                    android:textColor="@color/prm_theme_label_text"
-                    android:textSize="@dimen/demo_text_size_12" />
-
-                <TextView
-                    android:id="@+id/txtSliderMin"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/demo_view_size_2"
-                    android:fontFamily="sans-serif-medium"
-                    android:textColor="@color/prm_theme_title_text"
-                    android:textSize="@dimen/demo_text_size_14"
-                    tools:text="0" />
-            </LinearLayout>
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/txtSliderCurrent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:fontFamily="sans-serif-medium"
-                android:gravity="center"
-                android:minWidth="@dimen/demo_view_size_60"
-                android:textColor="@color/prm_theme_primary"
-                android:textSize="@dimen/demo_text_size_18"
-                android:textStyle="bold"
-                tools:text="42 dp" />
+                android:fontFamily="sans-serif"
+                android:text="@string/prm_theme_slider_caption_min"
+                android:textColor="@color/prm_theme_label_text"
+                android:textSize="@dimen/demo_text_size_12" />
 
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:id="@+id/txtSliderMin"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="end"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif"
-                    android:text="@string/prm_theme_slider_caption_max"
-                    android:textColor="@color/prm_theme_label_text"
-                    android:textSize="@dimen/demo_text_size_12" />
-
-                <TextView
-                    android:id="@+id/txtSliderMax"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="@dimen/demo_view_size_2"
-                    android:fontFamily="sans-serif-medium"
-                    android:textColor="@color/prm_theme_title_text"
-                    android:textSize="@dimen/demo_text_size_14"
-                    tools:text="999" />
-            </LinearLayout>
+                android:layout_marginTop="@dimen/demo_view_size_2"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/prm_theme_title_text"
+                android:textSize="@dimen/demo_text_size_14"
+                tools:text="0" />
         </LinearLayout>
 
-        <SeekBar
-            android:id="@+id/seekToken"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/txtSliderCurrent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/demo_view_size_8"
-            android:max="999"
-            android:progressDrawable="@drawable/prm_seekbar_theme"
-            android:splitTrack="false"
-            android:thumb="@drawable/prm_seekbar_theme_thumb" />
+            android:layout_gravity="center"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:minWidth="@dimen/demo_view_size_60"
+            android:textColor="@color/prm_theme_primary"
+            android:textSize="@dimen/demo_text_size_18"
+            android:textStyle="bold"
+            tools:text="42 dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="@string/prm_theme_slider_caption_max"
+                android:textColor="@color/prm_theme_label_text"
+                android:textSize="@dimen/demo_text_size_12" />
+
+            <TextView
+                android:id="@+id/txtSliderMax"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="@dimen/demo_view_size_2"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/prm_theme_title_text"
+                android:textSize="@dimen/demo_text_size_14"
+                tools:text="999" />
+        </LinearLayout>
     </LinearLayout>
-</layout>
+
+    <SeekBar
+        android:id="@+id/seekToken"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/demo_view_size_8"
+        android:max="999"
+        android:progressDrawable="@drawable/prm_seekbar_theme"
+        android:splitTrack="false"
+        android:thumb="@drawable/prm_seekbar_theme_thumb" />
+</LinearLayout>

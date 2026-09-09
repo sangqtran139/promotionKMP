@@ -1,149 +1,136 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  Skeleton của 1 card ưu đãi.
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ctlTop"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingVertical="@dimen/prm_6sdp">
 
-  MỌI kích thước ở đây soi gương `prm_item_promotion.xml` (card thật): cùng `_6sdp` padding dọc,
-  cùng `_82sdp` chiều cao card, cùng `_15sdp` margin ngang, cùng tỉ lệ cột 24/76, cùng padding
-  `_11sdp`/`_9sdp` của khối chữ. Các thanh giả dùng **đúng style chữ thật** (`fontPRMRegular12`,
-  `fontPRMMedium16` + `lines="2"`) nên tự cao bằng dòng chữ sẽ thay thế chúng.
-
-  Lệch số ở đây là list "nhảy" một nấc lúc dữ liệu về — bản trước card shimmer cao 138dp, không
-  margin ngang, không padding dọc, nên vừa to hơn card thật vừa dính sát nhau.
--->
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/ctlTop"
+    <!--
+      Dùng ĐÚNG widget của card thật: `androidx.cardview.widget.CardView` + `cardElevation=0dp`.
+      Trước đây là `PRMCardView` — class đó kế thừa `PRMShadowView` và mặc định
+      `PRMShadowType.TokenShadowsCard` nên **có đổ bóng**, trong khi card thật phẳng
+      (`cardElevation="0dp"`) → skeleton nhìn nổi hơn card thật.
+    -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingVertical="@dimen/_6sdp">
+        android:layout_height="@dimen/prm_82sdp"
+        android:layout_marginHorizontal="@dimen/prm_15sdp"
+        android:background="@color/prm_white"
+        app:cardCornerRadius="@dimen/prm_12sdp"
+        app:cardElevation="0dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <!--
-          Dùng ĐÚNG widget của card thật: `androidx.cardview.widget.CardView` + `cardElevation=0dp`.
-          Trước đây là `PRMCardView` — class đó kế thừa `PRMShadowView` và mặc định
-          `PRMShadowType.TokenShadowsCard` nên **có đổ bóng**, trong khi card thật phẳng
-          (`cardElevation="0dp"`) → skeleton nhìn nổi hơn card thật.
-        -->
-        <androidx.cardview.widget.CardView
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="@dimen/_82sdp"
-            android:layout_marginHorizontal="@dimen/_15sdp"
-            android:background="@color/prm_white"
-            app:cardCornerRadius="@dimen/_12sdp"
-            app:cardElevation="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_height="match_parent"
+            android:background="@color/prm_color_FBFBFB">
 
+            <!-- Cột logo: 24% bề ngang, y hệt `ctlPartOne` của card thật. -->
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@color/prm_color_FBFBFB">
+                android:id="@+id/ctlPartOne"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:background="@drawable/prm_bg_item_endow_part_one"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.24">
 
-                <!-- Cột logo: 24% bề ngang, y hệt `ctlPartOne` của card thật. -->
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:id="@+id/ctlPartOne"
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:background="@drawable/prm_bg_item_endow_part_one"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintWidth_percent="0.24">
-
-                    <com.ttcn.prm.ui.widget.PRMCircleImageView
-                        android:id="@+id/imgVoucher"
-                        android:layout_width="@dimen/prm_view_size_48"
-                        android:layout_height="@dimen/prm_view_size_48"
-                        android:background="@drawable/prm_background_shimmer_circle"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
-
-                <com.ttcn.prm.ui.widget.PRMImageView
-                    android:id="@+id/imgLine"
-                    android:layout_width="wrap_content"
-                    android:layout_height="0dp"
-                    android:layout_marginVertical="@dimen/_7sdp"
-                    android:background="@drawable/prm_bg_line_my_endow"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <!-- Khối chữ: 76% bề ngang + padding y hệt card thật. -->
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:background="@drawable/prm_bg_item_endow_part_two"
-                    android:paddingHorizontal="@dimen/_11sdp"
-                    android:paddingTop="@dimen/_9sdp"
+                <com.ttcn.prm.ui.widget.PRMCircleImageView
+                    android:id="@+id/imgVoucher"
+                    android:layout_width="@dimen/prm_view_size_48"
+                    android:layout_height="@dimen/prm_view_size_48"
+                    android:background="@drawable/prm_background_shimmer_circle"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintWidth_percent="0.76">
-
-                    <!-- Tên thương hiệu: 1 dòng (đối ứng `txtVoucherName`). -->
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/txtVoucherName"
-                        style="@style/PRMFontRegular12"
-                        android:layout_width="@dimen/_80sdp"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/prm_background_shimmer"
-                        android:maxLines="1"
-                        android:text="@string/prm_promotion_example"
-                        android:textColor="@android:color/transparent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <!-- Tên ưu đãi: LUÔN 2 dòng (đối ứng `tvContent` `lines="2"`). -->
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/tvContent"
-                        style="@style/PRMFontMedium16"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/_5sdp"
-                        android:background="@drawable/prm_background_shimmer"
-                        android:lines="2"
-                        android:maxLines="2"
-                        android:text="@string/prm_promotion_example"
-                        android:textColor="@android:color/transparent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
-                        app:layout_constraintTop_toBottomOf="@+id/txtVoucherName" />
-
-                    <!-- Dòng HSD: ghim đáy như card thật. -->
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/tvEndDate"
-                        style="@style/PRMFontRegular12"
-                        android:layout_width="@dimen/_70sdp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/_4sdp"
-                        android:background="@drawable/prm_background_shimmer"
-                        android:maxLines="1"
-                        android:text="@string/prm_promotion_example_date"
-                        android:textColor="@android:color/transparent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent" />
-
-                    <!-- Nút "Sử dụng": cùng hàng với HSD, sát mép phải. -->
-                    <com.ttcn.prm.ui.widget.PRMTextView
-                        android:id="@+id/tvUseNow"
-                        style="@style/PRMFontRegular12"
-                        android:layout_width="@dimen/_45sdp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="@dimen/_4sdp"
-                        android:background="@drawable/prm_background_shimmer"
-                        android:maxLines="1"
-                        android:text="@string/prm_use"
-                        android:textColor="@android:color/transparent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</layout>
+
+            <com.ttcn.prm.ui.widget.PRMImageView
+                android:id="@+id/imgLine"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:layout_marginVertical="@dimen/prm_7sdp"
+                android:background="@drawable/prm_bg_line_my_endow"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- Khối chữ: 76% bề ngang + padding y hệt card thật. -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/prm_bg_item_endow_part_two"
+                android:paddingHorizontal="@dimen/prm_11sdp"
+                android:paddingTop="@dimen/prm_9sdp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.76">
+
+                <!-- Tên thương hiệu: 1 dòng (đối ứng `txtVoucherName`). -->
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/txtVoucherName"
+                    style="@style/PRMFontRegular12"
+                    android:layout_width="@dimen/prm_80sdp"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/prm_background_shimmer"
+                    android:maxLines="1"
+                    android:text="@string/prm_promotion_example"
+                    android:textColor="@android:color/transparent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- Tên ưu đãi: LUÔN 2 dòng (đối ứng `tvContent` `lines="2"`). -->
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvContent"
+                    style="@style/PRMFontMedium16"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/prm_5sdp"
+                    android:background="@drawable/prm_background_shimmer"
+                    android:lines="2"
+                    android:maxLines="2"
+                    android:text="@string/prm_promotion_example"
+                    android:textColor="@android:color/transparent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="@+id/txtVoucherName"
+                    app:layout_constraintTop_toBottomOf="@+id/txtVoucherName" />
+
+                <!-- Dòng HSD: ghim đáy như card thật. -->
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvEndDate"
+                    style="@style/PRMFontRegular12"
+                    android:layout_width="@dimen/prm_70sdp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/prm_4sdp"
+                    android:background="@drawable/prm_background_shimmer"
+                    android:maxLines="1"
+                    android:text="@string/prm_promotion_example_date"
+                    android:textColor="@android:color/transparent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <!-- Nút "Sử dụng": cùng hàng với HSD, sát mép phải. -->
+                <com.ttcn.prm.ui.widget.PRMTextView
+                    android:id="@+id/tvUseNow"
+                    style="@style/PRMFontRegular12"
+                    android:layout_width="@dimen/prm_45sdp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/prm_4sdp"
+                    android:background="@drawable/prm_background_shimmer"
+                    android:maxLines="1"
+                    android:text="@string/prm_use"
+                    android:textColor="@android:color/transparent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

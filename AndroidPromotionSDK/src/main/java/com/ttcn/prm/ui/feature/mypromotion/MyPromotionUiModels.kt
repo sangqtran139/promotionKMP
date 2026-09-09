@@ -44,6 +44,15 @@ internal data class MyVoucherListItem(
      * false` nhưng KHÔNG hiện dải, vì đó không phải chuyện điều kiện của đơn hàng.
      */
     val showsIneligibleWarning: Boolean = false,
+    /**
+     * Ưu đãi bị `validateStackableDiscounts` từ chối ở màn "Chọn ưu đãi" (`ChooseOffer.isRejected`).
+     *
+     * Chỉ để **giấu badge trạng thái**: ca này card chỉ mờ đi, không đeo nhãn nào — lý do đã hiện ở
+     * popup. Không có cờ này thì adapter (bật badge theo `!isEnabled`) hiện "Không đủ điều kiện".
+     *
+     * Mặc định `false` nên hai màn kia (`Ưu đãi của tôi`, `Tìm ưu đãi`) không đổi gì.
+     */
+    val isRejected: Boolean = false,
 )
 
 internal data class TabItem(

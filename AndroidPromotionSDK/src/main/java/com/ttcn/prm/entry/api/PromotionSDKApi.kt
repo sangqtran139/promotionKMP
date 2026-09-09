@@ -40,8 +40,19 @@ import kotlin.coroutines.cancellation.CancellationException
  * ```
  */
 class PromotionSDKApi internal constructor(
-    private val useCases: PromotionUseCases = PromotionUseCases(),
+    /**
+     * `Lazy`: instance "chưa khởi tạo" ([notInitialized]) **không được** dựng [PromotionUseCases] —
+     * lúc đó đồ thị DI của lõi chưa có gì. Tham số cũ (`= PromotionUseCases()`) được tính ngay lúc
+     * gọi constructor nên không hoãn được.
+     */
+    useCases: Lazy<PromotionUseCases> = lazy { PromotionUseCases() },
+    /**
+     * `false` = host đọc `PromotionSDK.api` trước khi `initialize`. Mọi hàm trả
+     * [PromotionSDKError.NotInitialized] thay vì ném — xem [notInitialized].
+     */
+    private val isReady: Boolean = true,
 ) {
+    private val useCases: PromotionUseCases by useCases
     // ─── Public API ───────────────────────────────────────────────────────────
 
     /**
@@ -233,7 +244,10 @@ class PromotionSDKApi internal constructor(
         call: suspend () -> PromotionResult<T>,
         onEmpty: (() -> R)? = null,
         map: (T) -> R,
-    ): PromotionApiResult<R> = try {
+    ): PromotionApiResult<R> = if (!isReady) {
+        // Một chỗ chặn cho cả 6 hàm public: tất cả đều đi qua `handle`.
+        PromotionApiResult.Failure(PromotionSDKError.NotInitialized)
+    } else try {
         when (val result = call()) {
             is PromotionResult.Success -> PromotionApiResult.Success(map(result.data))
             is PromotionResult.Failure ->
@@ -249,19 +263,18 @@ class PromotionSDKApi internal constructor(
         PromotionApiResult.Failure(PromotionSDKError.Unknown(e))
     }
 
+    /**
+     * Uỷ thẳng cho [PromotionSDKError.from] — **một đường map duy nhất** cho cả hai bề mặt lỗi.
+     *
+     * Trước đây hàm này tự map một bản thứ hai, khác bản ở `PromotionApiResult.kt`: cùng một mã lỗi
+     * ra hai kết quả khác nhau tuỳ host đi vào headless hay vào callback của widget.
+     */
     private fun toSdkError(failure: PromotionResult.Failure): PromotionSDKError =
-        when (failure.errorCode) {
-            PromotionErrorCodes.FEATURE_DISABLED -> PromotionSDKError.FeatureDisabled
-            PromotionErrorCodes.TIMEOUT -> PromotionSDKError.Timeout
-            PromotionErrorCodes.NO_RESULT -> PromotionSDKError.ParseFailed
-            PromotionErrorCodes.NETWORK_ERROR ->
-                PromotionSDKError.NetworkFailure(code = null, message = failure.message.orEmpty())
-            // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) đi kèm httpStatus nếu có.
-            else -> PromotionSDKError.NetworkFailure(
-                code = failure.httpStatus,
-                message = failure.message.orEmpty(),
-            )
-        }
+        PromotionSDKError.from(
+            errorCode = failure.errorCode,
+            serverMessage = failure.message,
+            httpStatus = failure.httpStatus,
+        )
 
     // ─── Lõi → DTO public ─────────────────────────────────────────────────────
 
@@ -290,10 +303,28 @@ class PromotionSDKApi internal constructor(
         voucherCode = model.voucherCode,
     )
 
-    private companion object {
+    // `internal` chứ không `private`: `PromotionSDK.api` (package `entry`) đọc [notInitialized].
+    internal companion object {
         const val DEFAULT_PAGE_SIZE = 10
         const val DEFAULT_TAB = "all"
         const val DEFAULT_OBJECT_TYPE = "CAMPAIGN"
+
+        /**
+         * Bề mặt trả về khi SDK **chưa** `initialize` — mọi hàm về [PromotionApiResult.Failure] với
+         * [PromotionSDKError.NotInitialized].
+         *
+         * Thay cho `check(...)` ném [IllegalStateException] ở `PromotionSDK.api`: đối ứng iOS, nơi
+         * chỗ này từng làm crash thẳng app host. Ném exception đỡ hơn crash nhưng vẫn bắt host phải
+         * `try/catch` quanh một property getter — trong khi mọi hàm của lớp này vốn đã trả lỗi bằng
+         * [PromotionApiResult.Failure].
+         *
+         * `lazy { error(...) }` không bao giờ chạm tới: `isReady = false` chặn ngay ở `handle`, mà
+         * cả 6 hàm public đều đi qua đó. Thêm hàm public **không** qua `handle` là phá giả định này.
+         */
+        val notInitialized = PromotionSDKApi(
+            useCases = lazy { error("unreachable: isReady = false") },
+            isReady = false,
+        )
     }
 }
 

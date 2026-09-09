@@ -37,10 +37,14 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
 
     /// Callback trả về danh sách promotion đã chọn về host (tương tự Android onApplyVoucher).
     ///
-    /// Tham số thứ hai (`onSettled`) **bắt buộc phải được gọi** khi lượt validate có kết quả — thành
-    /// công hay lỗi đều tính — nếu không nút "Áp dụng" khoá vĩnh viễn. Đối ứng tham số `onSettled`
-    /// của `PRMEndowView.applySelectedOffers` bên Android.
-    var onApplyVoucher: (([EligibleOffer], @escaping () -> Void) -> Void)?
+    /// Tham số thứ hai **bắt buộc phải được gọi đúng một lần** khi lượt validate ngã ngũ — thành
+    /// công, bị từ chối hay lỗi đều tính — nếu không nút "Áp dụng" khoá vĩnh viễn. Đối ứng tham số
+    /// `onSettled` của `PRMEndowView.applySelectedOffers` bên Android (cũng đã đổi sang
+    /// `EndowApplyOutcome`).
+    ///
+    /// Trước đây nó là `() -> Void` trần (chỉ báo "xong"), nên VC không biết server đã **từ chối** ưu
+    /// đãi hay chưa — nhánh đó đi chung đường với thành công và màn đóng lại như đã áp xong.
+    var onApplyVoucher: (([EligibleOffer], @escaping (EndowApplyOutcome) -> Void) -> Void)?
 
     /// Forward callback "Áp dụng" từ màn chi tiết (đẩy tiếp tới SDK boundary).
     var onApplyVoucherFromDetail: ((String) -> Void)?
@@ -152,12 +156,45 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         guard !viewModel.currentState.isApplying else { return }
         let offers = viewModel.selectedOffers()
         guard !offers.isEmpty else { return }
-        // Khoá nút tới khi `validateStackableDiscounts` trả về. `onSettled` phải chạy ở mọi nhánh,
-        // kể cả nhánh lỗi — xem KDoc của `onApplyVoucher`.
+        // Khoá nút tới khi `validateStackableDiscounts` trả về. Closure kết cục phải chạy ở mọi
+        // nhánh, kể cả nhánh lỗi — xem KDoc của `onApplyVoucher`.
         viewModel.dispatch(ChoosePromotionIntentApplyStarted.shared)
-        onApplyVoucher?(offers) { [weak self] in
-            self?.viewModel.dispatch(ChoosePromotionIntentApplyFinished.shared)
+        onApplyVoucher?(offers) { [weak self] outcome in
+            self?.handleApplyOutcome(outcome)
         }
+    }
+
+    /// Ba kết cục của lượt "Áp dụng", ba hành động khác nhau — **đối ứng từng dòng** với
+    /// `ChoosePromotionFragment.onApplyClicked` bên Android:
+    ///
+    /// | Kết cục | Widget | Màn này |
+    /// |---|---|---|
+    /// | `Applied` | đã áp bộ mới | đóng (do `PromotionSDKImpl` pop, xem `openChoosePromotion`) |
+    /// | `Rejected` | **không đổi** | ở lại, disable ưu đãi bị từ chối + popup câu của server |
+    /// | `Failed` | không đổi | ở lại + popup câu lỗi chung |
+    ///
+    /// `Rejected` **không** bắn thêm `ApplyFinished`: `ApplyRejected` đã mở khoá nút trong cùng một
+    /// lượt cập nhật state, tách ra là màn vẽ một khung hình có card disable mà vẫn còn tick.
+    ///
+    /// Popup của `Rejected` không hiện ở đây mà ở `render` (`display.applyMessage`) — câu nào hiện là
+    /// **quyết định dùng chung** ở store, không để mỗi nền tảng tự chọn trong danh sách bị từ chối.
+    ///
+    /// Cast bằng `as?` cho khớp cách toàn bộ SDK vẫn xử lý sealed interface của Kotlin
+    /// (`result as? EndowConfirmResultFailure`, `effect as? PRMEffectShowError`).
+    private func handleApplyOutcome(_ outcome: EndowApplyOutcome) {
+        if let rejected = outcome as? EndowApplyOutcomeRejected {
+            viewModel.dispatch(ChoosePromotionIntentApplyRejected(items: rejected.items))
+            return
+        }
+        viewModel.dispatch(ChoosePromotionIntentApplyFinished.shared)
+        if let failed = outcome as? EndowApplyOutcomeFailed {
+            // Validate hỏng → **popup** (không phải toast): user vừa bấm "Áp dụng" và đang chờ kết
+            // quả, toast trôi mất thì tưởng đã áp xong. Màn "Chọn ưu đãi" **ở lại** để user chọn lại
+            // hoặc thoát chủ động. Đối ứng `showErrorDialog(mapPromotionError(...))` bên Android.
+            showErrorDialog(PromotionUIStrings.errorMessage(failed.errorCode))
+        }
+        // Còn lại là `Applied` — điều hướng do `PromotionSDKImpl.openChoosePromotion` lo (nó giữ
+        // `host`/`navigator`, VC này không tự pop).
     }
 
     /// Màn Chi tiết (mở từ đây) bấm "Áp dụng" → tick voucher đó. Router gọi vào, VC chỉ forward.
@@ -216,7 +253,7 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
     // MARK: - Bind ViewModel
     //
     // Đối ứng `ChoosePromotionFragment.observeData` bên Android: một `render(state)` cho toàn bộ bề
-    // mặt, một nhánh effect, rồi `start()` (seed pre-select + preload).
+    // mặt, một nhánh effect, rồi `loadInitialIfNeeded()` (seed pre-select + gọi `findEligible`).
     override func bindViewModel() {
         super.bindViewModel()
 
@@ -269,6 +306,25 @@ final class ChoosePromotionViewController: PRMBaseViewController<ChoosePromotion
         promotionsTableView.isHidden = showNoResult
 
         renderLoadMore(state.isLoadingMoreOther)
+        showApplyMessageIfAny(state)
+    }
+
+    /// Ưu đãi vừa bị server từ chối → popup **câu của chính server**, một lần.
+    ///
+    /// Không đi qua `PromotionUIStrings.errorMessage`: đó là bảng **mã lỗi kỹ thuật** → chuỗi hiển
+    /// thị, còn đây là lời giải thích nghiệp vụ ("Voucher không áp dụng cho đơn này") mà chỉ server
+    /// biết. Server không kèm câu nào thì mới lùi về câu chung.
+    ///
+    /// `ConsumeApplyMessage` TRƯỚC khi hiện dialog: cờ trong state phải tắt ngay, nếu không lượt
+    /// render kế tiếp lại bắn popup thứ hai. Đối ứng `showApplyMessageIfAny` bên Android.
+    private func showApplyMessageIfAny(_ state: ChoosePromotionViewModel.Display) {
+        guard let message = state.applyMessage else { return }
+        viewModel.dispatch(ChoosePromotionIntentConsumeApplyMessage.shared)
+        showErrorDialog(
+            message.isEmpty
+                ? PromotionUIStrings.errorMessage(PromotionErrorCodes.shared.GENERAL)
+                : message
+        )
     }
 
     /// Gắn/gỡ spinner ở đáy list. Chỉ đụng `tableFooterView` khi trạng thái thật sự đổi để không

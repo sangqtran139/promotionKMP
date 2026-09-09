@@ -23,6 +23,7 @@ import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.endow.EndowAppliedDiscount
+import com.ttcn.promotionsdk.presentation.endow.EndowApplyOutcome
 import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowState
 import com.ttcn.promotionsdk.presentation.endow.EndowStore
@@ -227,7 +228,7 @@ class EndowStoreTest {
             )
         })
         val s = store(repo)
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+        assertEquals(EndowApplyOutcome.Applied, s.validateAndApply(listOf(offer("a"))))
 
         val st = s.currentState()
         assertFalse(st.isValidating)
@@ -238,23 +239,76 @@ class EndowStoreTest {
         assertEquals(EndowWidgetState.APPLIED, st.widgetState)
     }
 
+    /**
+     * Có item `valid = false` → **không áp gì cả**: widget giữ nguyên bộ discount cũ, và nơi gọi nhận
+     * [EndowApplyOutcome.Rejected] kèm câu của server để màn "Chọn ưu đãi" ở lại + disable item đó.
+     *
+     * Trước đây nhánh này ghi thẳng `appliedDiscounts` + `discountUnavailable = true` (widget nhảy
+     * sang UNAVAILABLE) trong khi màn chọn đóng lại như thành công — user chọn voucher xong thấy nó
+     * bị gạch ngang mà không ai nói vì sao.
+     */
     @Test
-    fun validateAndApply_anyInvalid_marksUnavailable() = runTest {
+    fun validateAndApply_anyInvalid_rejectsWithReasonAndKeepsPreviousApplied() = runTest {
         val repo = FakeRepo(validate = {
             ValidateDiscountsResult(
                 overallValid = false, totalDiscountAmount = "0", finalAmount = "10000",
                 items = listOf(
                     DiscountItemResult("a", "CAMPAIGN", true, "1000", "ELIGIBLE"),
-                    DiscountItemResult("b", "CAMPAIGN", false, "0", "NOT_ELIGIBLE"),
+                    DiscountItemResult(
+                        "b", "CAMPAIGN", false, "0", "NOT_ELIGIBLE",
+                        validationMessages = listOf("Voucher khong ap dung cho don nay"),
+                    ),
                 ),
             )
         })
         val s = store(repo)
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"), offer("b"))))
+        s.dispatch(EndowIntent.SetApplied(listOf(applied("cu")), unavailable = false))
+
+        val outcome = s.validateAndApply(listOf(offer("a"), offer("b")))
+
+        val rejected = outcome as EndowApplyOutcome.Rejected
+        assertEquals(listOf("b"), rejected.items.map { it.objectId })
+        assertEquals("Voucher khong ap dung cho don nay", rejected.items[0].message)
 
         val st = s.currentState()
-        assertTrue(st.discountUnavailable)
-        assertEquals(EndowWidgetState.UNAVAILABLE, st.widgetState)
+        assertFalse(st.isValidating)
+        assertNull(st.errorCode, "bi tu choi khong phai loi ky thuat")
+        assertEquals(listOf("cu"), st.appliedDiscounts.map { it.objectId }, "bo dang ap phai giu nguyen")
+        assertFalse(st.discountUnavailable)
+        assertEquals(EndowWidgetState.APPLIED, st.widgetState)
+    }
+
+    /** Server từ chối nhưng không kèm lý do → message rỗng; native tự lùi về câu lỗi chung. */
+    @Test
+    fun validateAndApply_invalidWithoutMessage_stillRejectsWithEmptyReason() = runTest {
+        val repo = FakeRepo(validate = {
+            ValidateDiscountsResult(
+                overallValid = false, totalDiscountAmount = "0", finalAmount = "10000",
+                items = listOf(DiscountItemResult("a", "CAMPAIGN", false, "0", "NOT_ELIGIBLE")),
+            )
+        })
+        val outcome = store(repo).validateAndApply(listOf(offer("a")))
+
+        val rejected = outcome as EndowApplyOutcome.Rejected
+        assertEquals("", rejected.items.single().message)
+    }
+
+    /** Lý do cấp-đơn (`businessRuleViolations`) cũng phải tới được màn chọn — `reasonFor` đã lùi sẵn. */
+    @Test
+    fun validateAndApply_invalidWithOrderLevelReason_usesBusinessRuleViolation() = runTest {
+        val repo = FakeRepo(validate = {
+            ValidateDiscountsResult(
+                overallValid = false, totalDiscountAmount = "0", finalAmount = "10000",
+                items = listOf(DiscountItemResult("a", "CAMPAIGN", false, "0", "NOT_ELIGIBLE")),
+                businessRuleViolations = listOf("Don hang khong du dieu kien"),
+            )
+        })
+        val outcome = store(repo).validateAndApply(listOf(offer("a")))
+
+        assertEquals(
+            "Don hang khong du dieu kien",
+            (outcome as EndowApplyOutcome.Rejected).items.single().message,
+        )
     }
 
     @Test
@@ -286,7 +340,7 @@ class EndowStoreTest {
     fun validateAndApply_failure_setsErrorAndStopsValidating() = runTest {
         val repo = FakeRepo(validate = { throw PromotionException("VAL_ERR", "loi") })
         val s = store(repo)
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+        assertEquals(EndowApplyOutcome.Failed("VAL_ERR"), s.validateAndApply(listOf(offer("a"))))
 
         val st = s.currentState()
         assertFalse(st.isValidating)
@@ -303,7 +357,10 @@ class EndowStoreTest {
     fun validateAndApply_nullResult_reportsErrorAndAppliesNothing() = runTest {
         val repo = FakeRepo(validate = { null })
         val s = store(repo)
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(offer("a"))))
+        assertEquals(
+            EndowApplyOutcome.Failed(ErrorCodes.NO_RESULT),
+            s.validateAndApply(listOf(offer("a"))),
+        )
 
         val st = s.currentState()
         assertTrue(st.appliedDiscounts.isEmpty())

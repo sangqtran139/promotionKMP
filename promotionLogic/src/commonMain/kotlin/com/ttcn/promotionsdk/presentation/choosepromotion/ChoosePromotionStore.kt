@@ -8,6 +8,7 @@ import com.ttcn.promotionsdk.domain.model.eligible.FindEligibleCampaignsRequest
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.presentation.base.PRMStore
 import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
+import com.ttcn.promotionsdk.presentation.common.RejectedOffer
 import com.ttcn.promotionsdk.presentation.base.PromotionCancellable
 import com.ttcn.promotionsdk.presentation.mypromotion.toMyPromotionTab
 import kotlinx.coroutines.CoroutineScope
@@ -26,8 +27,8 @@ import com.ttcn.promotionsdk.config.eligibleOrderItems
 /**
  * **Tầng UI-logic dùng chung** cho màn "Chọn ưu đãi" (checkout) — chạy trên cả Android & iOS.
  *
- * Gom phần **rõ ràng dùng chung**: load đầu / preload từ widget / phân trang **2 nhóm độc lập**
- * (`forSectionPage`) / search server-side / xử lý lỗi. Order-context (orderId/orderValue) đọc từ
+ * Gom phần **rõ ràng dùng chung**: load đầu / phân trang **2 nhóm độc lập** (`forSectionPage`) /
+ * search server-side / xử lý lỗi / disable tại chỗ ưu đãi bị validate từ chối. Order-context (orderId/orderValue) đọc từ
  * [PromotionContainer.requestContextProvider] — nguồn duy nhất cho cả 2 nền tảng.
  *
  * KHÔNG gom **validate/apply** và **selection**: hai thứ này sống ở tầng khác nhau theo nền tảng
@@ -88,8 +89,11 @@ class ChoosePromotionStore(
             is ChoosePromotionIntent.SeedOnce -> {
                 if (!hasSeeded) {
                     hasSeeded = true
-                    _state.update { it.copy(selectedIds = intent.preSelectedIds.distinct()) }
-                    preload(intent.myOffers, intent.otherOffers, intent.myIsLastPage, intent.otherIsLastPage)
+                    // Bật `isLoading` NGAY ở đây, đồng bộ, chứ không đợi `loadOffers` (nó chạy trong
+                    // coroutine): hở một khung hình là màn hiện view rỗng "chưa có ưu đãi nào" trước
+                    // khi shimmer kịp che. Cùng lý do với nhánh `ClearKeyword` bên trên.
+                    _state.update { it.copy(selectedIds = intent.preSelectedIds.distinct(), isLoading = true) }
+                    loadOffers(isRefresh = false)
                 }
             }
             is ChoosePromotionIntent.ToggleSelection -> onToggleSelection(intent.id)
@@ -99,6 +103,50 @@ class ChoosePromotionStore(
             // biết lúc nào bắt đầu/kết thúc — native báo. Chỉ đổi cờ, không đụng dữ liệu danh sách.
             ChoosePromotionIntent.ApplyStarted -> _state.update { it.copy(isApplying = true) }
             ChoosePromotionIntent.ApplyFinished -> _state.update { it.copy(isApplying = false) }
+            is ChoosePromotionIntent.ApplyRejected -> onApplyRejected(intent.items)
+            ChoosePromotionIntent.ConsumeApplyMessage -> _state.update { it.copy(applyMessage = null) }
+        }
+    }
+
+    /**
+     * Server từ chối [items] ở lượt "Áp dụng" → **disable tại chỗ + bỏ tick**, không gì khác.
+     *
+     * Bốn việc trong một lượt cập nhật, cố ý **không tách**: state phát ra giữa chừng là màn vẽ một
+     * khung hình có ưu đãi đã disable mà vẫn còn tick.
+     *
+     * 1. Nhập id của [items] vào [ChoosePromotionState.rejectedIds] (cộng dồn, không thay thế —
+     *    lượt trước từ chối ưu đãi khác thì ưu đãi đó vẫn phải đứng ở trạng thái disable).
+     * 2. Map lại cả hai nhóm qua [toChooseOffer] để `isUsable` = false. **Chỉ vậy** — KHÔNG gắn nhãn
+     *    trạng thái nào lên card, cũng không dải "Chưa đủ điều kiện áp dụng". Dải đó nói về điều kiện
+     *    của **đơn hàng** (`findEligible` trả `usable = false` kèm `unmatchedRules`); ưu đãi bị
+     *    validate từ chối là chuyện khác, và lý do đã hiện ở popup ([ChoosePromotionState.applyMessage]).
+     * 3. **Bỏ tick** các ưu đãi vừa bị từ chối: giữ tick trên một card đã mờ là tự mâu thuẫn, và
+     *    `canApply()` cũng sẽ chặn nút mãi vì thấy ưu đãi đang tick không dùng được.
+     * 4. Mở khoá nút ([ChoosePromotionState.isApplying] = false) + đặt câu báo một-lần.
+     *
+     * Câu hiện lên lấy **nguyên văn của server** ([RejectedOffer.message], do
+     * `ValidateDiscountsResult.reasonFor` bóc từ `data` của response) — của ưu đãi đầu tiên có lời
+     * giải thích. Ở chế độ chọn đơn (mặc định) danh sách chỉ có một phần tử nên không có gì phải
+     * chọn; chế độ chọn nhiều sẽ cần cách gom nhiều câu — để đó tới khi thật sự bật multi-select.
+     */
+    private fun onApplyRejected(items: List<RejectedOffer>) {
+        if (items.isEmpty()) {
+            _state.update { it.copy(isApplying = false) }
+            return
+        }
+        _state.update { st ->
+            // Chỉ giữ **id**, không giữ câu lý do: câu đó dùng đúng một lần cho popup. Giữ lại theo
+            // từng item là mời gọi đem nó ra hiển thị lên card — đúng thứ vừa bỏ.
+            val allRejected = (st.rejectedIds + items.map { it.objectId }).distinct()
+            val lookup = allRejected.toSet()
+            st.copy(
+                rejectedIds = allRejected,
+                myOffers = st.myOffers.map { it.source.toChooseOffer(st.expireWarningDate, lookup) },
+                otherOffers = st.otherOffers.map { it.source.toChooseOffer(st.expireWarningDate, lookup) },
+                selectedIds = st.selectedIds.filterNot { it in lookup },
+                isApplying = false,
+                applyMessage = items.firstOrNull { it.message.isNotBlank() }?.message.orEmpty(),
+            )
         }
     }
 
@@ -166,8 +214,8 @@ class ChoosePromotionStore(
                 hasLoadedInitial = true,
                 isLoading = false,
                 expireWarningDate = warn,
-                myOffers = my.map { o -> o.toChooseOffer(warn) },
-                otherOffers = other.map { o -> o.toChooseOffer(warn) },
+                myOffers = my.map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
+                otherOffers = other.map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
                 myIsLastPage = myIsLastPage,
                 otherIsLastPage = otherIsLastPage,
                 isEmpty = my.isEmpty() && other.isEmpty(),
@@ -199,8 +247,12 @@ class ChoosePromotionStore(
                             myIsLastPage = result?.myIsLastPage ?: true,
                             otherIsLastPage = result?.otherIsLastPage ?: true,
                             expireWarningDate = warn,
-                            myOffers = result?.myOffers.orEmpty().map { o -> o.toChooseOffer(warn) },
-                            otherOffers = result?.otherOffers.orEmpty().map { o -> o.toChooseOffer(warn) },
+                            // Danh sách mới từ server vẫn phải đi qua `rejectedIds`: server đánh
+                            // `usable = true` cho ưu đãi nó vừa từ chối lúc validate (hai API khác
+                            // nhau), nên không áp lại override thì kéo-để-tải-lại là ưu đãi hỏng sáng
+                            // lên chọn được.
+                            myOffers = result?.myOffers.orEmpty().map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
+                            otherOffers = result?.otherOffers.orEmpty().map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
                             isEmpty = result?.myOffers.orEmpty().isEmpty() && result?.otherOffers.orEmpty().isEmpty(),
                             hasLoadedInitial = true,
                         )
@@ -239,13 +291,13 @@ class ChoosePromotionStore(
                             it.copy(
                                 isLoadingMore = false, myPage = nextPage,
                                 myIsLastPage = result?.myIsLastPage ?: true,
-                                myOffers = it.myOffers + result?.myOffers.orEmpty().map { o -> o.toChooseOffer(warn) },
+                                myOffers = it.myOffers + result?.myOffers.orEmpty().map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
                             )
                         } else {
                             it.copy(
                                 isLoadingMoreOther = false, otherPage = nextPage,
                                 otherIsLastPage = result?.otherIsLastPage ?: true,
-                                otherOffers = it.otherOffers + result?.otherOffers.orEmpty().map { o -> o.toChooseOffer(warn) },
+                                otherOffers = it.otherOffers + result?.otherOffers.orEmpty().map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
                             )
                         }
                     }

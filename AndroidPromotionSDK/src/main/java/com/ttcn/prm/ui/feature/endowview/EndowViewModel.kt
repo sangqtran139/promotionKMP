@@ -5,6 +5,7 @@ import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.usecase.CreateRedemptionSessionUseCase
 import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
+import com.ttcn.promotionsdk.presentation.endow.EndowApplyOutcome
 import com.ttcn.promotionsdk.presentation.endow.EndowConfirmResult
 import com.ttcn.promotionsdk.presentation.endow.EndowIntent
 import com.ttcn.promotionsdk.presentation.endow.EndowState
@@ -28,8 +29,8 @@ import com.ttcn.promotionsdk.presentation.endow.EndowStore
  * 3. **Bỏ máy trạng thái `settleCompletion`/`sawValidating`/`handleSettle`/`consumeErrorUnlessSettling`**.
  *    Bốn thứ đó tồn tại chỉ vì `EndowStore.validateAndApply` là fire-and-forget: muốn biết kết quả
  *    phải rình `isValidating` true→false trên dòng state chung — mà `StateFlow` là **conflated** nên
- *    còn phải chặn widget xoá lỗi trước khi nơi gọi đọc kịp. Nay store `suspend` và **trả thẳng
- *    state cuối**, nên cả bốn biến mất. iOS bỏ y hệt.
+ *    còn phải chặn widget xoá lỗi trước khi nơi gọi đọc kịp. Nay store `suspend` và **trả thẳng kết
+ *    cục** ([EndowApplyOutcome]) của lượt gọi, nên cả bốn biến mất. iOS bỏ y hệt.
  *
  * Bề mặt state là **chính [EndowState] của store**, không bọc lại — xem [PRMStoreViewModel].
  */
@@ -60,10 +61,10 @@ internal class EndowViewModel(
     suspend fun refreshAvailability(): Boolean = endowStore.refreshAvailability()
 
     /**
-     * Validate + áp ưu đãi user chọn ở màn "Chọn ưu đãi"; **trả state cuối của đúng lượt này**.
-     * Đối ứng `EndowViewModel.validateAndApply(_:)` bên iOS.
+     * Validate + áp ưu đãi user chọn ở màn "Chọn ưu đãi"; **trả kết cục của đúng lượt này**
+     * ([EndowApplyOutcome]). Đối ứng `EndowViewModel.validateAndApply(_:completion:)` bên iOS.
      */
-    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowState =
+    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowApplyOutcome =
         endowStore.validateAndApply(offers)
 
     /** Host tự validate rồi đưa kết quả vào (giữ public API `PRMEndowView.setDiscountDetails`). */

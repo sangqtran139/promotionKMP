@@ -30,6 +30,7 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.showsIneligibleWarning
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
+import com.ttcn.promotionsdk.presentation.common.RejectedOffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -623,15 +624,9 @@ class ChoosePromotionStoreBranchTest {
 
     @Test
     fun seedOnce_ignoresSecondCall_soUserSelectionSurvivesViewRecreation() = runTest {
-        val repo = FakeRepo { EligibleOffersResult() }
+        val repo = FakeRepo { EligibleOffersResult(otherOffers = listOf(offer("b"))) }
         val s = TestScopeStore(repo, testScheduler)
-        val seed = ChoosePromotionIntent.SeedOnce(
-            preSelectedIds = listOf("pre"),
-            myOffers = listOf(offer("a")),
-            otherOffers = listOf(offer("b")),
-            myIsLastPage = true,
-            otherIsLastPage = true,
-        )
+        val seed = ChoosePromotionIntent.SeedOnce(preSelectedIds = listOf("pre"))
         s.dispatch(seed)
         testScheduler.advanceUntilIdle()
         s.dispatch(ChoosePromotionIntent.ToggleSelection("b"))   // user tick thêm
@@ -641,7 +636,177 @@ class ChoosePromotionStoreBranchTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(listOf("b"), s.currentState().selectedIds, "seed lần 2 không được đụng selection")
-        assertEquals(0, repo.calls)
+        assertEquals(1, repo.calls, "seed lần 2 cũng không được gọi lại API")
+    }
+
+    /**
+     * Vào màn là **luôn** hỏi lại server, kể cả khi widget đã có sẵn danh sách.
+     *
+     * Trước đây `SeedOnce` ôm luôn danh sách preload của widget và store dùng thẳng, nên màn mở ra
+     * hiện dữ liệu của thời điểm widget nạp — có thể đã cũ (ngân sách hết, voucher vừa bị dùng ở
+     * thiết bị khác) mà không có gì sửa lại cho tới khi user tự kéo-để-tải-lại.
+     */
+    @Test
+    fun seedOnce_alwaysFetchesFreshOffers() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("moi"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = listOf("pre")))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, repo.calls)
+        assertEquals(listOf("moi"), s.currentState().myOffers.map { it.source.id })
+        assertEquals(listOf("pre"), s.currentState().selectedIds)
+    }
+
+    /**
+     * Shimmer phải che ngay từ khung hình đầu, không để view rỗng loé lên trước.
+     *
+     * Dùng `StandardTestDispatcher` chứ **không** `TestScopeStore` (unconfined): với unconfined,
+     * `scope.launch` trong `loadOffers` chạy tới xong **ngay trong lời gọi `dispatch`**, nên tới lúc
+     * assert thì `isLoading` đã về `false` — test đỏ trong khi code đúng. Ở đây coroutine bị giữ lại
+     * cho tới `advanceUntilIdle()`, nên cái quan sát được đúng là "trạng thái ngay sau dispatch".
+     */
+    @Test
+    fun seedOnce_turnsOnLoadingSynchronously() = runTest {
+        val repo = FakeRepo { EligibleOffersResult() }
+        val s = ChoosePromotionStore(
+            FindEligibleCampaignsUseCase(repo),
+            CoroutineScope(kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)),
+        )
+
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        assertTrue(s.currentState().isLoading, "phải bật đồng bộ, không đợi coroutine chạy")
+
+        testScheduler.advanceUntilIdle()
+        assertFalse(s.currentState().isLoading, "nạp xong thì tắt")
+    }
+
+    // ─── ApplyRejected: server từ chối ưu đãi ở lượt "Áp dụng" ─────────────────
+
+    @Test
+    fun applyRejected_disablesOfferUnticksItAndKeepsServerReason() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"), offer("b"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+        s.dispatch(ChoosePromotionIntent.ToggleSelection("a"))
+        s.dispatch(ChoosePromotionIntent.ApplyStarted)
+
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "Khong ap dung duoc"))))
+
+        val st = s.currentState()
+        val a = st.myOffers.first { it.source.id == "a" }
+        assertFalse(a.isUsable, "bi tu choi thi khong chon duoc nua")
+        assertTrue(a.isRejected)
+        // CHỈ disable. Dải "Chưa đủ điều kiện áp dụng" nói về điều kiện của ĐƠN HÀNG
+        // (`findEligible` trả `usable = false`) — bị validate từ chối là chuyện khác, và lý do đã
+        // hiện ở popup. Gắn dải vào là báo sai nguyên nhân cho user.
+        assertFalse(a.showsIneligibleWarning(), "khong duoc gan them trang thai chua du dieu kien")
+        assertEquals(emptyList(), st.selectedIds, "phai bo tick")
+        assertFalse(st.isApplying, "mo khoa nut")
+        assertEquals("Khong ap dung duoc", st.applyMessage)
+
+        // Ưu đãi khác không bị vạ lây.
+        assertTrue(st.myOffers.first { it.source.id == "b" }.isUsable)
+    }
+
+    /**
+     * `findEligible` vẫn trả `usable = true` cho ưu đãi vừa bị validate từ chối (hai API khác nhau),
+     * nên override cục bộ phải sống qua lượt nạp lại — nếu không, kéo-để-tải-lại là nó sáng lên.
+     */
+    @Test
+    fun applyRejected_survivesRefreshAndPaging() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "Het ngan sach"))))
+
+        s.dispatch(ChoosePromotionIntent.Refresh)
+        testScheduler.advanceUntilIdle()
+
+        val a = s.currentState().myOffers.single()
+        assertFalse(a.isUsable, "nap lai khong duoc xoa override")
+        assertTrue(a.isRejected)
+    }
+
+    /** Lượt sau từ chối ưu đãi khác → lý do cũ vẫn còn giá trị, phải cộng dồn chứ không thay thế. */
+    @Test
+    fun applyRejected_accumulatesAcrossAttempts() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"), offer("b"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "ly do a"))))
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("b", "ly do b"))))
+
+        val st = s.currentState()
+        assertEquals(listOf("a", "b"), st.rejectedIds)
+        assertTrue(st.myOffers.none { it.isUsable })
+    }
+
+    /**
+     * Ưu đãi bị từ chối **hai lần** thì id không được nhân đôi trong [ChoosePromotionState.rejectedIds]
+     * — nó là danh sách, không phải set, nên `distinct()` là thứ duy nhất giữ nó sạch.
+     */
+    @Test
+    fun applyRejected_sameOfferTwice_doesNotDuplicateId() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "lan 1"))))
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "lan 2"))))
+
+        assertEquals(listOf("a"), s.currentState().rejectedIds)
+    }
+
+    /** Server từ chối mà không nói lý do: card vẫn phải mờ đi; câu báo rỗng để native tự lùi. */
+    @Test
+    fun applyRejected_withoutReason_stillDisablesOffer() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", ""))))
+
+        val st = s.currentState()
+        assertFalse(st.myOffers.single().isUsable)
+        assertEquals("", st.applyMessage)
+    }
+
+    @Test
+    fun consumeApplyMessage_clearsIt() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(listOf(RejectedOffer("a", "x"))))
+
+        s.dispatch(ChoosePromotionIntent.ConsumeApplyMessage)
+
+        assertNull(s.currentState().applyMessage)
+    }
+
+    /** Danh sách rỗng (không nên xảy ra) chỉ mở khoá nút, không đụng gì khác. */
+    @Test
+    fun applyRejected_emptyList_onlyUnlocksButton() = runTest {
+        val repo = FakeRepo { EligibleOffersResult(myOffers = listOf(offer("a"))) }
+        val s = TestScopeStore(repo, testScheduler)
+        s.dispatch(ChoosePromotionIntent.SeedOnce(preSelectedIds = emptyList()))
+        testScheduler.advanceUntilIdle()
+        s.dispatch(ChoosePromotionIntent.ApplyStarted)
+
+        s.dispatch(ChoosePromotionIntent.ApplyRejected(emptyList()))
+
+        val st = s.currentState()
+        assertFalse(st.isApplying)
+        assertTrue(st.rejectedIds.isEmpty())
+        assertNull(st.applyMessage)
+        assertTrue(st.myOffers.single().isUsable)
     }
 
     @Test

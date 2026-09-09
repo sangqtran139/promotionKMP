@@ -89,7 +89,7 @@
 
     <!--
       Chiều cao banner màn chi tiết — dp CỐ ĐỊNH để soi gương iOS (XIB `bannerImageView` = 173pt).
-      Trước đây dùng `@dimen/prm_tokenSizing184` → `@dimen/_147sdp`, tức scale theo bề rộng màn hình:
+      Trước đây dùng `@dimen/prm_tokenSizing184` → `@dimen/prm_147sdp`, tức scale theo bề rộng màn hình:
       147dp ở sw300, 176dp ở sw360, 191dp ở sw390, 294dp ở sw600 (tablet) — chỉ trùng 173 của iOS ở
       đúng một cỡ máy, còn lại lệch, tablet lệch 70%. Ảnh 2 nền tảng phải cùng kích thước nên bỏ sdp.
     -->

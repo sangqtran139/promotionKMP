@@ -30,8 +30,70 @@ android {
         }
     }
 
+    // ─── Môi trường: staging / uat / product ─────────────────────────────────────────────────
+    //
+    // Chọn lúc BUILD, không phải lúc chạy: mỗi flavor sinh một `BuildConfig.DEMO_BASE_URL` riêng.
+    // Trong Android Studio đổi bằng Build Variants; ngoài dòng lệnh thì đọc tên task:
+    //
+    //     ./gradlew :androidApp:assembleStagingDebug    # hoặc Uat / Product
+    //     ./gradlew :androidApp:installProductDebug
+    //     ./scripts/build-android.sh local --env product
+    //
+    // `buildConfig = true` là BẮT BUỘC từ AGP 8: mặc định đã tắt, thiếu dòng đó thì
+    // `buildConfigField` không sinh ra gì và `BuildConfig.DEMO_BASE_URL` không biên dịch được.
+    //
+    // KHÔNG đặt `applicationIdSuffix`: ba flavor dùng chung một applicationId nên cài cái này là
+    // đè cái kia. Đổi lại `scripts/build-android.sh` (và lệnh `adb am start`) không phải suy ra
+    // app id theo flavor. Cần cài song song để so hai môi trường thì thêm
+    // `applicationIdSuffix = ".uat"` vào từng flavor và sửa `APP_ID` trong script cho khớp.
+    // `DEMO_ENV` (tên môi trường) tách khỏi `DEMO_BASE_URL` (địa chỉ): có chỗ cần rẽ nhánh theo
+    // MÔI TRƯỜNG chứ không theo URL — vd staging không cấp `requestId` nên client phải tự sinh
+    // (xem `LoginService.requestOtp`). Suy ngược môi trường từ chuỗi URL là so sánh chuỗi mong manh,
+    // đổi URL một chữ là nhánh đó im lặng ngừng chạy.
+    flavorDimensions += "env"
+
+    productFlavors {
+        create("staging") {
+            dimension = "env"
+            // BẮT BUỘC, đừng bỏ. Không flavor nào `isDefault` thì AGP chọn cái **đầu tiên theo
+            // alphabet** — `product` < `staging` < `uat` — nên Android Studio tự chọn `productDebug`
+            // sau mỗi lần sync và bấm Run là build thẳng PRODUCTION mà không báo gì.
+            isDefault = true
+            buildConfigField("String", "DEMO_ENV", "\"staging\"")
+            // HTTP trần, không phải HTTPS — nên `res/xml/network_security_config.xml` mới phải mở
+            // cleartext riêng cho host `125.235.38.229`. Xoá flavor này thì file đó cũng hết lý do
+            // tồn tại; ngược lại, sửa IP ở đây mà quên file kia là mọi request staging bị Android
+            // chặn thẳng với `CLEARTEXT communication not permitted`.
+            buildConfigField("String", "DEMO_BASE_URL", "\"http://125.235.38.229:8080\"")
+            resValue("string", "app_name", "Promotion SDK (STG)")
+            versionNameSuffix = "-staging"
+        }
+        create("uat") {
+            dimension = "env"
+            buildConfigField("String", "DEMO_ENV", "\"uat\"")
+            buildConfigField("String", "DEMO_BASE_URL", "\"https://api24cdn.vtmoney.vn/uatmm\"")
+            resValue("string", "app_name", "Promotion SDK (UAT)")
+            versionNameSuffix = "-uat"
+        }
+        create("product") {
+            dimension = "env"
+            buildConfigField("String", "DEMO_ENV", "\"product\"")
+            // Cùng host với UAT, **bỏ đoạn `/uatmm`** — đó là toàn bộ khác biệt giữa hai môi trường.
+            buildConfigField("String", "DEMO_BASE_URL", "\"https://api24cdn.vtmoney.vn\"")
+            // Có hậu tố như hai môi trường kia. Trước đây để trống cho "giống bản thật", nhưng đây
+            // là app DEMO — không có bản thật nào để giống, và tên trơn khiến bản production nhìn
+            // hệt bản mặc định. Muốn biết mình đang cầm gì thì phải đọc được nó trên màn hình.
+            resValue("string", "app_name", "Promotion SDK (PRODUCT)")
+            versionNameSuffix = "-product"
+        }
+    }
+
     buildFeatures {
-        dataBinding = true
+        buildConfig = true
+        // `dataBinding` TẮT — cùng lý do với `:AndroidPromotionSDK`: 7 layout của app demo bọc thẻ
+        // `<layout>` nhưng **0 file có `<data>`/`<variable>`** và **0 chỗ** dùng
+        // `DataBindingUtil`/`ViewDataBinding`. Tất cả đi qua View Binding.
+        dataBinding = false
         viewBinding = true
     }
 
@@ -82,6 +144,13 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
 
     // ─── Của riêng app demo ──────────────────────────────────────────────────────────────
+    // `sdp-android`: layout của CHÍNH app demo dùng `@dimen/_16sdp` và `@dimen/_120sdp`.
+    //
+    // Trước đây app không khai dòng này mà vẫn build được — nó **ăn ké** resource mà SDK kéo theo.
+    // Đó chính là vấn đề AND-4 nói: resource của library merge thẳng vào app host, nên host vô tình
+    // phụ thuộc vào một thư viện mình không hề khai. SDK vừa nội bộ hoá sdp (`prm_Xsdp`) là app này
+    // gãy ngay — đúng thứ sẽ xảy ra với host thật nếu không phát hiện sớm.
+    implementation(libs.sdp.android)
     implementation(libs.kotlinx.coroutines.android)
     // PromotionTestLoginManager gọi API lấy token. SDK **không** dùng Retrofit.
     implementation(libs.retrofit)

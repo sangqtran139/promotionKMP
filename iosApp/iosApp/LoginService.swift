@@ -108,13 +108,39 @@ final class LoginService {
     static let shared = LoginService()
     private init() {}
 
-    // MARK: - Cấu hình demo (sửa nhanh tại đây) — hardcode y theo curl BE.
+    // MARK: - Cấu hình demo
 
-    /// Cùng host với `DEMO_BASE_URL` bên `:androidApp` — môi trường UAT.
-    private let endpoint = URL(string: "https://api24cdn.vtmoney.vn/uatmm/auth/v1/authn/login")!
-    /// Khớp `DEMO_MSISDN` bên `:androidApp`. Đổi số thì đổi đúng dòng này.
-    let msisdn = "84971410156"
-    private let pin = "139200"
+    /// Cùng host với `DEMO_BASE_URL` bên `:androidApp` — theo **môi trường đang build**
+    /// (`DemoEnvironment.baseUrl`), không còn gắn cứng UAT.
+    private let endpoint = URL(string: "\(DemoEnvironment.baseUrl)/auth/v1/authn/login")!
+
+    // Số điện thoại và PIN của tài khoản demo đã **xoá khỏi code**: chúng là thông tin đăng nhập
+    // của một tài khoản thật, không có lý do nằm trong repo. Người dùng tự nhập; số điện thoại
+    // (không phải PIN) được nhớ lại cho lần mở sau — xem `DemoLoginStore`.
+
+    /// Độ dài tối đa của ô PIN và ô OTP. Đối ứng `android:maxLength` trong
+    /// `fragment_token_loading.xml` — sửa một bên thì sửa cả hai.
+    static let pinLength = 6
+    static let otpLength = 4
+
+    /// Đưa số người dùng gõ về dạng server nhận: **mã quốc gia `84`, không có dấu `+`**.
+    ///
+    /// Người dùng gõ quen kiểu nào cũng nhận: `0912345678`, `84912345678`, `+84 912 345 678`,
+    /// `0912.345.678`. Không chuẩn hoá thì `0912345678` gửi thẳng lên server là sai định dạng
+    /// `msisdn` và bước 1 trả lỗi chung chung, không ai đoán ra nguyên nhân là dấu `0` ở đầu.
+    ///
+    /// Đối ứng `normalizeMsisdn` bên `:androidApp` — hai bên phải cùng luật, nếu không cùng một số
+    /// gõ vào lại đăng nhập được ở một máy và hỏng ở máy kia.
+    static func normalizeMsisdn(_ raw: String) -> String {
+        // Bỏ mọi thứ không phải chữ số: khoảng trắng, dấu chấm, gạch, và cả dấu `+` của `+84`.
+        let digits = raw.filter(\.isNumber)
+        if digits.hasPrefix("84") { return digits }
+        // `0` đầu là mã vùng nội địa — thay bằng `84`, KHÔNG phải ghép thêm vào trước
+        // (`840912345678` là số không tồn tại).
+        if digits.hasPrefix("0") { return "84" + digits.dropFirst() }
+        // Không `0` cũng không `84` (vd gõ thiếu `912345678`) → ghép `84` vào trước.
+        return digits.isEmpty ? digits : "84" + digits
+    }
 
     /// `ephemeral` + tắt cookie + tắt cache: `URLSession` mặc định mang theo cookie, cache và
     /// header tự thêm của hệ thống, nên request thật khác lệnh `curl` mà chính nó in ra — và lệnh
@@ -144,10 +170,25 @@ final class LoginService {
     /// lần không hoàn tất. Không tự thử lại ở đây.
     ///
     /// Soi gương `LoginService.requestOtp()` bên `:androidApp`.
-    /// - Parameter previousRequestId: `requestId` còn giữ từ lần xin trước, nếu có.
-    func requestOtp(previousRequestId: String? = nil,
+    /// - Parameters:
+    ///   - msisdn: số người dùng vừa nhập.
+    ///   - pin: PIN người dùng vừa nhập.
+    ///   - previousRequestId: `requestId` còn giữ từ lần xin trước, nếu có.
+    func requestOtp(msisdn: String,
+                    pin: String,
+                    previousRequestId: String? = nil,
                     completion: @escaping (Result<OtpChallenge, Error>) -> Void) {
-        post(requestId: "", otp: "") { [weak self] result in
+        // STAGING: server **không cấp** `requestId`, client tự sinh một chuỗi và dùng lại nguyên vẹn
+        // cho bước 2. Giữ chuỗi của lượt trước nếu còn (OTP cũ chưa hết hiệu lực thì `requestId` đi
+        // kèm nó cũng phải giữ) — sinh mới mỗi lần bấm là mã vừa nhận về không còn khớp phiên nào.
+        //
+        // UAT/PRODUCT giữ nguyên đường cũ: gửi `requestId` RỖNG ở bước 1 rồi lấy chuỗi server trả về.
+        // Đối ứng `selfIssued` trong `LoginService.requestOtp` bên `:androidApp`.
+        let selfIssued: String? = DemoEnvironment.isStaging
+            ? (previousRequestId?.isEmpty == false ? previousRequestId : Self.newRequestId())
+            : nil
+
+        post(msisdn: msisdn, pin: pin, requestId: selfIssued ?? "", otp: "") { [weak self] result in
             guard let self else { return }
             print("[Demo] Bước 1 response: \(result)")
             switch result {
@@ -157,7 +198,7 @@ final class LoginService {
             case .success(let response):
                 if response.status?.code == "00",
                    let token = response.data?.accessToken, !token.isEmpty {
-                    let username = response.data?.username ?? self.msisdn
+                    let username = response.data?.username ?? msisdn
                     self.finishChallenge(completion, .success(.token(
                         LoginResult(accessToken: token, username: username))))
                     return
@@ -178,8 +219,12 @@ final class LoginService {
                 // Rỗng KHÔNG phải lỗi: mã cũ vẫn dùng được. Nên rơi về `requestId` đang giữ thay vì
                 // báo hỏng — bản trước vứt nó đi rồi bắt người dùng bấm "Gửi lại OTP" mãi mãi, vì
                 // càng bấm càng chắc chắn rỗng.
+                // Nước lùi cuối là `selfIssued` — chuỗi client tự sinh ở trên (chỉ khác nil ở
+                // staging). Server bên đó không trả `requestId` nên thiếu nhánh này là luôn rơi vào
+                // `guard` báo lỗi bên dưới.
                 let fresh = response.data?.requestId
-                guard let requestId = (fresh?.isEmpty == false ? fresh : previousRequestId),
+                let carried = previousRequestId?.isEmpty == false ? previousRequestId : selfIssued
+                guard let requestId = (fresh?.isEmpty == false ? fresh : carried),
                       !requestId.isEmpty else {
                     self.finishChallenge(completion, .failure(LoginError.server(
                         code: "AUT0014",
@@ -193,9 +238,12 @@ final class LoginService {
     }
 
     /// Bước 2 — gửi OTP người dùng vừa nhập, lấy access token.
-    func submitOtp(requestId: String, otp: String,
+    ///
+    /// [msisdn]/[pin] phải **trùng** lượt `requestOtp` đã tạo ra [requestId]: server gắn OTP với
+    /// đúng bộ đó, gửi lệch là mất một lượt trong hạn 5 lần sai.
+    func submitOtp(requestId: String, otp: String, msisdn: String, pin: String,
                    completion: @escaping (Result<LoginResult, Error>) -> Void) {
-        post(requestId: requestId, otp: otp) { [weak self] result in
+        post(msisdn: msisdn, pin: pin, requestId: requestId, otp: otp) { [weak self] result in
             guard let self else { return }
             print("[Demo] Bước 2 response: \(result)")
             switch result {
@@ -213,7 +261,7 @@ final class LoginService {
                     self.finish(completion, .failure(LoginError.missingToken))
                     return
                 }
-                let username = response.data?.username ?? self.msisdn
+                let username = response.data?.username ?? msisdn
                 self.finish(completion, .success(LoginResult(accessToken: token, username: username)))
             }
         }
@@ -221,12 +269,14 @@ final class LoginService {
 
     // MARK: - Private
 
-    private func post(requestId: String, otp: String, completion: @escaping (Result<LoginResponse, Error>) -> Void) {
+    private func post(msisdn: String, pin: String, requestId: String, otp: String,
+                      completion: @escaping (Result<LoginResponse, Error>) -> Void) {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.httpShouldHandleCookies = false
         headers().forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body(requestId: requestId, otp: otp))
+        request.httpBody = try? JSONSerialization.data(
+            withJSONObject: body(msisdn: msisdn, pin: pin, requestId: requestId, otp: otp))
 
         print(Self.curlCommand(for: request))
 
@@ -273,7 +323,7 @@ final class LoginService {
     /// `otp` **RỖNG ở bước 1** — bước đó chỉ để server gửi mã về máy. Mã thật do người dùng nhập
     /// rồi truyền vào ở bước 2. Trước đây gắn cứng `"1111"`; mã đó không còn đúng, và mỗi lượt gửi
     /// sai bị tính một lần nhập sai — quá 5 lần liên tiếp là server khoá tài khoản một phút.
-    private func body(requestId: String, otp: String) -> [String: Any] {
+    private func body(msisdn: String, pin: String, requestId: String, otp: String) -> [String: Any] {
         [
             "msisdn": msisdn,
             "username": msisdn,
@@ -288,7 +338,15 @@ final class LoginService {
         ]
     }
 
-    /// `x-request-id` dạng timestamp `yyyyMMddHHmmss` (mới mỗi lần gọi, tránh server dedup).
+    /// Chuỗi `requestId` client tự sinh cho staging.
+    ///
+    /// UUID chứ không phải timestamp: hai lượt bấm cách nhau dưới một giây vẫn phải ra hai chuỗi
+    /// khác nhau. Bỏ dấu `-` cho gọn — server chỉ dùng nó làm khoá phiên, không soi định dạng.
+    ///
+    /// Đối ứng `newRequestId()` bên `:androidApp`.
+    private static func newRequestId() -> String {
+        UUID().uuidString.replacingOccurrences(of: "-", with: "")
+    }
 
     /// In request thành một lệnh `curl` copy-dán được — đối ứng `CurlLoggingInterceptor` bên
     /// `:androidApp`, thứ iOS vốn thiếu.

@@ -7,20 +7,27 @@
 > | | Bề mặt public | Mọi thứ khác |
 > |---|---|---|
 > | Android | `com.ttcn.prm.entry.**` (gồm `entry.api`) + `ui.theme.**` + `ui.feature.endowview` | `internal` |
-> | iOS | `iosPromotionSDK/Entry/**` trong module `PRM` | không có `public` |
+> | iOS | `iosPromotionSDK/Entry/**` **+ `PromotionSDKUI/Theme/**`** trong module `PRM` | không có `public` |
 >
 > Không có ngoại lệ. Cần host dùng được cái gì thì **dời nó vào `entry`**, đừng nới `public` tại chỗ —
-> xem §5. Kiểm tra nhanh (phải **không** in ra gì):
+> xem §5. Kiểm tra bằng một lệnh:
 >
 > ```bash
-> # Android
-> grep -rEn '^(public )?(open |abstract |sealed |data |enum |annotation |value |inline |suspend |const |fun )*(class|interface|object|fun|val|var|typealias) ' \
->   --include='*.kt' AndroidPromotionSDK/src/main/java/com/ttcn/prm | grep -v '/entry/'
-> # iOS
-> grep -rn '^\s*\(public\|open\)\s' --include='*.swift' iosPromotionSDK/PromotionSDKUI
+> ./scripts/check-public-api.sh
 > ```
 >
-> `grep` ở trên chỉ soi **source**. `internal` của Kotlin không đi tới bytecode: nó biên dịch thành
+> ⚠️ **Hai lệnh `grep` chép tay trước đây ở đây là SAI** — chúng chỉ loại trừ `/entry/` (Android) và
+> không loại trừ gì (iOS), trong khi allowlist do chính bảng trên khai gồm ba nhánh Android và hai
+> nhánh iOS. Chạy thật thì chúng **luôn đỏ 126 dòng** (Android 17 + iOS 109) dù code hoàn toàn đúng.
+>
+> Một gate luôn đỏ còn tệ hơn không có gate: người làm theo checklist chỉ có hai đường, và cả hai đều
+> xấu — hoặc "sửa cho xanh" bằng cách đổi `public` → `internal` ở `ui/theme` (tức **xoá theme API
+> khỏi bề mặt host**, breaking, mà trông y như một hành động tuân thủ rule), hoặc học được rằng gate
+> này luôn đỏ nên bỏ qua, và từ đó mọi vi phạm **thật** cũng bị bỏ qua cùng.
+>
+> Bảng trên cũng thiếu `PromotionSDKUI/Theme/**` ở dòng iOS — đã bổ sung.
+>
+> Script trên chỉ soi **source**. `internal` của Kotlin không đi tới bytecode: nó biên dịch thành
 > `public final class`, nên host viết Java hoặc dùng reflection vẫn với tới được. Phần bịt thêm ở
 > tầng AAR — sources.jar và resource private — nằm ở §6.
 
@@ -54,9 +61,12 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 - [3. `PromotionSDKApi` — ranh giới, không phải use case](#3-promotionsdkapi--ranh-giới-không-phải-use-case)
   - [3.1. Năm hàm](#31-năm-hàm)
   - [3.2. Kết quả và lỗi](#32-kết-quả-và-lỗi)
+  - [3.2.1. Ba gate giữ bề mặt public](#321-ba-gate-giữ-bề-mặt-public)
   - [3.3. DTO](#33-dto)
 - [4. Thành phần UI công khai (Android)](#4-thành-phần-ui-công-khai-android)
 - [5. Quy tắc khi mở rộng](#5-quy-tắc-khi-mở-rộng)
+- [5b. Cái gì là "breaking" — danh sách chốt](#5b-cái-gì-là-breaking--danh-sách-chốt)
+  - [5b.0. Bề mặt iOS là `@MainActor`](#5b0-bề-mặt-ios-là-mainactor)
 - [6. Bịt kín ở tầng AAR (Android)](#6-bịt-kín-ở-tầng-aar-android)
   - [6.1. Không phát hành sources.jar](#61-không-phát-hành-sourcesjar)
   - [6.2. Resource private toàn bộ](#62-resource-private-toàn-bộ)
@@ -85,7 +95,8 @@ object PromotionSDK {
     fun isInitialized(): Boolean
     fun getCallback(): PromotionSDKCallback?
 
-    val api: PromotionSDKApi                        // bề mặt headless; ném IllegalStateException nếu chưa initialize
+    val api: PromotionSDKApi                        // bề mặt headless; chưa initialize → mọi hàm trả NotInitialized
+    val sdkVersion: String                          // "1.0.0" — đọc được trước initialize
 
     val session: PromotionSessionConfig?            // session đã truyền lúc initialize
     val currentOrderId: String?
@@ -335,17 +346,58 @@ when (val r = PromotionSDK.api.getVouchers()) {
 }
 ```
 
-Sáu nhánh lỗi, giống nhau hai bên: `NetworkFailure(code, message)`, `SessionExpired`, `Timeout`,
-`ParseFailed`, `FeatureDisabled`, `Unknown(error)`.
+**Tám** nhánh lỗi, giống nhau hai bên:
+
+| Nhánh | Khi nào |
+|---|---|
+| `NetworkFailure(code, message)` | mạng/HTTP hỏng. `message` **không bao giờ rỗng** — thiếu câu của server thì lùi về "Không có kết nối mạng…" |
+| `BusinessRule(code, serverMessage)` | server từ chối theo **rule nghiệp vụ** (vd `VOUCHER_EXPIRED`). `code` là mã thô, `serverMessage` là câu cho người dùng (`null` khi server không kèm) |
+| `SessionExpired` | token hết hạn |
+| `Timeout` | |
+| `ParseFailed` | server trả `data: null` ở nơi bắt buộc có dữ liệu |
+| `FeatureDisabled` | cờ tính năng TẮT (`PRM_MOB_021`) |
+| `NotInitialized` | gọi `api` trước `initialize` |
+| `Unknown(error)` | còn lại |
 
 - Kotlin: `sealed class PromotionSDKError : Exception()`; `message` là câu hiển thị được.
 - Swift: `enum PromotionSDKError: Error, LocalizedError`; `errorDescription` ≡ `message` bên Kotlin.
 
-**API không ném lỗi nghiệp vụ.** Chỉ `CancellationException` thoát ra, để structured concurrency của
-host còn hoạt động.
+> ⚠️ **Thêm nhánh = major bump.** Host `when`/`switch` trên type này; Kotlin đòi `when` trên `sealed`
+> phải đủ nhánh, và enum Swift ở module thường không `@frozen` được. Mỗi nhánh mới làm hỏng biên dịch
+> của mọi host đã liệt kê đủ. Danh sách trên là bản đã chốt — muốn thêm thì phải là major.
+
+**API không ném lỗi nghiệp vụ, và cũng không ném vì chưa khởi tạo.** Chỉ `CancellationException`
+thoát ra, để structured concurrency của host còn hoạt động. Đọc `PromotionSDK.api` trước
+`initialize` **không** crash và **không** ném: nó trả một bề mặt mà mọi hàm cho `NotInitialized`.
+
+**Một đường map lỗi duy nhất.** `PromotionSDKError.from(errorCode, serverMessage, httpStatus)` là nơi
+duy nhất quy mã lỗi thô sang type công khai — cả bề mặt headless (`PromotionSDKApi`) lẫn callback của
+widget (`PRMEndowView.onError`, `confirmRedemption`) đều gọi nó. Trước đây mỗi bên map một bản riêng,
+nên cùng một lỗi ra hai kết quả khác nhau tuỳ host đi vào đường nào.
 
 `NO_RESULT` (server trả `data: null`) được xử lý theo ngữ cảnh, **không** đồng nhất:
 danh sách → thành công với list rỗng; chi tiết / validate / redemption → `ParseFailed`.
+
+### 3.2.1. Ba gate giữ bề mặt public
+
+| Gate | Lệnh | Trả lời câu hỏi |
+|---|---|---|
+| Allowlist | `./scripts/check-public-api.sh` | Có khai báo `public` nào lọt ra ngoài allowlist không? |
+| Baseline lõi | `./scripts/api-baseline.sh check` | Bề mặt Kotlin→ObjC của lõi có đổi so với bản đã review không? |
+| `explicitApiWarning()` | `./gradlew :promotionLogic:compileKotlinIosSimulatorArm64` | Khai báo nào của lõi chưa ghi visibility tường minh? |
+
+**Baseline lõi** (`docs/api/PromotionLogic.baseline.h`) đáng có vì repo dùng **SKIE**: nó sinh phần
+Swift API **từ** Kotlin, nên chỉ cần nâng version SKIE là bề mặt Swift đổi mà **không commit nào chạm
+source**. Không có baseline thì không cơ chế nào phát hiện. Đổi bề mặt có chủ đích → review diff rồi
+`./scripts/api-baseline.sh update`, commit **cùng** commit đổi API.
+
+> ⚠️ Baseline hiện tại chụp **trước** nhóm đổi tên API-1/API-4/API-5 (tên module, prefix token,
+> `Endow` → `Offer`). Làm xong nhóm đó thì `update` lại — diff sẽ lớn, và đó là điều đúng.
+
+**`explicitApiWarning()`** đang ở mức **cảnh báo**, chưa `explicitApi()` (strict). Lý do: bật strict
+là build đỏ ngay với ~200 khai báo thiếu visibility/kiểu trả về tường minh. Danh sách cảnh báo đó
+chính là việc cần rà; hạ về 0 rồi mới nâng lên strict. Mọi thứ `public` ở lõi đều lọt ra
+`PromotionLogic.h`, mà Kotlin mặc định là `public` — quên gõ `internal` là đã phát hành API mới.
 
 ### 3.3. DTO
 
@@ -424,6 +476,72 @@ widget) thì gọi thẳng `PromotionSDK.openChoosePromotion(activity, endowView
    nguyên tên và thứ tự. Cập nhật file này.
 4. Đổi chữ ký public của iOS → app host phải `⇧⌘K` (Clean Build Folder). `build-xcframework.sh` đã tự
    dọn `SwiftExplicitPrecompiledModules`, nhưng cache của Xcode vẫn có thể nói dối nếu bạn build tay.
+
+---
+
+## 5b. Cái gì là "breaking" — danh sách chốt
+
+SemVer nói *khi nào* bump major nhưng không nói *cái gì* tính là breaking cho **SDK này**. Không có
+danh sách thì mỗi lần lại tranh luận lại, và loại breaking nguy hiểm nhất — **breaking hành vi** —
+gần như luôn bị bỏ sót vì nó không đổi một chữ ký nào.
+
+### 5b.0. Bề mặt iOS là `@MainActor`
+
+`PromotionSDK` (và cả cây UI bên dưới: `PromotionSDKImpl`, `PRMStoreViewModel`, `PRMBaseBuilder`,
+`PRMBaseRouter`) đánh `@MainActor`. Hợp đồng này **vốn đã** là "gọi trên main thread" — nó là API UI
+(`openMyPromotion(from: UIViewController)`, `createEndowView(from:)`, `configure(theme:)`) — nhưng
+trước đây chỉ nằm trong doc comment, nên host gọi từ thread nền sẽ **crash lúc chạy** ở tầng UIKit
+thay vì được compiler chỉ đúng chỗ sai.
+
+Host gọi từ ngữ cảnh không phải main thì bọc `await MainActor.run { … }`.
+
+> **Thêm `@MainActor` SAU go-live là source-breaking với mọi host**, nên nó phải nằm ở đây từ đầu.
+> Nó cũng đóng luôn phần global mutable state (bốn `private static var` của `PromotionSDK`) — thứ
+> Swift 6 sẽ chặn.
+
+Ba chỗ trong chính SDK từng chỉ được bảo đảm bằng comment, nay compiler giữ:
+`PRMStoreViewModel.emitErrorIfNeeded`, `PromotionSDKImpl.render(_:on:)`, và closure `onState`/`onEffect`
+(kiểu nay là `@MainActor (State) -> Void`). Riêng `bindStore` giữ `DispatchQueue.main.async` +
+`MainActor.assumeIsolated` chứ **không** đổi sang `Task { @MainActor in }`: `Task` không bảo đảm thứ
+tự giữa nhiều lần phát, mà `StateFlow` là conflated — hai state tới gần nhau mà chạy đảo thứ tự là
+bản cũ ghi đè bản mới.
+
+### 5b.1. Breaking chữ ký (rõ ràng)
+
+| Thay đổi | Vì sao vỡ |
+|---|---|
+| Xoá / đổi tên hàm, property, type public | host không compile |
+| Đổi kiểu tham số hoặc kiểu trả về | như trên |
+| **Thêm tham số không có giá trị mặc định** | như trên. Thêm kèm default thì **không** breaking |
+| **Thêm hàm vào `PromotionSDKCallback` mà không có default implementation** | host cài đặt protocol/interface đó sẽ không compile. Kotlin: `fun x() {}`; Swift: `extension` với bản rỗng |
+| Đổi module name / prefix type (API-1, API-4) | vỡ dòng `import` và mọi chỗ dùng tên cũ |
+| Đổi `implementation` → không còn `api` ở artifact nằm trong chữ ký public | host mất type khỏi compile classpath |
+| **Thêm `@MainActor`** vào type/hàm public (iOS) | mọi chỗ host gọi từ ngữ cảnh không phải main thành lỗi compile — xem 5b.0 |
+
+### 5b.2. Breaking hành vi (không đổi chữ ký nào — nguy hơn)
+
+| Thay đổi | Vì sao vỡ | Đã xảy ra thật |
+|---|---|---|
+| **Đổi thứ tự callback** phát về host | host xử lý theo thứ tự cũ sẽ sai; không có gì báo | ✅ `PromotionSDKImpl.emit` từng đổi applied-trước → count-trước-applied. Nay có golden test khoá lại (`EndowHostNotifierEmitTests`, `EndowHostNotifierTest`) |
+| **Thêm nhánh vào `PromotionSDKError`** | Kotlin `when` trên `sealed` và Swift `switch` trên enum không `@frozen` đòi liệt kê đủ → host không compile | ✅ thêm `BusinessRule` + `NotInitialized` (2026-09-10) |
+| **Đổi mã lỗi thô** (`ErrorCodes`) | host so chuỗi mã sẽ rơi vào nhánh sai | — |
+| **Đổi thời điểm phát** callback (sớm/muộn hơn) | host dựa vào "đã có dữ liệu lúc callback chạy" | — |
+| **Đổi ngữ nghĩa một trạng thái** (vd `EndowWidgetState.UNAVAILABLE` nay chỉ đến từ 2 đường thay vì 3) | host render theo trạng thái sẽ hiện sai | ✅ 2026-09-10 |
+| **Bỏ/đổi resource public Android** (`prm_*` mà host tham chiếu) | host không build được resource | — |
+
+### 5b.3. KHÔNG breaking
+
+Thêm hàm/property/type mới · thêm case vào enum **chỉ SDK sinh ra và host không `switch`** · thêm
+tham số **có** default · đổi phần `internal` · đổi chuỗi hiển thị · sửa bug mà hợp đồng không đổi.
+
+### 5b.4. Kiểm bằng gì
+
+`./scripts/api-baseline.sh check` bắt được nhóm **5b.1** (diff header là bằng chứng). Nhóm **5b.2**
+thì baseline **không** thấy — đó là lý do phải có test khoá thứ tự và số lần gọi callback (§3.2.1),
+và lý do bảng này liệt kê chúng ra thành văn bản.
+
+> Danh sách này phải **đóng băng trước commit go-live** — sau đó mỗi dòng ở 5b.1/5b.2 là một lần
+> major bump, và với SDK nội bộ thì "major bump" nghĩa là đi bắt từng đối tác sửa code.
 
 ---
 

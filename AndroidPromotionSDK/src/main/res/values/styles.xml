@@ -24,32 +24,32 @@
 
     <style name="PRMFontRegular18">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_14sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_14sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayRegular16">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_12sdp</item>
-        <item name="lineHeight">@dimen/_21sdp</item>
+        <item name="android:textSize">@dimen/prm_12sdp</item>
+        <item name="lineHeight">@dimen/prm_21sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayBold22">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_18sdp</item>
-        <item name="lineHeight">@dimen/_21sdp</item>
+        <item name="android:textSize">@dimen/prm_18sdp</item>
+        <item name="lineHeight">@dimen/prm_21sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayBold32">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_26sdp</item>
-        <item name="lineHeight">@dimen/_30sdp</item>
+        <item name="android:textSize">@dimen/prm_26sdp</item>
+        <item name="lineHeight">@dimen/prm_30sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayBold18">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_14sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_14sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMBaseTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -58,7 +58,7 @@
         <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:navigationBarColor">@android:color/white</item>
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="prmRecyclerViewDividerSize">@dimen/_1sdp</item>
+        <item name="prmRecyclerViewDividerSize">@dimen/prm_1sdp</item>
         <item name="prmRecyclerViewDividerTint">@color/prm_tokenDark10</item>
         <item name="prmRecyclerViewDividerAsSpace">false</item>
         <item name="prmRecyclerViewDividerDrawable">@color/prm_tokenWhite</item>
@@ -73,62 +73,62 @@
 
     <style name="PRMFontRegular10">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_8sdp</item>
-        <item name="lineHeight">@dimen/_10sdp</item>
+        <item name="android:textSize">@dimen/prm_8sdp</item>
+        <item name="lineHeight">@dimen/prm_10sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayRegular10">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_8sdp</item>
-        <item name="lineHeight">@dimen/_10sdp</item>
+        <item name="android:textSize">@dimen/prm_8sdp</item>
+        <item name="lineHeight">@dimen/prm_10sdp</item>
     </style>
 
     <style name="PRMFontRegular12">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_10sdp</item>
-        <item name="lineHeight">@dimen/_11sdp</item>
+        <item name="android:textSize">@dimen/prm_10sdp</item>
+        <item name="lineHeight">@dimen/prm_11sdp</item>
     </style>
 
     <style name="PRMFontRegular14">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_11sdp</item>
-        <item name="lineHeight">@dimen/_14sdp</item>
+        <item name="android:textSize">@dimen/prm_11sdp</item>
+        <item name="lineHeight">@dimen/prm_14sdp</item>
     </style>
 
     <style name="PRMFontBold18">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_14sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_14sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMFontDisPlayRegular14">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_10sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_10sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMFontBold14">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_11sdp</item>
-        <item name="lineHeight">@dimen/_14sdp</item>
+        <item name="android:textSize">@dimen/prm_11sdp</item>
+        <item name="lineHeight">@dimen/prm_14sdp</item>
     </style>
 
     <style name="PRMFontMedium16">
         <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
-        <item name="android:textSize">@dimen/_13sdp</item>
-        <item name="lineHeight">@dimen/_16sdp</item>
+        <item name="android:textSize">@dimen/prm_13sdp</item>
+        <item name="lineHeight">@dimen/prm_16sdp</item>
     </style>
 
     <style name="PRMFontMedium18">
         <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
-        <item name="android:textSize">@dimen/_14sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_14sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayMedium18">
         <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
-        <item name="android:textSize">@dimen/_14sdp</item>
-        <item name="lineHeight">@dimen/_18sdp</item>
+        <item name="android:textSize">@dimen/prm_14sdp</item>
+        <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
     <style name="PRMCustomBottomSheetDialogTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -150,7 +150,7 @@
 
     <style name="PRMSlideButtonTextAppreance" parent="android:TextAppearance">
         <item name="android:textColor">@color/prm_tokenWhite</item>
-        <item name="android:textSize">@dimen/_15sdp</item>
+        <item name="android:textSize">@dimen/prm_15sdp</item>
         <item name="android:fontFamily">@font/prm_sf_pro_display_medium</item>
     </style>
 
@@ -165,50 +165,50 @@
 
     <style name="PRMFontBold32">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_26sdp</item>
-        <item name="lineHeight">@dimen/_30sdp</item>
+        <item name="android:textSize">@dimen/prm_26sdp</item>
+        <item name="lineHeight">@dimen/prm_30sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayBold08">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_6sdp</item>
-        <item name="lineHeight">@dimen/_7sdp</item>
+        <item name="android:textSize">@dimen/prm_6sdp</item>
+        <item name="lineHeight">@dimen/prm_7sdp</item>
     </style>
 
     <style name="PRMFontRegular16">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_13sdp</item>
-        <item name="lineHeight">@dimen/_16sdp</item>
+        <item name="android:textSize">@dimen/prm_13sdp</item>
+        <item name="lineHeight">@dimen/prm_16sdp</item>
     </style>
 
     <style name="PRMFontBold22">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_18sdp</item>
-        <item name="lineHeight">@dimen/_21sdp</item>
+        <item name="android:textSize">@dimen/prm_18sdp</item>
+        <item name="lineHeight">@dimen/prm_21sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayRegular14">
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textSize">@dimen/_11sdp</item>
-        <item name="lineHeight">@dimen/_14sdp</item>
+        <item name="android:textSize">@dimen/prm_11sdp</item>
+        <item name="lineHeight">@dimen/prm_14sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayMedium14">
         <item name="fontFamily">@font/prm_sf_pro_display_medium</item>
-        <item name="android:textSize">@dimen/_11sdp</item>
-        <item name="lineHeight">@dimen/_14sdp</item>
+        <item name="android:textSize">@dimen/prm_11sdp</item>
+        <item name="lineHeight">@dimen/prm_14sdp</item>
     </style>
 
     <style name="PRMFontSfDisplayMedium16">
         <item name="android:fontFamily">@font/prm_sf_pro_display_medium</item>
-        <item name="android:textSize">@dimen/_13sdp</item>
-        <item name="lineHeight">@dimen/_16sdp</item>
+        <item name="android:textSize">@dimen/prm_13sdp</item>
+        <item name="lineHeight">@dimen/prm_16sdp</item>
     </style>
 
     <style name="PRMFontBold16">
         <item name="fontFamily">@font/prm_sf_pro_display_bold</item>
-        <item name="android:textSize">@dimen/_13sdp</item>
-        <item name="lineHeight">@dimen/_16sdp</item>
+        <item name="android:textSize">@dimen/prm_13sdp</item>
+        <item name="lineHeight">@dimen/prm_16sdp</item>
     </style>
 
     <style name="PRMTabLayOutNew" parent="TextAppearance.Design.Tab">
@@ -220,7 +220,7 @@
     </style>
 
     <style name="PRMButton_gradient_prm" parent="@style/Widget.AppCompat.Button.Colored">
-        <item name="android:textSize">@dimen/_10sdp</item>
+        <item name="android:textSize">@dimen/prm_10sdp</item>
         <item name="android:fontFamily">@font/prm_sf_pro_display_regular</item>
         <item name="android:textColor">@color/prm_white</item>
         <item name="android:background">@drawable/prm_button_gradient_background</item>

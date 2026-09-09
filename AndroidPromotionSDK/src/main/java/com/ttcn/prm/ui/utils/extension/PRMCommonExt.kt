@@ -15,7 +15,7 @@ import androidx.annotation.LayoutRes
 import androidx.fragment.app.Fragment
 import com.google.gson.Gson
 import com.ttcn.prm.ui.utils.ViewGlobalConst
-import timber.log.Timber
+import com.ttcn.prm.ui.utils.PRMLog
 import java.text.Normalizer
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -34,11 +34,14 @@ internal fun Int.getString(context: Context): String {
     return context.resources.getString(this)
 }
 
+/** Scope log của nhóm hàm parse khung giờ — thay `Timber.tag("DisplayTimeFrames")`. */
+private const val TIME_LOG_SCOPE = "DisplayTimeFrames"
+
 internal inline fun <T> runSafely(block: () -> T?): T? {
     return try {
         block()
     } catch (e: Exception) {
-        Timber.e(e)
+        PRMLog.e("runSafely", e.message ?: "lỗi không rõ", e)
         null
     }
 }
@@ -149,15 +152,16 @@ internal fun getCurrentTimeInMinutes(): Int {
 internal fun parseTimeToSeconds(timeString: String): Int? {
     return try {
         if (timeString.isEmpty()) {
-            Timber.tag("DisplayTimeFrames").w("Time string can not null")
+            PRMLog.w(TIME_LOG_SCOPE, "Time string can not null")
             return null
         }
 
         val parts = timeString.trim().split(":")
 
         if (parts.size != 2 && parts.size != 3) {
-            Timber.tag("DisplayTimeFrames")
-                .w("Invalid time format: $timeString (expected HH:mm or HH:mm:ss)")
+            PRMLog.w(
+                TIME_LOG_SCOPE,
+                "Invalid time format: $timeString (expected HH:mm or HH:mm:ss)")
             return null
         }
 
@@ -171,27 +175,27 @@ internal fun parseTimeToSeconds(timeString: String): Int? {
         }
 
         if (hour == null || minute == null || second == null) {
-            Timber.tag("DisplayTimeFrames").w("Failed to parse time components: $timeString")
+            PRMLog.w(TIME_LOG_SCOPE, "Failed to parse time components: $timeString")
             return null
         }
 
         if (hour !in 0..23) {
-            Timber.tag("DisplayTimeFrames").w("Invalid hour: $hour (must be 0-23)")
+            PRMLog.w(TIME_LOG_SCOPE, "Invalid hour: $hour (must be 0-23)")
             return null
         }
 
         if (minute !in 0..59) {
-            Timber.tag("DisplayTimeFrames").w("Invalid minute: $minute (must be 0-59)")
+            PRMLog.w(TIME_LOG_SCOPE, "Invalid minute: $minute (must be 0-59)")
             return null
         }
         if (second !in 0..59) {
-            Timber.tag("DisplayTimeFrames").w("Invalid second: $second (must be 0-59)")
+            PRMLog.w(TIME_LOG_SCOPE, "Invalid second: $second (must be 0-59)")
             return null
         }
 
         hour * 3600 + minute * 60 + second
     } catch (e: Exception) {
-        Timber.tag("DisplayTimeFrames").e(e, "Error parsing time: $timeString")
+        PRMLog.e(TIME_LOG_SCOPE, "Error parsing time: $timeString", e)
         null
     }
 }

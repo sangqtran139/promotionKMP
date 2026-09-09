@@ -26,9 +26,78 @@ class EndowHostNotifierTest {
             eligibilityStatus = "",
         )
 
-    // ─── Count ────────────────────────────────────────────────────────────────
+    // ─── Golden: DANH SÁCH CÓ THỨ TỰ, không phải "có chứa" ────────────────────
+    //
+    // CHANGELOG từng ghi một lần `PromotionSDKImpl.emit` đổi thứ tự phát callback (applied-trước →
+    // count-trước-applied). **Không chữ ký nào đổi**, nên không gì bắt được: host nào dựa vào thứ tự
+    // thì vỡ im lặng. Đây là loại thay đổi dễ xảy ra nhất khi ai đó sắp xếp lại một vòng `for` trông
+    // như dọn dẹp.
+    //
+    // Vì vậy các test dưới đây so **`assertEquals` trên cả List**, không dùng `contains`/`any`:
+    // `contains` vẫn xanh khi thứ tự đảo hoặc khi có sự kiện thừa chen vào.
 
-            // ─── Applied ──────────────────────────────────────────────────────────────
+    /** Một lượt áp voucher = **đúng một** sự kiện, không nhiều hơn. */
+    @Test
+    fun golden_appliedTransition_phatDungMotSuKien() {
+        val n = EndowHostNotifier()
+
+        assertEquals(
+            listOf(EndowHostEvent.VoucherApplied("v1")),
+            n.onState(EndowState(hasLoadedInitial = true, appliedDiscounts = listOf(applied("v1")))),
+        )
+    }
+
+    /** Render lại cùng state → **danh sách rỗng**. Bắn theo mỗi lần render là host nhận hàng chục lần. */
+    @Test
+    fun golden_renderLaiCungState_khongPhatGiThem() {
+        val n = EndowHostNotifier()
+        val state = EndowState(hasLoadedInitial = true, appliedDiscounts = listOf(applied("v1")))
+        n.onState(state)
+
+        assertEquals(emptyList(), n.onState(state))
+        assertEquals(emptyList(), n.onState(state))
+    }
+
+    /**
+     * Chuỗi transition đầy đủ của một phiên: chưa áp → áp v1 → render lại → huỷ → áp v2.
+     *
+     * Gộp cả chuỗi vào **một** danh sách phẳng rồi so một lần: đó mới là thứ host thật sự nhận được
+     * theo thời gian, và là thứ vỡ khi ai đó đổi thứ tự.
+     */
+    @Test
+    fun golden_chuoiTransitionMotPhien_dungThuTuVaDungSoLan() {
+        val n = EndowHostNotifier()
+        val empty = EndowState(hasLoadedInitial = true)
+        val v1 = EndowState(hasLoadedInitial = true, appliedDiscounts = listOf(applied("v1")))
+        val v2 = EndowState(hasLoadedInitial = true, appliedDiscounts = listOf(applied("v2")))
+
+        val phat = listOf(empty, v1, v1, empty, v2, v2).flatMap { n.onState(it) }
+
+        assertEquals(
+            listOf(
+                EndowHostEvent.VoucherApplied("v1"),
+                EndowHostEvent.VoucherApplied("v2"),
+            ),
+            phat,
+        )
+    }
+
+    /**
+     * Widget APPLIED nhưng `appliedDiscounts` chưa có id (một nhịp render trung gian) → không phát,
+     * và **không** đụng bộ nhớ trong: nhịp sau có id thì phải phát **một** lần, không phải hai.
+     */
+    @Test
+    fun golden_nhipTrungGianThieuId_khongLamPhatHaiLan() {
+        val n = EndowHostNotifier()
+        val khongId = EndowState(hasLoadedInitial = true, totalVoucherCount = 3)
+        val coId = EndowState(hasLoadedInitial = true, appliedDiscounts = listOf(applied("v1")))
+
+        val phat = listOf(khongId, coId, coId).flatMap { n.onState(it) }
+
+        assertEquals(listOf(EndowHostEvent.VoucherApplied("v1")), phat)
+    }
+
+    // ─── Applied ──────────────────────────────────────────────────────────────
 
     @Test
     fun applied_firesOnceOnTransitionIntoApplied() {

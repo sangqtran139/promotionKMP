@@ -134,5 +134,9 @@ internal fun ChooseOffer.toVoucherListItem(): MyVoucherListItem {
         // Dải "Chưa đủ điều kiện áp dụng" KHÁC với "không dùng được": hết hạn cũng không dùng được
         // nhưng không phải chuyện điều kiện đơn hàng. Luật ở store, đừng suy lại từ `isEnabled`.
         showsIneligibleWarning = showsIneligibleWarning(),
+        // Bị `validateStackableDiscounts` từ chối → CHỈ mờ đi, không nhãn nào cả. Adapter cần biết để
+        // giấu badge, vì badge của nó bật theo `!isEnabled` nên mặc định sẽ lòi ra chữ "Không đủ điều
+        // kiện" — đúng thứ trạng thái mà ca này không được mang.
+        isRejected = isRejected,
     )
 }

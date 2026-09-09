@@ -1,0 +1,61 @@
+# Rule cho tầng Swift của SDK.
+#
+# Chọn theo **vi phạm đã đếm thật trong repo**, không phải rule set mặc định copy về. Phần
+# `KHÔNG bật` ở cuối cũng quan trọng ngang phần bật: bật nhầm rule là cả team đi "sửa cho xanh"
+# những chỗ vốn đã đúng.
+#
+# Chạy: `swiftlint --strict` (cần `brew install swiftlint`). Nên chạy trên file THAY ĐỔI, đừng quét
+# cả repo ngày đầu.
+
+included:
+  - iosPromotionSDK
+excluded:
+  - iosPromotionSDK/.spm          # checkout của SPM, không phải code của mình
+  - iosPromotionSDK/build         # xcframework + DerivedData
+  - iosPromotionSDK/Packages/*/.build
+
+disabled_rules:
+  - line_length          # nhiều dòng dài là CÓ CHỦ ĐÍCH (bảng token, chuỗi giải thích)
+  - trailing_whitespace
+  - todo                 # repo dùng `TODO(...)` có chủ đích, vd TODO(auto-apply)
+
+opt_in_rules:
+  - force_unwrapping     # PRMButton từng có 21 chỗ — đã dọn hết, rule này giữ cho không quay lại
+  - weak_delegate        # 9/9 delegate đã weak → bật để giữ nguyên trạng
+  - private_outlet       # 22/22 IBOutlet đã private → giữ
+  - unowned_variable_capture
+  - overridden_super_call
+  - prohibited_super_call
+  - empty_count
+  - first_where
+  - last_where
+
+# ── KHÔNG bật (đã kiểm, sẽ ra false positive) ──────────────────────────────────
+#
+#  strong_iboutlet — 22 IBOutlet đang `strong` + `private`, và đó là ĐÚNG. Outlet strong trỏ tới
+#    subview của một view đã được retain thì không rò rỉ; Apple đã bỏ khuyến nghị `weak` từ lâu.
+#    Bật rule này = 22 cảnh báo sai, và cách "sửa cho xanh" là thêm 22 chữ `weak` vô nghĩa.
+
+custom_rules:
+  prm_hardcoded_color:
+    name: "Màu hardcode ngoài tầng theme"
+    regex: 'UIColor\((red|white):|#colorLiteral'
+    excluded: ".*(Foundations/Colors|Theme/|ThemeHex|PromotionThemeDefaults|UIColor\\+Extension|RemoteImageCache|UIImageView\\+Remote).*"
+    message: "Màu phải lấy từ PRMThemeRegistry/Colors — host đổi theme thì chỗ hardcode không đổi theo."
+    severity: warning
+
+  prm_vietnamese_literal:
+    name: "Chuỗi tiếng Việt ngoài PromotionUIStrings"
+    regex: '"[^"]*[àáảãạăâèéẻẽẹêìíỉĩịòóỏõọôơùúủũụưỳýỷỹỵđ][^"]*"'
+    # `match_kinds` là dòng BẮT BUỘC: chỉ soi string literal, bỏ qua comment. Thiếu nó thì repo ra
+    # ~200 false positive vì doc comment viết bằng tiếng Việt.
+    match_kinds: [string]
+    excluded: ".*(PromotionUIStrings|PromotionThemeDefaults|PromotionSDKTests|Tests).*"
+    message: "Chuỗi hiển thị khai ở PromotionUIStrings — xem CODE-3 (tham số `language` chưa đổi được UI)."
+    severity: warning
+
+  prm_public_type_prefix:
+    name: "Type public thiếu prefix"
+    regex: '^public (final |open )?(class|struct|enum|protocol) (?!PRM|Promotion)'
+    message: "Type public phải mở đầu bằng PRM/Promotion — nó sống trong namespace app host."
+    severity: error

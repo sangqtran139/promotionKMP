@@ -2,6 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!--
+		Base URL của môi trường đang build. `$(PRM_BASE_URL)` là build setting do từng configuration
+		khai (Staging / Uat / Product — xem project.pbxproj); Xcode thay nó bằng giá trị thật lúc đóng gói
+		Info.plist, nên app chỉ việc đọc key này thay vì giữ một hằng Swift cứng.
+
+		`Debug`/`Release` (hai configuration gốc) cũng khai setting này, giá trị UAT — để scheme cũ
+		`iosApp` chạy y như trước chứ không nở ra chuỗi rỗng.
+	-->
+	<key>PRM_BASE_URL</key>
+	<string>$(PRM_BASE_URL)</string>
+	<!-- Tên môi trường (`staging`/`uat`/`product`) — tách khỏi PRM_BASE_URL vì có chỗ rẽ nhánh theo
+	     MÔI TRƯỜNG chứ không theo địa chỉ. Đối ứng `BuildConfig.DEMO_ENV` bên `:androidApp`. -->
+	<key>PRM_ENV</key>
+	<string>$(PRM_ENV)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

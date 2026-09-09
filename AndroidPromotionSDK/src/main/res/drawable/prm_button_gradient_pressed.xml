@@ -3,45 +3,45 @@
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#03000000" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 
-    <item android:bottom="@dimen/_1sdp">
+    <item android:bottom="@dimen/prm_1sdp">
         <shape android:shape="rectangle">
             <solid android:color="#05000000" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 
-    <item android:bottom="@dimen/_2sdp">
+    <item android:bottom="@dimen/prm_2sdp">
         <shape android:shape="rectangle">
             <solid android:color="#08000000" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 
-    <item android:bottom="@dimen/_3sdp">
+    <item android:bottom="@dimen/prm_3sdp">
         <shape android:shape="rectangle">
             <solid android:color="#0A000000" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 
-    <item android:bottom="@dimen/_4sdp">
+    <item android:bottom="@dimen/prm_4sdp">
         <shape android:shape="rectangle">
             <solid android:color="#0D000000" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 
-    <item android:bottom="@dimen/_5sdp">
+    <item android:bottom="@dimen/prm_5sdp">
         <shape android:shape="rectangle">
             <gradient
                 android:angle="0"
                 android:endColor="#602626"
                 android:startColor="#680A0A" />
-            <corners android:radius="@dimen/_25sdp" />
+            <corners android:radius="@dimen/prm_25sdp" />
         </shape>
     </item>
 </layer-list>

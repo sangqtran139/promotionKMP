@@ -22,17 +22,58 @@ import retrofit2.http.POST
 
 private const val TAG = "LoginService"
 
+// Số điện thoại và PIN của tài khoản demo đã **xoá khỏi code**: chúng là thông tin đăng nhập của
+// một tài khoản thật, không có lý do nằm trong repo. Người dùng tự nhập; số điện thoại (không phải
+// PIN) được nhớ lại cho lần mở sau — xem [DemoLoginPrefs].
+
+/**
+ * Đưa số người dùng gõ về dạng server nhận: **mã quốc gia `84`, không có dấu `+`**.
+ *
+ * Người dùng gõ quen kiểu nào cũng nhận: `0912345678`, `84912345678`, `+84 912 345 678`,
+ * `0912.345.678`. Không chuẩn hoá thì `0912345678` gửi thẳng lên server là sai định dạng `msisdn`
+ * và bước 1 trả lỗi chung chung, không ai đoán ra nguyên nhân là dấu `0` ở đầu.
+ *
+ * Đối ứng `LoginService.normalizeMsisdn` bên iOS — hai bên phải cùng luật, nếu không cùng một số
+ * gõ vào lại đăng nhập được ở một máy và hỏng ở máy kia.
+ */
+internal fun normalizeMsisdn(raw: String): String {
+    // Bỏ mọi thứ không phải chữ số: khoảng trắng, dấu chấm, gạch, và cả dấu `+` của `+84`.
+    val digits = raw.filter { it.isDigit() }
+    return when {
+        digits.isEmpty() -> digits
+        digits.startsWith("84") -> digits
+        // `0` đầu là mã vùng nội địa — THAY bằng `84`, không phải ghép thêm vào trước
+        // (`840912345678` là số không tồn tại).
+        digits.startsWith("0") -> "84" + digits.drop(1)
+        // Không `0` cũng không `84` (vd gõ thiếu `912345678`) → ghép `84` vào trước.
+        else -> "84$digits"
+    }
+}
+
 /**
  * Server demo — **một nguồn duy nhất** cho cả login lẫn `PromotionSDK.initialize(baseUrl = …)`.
  *
  * Trước đây IP này bị chép ở hai file, đổi môi trường mà quên một chỗ thì login và SDK trỏ về hai
  * server khác nhau — hỏng theo kiểu rất khó đoán. Không có dấu '/' ở cuối: SDK nhận dạng này,
  * riêng Retrofit thì tự nối thêm.
+ *
+ * Giá trị đến từ **flavor môi trường** (`staging` / `uat` / `product`) qua `BuildConfig.DEMO_BASE_URL`
+ * — xem khối `productFlavors` trong `androidApp/build.gradle.kts`. Sửa URL thì sửa ở đó, không
+ * phải ở đây.
+ *
+ * `val` chứ không phải `const val`: `BuildConfig.DEMO_BASE_URL` là `static final` do AGP sinh lúc
+ * build, không phải hằng biên dịch của Kotlin nên không đứng sau `const` được.
  */
-/** Số nhận OTP của tài khoản demo. Đổi số thì đổi đúng một dòng này. */
-internal const val DEMO_MSISDN = "84971410156"
+internal val DEMO_BASE_URL: String = BuildConfig.DEMO_BASE_URL
 
-internal const val DEMO_BASE_URL = "https://api24cdn.vtmoney.vn/uatmm"
+/** Tên môi trường đang build: `staging` / `uat` / `product`. Đối ứng `DemoEnvironment.name` bên iOS. */
+internal val DEMO_ENV: String = BuildConfig.DEMO_ENV
+
+/**
+ * Rẽ nhánh theo **tên môi trường**, không theo [DEMO_BASE_URL]: so chuỗi URL là mong manh, đổi địa
+ * chỉ một chữ là nhánh này im lặng ngừng chạy. Xem [LoginService.requestOtp].
+ */
+internal val IS_STAGING: Boolean = DEMO_ENV == "staging"
 
 /**
  * Kho token của app demo — đứng cho thứ mà host thật đã có sẵn (session manager / repository).
@@ -94,11 +135,14 @@ internal fun expireTokenForDemo() {
  */
 class LoginService {
 
+    // `msisdn`/`username`/`pin` KHÔNG có giá trị mặc định: chúng là thứ người dùng gõ vào. Để
+    // default ở đây là mở đường cho một lời gọi quên truyền rồi âm thầm đăng nhập bằng tài khoản
+    // demo — hỏng theo kiểu "đăng nhập được nhưng sai người".
     private data class LoginRequest(
-        val msisdn: String = DEMO_MSISDN,
-        val username: String = DEMO_MSISDN,
+        val msisdn: String,
+        val username: String,
+        val pin: String,
         val userType: String = "msisdn",
-        val pin: String = "139200",
         val loginType: String = "BASIC",
         val notifyToken: String = "1234567899",
         val requestId: String = "",
@@ -173,10 +217,28 @@ class LoginService {
      * @param previousRequestId `requestId` còn giữ từ lần xin trước, nếu có.
      */
     suspend fun requestOtp(
-        msisdn: String = DEMO_MSISDN,
+        msisdn: String,
+        pin: String,
         previousRequestId: String? = null,
     ): OtpChallenge = withContext(Dispatchers.IO) {
-        val response = service.login(LoginRequest(msisdn = msisdn, username = msisdn))
+        // STAGING: server **không cấp** `requestId`, client tự sinh một chuỗi và dùng lại nguyên vẹn
+        // cho bước 2. Giữ chuỗi của lượt trước nếu còn (OTP cũ chưa hết hiệu lực thì `requestId` đi
+        // kèm nó cũng phải giữ) — sinh mới mỗi lần bấm là mã vừa nhận về không còn khớp phiên nào.
+        //
+        // UAT/PRODUCT giữ nguyên đường cũ: gửi `requestId` RỖNG ở bước 1 rồi lấy chuỗi server trả về.
+        val selfIssued = if (IS_STAGING) {
+            previousRequestId?.takeIf { it.isNotBlank() } ?: newRequestId()
+        } else {
+            null
+        }
+        val response = service.login(
+            LoginRequest(
+                msisdn = msisdn,
+                username = msisdn,
+                pin = pin,
+                requestId = selfIssued.orEmpty(),
+            )
+        )
         Log.d(TAG, "Bước 1 response: $response")
 
         val token = response.data?.accessToken
@@ -196,16 +258,30 @@ class LoginService {
         // càng chắc chắn rỗng.
         val requestId = response.data?.requestId?.takeIf { it.isNotBlank() }
             ?: previousRequestId?.takeIf { it.isNotBlank() }
+            // Nước lùi cuối: chuỗi client tự sinh ở trên (chỉ khác null ở staging). Server bên đó
+            // không trả `requestId` nên thiếu nhánh này là luôn rơi vào `checkNotNull` bên dưới.
+            ?: selfIssued
         checkNotNull(requestId) { response.describe() }
 
         OtpChallenge.NeedOtp(requestId, response.describe())
     }
 
-    /** Bước 2 — gửi OTP người dùng vừa nhập, lấy access token. */
-    suspend fun submitOtp(requestId: String, otp: String, msisdn: String = DEMO_MSISDN): String =
+    /**
+     * Bước 2 — gửi OTP người dùng vừa nhập, lấy access token.
+     *
+     * [msisdn]/[pin] phải **trùng** lượt [requestOtp] đã tạo ra [requestId]: server gắn OTP với
+     * đúng bộ đó, gửi lệch là mất một lượt trong hạn 5 lần sai.
+     */
+    suspend fun submitOtp(requestId: String, otp: String, msisdn: String, pin: String): String =
         withContext(Dispatchers.IO) {
             val response = service.login(
-                LoginRequest(msisdn = msisdn, username = msisdn, requestId = requestId, otp = otp),
+                LoginRequest(
+                    msisdn = msisdn,
+                    username = msisdn,
+                    pin = pin,
+                    requestId = requestId,
+                    otp = otp,
+                ),
             )
             Log.d(TAG, "Bước 2 response: $response")
 
@@ -220,6 +296,17 @@ class LoginService {
      * "Bạn đã nhập sai/không nhập mã OTP quá 5 lần liên tiếp. Vui lòng thực hiện lại sau 1 phút")
      * — thứ mà thông báo tự soạn ở client không đoán nổi.
      */
+    /**
+     * Chuỗi `requestId` client tự sinh cho staging.
+     *
+     * UUID chứ không phải timestamp: hai lượt bấm cách nhau dưới một giây vẫn phải ra hai chuỗi khác
+     * nhau. Bỏ dấu `-` cho gọn — server chỉ dùng nó làm khoá phiên, không soi định dạng.
+     *
+     * Đối ứng `LoginService.newRequestId()` bên iOS.
+     */
+    private fun newRequestId(): String =
+        java.util.UUID.randomUUID().toString().replace("-", "")
+
     private fun LoginResponse.describe(): String =
         status?.displayMessage
             ?: status?.message

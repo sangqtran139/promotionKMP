@@ -13,6 +13,20 @@
 
 import UIKit
 
+/// `@MainActor` trên **cả class**, không rải trên từng hàm.
+///
+/// Hợp đồng thật của bề mặt này vốn đã là "gọi trên main thread" — nó là API UI:
+/// `openMyPromotion(from: UIViewController)`, `createEndowView(from:)`, `configure(theme:)`. Trước
+/// đây hợp đồng đó chỉ nằm trong doc comment, nên host gọi từ thread nền sẽ **crash lúc chạy** ở
+/// tầng UIKit thay vì được compiler chỉ đúng chỗ sai.
+///
+/// Nó cũng đóng luôn phần global mutable state: bốn `private static var` bên dưới nay được
+/// MainActor cô lập, thay vì là biến toàn cục ai đọc ghi lúc nào cũng được — thứ Swift 6 sẽ chặn.
+///
+/// **Thêm bây giờ, không phải sau go-live.** Sau go-live thì đây là source-breaking với mọi host:
+/// mỗi chỗ gọi từ ngữ cảnh không phải main sẽ thành lỗi compile hoặc phải bọc `await MainActor.run`.
+/// Hôm nay chi phí bằng không vì chưa host nào tích hợp.
+@MainActor
 public final class PromotionSDK {
 
     // Chặn khởi tạo instance từ ngoài — API hoàn toàn tĩnh (giống `object` của Android).
@@ -26,11 +40,14 @@ public final class PromotionSDK {
     private static var _impl: NSObject?
     private static var impl: PromotionSDKImpl? { _impl as? PromotionSDKImpl }
 
-    /// Đồ thị đang sống. Gọi trước `initialize` → **không** crash: ghi `NSLog` nêu đúng hàm bị gọi
-    /// sớm rồi trả `nil` để nơi gọi `guard … else { return }`. Đối ứng `requireInitialized` bên Android.
+    /// Đồ thị đang sống. Gọi trước `initialize` → **không** crash: ghi log nêu đúng hàm bị gọi sớm
+    /// rồi trả `nil` để nơi gọi `guard … else { return }`. Đối ứng `requireInitialized` bên Android.
     private static func requireImpl(_ caller: String) -> PromotionSDKImpl? {
         guard let impl else {
-            NSLog("[PromotionSDK] %@ bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(options:) trước.", caller)
+            PRMLog.integrationError(
+                "[PromotionSDK] \(caller) bị gọi trước initialize() — bỏ qua. "
+                + "Hãy gọi PromotionSDK.initialize(options:) trước."
+            )
             return nil
         }
         return impl
@@ -89,8 +106,6 @@ public final class PromotionSDK {
         // một lần; lần sau chỉ cần initialize lại, theme tự sống lại. Đối ứng PromotionSDK.initialize bên Android.
         impl.restoreOrApplyTheme(options.theme)
         wireCallbacks(impl)
-        // Phải gọi **sau** wireCallbacks: cờ nạp xong mới báo host, và lúc đó callback đã được nối.
-        impl.notifyAvailabilityAfterInitialLoad()
     }
 
     /// Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ nguồn token + baseUrl.
@@ -137,19 +152,38 @@ public final class PromotionSDK {
     /// Callback đã truyền lúc `initialize` (`nil` nếu chưa init / không truyền). Đối ứng `getCallback()` Android.
     public static func getCallback() -> PromotionSDKCallback? { callback }
 
+    /// Version của SDK đang chạy, vd `"1.0.0"` — đọc được **trước** `initialize`.
+    ///
+    /// Với support và telemetry, "app đang chạy SDK bản nào" là câu hỏi đầu tiên; nó phải trả lời
+    /// được bằng một dòng code. Trước đây host phải tự biết class nào để `Bundle(for:)` — kiến thức
+    /// nội bộ của SDK, và là **lệch parity**: Android đã có `BuildConfig.SDK_VERSION`.
+    ///
+    /// Nguồn: `MARKETING_VERSION` của target `PRM` → `CFBundleShortVersionString` trong Info.plist
+    /// của framework (`GENERATE_INFOPLIST_FILE = YES`). Xem `docs/release/VersioningPolicy.md`; số
+    /// này giữ trùng `SDK_VERSION` bên Android.
+    ///
+    /// `Bundle(for:)` chứ không phải `Bundle.main`: `.main` là bundle của **app host**, trả về
+    /// version của app chứ không phải của SDK.
+    public static let sdkVersion: String = {
+        let bundle = Bundle(for: PromotionSDKImpl.self)
+        return bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+    }()
+
     // MARK: - Headless API
 
     /// Bề mặt headless cho host tự dựng UI (lấy voucher, validate, tạo redemption). Phải gọi
     /// `initialize` trước. Không phải use case — xem `PromotionSDKApi`. Đối ứng `PromotionSDK.api` Android.
     ///
-    /// Đây là điểm vào **duy nhất** còn dừng chương trình khi chưa `initialize` — kiểu trả về không
-    /// optional nên không có giá trị nào an toàn để trả. Đối ứng `check(...)` bên Android. Dùng
-    /// `isInitialized()` để gác trước nếu host không chắc thứ tự khởi tạo.
+    /// Gọi trước `initialize` **không crash**: trả về một bề mặt mà mọi hàm cho
+    /// `.failure(.notInitialized)`. Trước đây chỗ này dừng thẳng chương trình — điểm dừng duy nhất
+    /// trong cả public API, và là SDK làm crash app của host vì lỗi thứ tự khởi tạo của **host**.
+    /// Với một SDK nhúng vào luồng thanh toán thì cái giá đó không đáng; lập luận cũ ("kiểu trả về
+    /// không optional nên không có giá trị nào an toàn để trả") bỏ qua mất lựa chọn thứ ba là để
+    /// chính các hàm trả lỗi.
+    ///
+    /// `isInitialized()` vẫn dùng được nếu host muốn gác trước.
     public static var api: PromotionSDKApi {
-        guard let impl else {
-            preconditionFailure("PromotionSDK.initialize() phải được gọi trước khi truy cập api.")
-        }
-        return impl.makeApi()
+        impl?.makeApi() ?? PromotionSDKApi.notInitialized
     }
 
     // MARK: - Context
@@ -258,8 +292,13 @@ public final class PromotionSDK {
     /// và vẫn gọi `completion` với giá trị đang có (fail-open).
     ///
     /// `completion` chạy trên **main thread** để host set UI được ngay; gọi trước `initialize` cũng
-    /// an toàn (trả cờ mặc định bật hết). Sau mỗi lần nạp, SDK báo lại công tắc tổng qua
-    /// `PromotionSDKCallback.onAvailabilityChanged(enabled:)`.
+    /// an toàn (trả cờ mặc định bật hết).
+    ///
+    /// **Đây là đường DUY NHẤT** host biết công tắc tổng — không có callback toàn cục nào cho việc
+    /// này. `PromotionSDKCallback` có đúng ba sự kiện (`onVoucherApplied` / `onServiceSelected` /
+    /// `onExpireToken`); `onAvailabilityChanged` từng được cân nhắc rồi **loại bỏ có chủ đích**
+    /// (xem `docs/common/InitParity.md` §3, mục "Đã loại"). Ba doc comment ở file này từng hứa nó —
+    /// hứa một method chưa bao giờ tồn tại.
     ///
     /// ```swift
     /// PromotionSDK.refreshFeatureFlags { flags in
@@ -278,8 +317,8 @@ public final class PromotionSDK {
 
     /// Show the "My Promotions" list screen.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
-    /// Cờ `VOUCHER_LIST` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
-    /// qua `onAvailabilityChanged(enabled:)`.
+    /// Cờ `VOUCHER_LIST` TẮT → gọi `onFeatureDisabled` nếu host truyền, không thì SDK tự hiện
+    /// PRM_MOB_021 trên `viewController`.
     /// Cờ tính năng TẮT ở một điểm mở màn: **ưu tiên trả cho host**, host không nhận thì SDK tự lo.
     ///
     /// Nhận closure ngay ở hàm `open…` chứ không dùng callback toàn cục: chỉ có cách đó SDK mới biết
@@ -291,7 +330,7 @@ public final class PromotionSDK {
             onFeatureDisabled()
             return
         }
-        impl.showFeatureDisabledToast(on: viewController)
+        impl.showFeatureDisabledDialog(on: viewController)
     }
 
     public static func openMyPromotion(from viewController: UIViewController,
@@ -320,8 +359,8 @@ public final class PromotionSDK {
     /// Mở màn **chi tiết ưu đãi** theo `voucherId`.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
     /// Màn tự gọi API lấy chi tiết đầy đủ; trong lúc chờ hiện shimmer.
-    /// Cờ `VOUCHER_DETAIL` TẮT → hiện toast lỗi PRM_MOB_021 trên `viewController` + báo host
-    /// qua `onAvailabilityChanged(enabled:)`.
+    /// Cờ `VOUCHER_DETAIL` TẮT → gọi `onFeatureDisabled` nếu host truyền, không thì SDK tự hiện
+    /// PRM_MOB_021 trên `viewController`.
     ///
     /// `returnVoucherOnApply` quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
     /// - `true` (mặc định): nút "Áp dụng" → trả `voucherId` về `onVoucherApplied`, SDK tự đóng màn.

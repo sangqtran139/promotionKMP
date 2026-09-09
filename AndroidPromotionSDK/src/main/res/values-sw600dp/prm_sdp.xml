@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Sinh từ com.intuit.sdp:sdp-android:1.1.1 — CHỈ 55 giá trị SDK thật sự dùng.
+
+    Vì sao nội bộ hoá thay vì khai dependency: resource của thư viện Android **merge thẳng
+    vào app host**, nên `sdp-android` đổ ~600 dimens × 29 bucket vào R của host, tất cả mang
+    tên `_1sdp`, `_2sdp`… — không prefix, không namespace. Host cũng dùng sdp mà khác version
+    là xung đột; host không dùng thì vẫn phải mang.
+
+    Giữ nguyên giá trị theo từng bucket (KHÔNG quy về dp cố định): sdp là "scalable dp",
+    thay bằng số cứng là layout đổi trên tablet và máy màn nhỏ.
+
+    Tự sinh — đừng sửa tay. Cần thêm giá trị thì thêm ở layout rồi chạy lại script sinh.
+-->
+<resources>
+    <dimen name="prm_102sdp">204.00dp</dimen>
+    <dimen name="prm_109sdp">218.00dp</dimen>
+    <dimen name="prm_10sdp">20.00dp</dimen>
+    <dimen name="prm_110sdp">220.00dp</dimen>
+    <dimen name="prm_115sdp">230.00dp</dimen>
+    <dimen name="prm_11sdp">22.00dp</dimen>
+    <dimen name="prm_122sdp">244.00dp</dimen>
+    <dimen name="prm_128sdp">256.00dp</dimen>
+    <dimen name="prm_12sdp">24.00dp</dimen>
+    <dimen name="prm_134sdp">268.00dp</dimen>
+    <dimen name="prm_13sdp">26.00dp</dimen>
+    <dimen name="prm_141sdp">282.00dp</dimen>
+    <dimen name="prm_147sdp">294.00dp</dimen>
+    <dimen name="prm_14sdp">28.00dp</dimen>
+    <dimen name="prm_150sdp">300.00dp</dimen>
+    <dimen name="prm_154sdp">308.00dp</dimen>
+    <dimen name="prm_15sdp">30.00dp</dimen>
+    <dimen name="prm_160sdp">320.00dp</dimen>
+    <dimen name="prm_16sdp">32.00dp</dimen>
+    <dimen name="prm_18sdp">36.00dp</dimen>
+    <dimen name="prm_19sdp">38.00dp</dimen>
+    <dimen name="prm_1sdp">2.00dp</dimen>
+    <dimen name="prm_200sdp">400.00dp</dimen>
+    <dimen name="prm_20sdp">40.00dp</dimen>
+    <dimen name="prm_21sdp">42.00dp</dimen>
+    <dimen name="prm_22sdp">44.00dp</dimen>
+    <dimen name="prm_24sdp">48.00dp</dimen>
+    <dimen name="prm_25sdp">50.00dp</dimen>
+    <dimen name="prm_26sdp">52.00dp</dimen>
+    <dimen name="prm_2sdp">4.00dp</dimen>
+    <dimen name="prm_30sdp">60.00dp</dimen>
+    <dimen name="prm_32sdp">64.00dp</dimen>
+    <dimen name="prm_34sdp">68.00dp</dimen>
+    <dimen name="prm_38sdp">76.00dp</dimen>
+    <dimen name="prm_3sdp">6.00dp</dimen>
+    <dimen name="prm_40sdp">80.00dp</dimen>
+    <dimen name="prm_42sdp">84.00dp</dimen>
+    <dimen name="prm_45sdp">90.00dp</dimen>
+    <dimen name="prm_4sdp">8.00dp</dimen>
+    <dimen name="prm_50sdp">100.00dp</dimen>
+    <dimen name="prm_51sdp">102.00dp</dimen>
+    <dimen name="prm_58sdp">116.00dp</dimen>
+    <dimen name="prm_5sdp">10.00dp</dimen>
+    <dimen name="prm_64sdp">128.00dp</dimen>
+    <dimen name="prm_6sdp">12.00dp</dimen>
+    <dimen name="prm_70sdp">140.00dp</dimen>
+    <dimen name="prm_77sdp">154.00dp</dimen>
+    <dimen name="prm_7sdp">14.00dp</dimen>
+    <dimen name="prm_80sdp">160.00dp</dimen>
+    <dimen name="prm_82sdp">164.00dp</dimen>
+    <dimen name="prm_83sdp">166.00dp</dimen>
+    <dimen name="prm_8sdp">16.00dp</dimen>
+    <dimen name="prm_90sdp">180.00dp</dimen>
+    <dimen name="prm_96sdp">192.00dp</dimen>
+    <dimen name="prm_9sdp">18.00dp</dimen>
+    <dimen name="prm_minus22sdp">-44.00dp</dimen>
+    <dimen name="prm_minus3sdp">-6.00dp</dimen>
+    <dimen name="prm_minus7sdp">-14.00dp</dimen>
+</resources>

@@ -15,7 +15,9 @@ Phân loại, lan truyền và hiển thị lỗi trong TTCN Promotion SDK. Mụ
 - [4. Quy tắc ở UI](#4-quy-tắc-ở-ui)
   - [4.1. Android (MVI)](#41-android-mvi)
   - [4.2. iOS (MVVM + callback thuần)](#42-ios-mvvm--callback-thuần)
+    - [4.2.1. Một đường map mã lỗi → type công khai](#421-một-đường-map-mã-lỗi--type-công-khai)
   - [4.3. Không còn toast — chỉ còn popup hoặc im lặng](#43-không-còn-toast--chỉ-còn-popup-hoặc-im-lặng)
+    - [4.3.1. Ngoại lệ: câu của server, không qua bảng mã lỗi](#431-ngoại-lệ-câu-của-server-không-qua-bảng-mã-lỗi)
   - [4.4. PRM_MOB_021 — tính năng bị cờ chặn](#44-prm_mob_021--tính-năng-bị-cờ-chặn)
   - [4.5. Cả hai](#45-cả-hai)
 - [5. Quy tắc](#5-quy-tắc)
@@ -177,8 +179,48 @@ Hai hàm popup nằm ở **lớp base** của mỗi nền tảng, đừng gọi 
 phải Fragment/VC (ví dụ `PromotionSDK` gọi từ Activity, `PRMBaseRouter`) thì dùng
 `PRMBaseConfirmDialog.showError(context, fm, message)` / `PRMConfirmationDialog.showError(_:in:)`.
 
-Đang dùng popup ở: validate hỏng khi bấm "Áp dụng", kéo-để-tải-lại hỏng (màn "Chọn ưu đãi"), và mọi
-đường bị feature flag chặn.
+Đang dùng popup ở: validate hỏng khi bấm "Áp dụng", **ưu đãi bị validate từ chối**, kéo-để-tải-lại
+hỏng (màn "Chọn ưu đãi"), và mọi đường bị feature flag chặn.
+
+### 4.2.1. Một đường map mã lỗi → type công khai
+
+`PromotionSDKError.from(errorCode, serverMessage, httpStatus)` là **nơi duy nhất** quy mã lỗi thô
+sang type mà host bắt được. Cả hai bề mặt gọi chung nó: headless (`PromotionSDKApi.toSdkError`) và
+callback của widget (`PRMEndowView.onError`, `confirmRedemption`).
+
+Trước đây mỗi bề mặt map một bản riêng, và hai bản **không khớp**: bản ở `PromotionApiResult` trả
+`message = ""` cho `NETWORK_ERROR`, bản ở `PromotionSDKApi` trả `failure.message` kèm `httpStatus`.
+Cùng một sự cố mạng, host nhận hai kết quả khác nhau tuỳ đi vào đường nào — và đường trả chuỗi rỗng
+làm host hiện **popup trắng không chữ** ở đúng case hay xảy ra nhất.
+
+Hai luật của hàm này:
+- `NETWORK_ERROR` → `message` **không bao giờ rỗng**: thiếu câu của server thì lùi về
+  "Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại" (trùng `R.string.prm_error_network`, để bề
+  mặt headless và UI của SDK không nói hai câu khác nhau).
+- Mã không nhận ra → `BusinessRule(code, serverMessage)`, **không** phải `NetworkFailure`. Trước đây
+  mọi mã nghiệp vụ của server bị nhét vào `networkFailure(code: nil, message: errorCode)`: host nhận
+  một "lỗi mạng" mà thật ra là rule nghiệp vụ, với **mã lỗi thô nằm đúng chỗ đáng lẽ là câu hiển thị
+  cho người dùng** — hiện thẳng lên UI là ra chữ `VOUCHER_EXPIRED`.
+
+### 4.3.1. Ngoại lệ: câu của server, không qua bảng mã lỗi
+
+Có đúng **một** đường mà popup hiện chuỗi thô từ API thay vì map qua bảng mã: `validateStackableDiscounts`
+trả `valid = false` cho ưu đãi user vừa chọn.
+
+| | Bảng mã lỗi (đường thường) | Câu của server (ngoại lệ này) |
+|---|---|---|
+| Nguồn | `ErrorCodes` / `PromotionException` | `ValidateDiscountsResult.reasonFor(objectId)` → `validationMessages` (cấp dòng), lùi về `businessRuleViolations` (cấp đơn) |
+| Mang đi bằng | `errorCode: String` trong state | `RejectedOffer.message` → `ChoosePromotionState.applyMessage` |
+| Native hiển thị | `mapPromotionError(code)` / `PromotionUIStrings.errorMessage(code)` | **chuỗi nguyên văn** |
+
+Lý do: đây là lời giải thích **nghiệp vụ** ("Voucher không áp dụng cho đơn này") mà chỉ server biết —
+cho nó đi qua bảng mã là quy nó về "Đã có lỗi xảy ra", tức vứt đúng thứ user cần để hành động. Trước
+đây field này được parse rồi bỏ đi, không nơi nào đọc.
+
+Server từ chối mà **không** kèm câu nào (`message` rỗng) thì mới lùi về câu lỗi chung
+(`ErrorCodes.GENERAL`) — lõi không dựng sẵn chuỗi tiếng Việt, xem [§2](#2-bốn-tầng-lỗi).
+
+Chi tiết luồng: [features/ChoosePromotion.md §2.2](../features/ChoosePromotion.md#22-server-từ-chối-ưu-đãi--disable-tại-chỗ).
 
 ### 4.4. PRM_MOB_021 — tính năng bị cờ chặn
 

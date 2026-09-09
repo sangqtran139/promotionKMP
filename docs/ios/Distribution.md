@@ -71,6 +71,14 @@ Mỗi lần build, script tự đóng gói `build/Promotion.xcframework.zip` (**
 mang đi tích hợp ngay; version đã nằm trong Info.plist). Khác Android đặt version vào tên file
 (`AndroidPromotionSDK-<version>.aar`): iOS tích hợp theo tên framework cố định nên giữ tên zip ổn định.
 
+> **Môi trường app demo**: `iosApp.xcodeproj` có 5 configuration — `Debug`/`Release` (giữ nguyên,
+> URL = UAT) và ba configuration môi trường `Staging`/`Uat`/`Product`, mỗi cái khai build setting
+> `PRM_BASE_URL` + `PRM_ENV` riêng. Ba scheme cùng tên (`iosApp-Staging`/`iosApp-Uat`/`iosApp-Product`)
+> trỏ vào đúng configuration của mình ở **cả 5 action** (Run/Test/Profile/Analyze/Archive) — archive
+> scheme "Uat" mà ra Release thì bản archive nói dối về môi trường nó được build. App đọc giá trị qua
+> `Info.plist` → `DemoEnvironment`. Ngoài dòng lệnh: `./scripts/build-ios.sh local --env product`
+> (mặc định `staging`). Đối ứng product flavor `staging`/`uat`/`product` bên `:androidApp`.
+
 > **Scheme `iosApp` phải là shared scheme** (`xcshareddata/xcschemes`, đã commit). Để trong
 > `xcuserdata` thì chỉ máy của người tạo mới thấy — máy khác clone về, `xcodebuild -scheme iosApp`
 > không tìm ra. Và `-derivedDataPath` bắt buộc đi kèm `-scheme`, không dùng được với `-target`.
@@ -184,12 +192,59 @@ này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
   package của SDK vào project host thì tính đóng gói mất — **kênh phát hành hỗ trợ duy nhất là xcframework rời**.
 - Host **vẫn** tự ký framework lúc embed (`CODE_SIGNING_ALLOWED=NO` khi build SDK) — đây là thao tác
   chuẩn của Xcode, không phải "cài thêm".
-- **Sàn iOS 13 giữ nguyên.** Combine yêu cầu iOS 13; async/await back-deploy về iOS 13 (Xcode tự nhúng
-  runtime concurrency vào app host, host không cấu hình gì). Sàn này không đổi khi gỡ RxSwift — bản
-  RxSwift trước đó vốn cũng đã bắt iOS 13, nên không có host nào bị loại thêm. Nên **smoke-test một lần trên thiết bị iOS 13/14 thật** (back-deploy concurrency).
+- **Sàn iOS 13 giữ nguyên** — nhưng chỉ phần **đóng gói** được kiểm; phần **runtime dưới iOS 15 chưa
+  từng chạy thử**. Xem mục ngay dưới đây.
 
 > Muốn CI chặn hồi quy bất biến này: cho `build-xcframework.sh` **fail** khi danh sách framework động
 > cuối cùng khác rỗng, thay vì chỉ in cảnh báo như hiện tại.
+
+### 3.1. Sàn iOS — cái gì đã kiểm, cái gì chưa
+
+SDK dùng Swift concurrency (`Task` / `async` / `await`) và **không bỏ được**: SKIE bridge mọi hàm
+`suspend` của Kotlin thành `async`, nên `PromotionSDKApi`, `EndowViewModel`, `PromotionSDKImpl` đều
+đi qua nó. Combine còn ở 2 tiện ích (`UITextField+Combine`, `PRMRefreshTableView`) — Combine là
+thành phần của iOS 13, không phải nguồn rủi ro ở đây.
+
+Concurrency runtime chỉ nằm sẵn **trong iOS từ 15.0**. Dưới mức đó Xcode nhúng bản back-deploy
+`libswift_Concurrency.dylib` vào app **của host** — host không cấu hình gì.
+
+**Đã kiểm (đóng gói) — chạy thật ngày 2026-09-10, Xcode 26.6:**
+
+| Kiểm | Kết quả |
+|---|---|
+| Build app host với `IPHONEOS_DEPLOYMENT_TARGET=13.0` | ✅ xanh, **không** warning deployment target |
+| `libswift_Concurrency.dylib` có được nhúng vào `iosApp.app/Frameworks/` | ✅ có, cả bản device lẫn simulator — Xcode tự làm vì SDK nhúng trong app |
+| Sàn của dylib nhúng (**device**) | ✅ `LC_VERSION_MIN_IPHONEOS 7.0` → nạp được trên iOS 13 |
+| Sàn của dylib nhúng (**simulator**) | ⚠️ `minos 14.0` — vô hại, vì **không có** simulator dưới 14 |
+| `PRM.framework` weak-link `@rpath/libswift_Concurrency.dylib` + có rpath `@executable_path/Frameworks` | ✅ |
+| App bản sàn-13.0 khởi động trên simulator | ✅ không crash |
+
+**Chưa kiểm (runtime) — và không kiểm được bằng toolchain hiện tại:**
+
+Xcode 26 **không có** runtime simulator dưới iOS 15, và `xcodebuild -downloadPlatform iOS
+-buildVersion 13.7 / 15.0 / 15.5` đều trả `"not available for download"`. Chạy trên simulator mới
+cũng **không** thay được: đo bằng `DYLD_PRINT_LIBRARIES` trên bản build sàn-13.0, dyld nạp bản
+**của hệ điều hành** (`…/RuntimeRoot/usr/lib/swift/libswift_Concurrency.dylib`) chứ không nạp bản
+nhúng trong `Frameworks/` — tức là đường back-deploy hoàn toàn không được đi qua.
+
+⇒ Muốn đóng hẳn thì chỉ có hai đường: **thiết bị iOS 13/14 thật**, hoặc **Xcode cũ** còn runtime
+simulator 13.x.
+
+**Rủi ro tồn đọng phải quyết (dành cho đội tích hợp):** iOS 13.0–13.3 có vài lỗi đã biết ở runtime
+concurrency back-deploy. Sàn 13.0 hiện là một lời hứa **chưa ai chạy thử một lần nào**.
+
+| Phương án | Đánh đổi |
+|---|---|
+| Giữ 13.0 | Phải mượn một máy iOS 13 thật smoke-test trước go-live, nếu không thì đây là rủi ro chỉ lộ ra ở máy user. |
+| Nâng lên **14.0** | Bỏ đúng dải 13.0–13.3 nhiều lỗi nhất; bản simulator của dylib cũng khớp sàn. |
+| Nâng lên **15.0** (Xcode 26 khuyến nghị — `RECOMMENDED_IPHONEOS_DEPLOYMENT_TARGET = 15.0`) | Xoá **toàn bộ** lớp rủi ro: từ 15.0 runtime nằm trong OS, không còn back-deploy. App demo đã ở 15.3 nên không mất gì trong repo. Đổi lại: host nào còn ở 13/14 sẽ không tích hợp được. |
+
+Đây là quyết định tương thích của bên tích hợp, không phải của SDK — nên nó nằm ở đây dưới dạng câu
+hỏi, chưa đổi.
+
+**Chặn hồi quy:** `./scripts/check-backdeploy.sh` so sàn của dylib back-deploy trong toolchain đang
+dùng với sàn SDK khai, và fail khi dylib cao hơn. Đây là kịch bản hỏng thật: nâng Xcode → sàn dylib
+nhích lên → app host **vẫn build xanh** nhưng chết lúc khởi động trên máy user cũ.
 
 
 ## 4. Đẩy lên Artifactory

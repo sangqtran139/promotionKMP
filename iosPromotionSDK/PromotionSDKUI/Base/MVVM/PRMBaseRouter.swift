@@ -5,10 +5,13 @@
 
 import UIKit
 
+/// `@MainActor`: router chỉ làm điều hướng (`push`/`present`/`pop`) — thuần UIKit.
+@MainActor
 protocol PRMBaseRouterProtocol {
     func routeToParent()
 }
 
+@MainActor
 class PRMBaseRouter<VC: UIViewController>: PRMBaseRouterProtocol {
 
     weak var viewController: VC?

@@ -235,8 +235,12 @@ internal class ChoosePromotionMainAdapter(
                 ctlNotEnoughApplyVoucher.isVisible = showsWarning
                 // Khuyết đáy đổi sang bản VÀNG chỉ khi có dải nằm sau; ca hết hạn giữ khuyết xám.
                 imgCircleNotEnoughApplyVoucher.isVisible = showsWarning
-                // Badge lý do thì vẫn hiện cho MỌI ca không dùng được ("Đã hết hạn" / câu unmatchedRules).
-                txtExpired.isVisible = !canUse
+                // Badge lý do hiện cho ca không dùng được có LÝ DO NÓI ĐƯỢC ("Đã hết hạn" / câu
+                // `unmatchedRules`). Ưu đãi vừa bị `validateStackableDiscounts` từ chối thì KHÔNG:
+                // card chỉ mờ đi, lý do đã hiện ở popup ngay lúc bấm "Áp dụng". Thiếu vế
+                // `!isRejected` thì badge rơi vào nhánh `.ifBlank` và lòi ra "Không đủ điều kiện" —
+                // sai nghĩa, vì đơn hàng không hề thiếu điều kiện nào.
+                txtExpired.isVisible = !canUse && !voucher.isRejected
                 // Hết hạn có chuỗi riêng; các ca `usable=false` khác thì dùng câu server gửi kèm
                 // (`unmatchedRules`). Cùng cách phân giải với `MyPromotionAdapter`.
                 txtExpired.text = if (voucher.status == VoucherStatus.EXPIRED) {

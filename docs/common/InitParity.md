@@ -30,6 +30,13 @@
    kèm lý do. Không được phát sinh ngoại lệ mới nếu không ghi vào đây.
 3. Host gọi **thẳng** `PromotionSDK` — không cần wrapper (đã bỏ khuyến nghị `PromotionServing`, xem [§6](#6-tích-hợp-trực-tiếp--host-không-cần-wrapper)).
 4. Ký hiệu: ✅ đã khớp · 🔧 phải nắn · ⚠️ cần bạn xác nhận · N1 ngoại lệ nền tảng.
+5. **Bảng dưới đây phải khớp CODE, không phải khớp ý định.** File này tự nhận là nguồn sự thật cho
+   tầng init, nên một dòng 🔧 đã làm xong mà chưa xoá chính là **nguồn sai**. Người đọc còn tự đối
+   chiếu source rồi bỏ qua; nhưng agent AI thì có xu hướng tin tài liệu tự nhận là nguồn sự thật —
+   nó sẽ đi "hoàn thành" một việc đã xong, hoặc làm theo một ⚠️ đã được quyết định khác đi (vd đổi
+   spelling enum `PROD`/`prod`, làm vỡ quy ước của một trong hai ngôn ngữ).
+   Sửa code ở tầng init → sửa bảng **trong cùng commit**. Kiểm nhanh: `grep '🔧' docs/common/InitParity.md`
+   rồi đối chiếu từng dòng còn lại với source.
 
 ---
 
@@ -48,8 +55,9 @@
 | Order động | `currentOrderId` / `currentOrderValue` / `currentServiceCode` / `currentMetaData` | ✅ | ✅ | ✅ |
 | Cập nhật context | `updateOrderInfo(orderId, productId, orderValue, metaData, skuSourceId, productName, productCategory, quantity, unitPrice)` | ✅ | ✅ | ✅ `orderId`/`productId` **bắt buộc** (B10); đơn chỉ 1 dòng sản phẩm → field phẳng thay vì `List<PromotionOrderItem>`, SDK tự bọc lại thành list nội bộ; `serviceCode` bỏ khỏi tham số ở cả 2 bên (B8); `skuId` đổi tên `skuSourceId`, để trống thì **không** gửi field này lên `findEligible` (B11) |
 | Đặt theme | `configure(theme)` | ✅ | ✅ | ✅ |
-| Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `var currentTheme` 🔧 | 🔧 iOS đổi property → hàm |
-| Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | *(thiếu)* 🔧 | 🔧 iOS bổ sung |
+| Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `func currentTheme()` | ✅ đã nắn ở B2 |
+| Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | `func getCallback()` | ✅ đã nắn ở B2 |
+| Đọc version SDK | **`sdkVersion`** (cả 2) | `val sdkVersion` | `static let sdkVersion` | ✅ thêm 2026-09-10 (API-7). Android lấy `BuildConfig.SDK_VERSION`, iOS lấy `CFBundleShortVersionString` — hai số giữ trùng nhau |
 | Cờ — chụp tất cả | `featureFlags()` | `fun featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | ✅ cache đồng bộ, fail-open |
 | Cờ — tra một | `isFeatureEnabled(feature)` | `fun isFeatureEnabled(feature: PromotionFeature)` | `isFeatureEnabled(_ feature: PromotionFeature)` | ✅ enum public mỗi bên; hằng chuỗi lõi không ra tới host |
 | Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
@@ -69,9 +77,9 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 | Type | Field / thứ tự (canonical) | Android | iOS | TT |
 |---|---|---|---|---|
 | `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
-| `PromotionSessionConfig` | `tokenSource, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | `baseURL` 🔧 | 🔧 **iOS đổi `baseURL` → `baseUrl`**. Không còn `accessToken` |
+| `PromotionSessionConfig` | `tokenSource, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | ✅ (`baseUrl`) | ✅ đã nắn ở B2. Không còn `accessToken` |
 | `PromotionTokenSource` | `currentToken()`, `refreshToken(onResult)` | `interface`, `refreshToken` có default `= onResult(false)` | `protocol`, default ở `public extension` | ✅ **nguồn token duy nhất** — xem [§Token](#21-token--promotiontokensource-một-khái-niệm-duy-nhất) |
-| `PromotionEnvironment` | `PROD, STAGING` ⚠️ hoặc `prod, staging` ⚠️ | `PROD, STAGING` | `prod, staging` | ⚠️ **cần chốt spelling** (xem ghi chú) |
+| `PromotionEnvironment` | `PROD, STAGING` / `prod, staging` | `PROD, STAGING` | `prod, staging` | **N1** — đã chốt: giữ convention mỗi ngôn ngữ (xem ghi chú) |
 | `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
 | `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter + `refreshAccessToken` | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng). **Không có field token nào** — chỉ chuyển tiếp sang `tokenSource` |
 | `PromotionOrderItem` | `skuSourceId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
@@ -139,6 +147,20 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 
 `PromotionSDKCallback` nay còn **ba** sự kiện: `onVoucherApplied`, `onServiceSelected`, `onExpireToken`.
 
+> **Dọn ngày 2026-09-10 — quyết định trên đúng, nhưng code và doc chưa theo kịp.** Bốn thứ còn sót
+> lại sau khi bỏ các callback này, tất cả đã xoá:
+> - `PromotionSDKImpl.onAvailabilityUpdate` / `onClearVoucher` / `onUpdateWidgetCount` / `onClose` —
+>   bốn closure mà `wireCallbacks` **chưa bao giờ gán**. Hai cái còn có chỗ gọi (bắn vào `nil`).
+> - `PromotionSDKImpl.notifyAvailabilityAfterInitialLoad()` + `PromotionSDK.notifyAvailability()`
+>   (Android — thân hàm chỉ đọc `callback` rồi **không làm gì**). Cơ chế "báo host khi kill-switch
+>   tắt" vì thế chưa phát một lần nào, ở cả hai nền tảng.
+> - Ba doc comment mồ côi trong `PromotionSDKCallback.swift` — đọc file tưởng protocol có 6 sự kiện.
+> - Ba chỗ trong `PromotionSDK.swift` hứa với host `onAvailabilityChanged(enabled:)` — một method
+>   chưa bao giờ tồn tại.
+>
+> Host cần công tắc tổng thì dùng `PromotionSDK.refreshFeatureFlags`; cờ chặn một điểm mở màn thì
+> dùng `onFeatureDisabled` của chính hàm `open…` (§3.1).
+
 ### 3.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`
 
 Cả ba hàm mở màn nhận thêm tham số **tuỳ chọn**:
@@ -175,7 +197,8 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 | Tham số `containerViewId` | có | *(không)* | Chỉ Android có FragmentContainer. |
 | Facade/Impl | 1 `object` gộp | `PromotionSDK` + `PromotionSDKImpl` | iOS cần box giấu type để tránh cross-module deserialization (binary-interface trick). |
 | Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.1](#51-widget). |
-| Enum case (nếu chọn giữ) | `PROD/STAGING` | `prod/staging` | Convention enum mỗi ngôn ngữ (đang chờ ⚠️ §2). |
+| Enum case | `PROD/STAGING` | `prod/staging` | **N1 — đã chốt (2026-09-10)**: giữ convention enum của mỗi ngôn ngữ. Kotlin `PROD` và Swift `prod` đều đang đúng chuẩn bên mình; ép giống nhau từng chữ sẽ làm một trong hai bên trông sai với dev của nền tảng đó. Quyết định gốc ở B1 (§7), bảng §2 trước đây còn để ⚠️ nên nhìn như đang treo. Nằm trên public API cả hai bên → sau go-live không đổi được nữa. |
+| Ràng buộc thread ở bề mặt public | `@MainThread` (lint) | `@MainActor` (compiler) | Cùng **một** hợp đồng — "gọi trên main thread" — nhưng mỗi nền tảng ép bằng công cụ mạnh nhất nó có. Áp cho 6 điểm UI: `configure(theme:)`, `openMyPromotion`, `openPromotionDetail`, `openChoosePromotion`, `closePromotionDetail`, `closeMyPromotion`. iOS đánh `@MainActor` lên **cả class** `PromotionSDK` nên phủ rộng hơn; Kotlin không có annotation cấp class tương đương. Chi tiết: [PublicApi.md §5b.0](./PublicApi.md#5b0-bề-mặt-ios-là-mainactor). |
 | Ràng buộc View↔ViewModel | `StateFlow` + `collectFlow` | closure `onState`/`onEffect` | Không có `Flow` trong Swift. Hình dạng đã **ép trùng**: cùng `handleAction`, cùng `UiState`/`Effect`, `onState` replay state hiện tại khi gán (mô phỏng `StateFlow`). Từ 2026-07-23 iOS **không** còn Combine. |
 | Cách hiện lỗi / thông báo | popup | popup | **Đã đồng nhất: toast bỏ hẳn ở cả 2 bên.** Cần báo user → `PRMBaseFragment.showErrorDialog` (Android, `PRMBaseConfirmDialog`) ↔ `PRMBaseViewController.showErrorDialog` (iOS, `PRMConfirmationDialog`). Màn đã có shimmer/empty-view nói thay thì **không hiện gì**. Chuỗi lỗi trùng nhau: `mapPromotionError` ↔ `PromotionUIStrings.errorMessage`. Xem [ErrorHandling.md](./ErrorHandling.md). |
 
@@ -310,6 +333,26 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
   `updateOrderInfo` vẫn dựng item với `skuId = ""` (theo B9/B10), server nhận `"skuSourceId":""`; nay
   field bị bỏ hẳn khỏi JSON nhờ `explicitNulls = false` (`PromotionHttpClient`), các field khác của
   item (`productId`/`productName`/`quantity`/`unitPrice`) không đổi.
+- [x] **B12.** (2026-09-09) Luồng mở & áp của màn "Chọn ưu đãi" nắn lại đối xứng ở cả 2 nền tảng:
+  - **Mở màn luôn gọi lại `findEligible`.** `ChoosePromotionIntent.SeedOnce` rút còn
+    `SeedOnce(preSelectedIds)` và tự chạy `loadOffers()`; đường preload từ widget bị **xoá cả hai
+    bên** — `ChoosePromotionFragment.initialMyOffers`/`initialOtherOffers`/`initialMyIsLastPage`/
+    `initialOtherIsLastPage` (Android) và `ChoosePromotionBuilder.DataModel.preloadedMy`/
+    `preloadedOther`/`myIsLastPage`/`otherIsLastPage` (iOS), kèm
+    `PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage` (`internal`, chỉ tồn
+    tại để feed chúng). Thứ duy nhất còn truyền từ widget sang là `preSelectedVoucherIds`.
+  - **`EndowStore.validateAndApply` trả `EndowApplyOutcome`** thay cho `EndowState` →
+    `EndowViewModel.validateAndApply` đổi theo ở cả 2 bên (Android `suspend` trả thẳng, iOS
+    `completion: ((EndowApplyOutcome) -> Void)?`). Nhánh `Rejected` **không commit** `appliedDiscounts`.
+  - **Ba nhánh kết cục xử lý y hệt nhau**: `ChoosePromotionFragment.onApplyClicked` (Android) ↔
+    `ChoosePromotionViewController.handleApplyOutcome` (iOS). Điều hướng vẫn theo kiến trúc mỗi bên —
+    Android `goBack()` ngay trong Fragment, iOS pop ở `PromotionSDKImpl.openChoosePromotion` vì VC
+    không giữ `host`/`navigator` (N1, không phải điểm lệch cần nắn).
+  - Intent mới dùng chung: `ApplyRejected(items)` / `ConsumeApplyMessage`; state mới: `rejectedIds`
+    (bền) + `applyMessage` (một-lần). Ưu đãi bị từ chối **chỉ mờ đi + bỏ tick**, không gắn thêm nhãn
+    trạng thái — Android phải thêm vế `!isRejected` cho badge (badge bên đó bật theo `!isEnabled`),
+    iOS tự đúng vì nhãn suy từ `displayState()` của server. Chi tiết:
+    [features/ChoosePromotion.md §2.2](../features/ChoosePromotion.md#22-server-từ-chối-ưu-đãi--disable-tại-chỗ).
 
 > ### Emission — đã cân cả 2 nền tảng ✅
 > Contract callback đối xứng tuyệt đối **và** đủ 6 sự kiện đều được phát ở cả hai bên:

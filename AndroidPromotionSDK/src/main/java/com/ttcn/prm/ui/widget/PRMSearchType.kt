@@ -16,7 +16,7 @@ internal enum class PRMSearchType(
     @ColorRes val textColorRes: Int
 ) {
     BASIC(
-        iconSizeRes = com.intuit.sdp.R.dimen._19sdp,
+        iconSizeRes = R.dimen.prm_19sdp,
         iconRes = R.drawable.prm_foundations_icon_search_dark,
         searchBackground = R.drawable.prm_views_search_field_basic_background,
         focusBackground = R.drawable.prm_views_search_field_basic_focus_background,
@@ -25,7 +25,7 @@ internal enum class PRMSearchType(
         textColorRes = R.color.prm_tokenDark100
     ),
     NAVIGATION(
-        iconSizeRes = com.intuit.sdp.R.dimen._13sdp,
+        iconSizeRes = R.dimen.prm_13sdp,
         iconRes = R.drawable.prm_foundations_icon_search_white,
         searchBackground = R.drawable.prm_views_search_field_navigation_background,
         focusBackground = R.drawable.prm_views_search_field_navigation_background,
@@ -34,7 +34,7 @@ internal enum class PRMSearchType(
         textColorRes = R.color.prm_tokenDark100
     ),
     BASIC_TRANSPARENT(
-        iconSizeRes = com.intuit.sdp.R.dimen._19sdp,
+        iconSizeRes = R.dimen.prm_19sdp,
         iconRes = R.drawable.prm_foundations_icon_search_white,
         searchBackground = R.drawable.prm_views_search_field_basic_background_opacity,
         focusBackground = R.drawable.prm_views_search_field_basic_focus_background_opacity,

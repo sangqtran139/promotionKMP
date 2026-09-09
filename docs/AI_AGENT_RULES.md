@@ -60,8 +60,13 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - Host cần dùng thêm thứ gì → **dời file đó vào `entry`**, KHÔNG nới `public` tại chỗ. Kiểu trả về
   nên là type chung khi được (vd `PromotionSDK.openChoosePromotion` nhận `PRMEndowView` mà không lộ `Fragment` thật)
   để class thật vẫn ẩn.
-- Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng —
-  [PublicApi.md](./common/PublicApi.md) có sẵn hai lệnh `grep` để kiểm, cả hai phải **không in ra gì**.
+- Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng — chạy
+  `./scripts/check-public-api.sh` để kiểm (phải in `✅`).
+- ⚠️ Hai lệnh `grep` chép tay từng nằm ở [PublicApi.md](./common/PublicApi.md) là **sai allowlist**
+  (chỉ loại trừ `/entry/`, bỏ sót `ui.theme` và `ui.feature.endowview`) nên **luôn đỏ 126 dòng** dù
+  code đúng. Gặp lại dạng đó ở đâu thì thay bằng script, đừng đi "sửa cho gate xanh" — cách sửa
+  trông-như-tuân-thủ ở đây là đổi `public` → `internal` ở `ui/theme`, tức xoá theme API khỏi bề mặt
+  host.
 
 ### 1.6. Không tự ý đổi kiến trúc
 - Giữ Clean Architecture (Data / Domain / Presentation).
@@ -130,7 +135,7 @@ thấy hoặc chi phối hành vi phải **song ánh** giữa Android và iOS:
 - [ ] Code tuân thủ `CodingStandards.md`.
 - [ ] Lỗi được xử lý theo `ErrorHandling.md`.
 - [ ] Đã cập nhật docs nếu chạm tới API/storage/DI/architecture (điều 8).
-- [ ] **Không có khai báo public nào lọt ra ngoài `entry`** (điều 4b) — chạy hai lệnh `grep` ở đầu
+- [ ] **Không có khai báo public nào lọt ra ngoài allowlist** (điều 4b) — chạy `./scripts/check-public-api.sh`; chi tiết ở đầu
       [PublicApi.md](./common/PublicApi.md), cả hai phải không in ra gì.
 - [ ] Không còn code trùng lặp.
 - [ ] **Build và test xanh trên cả hai nền tảng**:

@@ -52,6 +52,16 @@
     <!-- Lỗi transport, phân loại ở PromotionRemoteDataSource.apiCall. Tách khỏi prm_error_general vì
          user xử lý được: bật lại mạng rồi bấm lại. Giữ trùng câu chữ với PromotionUIStrings bên iOS. -->
     <string name="prm_error_network">Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại</string>
+
+    <!--
+        Nhãn cho trình đọc màn hình (TalkBack). `android:button="@null"` + nền drawable làm
+        RadioButton mất nhãn mặc định, nên không có dòng này thì TalkBack chỉ đọc "đã chọn" /
+        "chưa chọn" mà không nói đang chọn CÁI GÌ.
+    -->
+    <string name="prm_a11y_select_voucher">Chọn ưu đãi này</string>
+
+    <!-- FAB cuộn lên đầu ở màn Tìm ưu đãi: nút bấm được nên BẮT BUỘC có nhãn, không phải ảnh trang trí. -->
+    <string name="prm_a11y_scroll_to_top">Lên đầu danh sách</string>
     <string name="prm_error_timeout">Kết nối quá lâu không phản hồi. Vui lòng thử lại</string>
     <!-- PRM_MOB_021. Giữ nguyên câu chữ của iOS (PromotionSDKError.featureDisabled). -->
     <string name="prm_feature_disabled">Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>

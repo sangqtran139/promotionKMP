@@ -16,27 +16,18 @@ final class ChoosePromotionBuilder: PRMBaseBuilder<ChoosePromotionViewController
         // PromotionRequestContextProvider của lõi (đối xứng Android). Chỉ giữ data riêng của màn.
         /// Dòng đơn hàng cho Find Eligible Campaigns — không có trong provider nên vẫn truyền qua đây.
         let orderItems: [EligibleOrderItem]
-        /// Data preload từ widget (cachedListModel) để tránh double API call — giống Android PreloadVouchers.
-        /// Rỗng → màn tự fetch trang 0 (hiện shimmer).
-        let preloadedMy: [EligibleOffer]
-        let preloadedOther: [EligibleOffer]
-        let myIsLastPage: Bool
-        let otherIsLastPage: Bool
         /// Voucher đang áp dụng (nếu có) → pre-select khi mở lại màn chọn (khớp Android `preSelectedVoucherIds`).
         /// Danh sách để sẵn sàng multi-select; hiện tại thường 0/1 phần tử.
         let preSelectedVoucherIds: [String]
 
+        // Bốn field preload (`preloadedMy`/`preloadedOther` + hai cờ phân trang) đã bỏ: màn này nay
+        // **luôn** gọi lại `findEligible` khi mở (`ChoosePromotionIntent.SeedOnce`), nên dùng lại
+        // danh sách widget nạp lúc trước chỉ tổ hiện dữ liệu cũ. Cờ phân trang cũng lấy từ chính
+        // response đó. Đối ứng `ChoosePromotionFragment` bên Android.
+
         init(orderItems: [EligibleOrderItem] = [],
-             preloadedMy: [EligibleOffer] = [],
-             preloadedOther: [EligibleOffer] = [],
-             myIsLastPage: Bool = true,
-             otherIsLastPage: Bool = true,
              preSelectedVoucherIds: [String] = []) {
             self.orderItems = orderItems
-            self.preloadedMy = preloadedMy
-            self.preloadedOther = preloadedOther
-            self.myIsLastPage = myIsLastPage
-            self.otherIsLastPage = otherIsLastPage
             self.preSelectedVoucherIds = preSelectedVoucherIds
         }
     }

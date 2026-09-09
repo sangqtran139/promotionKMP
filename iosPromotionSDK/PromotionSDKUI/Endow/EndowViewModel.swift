@@ -19,7 +19,7 @@ final class EndowViewModel: PRMStoreViewModel<EndowStore> {
     ///
     /// Trước đây tắt vì lý do khác — phải giữ `errorCode` cho tới khi vòng validate kết thúc, do
     /// `validateAndApply` là fire-and-forget nên nơi gọi phải đọc nhờ dòng state chung. Lý do đó
-    /// hết: store `suspend` và **trả thẳng state cuối** của lượt gọi.
+    /// hết: store `suspend` và **trả thẳng kết cục** (`EndowApplyOutcome`) của lượt gọi.
     override var autoConsumesError: Bool { false }
 
     init(findEligibleUseCase: FindEligibleCampaignsUseCase = FindEligibleCampaignsUseCase(),
@@ -58,16 +58,22 @@ final class EndowViewModel: PRMStoreViewModel<EndowStore> {
         (try? await store.refreshAvailability())?.boolValue ?? true
     }
 
-    /// Validate + áp offers đã chọn; [completion] gọi MỘT lần khi validate xong (thành công/thất bại).
-    /// Widget-state cập nhật qua [observe]; [completion] để `PromotionSDKImpl` điều hướng (pop, callback host).
-    func validateAndApply(_ offers: [EligibleOffer], completion: ((EndowState) -> Void)? = nil) {
+    /// Validate + áp offers đã chọn; [completion] gọi MỘT lần khi lượt validate ngã ngũ, kèm
+    /// [EndowApplyOutcome] — áp được / bị server từ chối / không hỏi được server.
+    ///
+    /// Widget-state cập nhật qua [observe]; [completion] để `PromotionSDKImpl` điều hướng (pop) và
+    /// màn "Chọn ưu đãi" quyết định ở lại hay đóng. Đối ứng `EndowViewModel.validateAndApply` Android.
+    func validateAndApply(_ offers: [EligibleOffer], completion: ((EndowApplyOutcome) -> Void)? = nil) {
         Task { @MainActor in
-            // `suspend` bên Kotlin → `async throws` bên Swift. Trả state cuối của ĐÚNG lượt này nên
+            // `suspend` bên Kotlin → `async throws` bên Swift. Trả kết cục của ĐÚNG lượt này nên
             // không còn `settleCompletion`/`sawValidating`/`handleSettle` — Android bỏ y hệt.
-            let state = (try? await store.validateAndApply(offers: offers)) ?? currentState
-            completion?(state)
-            // Đã giao lỗi cho nơi gọi → giờ mới xoá, để lỗi cũ không dính sang vòng validate sau.
-            if state.errorCode != nil { consumeError() }
+            // Chỉ `CancellationException` mới thoát ra được (store nuốt lỗi nghiệp vụ), nhưng vẫn
+            // bắt để không nổ ở tầng host — cùng cách với `confirmRedemption`.
+            let outcome = (try? await store.validateAndApply(offers: offers))
+                ?? EndowApplyOutcomeFailed(errorCode: PromotionErrorCodes.shared.GENERAL)
+            completion?(outcome)
+            // Đã giao kết quả cho nơi gọi → giờ mới xoá lỗi, để lỗi cũ không dính sang vòng sau.
+            if currentState.errorCode != nil { consumeError() }
         }
     }
 

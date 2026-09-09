@@ -33,16 +33,14 @@ public protocol PromotionSDKCallback: AnyObject {
     /// Gọi khi user chọn và bấm "Áp dụng" ưu đãi thành công.
     func onVoucherApplied(voucherId: String)
 
-
-    /// Gọi khi widget load xong và biết tổng số voucher khả dụng.
-
     /// Gọi khi user chọn 1 dịch vụ trong bottom sheet "Chọn dịch vụ" (từ màn Ưu đãi của tôi / Tìm kiếm / Chi tiết).
     func onServiceSelected(selection: PromotionServiceSelection)
 
-    /// Gọi khi biết chắc trạng thái bật/tắt SDK qua feature flag (Unleash).
-    /// `enabled == false` → host nên ẩn toàn bộ điểm vào ưu đãi (entry point, widget).
-
-    /// Gọi khi màn hình SDK bị đóng (user back).
+    // Ba doc comment từng đứng xen giữa các method ở đây — cho "đếm voucher của widget", "trạng
+    // thái bật/tắt SDK theo feature flag", và "màn SDK bị đóng". Method của chúng đã bỏ, doc thì ở
+    // lại: đọc file này thì tưởng protocol có 6 sự kiện, và `PromotionSDK.swift` còn hứa với host ở
+    // ba chỗ nữa. Quyết định loại ba sự kiện đó ghi ở `docs/common/InitParity.md` §3 mục "Đã loại".
+    // Host cần cờ tính năng thì dùng `PromotionSDK.refreshFeatureFlags`.
 
     /// Gọi khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget
     /// Endow) trả về HTTP 401 và **không cứu được** — tức `PromotionTokenSource.refreshToken(_:)` đã

@@ -94,8 +94,8 @@ internal fun AppCompatRadioButton.applyRadioStrokeColors(
     val strokeWidthPx = (1f * resources.displayMetrics.density).toInt().coerceAtLeast(1)
 
     val tickDrawable = ContextCompat.getDrawable(ctx, R.drawable.prm_ic_tick_white)?.mutate()
-    val tickWidth = resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._8sdp)
-    val tickHeight = resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._5sdp)
+    val tickWidth = resources.getDimensionPixelSize(R.dimen.prm_8sdp)
+    val tickHeight = resources.getDimensionPixelSize(R.dimen.prm_5sdp)
 
     val checkedBackground = GradientDrawable().apply {
         shape = GradientDrawable.OVAL

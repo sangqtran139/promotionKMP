@@ -9,6 +9,7 @@ minh được gì về iOS.
 <!-- toc -->
 - [1. Chạy test](#1-chạy-test)
   - [1.1. Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"](#11-luôn-kiểm-số-lượng-test-đừng-tin-build-successful)
+  - [1.2. Test tầng Swift](#12-test-tầng-swift)
 - [2. Cấu trúc hiện tại](#2-cấu-trúc-hiện-tại)
 - [3. Test networking bằng `MockEngine`](#3-test-networking-bằng-mockengine)
   - [3.1. Kiểm cả hai chiều](#31-kiểm-cả-hai-chiều)
@@ -29,6 +30,33 @@ minh được gì về iOS.
 
 > Tên task đến từ AGP KMP plugin (`com.android.kotlin.multiplatform.library`), **không** phải
 > `testDebugUnitTest` như module Android thường.
+
+### 1.2. Test tầng Swift
+
+```bash
+cd iosPromotionSDK
+xcodebuild test -project PRM.xcodeproj -scheme PRM \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO
+```
+
+**Một lệnh chạy hết bốn bundle**: `PromotionSDKTests` (tầng `Entry/`) + `PRMFoundationTests` +
+`PRMDesignKitTests` + `PRMPromotionUITests`. Ba cái sau là test target của package local, được nối
+vào scheme `PRM` qua `Testables` — scheme tự sinh của từng package **không** có test action.
+
+Ba cái bẫy đã gỡ, đừng dựng lại:
+
+| Bẫy | Vì sao |
+|---|---|
+| `swift test` trong thư mục package | Build cho **macOS**, mà package là iOS-only → `no such module 'UIKit'`. Phải qua simulator. |
+| Scheme để trong `xcuserdata` | Máy khác clone về là mất. `PRM.xcscheme` nay nằm ở `xcshareddata/xcschemes` (đã commit). |
+| Sửa Kotlin xong test Swift ngay | `Promotion.xcframework` trong `build/` là **artifact cũ**. Đổi `promotionLogic` thì phải `./scripts/build-ios.sh local --skip-app` trước, không thì build gãy với `cannot find type … in scope`. |
+
+> `swiftc -parse` **không** thay được việc này: nó chỉ kiểm cú pháp, không kiểm kiểu — không bắt
+> được `cannot find type X in scope`.
+
+**Type Kotlin trong test**: `PRM` import `PRMKotlinBridge` bằng `@_implementationOnly`, nên
+`@testable import PRM` **không** kéo theo type Kotlin. Test nào cần dựng `EndowState`,
+`EndowHostEvent`… thì phải `import PRMKotlinBridge` tường minh (xem `EndowHostNotifierEmitTests`).
 
 ### 1.1. Luôn kiểm số lượng test, đừng tin "BUILD SUCCESSFUL"
 

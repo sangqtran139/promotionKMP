@@ -13,6 +13,7 @@ import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.presentation.common.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
+import com.ttcn.promotionsdk.presentation.endow.EndowApplyOutcome
 import com.ttcn.prm.databinding.PrmFragmentChoosePromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ChoosePromotionListItem
@@ -41,17 +42,10 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
 
     // ─── Input ────────────────────────────────────────────────────────────────
 
-    /**
-     * Data đã load sẵn từ [PRMEndowView] — dùng lại để tránh double API call.
-     * Rỗng thì ViewModel tự gọi API.
-     *
-     * `internal`: [EligibleOffer] thuộc `promotionLogic`. Host dựng màn qua [forEndowView].
-     */
-    internal var initialMyOffers: List<EligibleOffer> = emptyList()
-    internal var initialOtherOffers: List<EligibleOffer> = emptyList()
-    /** Cờ phân trang đi kèm dữ liệu preload — quyết định nút "Xem thêm" và có gọi trang kế không. */
-    internal var initialMyIsLastPage: Boolean = true
-    internal var initialOtherIsLastPage: Boolean = true
+    // Bốn field preload (`initialMyOffers`/`initialOtherOffers` + hai cờ phân trang) đã bỏ: màn này
+    // nay **luôn** gọi lại `findEligible` khi mở (`ChoosePromotionIntent.SeedOnce`), nên dùng lại
+    // danh sách widget nạp lúc trước chỉ tổ hiện dữ liệu cũ. Cờ phân trang cũng lấy từ chính response
+    // đó. Đối ứng `ChoosePromotionBuilder.DataModel` bên iOS.
 
     /** objectId của các voucher cần pre-select (valid=true từ discountDetails trước đó). */
     internal var preSelectedVoucherIds: Set<String> = emptySet()
@@ -60,12 +54,13 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
      * Callback trả về **offers đang chọn** khi bấm "Áp dụng"; validate + áp do `EndowStore` lo.
      * [forEndowView] tự nối vào [PRMEndowView.applySelectedOffers].
      *
-     * Tham số thứ hai là hàm báo **đã validate xong** kèm mã lỗi (`null` = thành công) — màn chỉ
-     * đóng khi áp được, lỗi thì ở lại + báo. Đối ứng completion của `endowVM.validateAndApply` iOS.
+     * Tham số thứ hai là hàm báo **đã validate xong** kèm [EndowApplyOutcome] — màn chỉ đóng khi áp
+     * được; server từ chối thì ở lại + disable ưu đãi; lỗi thì ở lại + báo. Đối ứng completion của
+     * `endowVM.validateAndApply` iOS.
      *
      * `internal`: [EligibleOffer] thuộc `promotionLogic`.
      */
-    internal var onApplySelectedOffers: ((List<EligibleOffer>, (String?) -> Unit) -> Unit)? = null
+    internal var onApplySelectedOffers: ((List<EligibleOffer>, (EndowApplyOutcome) -> Unit) -> Unit)? = null
 
     // ─── Internal state ───────────────────────────────────────────────────────
     // Selection + trạng thái mở/thu gọn nay do store (promotionLogic) quản — Fragment chỉ render.
@@ -147,6 +142,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
 
             updateApplyButtonState(state)
             rebuildList(state)
+            showApplyMessageIfAny(state)
         }
 
         collectFlow(viewModel.effects) { effect ->
@@ -157,18 +153,31 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             }
         }
 
-        // `SeedOnce`, KHÔNG phải `SetPreSelected` + `Preload`: `observeData()` chạy lại mỗi lần view
-        // được dựng lại, mà store sống lâu hơn view — bắn lại là ghi đè tick của user về bộ đã áp ban
-        // đầu và rewind `otherOffers` về trang đầu. Cờ gác nằm ở store nên iOS dùng chung.
+        // `SeedOnce`, KHÔNG phải `SetPreSelected` + `LoadInitial`: `observeData()` chạy lại mỗi lần
+        // view được dựng lại, mà store sống lâu hơn view — bắn lại là ghi đè tick của user về bộ đã
+        // áp ban đầu và gọi thừa một lượt `findEligible`. Cờ gác nằm ở store nên iOS dùng chung.
+        //
+        // Store tự gọi `findEligible` ở đây: vào màn là dữ liệu phải mới, không dùng lại bộ widget
+        // nạp lúc trước (ngân sách có thể đã hết, voucher có thể vừa bị dùng ở thiết bị khác).
         viewModel.dispatch(
-            ChoosePromotionIntent.SeedOnce(
-                preSelectedIds = preSelectedVoucherIds.toList(),
-                myOffers = initialMyOffers,
-                otherOffers = initialOtherOffers,
-                myIsLastPage = initialMyIsLastPage,
-                otherIsLastPage = initialOtherIsLastPage,
-            )
+            ChoosePromotionIntent.SeedOnce(preSelectedIds = preSelectedVoucherIds.toList())
         )
+    }
+
+    /**
+     * Ưu đãi vừa bị server từ chối → popup **câu của chính server**, một lần.
+     *
+     * Không đi qua [mapPromotionError]: đó là bảng **mã lỗi kỹ thuật** → chuỗi tài nguyên, còn đây là
+     * lời giải thích nghiệp vụ ("Voucher không áp dụng cho đơn này") mà chỉ server biết. Server không
+     * kèm câu nào thì mới lùi về câu chung.
+     *
+     * `dispatch` TRƯỚC khi hiện dialog: cờ trong state phải tắt ngay, nếu không lượt state kế tiếp
+     * (do chính `dispatch` sinh ra hoặc do bất kỳ thay đổi nào khác) lại bắn popup thứ hai.
+     */
+    private fun showApplyMessageIfAny(state: ChoosePromotionState) {
+        val message = state.applyMessage ?: return
+        viewModel.dispatch(ChoosePromotionIntent.ConsumeApplyMessage)
+        showErrorDialog(message.ifBlank { mapPromotionError(ErrorCodes.GENERAL) })
     }
 
     // ─── RecyclerView ─────────────────────────────────────────────────────────
@@ -209,7 +218,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             addItemDecoration(
                 VerticalSpaceItemDecoration(
                     0,
-                    resources.getDimensionPixelSize(com.intuit.sdp.R.dimen._6sdp),
+                    resources.getDimensionPixelSize(R.dimen.prm_6sdp),
                 )
             )
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -303,8 +312,17 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
     }
 
     /**
-     * Bấm "Áp dụng" → trả offers đang chọn cho widget (`EndowStore` validate).
-     * Lỗi → KHÔNG áp; ở lại màn chọn + báo lỗi. Thành công → đóng màn. (Giống iOS.)
+     * Bấm "Áp dụng" → trả offers đang chọn cho widget (`EndowStore` validate). Ba kết cục, ba hành
+     * động khác nhau — giống hệt iOS (`PromotionSDKImpl.openChoosePromotion`):
+     *
+     * | Kết cục | Widget | Màn này |
+     * |---|---|---|
+     * | `Applied` | đã áp bộ mới | đóng |
+     * | `Rejected` | **không đổi** | ở lại, disable ưu đãi bị từ chối + popup câu của server |
+     * | `Failed` | không đổi | ở lại + popup câu lỗi chung |
+     *
+     * Trước đây chỉ có hai nhánh (`errorCode` null hay không), nên `Rejected` đi chung đường với
+     * `Applied`: màn đóng lại như đã áp xong trong khi widget hiện ưu đãi bị gạch ngang.
      */
     private fun onApplyClicked() {
         // Chặn spam: `btnApply.isEnabled` bám `canApply()` nhưng chỉ đổi khi state phát ra lượt kế
@@ -324,16 +342,25 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         // Khoá nút cho tới khi `validateStackableDiscounts` trả về (`applySelectedOffers` luôn gọi
         // `onSettled` ở mọi nhánh, kể cả widget đã detach — nên không có đường nào kẹt khoá).
         viewModel.dispatch(ChoosePromotionIntent.ApplyStarted)
-        apply(offers) { errorCode ->
-            viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
-            if (errorCode != null) {
-                // Popup chứ không toast: lỗi validate
-                // bị nuốt hoàn toàn: user bấm "Áp dụng", API hỏng, màn đứng im không một thông báo.
-                // Dùng `showAlways` như PRM_MOB_021: user vừa chủ động bấm và đang chờ kết quả, im
-                // lặng là không chấp nhận được. (iOS dùng popup `PRMConfirmationDialog`.)
-                showErrorDialog(mapPromotionError(errorCode))
-            } else {
-                goBack()
+        apply(offers) { outcome ->
+            when (outcome) {
+                // Áp được → đóng màn, quay về màn thanh toán với widget đã cập nhật.
+                is EndowApplyOutcome.Applied -> {
+                    viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
+                    goBack()
+                }
+                // Server từ chối ưu đãi đang chọn → **ở lại**: store disable ưu đãi đó, bỏ tick và
+                // đặt câu giải thích; popup hiện ở `showApplyMessageIfAny`. `ApplyRejected` đã bao
+                // luôn phần mở khoá nút của `ApplyFinished` nên không bắn thêm.
+                is EndowApplyOutcome.Rejected ->
+                    viewModel.dispatch(ChoosePromotionIntent.ApplyRejected(outcome.items))
+                // Không hỏi được server → popup + ở lại. Popup chứ không toast: user vừa chủ động
+                // bấm và đang chờ kết quả, im lặng là màn đứng im không một thông báo.
+                // (iOS dùng popup `PRMConfirmationDialog`.)
+                is EndowApplyOutcome.Failed -> {
+                    viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
+                    showErrorDialog(mapPromotionError(outcome.errorCode))
+                }
             }
         }
     }
@@ -390,8 +417,8 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         /**
          * Dựng màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
          *
-         * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang
-         * áp, và đẩy kết quả ngược về widget khi user bấm "Áp dụng".
+         * Pre-select voucher đang áp và đẩy kết quả ngược về widget khi user bấm "Áp dụng". Danh
+         * sách ưu đãi thì màn tự gọi `findEligible` lấy mới, không nhận preload từ widget nữa.
          *
          * `internal`: fragment này là UI nội bộ. `PRMEndowView` tự gọi hàm này qua
          * `PromotionSDK.openChoosePromotion(activity, endowView)` khi user bấm widget — host không
@@ -403,10 +430,6 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         @JvmStatic
         fun forEndowView(endowView: PRMEndowView): ChoosePromotionFragment =
             ChoosePromotionFragment().apply {
-                initialMyOffers = endowView.myVouchers
-                initialOtherOffers = endowView.otherVouchers
-                initialMyIsLastPage = endowView.myIsLastPage
-                initialOtherIsLastPage = endowView.otherIsLastPage
                 // Pre-select TẤT CẢ ưu đãi đang áp (kể cả đang UNAVAILABLE) để user thấy & bỏ chọn
                 // được — khớp iOS (`appliedDiscounts.map { $0.objectId }`, không lọc `valid`).
                 preSelectedVoucherIds = endowView.discountDetails

@@ -22,6 +22,7 @@ import com.ttcn.prm.entry.api.PromotionSDKError
 import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
+import com.ttcn.promotionsdk.presentation.endow.EndowApplyOutcome
 import com.ttcn.promotionsdk.presentation.endow.EndowConfirmResult
 import com.ttcn.promotionsdk.presentation.endow.EndowHostEvent
 import com.ttcn.promotionsdk.presentation.endow.EndowHostNotifier
@@ -79,23 +80,10 @@ class PRMEndowView @JvmOverloads constructor(
 
     // ─── Read-only accessors (delegate to ViewModel state) ────────────────────
 
-    /**
-     * Ưu đãi đã load sẵn, dùng lại cho màn "Chọn ưu đãi" để khỏi gọi `findEligible` hai lần.
-     * `internal`: [EligibleOffer] thuộc `promotionLogic`, không được lọt ra API public.
-     * Widget tự đưa cho [PromotionSDK.openChoosePromotion] khi user bấm.
-     */
-    internal val myVouchers: List<EligibleOffer>
-        get() = viewModel?.state?.value?.myOffers ?: emptyList()
-
-    internal val otherVouchers: List<EligibleOffer>
-        get() = viewModel?.state?.value?.otherOffers ?: emptyList()
-
-    /** Cờ phân trang đi kèm [myVouchers] / [otherVouchers] — màn "Chọn ưu đãi" cần để biết còn trang không. */
-    internal val myIsLastPage: Boolean
-        get() = viewModel?.state?.value?.myIsLastPage ?: true
-
-    internal val otherIsLastPage: Boolean
-        get() = viewModel?.state?.value?.otherIsLastPage ?: true
+    // `myVouchers`/`otherVouchers` + hai cờ phân trang đã bỏ: chúng chỉ tồn tại để đẩy sang màn "Chọn
+    // ưu đãi" làm dữ liệu preload, mà màn đó nay **luôn** tự gọi `findEligible` khi mở
+    // (`ChoosePromotionIntent.SeedOnce`). Dữ liệu vẫn còn ở `EndowState` — nơi widget cất kết quả nạp
+    // của chính nó — chỉ là không ai đọc nhờ qua đây nữa.
 
     val discountDetails: List<AppliedDiscount>
         get() = viewModel?.state?.value?.appliedDiscounts ?: emptyList()
@@ -249,29 +237,34 @@ class PRMEndowView @JvmOverloads constructor(
      * Nhận offers user chọn từ màn "Chọn ưu đãi" → [EndowStore] validate & áp (dùng chung iOS).
      * `internal`: [EligibleOffer] thuộc `promotionLogic`; host dùng qua [ChoosePromotionFragment.forEndowView].
      *
-     * [onSettled] gọi một lần khi validate xong, kèm **mã lỗi** (`null` = thành công) — màn chọn dùng
-     * để quyết định đóng hay báo lỗi. Đối ứng completion của `endowVM.validateAndApply` bên iOS.
+     * [onSettled] gọi **đúng một lần ở mọi nhánh** khi lượt validate ngã ngũ, kèm
+     * [EndowApplyOutcome] — màn chọn dựa vào đó để đóng màn, disable ưu đãi, hay báo lỗi. Đối ứng
+     * completion của `endowVM.validateAndApply` bên iOS.
+     *
+     * Trước đây tham số là `errorCode: String?`, tức nơi gọi chỉ phân biệt được "mạng hỏng" với "mọi
+     * thứ khác": server **từ chối** ưu đãi rơi vào cùng nhánh với thành công nên màn chọn đóng lại
+     * như đã áp xong.
      */
     internal fun applySelectedOffers(
         offers: List<EligibleOffer>,
-        onSettled: ((errorCode: String?) -> Unit)? = null,
+        onSettled: ((outcome: EndowApplyOutcome) -> Unit)? = null,
     ) {
         val vm = viewModel
         if (vm == null) {
             // Widget đã detach (host `replace` màn thay vì `add`) → không có store để validate.
-            // Báo LỖI chứ không phải `null`: `null` nghĩa là "áp xong", màn chọn sẽ đóng và user
-            // tưởng đã áp trong khi widget không hề đổi.
-            onSettled?.invoke(ErrorCodes.GENERAL)
+            // Báo LỖI chứ không phải `Applied`: `Applied` nghĩa là "áp xong", màn chọn sẽ đóng và
+            // user tưởng đã áp trong khi widget không hề đổi.
+            onSettled?.invoke(EndowApplyOutcome.Failed(ErrorCodes.GENERAL))
             return
         }
-        // Store `suspend` và trả state cuối của đúng lượt này → không còn rình `isValidating` trên
+        // Store `suspend` và trả kết cục của đúng lượt này → không còn rình `isValidating` trên
         // dòng state chung, không còn phải giữ lỗi lại chờ nơi gọi đọc.
         val scope = viewScope
         if (scope == null) {
-            onSettled?.invoke(ErrorCodes.GENERAL)
+            onSettled?.invoke(EndowApplyOutcome.Failed(ErrorCodes.GENERAL))
             return
         }
-        scope.launch { onSettled?.invoke(vm.validateAndApply(offers).errorCode) }
+        scope.launch { onSettled?.invoke(vm.validateAndApply(offers)) }
     }
 
     /** Đánh dấu ưu đãi hiện tại không còn khả dụng mà không thay đổi danh sách. */
@@ -353,8 +346,9 @@ class PRMEndowView @JvmOverloads constructor(
             if (it == ErrorCodes.TOKEN_EXPIRED) {
                 PromotionSDK.getCallback()?.onExpireToken()
             }
-            // Xoá được ngay: nơi gọi `validateAndApply` nhận state trả về trực tiếp, không đọc nhờ
-            // dòng state này nữa nên không còn đua nhau (trước phải có `consumeErrorUnlessSettling`).
+            // Xoá được ngay: nơi gọi `validateAndApply` nhận `EndowApplyOutcome` trả về trực tiếp,
+            // không đọc nhờ dòng state này nữa nên không còn đua nhau (trước phải có
+            // `consumeErrorUnlessSettling`).
             viewModel?.consumeError()
         }
 

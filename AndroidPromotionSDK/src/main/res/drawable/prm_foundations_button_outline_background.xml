@@ -4,6 +4,6 @@
     <corners android:radius="@dimen/prm_tokenBorderRadius24" />
     <solid android:color="@color/prm_tokenWhite" />
     <stroke
-        android:width="@dimen/_1sdp"
+        android:width="@dimen/prm_1sdp"
         android:color="@color/prm_tokenViettelPayRed100" />
 </shape>

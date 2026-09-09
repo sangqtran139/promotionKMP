@@ -10,6 +10,10 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
 > - **Selection** (`selectedIds`, rule single/multi qua `ToggleSelection`, seed `SetPreSelected`) và
 >   **"Xem thêm/Thu gọn"** (`myExpanded` + state-machine `SeeMoreMy`, `mySeeMoreState()`/`visibleMyOffers()`)
 >   nằm trong store — dùng chung Android & iOS.
+> - **Vào màn là LUÔN gọi lại `findEligible`** (`SeedOnce`), không dùng lại danh sách widget đã nạp.
+>   Xem [Vào màn: luôn nạp lại từ server](#vào-màn-luôn-nạp-lại-từ-server).
+> - **Ưu đãi bị `validateStackableDiscounts` từ chối → disable + bỏ tick**, màn ở lại, lý do hiện ở
+>   popup. Xem [2.2](#22-server-từ-chối-ưu-đãi--disable-tại-chỗ).
 
 ## Mục lục
 
@@ -22,7 +26,7 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
   - [Loading khi tải thêm trang](#loading-khi-tải-thêm-trang)
   - [Tìm không ra kết quả](#tìm-không-ra-kết-quả)
   - [Field của `findEligible` mà SDK chưa đọc](#field-của-findeligible-mà-sdk-chưa-đọc)
-  - [Cờ phân trang khi mở màn từ widget](#cờ-phân-trang-khi-mở-màn-từ-widget)
+  - [Vào màn: luôn nạp lại từ server](#vào-màn-luôn-nạp-lại-từ-server)
 - [1. Contract (MVI)](#1-contract-mvi)
   - [1.1. State — `ChoosePromotionUiState`](#11-state--choosepromotionuistate)
   - [1.2. Nguồn dữ liệu: `findEligible`](#12-nguồn-dữ-liệu-findeligible)
@@ -30,6 +34,7 @@ Hỗ trợ hai danh sách (voucher của tôi + voucher khác), phân trang riê
   - [1.4. Effect — `ChoosePromotionEffect`](#14-effect--choosepromotioneffect)
 - [2. Luồng apply (validate nằm ở `EndowStore`)](#2-luồng-apply-validate-nằm-ở-endowstore)
   - [2.1. Chống spam nút "Áp dụng"](#21-chống-spam-nút-áp-dụng)
+  - [2.2. Server từ chối ưu đãi → disable tại chỗ](#22-server-từ-chối-ưu-đãi--disable-tại-chỗ)
 - [3. Hiển thị 1 item (parity Android ↔ iOS)](#3-hiển-thị-1-item-parity-android--ios)
   - [3.1. Dải "Chưa đủ điều kiện áp dụng" phải luồn xuống dưới card](#31-dải-chưa-đủ-điều-kiện-áp-dụng-phải-luồn-xuống-dưới-card)
 - [4. `serviceCode` đi vào request bằng đường nào](#4-servicecode-đi-vào-request-bằng-đường-nào)
@@ -183,19 +188,35 @@ chưa dùng** — đừng tưởng là sót:
 | `discountPreview.discountFormula`, `applicableItems[]` | — | DTO chưa khai |
 | `eligibilityDetails.eligibilityScore` / `matchedRules` / `warnings` | `eligibilityScore` dùng để sort | Không map — server đã sort sẵn, SDK giữ nguyên thứ tự |
 
-### Cờ phân trang khi mở màn từ widget
+### Vào màn: luôn nạp lại từ server
 
-`EndowStore` giữ `myIsLastPage` / `otherIsLastPage` của chính lần `findEligible` nó gọi. Màn "Chọn
-ưu đãi" nhận lại qua `Preload` nên biết đúng còn trang hay không:
+Mở màn "Chọn ưu đãi" là **luôn** gọi `findEligible` — `SeedOnce(preSelectedIds)` seed các voucher
+đang áp rồi chạy thẳng `loadOffers()`. Màn hiện shimmer một nhịp rồi ra danh sách mới.
 
-| Chặng | Android | iOS |
+**Trước đây không phải vậy:** widget đưa sang danh sách nó đã nạp (`Preload`) và store dùng thẳng,
+không gọi mạng. Tiết kiệm được một request, nhưng user nhìn thấy dữ liệu của **thời điểm widget nạp**
+— ngân sách campaign có thể đã hết, voucher có thể vừa bị dùng ở thiết bị khác — và không có gì sửa
+lại cho tới khi user tự kéo-để-tải-lại. Ở màn đụng tiền thì đúng quan trọng hơn nhanh.
+
+Kéo theo đó, **cờ phân trang cũng lấy từ chính response này**, không còn phải chuyển từ widget sang:
+
+| | Trước | Nay |
 |---|---|---|
-| Widget giữ cờ | `EndowState` → `PRMEndowUiState` → `PRMEndowView.myIsLastPage` | `EndowState` (đọc thẳng qua `endowVM.state`) |
-| Truyền sang màn chọn | `PromotionSDK.openChoosePromotion` (widget tự gọi khi bấm) → `ChoosePromotionFragment.forEndowView` (internal) → `PreloadVouchers` | `PromotionSDKImpl.openChoosePromotion` → `ChoosePromotionBuilder.DataModel` |
+| Danh sách ban đầu | `PRMEndowView.myVouchers` / `otherVouchers` → `ChoosePromotionFragment.initialMyOffers` (Android), `ChoosePromotionBuilder.DataModel.preloadedMy` (iOS) | `findEligible` gọi trong `SeedOnce` |
+| `myIsLastPage` / `otherIsLastPage` | `EndowState` → `initialMyIsLastPage` / `DataModel.myIsLastPage` | `EligibleOffersResult` của lượt gọi mới |
+| Cái duy nhất còn truyền từ widget | — | `preSelectedVoucherIds` (id các `discountDetails` đang áp) |
+
+Tám field đó (bốn mỗi bên) **đã xoá**; `PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/
+`otherIsLastPage` cũng xoá luôn vì chỉ tồn tại để feed chúng.
 
 Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`, không mở đường gọi trang kế.
-> - **Validate KHÔNG còn ở màn này.** Bấm "Áp dụng" chỉ **trả offers đang chọn** (`ApplySelectedOffers`);
->   validate & apply do **`EndowStore`** lo (xem [EndowView.md](./EndowView.md)).
+
+> Intent `Preload(...)` **vẫn còn** trong contract cho nơi nào thật sự có dữ liệu sẵn và không muốn
+> gọi mạng; chỉ là đường vào màn không đi qua nó nữa.
+
+> - **Validate KHÔNG chạy ở store màn này.** Bấm "Áp dụng" **trả offers đang chọn** cho widget;
+>   `EndowStore` lo validate & apply (xem [EndowView.md](./EndowView.md)). Nhưng **kết quả từ chối
+>   thì quay về đây** — xem [2.2](#22-server-từ-chối-ưu-đãi--disable-tại-chỗ).
 ## 1. Contract (MVI)
 
 ### 1.1. State — `ChoosePromotionState`
@@ -212,6 +233,7 @@ Kết quả `findEligible` là `null` (API lỗi) → cả hai cờ về `true`,
 | Chọn ưu đãi | `isMultiSelection`, `selectedIds`, `myExpanded` — **selection do store quản**, dùng chung 2 nền tảng |
 | Lỗi | `errorCode` (một-lần) và `loadFailed` (**bền**) |
 | Khoá nút "Áp dụng" | `isApplying` |
+| Ưu đãi bị validate từ chối | `rejectedIds` (**bền**) và `applyMessage` (một-lần, câu của server) |
 | Cảnh báo sắp hết hạn | `expireWarningDate` |
 
 Hai field lỗi **không** thay thế nhau: `errorCode` là một-lần (hiện xong `dispatch(ConsumeError)`),
@@ -221,6 +243,13 @@ trắng trơn. `loadFailed` mới là cờ bền cho việc đó.
 `isApplying` **chỉ để khoá nút**, không phải cờ loading của màn: shimmer và pull-to-refresh không đọc
 nó. Việc validate chạy ở `EndowStore` của widget chứ không ở store này, nên native phải báo hai đầu
 bằng `ApplyStarted` / `ApplyFinished` — **quên một nhánh kết thúc là nút chết luôn**.
+
+`rejectedIds` và `applyMessage` cũng **không** thay thế nhau, cùng cặp lý lẽ với `errorCode` /
+`loadFailed`: `applyMessage` là câu một-lần để bắn popup (hiện xong `dispatch(ConsumeApplyMessage)`),
+còn `rejectedIds` là cờ **bền** quyết định ưu đãi nào còn disable — kể cả sau khi user kéo-để-tải-lại.
+
+State chỉ giữ **id**, không giữ câu lý do theo từng item: câu đó dùng đúng một lần cho popup, giữ lại
+là mời gọi đem nó ra hiển thị lên card — đúng thứ mục 2.2 nói không được làm.
 
 ### 1.2. Nguồn dữ liệu: `findEligible`
 
@@ -235,8 +264,8 @@ lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc 
 
 ### 1.3. Intent — `ChoosePromotionIntent`
 - `LoadInitial` — load lần đầu (cả hai nhóm, `section = null`).
-- `Preload(myOffers, otherOffers, myIsLastPage, otherIsLastPage)` — **nhận data `PRMEndowView` đã tải** để khỏi gọi API lần hai. Mang `List<EligibleOffer>` (model lõi) chứ không phải model UI, giữ nguồn sự thật ở domain.
-- `SeedOnce(preSelectedIds, myOffers, otherOffers, …)` — seed pre-select **+** preload, chỉ chạy **một lần cho cả vòng đời store**. Không có nó thì view dựng lại sẽ ghi đè `selectedIds` về bộ ban đầu (tick mới của user biến mất) và rewind `otherOffers` về trang đầu.
+- `Preload(myOffers, otherOffers, myIsLastPage, otherIsLastPage)` — nhận danh sách đã có sẵn, **không gọi API**. Mang `List<EligibleOffer>` (model lõi) chứ không phải model UI, giữ nguồn sự thật ở domain. **Luồng vào màn không còn dùng intent này** (xem [Vào màn: luôn nạp lại từ server](#vào-màn-luôn-nạp-lại-từ-server)); giữ lại cho nơi nào thật sự muốn tránh vòng mạng.
+- `SeedOnce(preSelectedIds)` — seed pre-select **+ gọi `findEligible`**, chỉ chạy **một lần cho cả vòng đời store**. Không có cờ gác thì view dựng lại sẽ ghi đè `selectedIds` về bộ ban đầu (tick mới của user biến mất) và bắn thừa một lượt `findEligible`.
 - `SetPreSelected(ids)` — seed riêng các voucher pre-select.
 - `Refresh` — làm mới.
 - `QueryChanged(keyword)` — gõ mỗi ký tự → debounce → reload server-side kèm `keyword`. Gõ trắng đã tự đi đúng đường `ClearKeyword`, native **không** cần rẽ nhánh `if keyword.isEmpty()`.
@@ -246,7 +275,9 @@ lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc 
 - `ToggleSelection(id)` — chọn/bỏ chọn một ưu đãi.
 - `SeeMoreMy` — bấm "Xem thêm/Thu gọn" nhóm của tôi.
 - `ApplyStarted` / `ApplyFinished` — native báo hai đầu của lượt validate để khoá/mở khoá nút.
+- `ApplyRejected(items)` — `validateStackableDiscounts` trả `valid = false` cho `items` (`List<RejectedOffer>`): disable tại chỗ, bỏ tick, đặt `applyMessage`, **và mở khoá nút luôn** (bao phần việc của `ApplyFinished`).
 - `ConsumeError` — xoá `errorCode` sau khi đã hiển thị.
+- `ConsumeApplyMessage` — xoá `applyMessage` sau khi đã hiển thị.
 
 ### 1.4. Lỗi và điều hướng — **không** có `Effect` riêng của màn
 
@@ -254,25 +285,36 @@ lặng trả sai khi danh sách dài hơn một trang (iOS trước đây lọc 
 
 - **Lỗi** → `errorCode` trong state, rồi `PRMEffect.ShowError` dùng chung ở `PRMStore`.
 - **Mở chi tiết** → tầng UI tự gọi `openPromotionDetail()`, vẫn gác bởi cờ `VOUCHER_DETAIL`.
-- **Áp dụng** → validate chạy ở `EndowStore` của widget; màn này chỉ báo `ApplyStarted`/`ApplyFinished`.
+- **Áp dụng** → validate chạy ở `EndowStore` của widget; màn này báo `ApplyStarted` rồi nhận lại kết
+  cục bằng `ApplyFinished` / `ApplyRejected`.
 
 ---
 
 ## 2. Luồng apply (validate nằm ở `EndowStore`)
 
 ```
-User bấm "Áp dụng" → Action.ValidateAndApply
-  ViewModel: lọc offers theo store.selectedIds → sendEffect(ApplySelectedOffers(offers))
-Fragment: onApplySelectedOffers(offers) { errorCode -> ... }
-        → PRMEndowView.applySelectedOffers(offers, onSettled)
-        → PRMEndowViewModel.validateAndApply(offers) { state -> onSettled(state.errorCode) }
+User bấm "Áp dụng"
+Fragment/VC: state.selectedOffers() → onApplySelectedOffers(offers) { outcome -> ... }
+        → PRMEndowView.applySelectedOffers(offers, onSettled)     (iOS: vc.onApplyVoucher)
+        → EndowViewModel.validateAndApply(offers)
         → EndowStore: isValidating=true → validateStackableDiscounts → isValidating=false
-  errorCode != null → showErrorDialog(mapPromotionError(code)) — **popup**, **Ở LẠI** màn chọn (không áp)
-  errorCode == null → goBack() (đóng màn; widget đã cập nhật qua state)
+                      → EndowApplyOutcome
+
+  Applied        → goBack() / pop()          (widget đã mang bộ discount mới)
+  Rejected(items)→ dispatch(ApplyRejected)   Ở LẠI + disable ưu đãi + popup câu của server
+  Failed(code)   → dispatch(ApplyFinished)   Ở LẠI + popup mapPromotionError(code)
 ```
 
-> **Màn chỉ đóng khi validate xong và không lỗi** — đối xứng `PromotionSDKImpl.openChoosePromotion`
-> bên iOS (completion của `endowVM.validateAndApply`).
+`EndowStore.validateAndApply` trả **`EndowApplyOutcome`** (`Applied` / `Rejected(items)` /
+`Failed(errorCode)`), không phải `EndowState`. Trước đây nó trả state và nơi gọi chỉ đọc được
+`errorCode`, tức chỉ phân biệt nổi "mạng hỏng" với "mọi thứ khác" — nhánh **server từ chối ưu đãi**
+rơi vào cùng đường với thành công, nên màn đóng lại như đã áp xong còn widget lặng lẽ chuyển sang
+`UNAVAILABLE`: user chọn voucher rồi thấy nó gạch ngang mà không ai nói vì sao.
+
+> **Màn chỉ đóng ở nhánh `Applied`.** Điều hướng nằm ở `ChoosePromotionFragment.onApplyClicked`
+> (Android) và `PromotionSDKImpl.openChoosePromotion` (iOS — VC không giữ `host`/`navigator` nên
+> không tự pop được); phần còn lại của quyết định thì cả hai nền tảng đều nằm ở màn
+> (`onApplyClicked` ↔ `ChoosePromotionViewController.handleApplyOutcome`).
 
 ### 2.1. Chống spam nút "Áp dụng"
 
@@ -290,17 +332,83 @@ này** mà ở `EndowStore` của widget. Store màn Chọn chỉ giữ cờ.
 | | Android | iOS |
 |---|---|---|
 | Bắn `ApplyStarted` | `ChoosePromotionFragment.onApplyClicked` | `ChoosePromotionViewController.didTapApplyButton` |
-| Bắn `ApplyFinished` | callback `onSettled` của `PRMEndowView.applySelectedOffers` | closure `onSettled` truyền qua `vc.onApplyVoucher` |
+| Bắn `ApplyFinished` / `ApplyRejected` | callback `onSettled` của `PRMEndowView.applySelectedOffers` | closure kết cục truyền qua `vc.onApplyVoucher` → `handleApplyOutcome` |
 | Chặn tức thời | `if (viewModel.state.value.isApplying) return` | `guard !viewModel.currentState.isApplying` |
 
 Hai chỗ dễ làm hỏng:
 
-1. **Quên `ApplyFinished` ở một nhánh** → nút khoá vĩnh viễn, user phải thoát màn. Mọi đường ra đều
-   phải gọi: `applySelectedOffers` bên Android gọi `onSettled` cả khi widget đã detach;
-   `PromotionSDKImpl` bên iOS gọi `onSettled()` cả trong nhánh `guard let self` hỏng.
+1. **Quên mở khoá ở một nhánh** → nút khoá vĩnh viễn, user phải thoát màn. Mọi đường ra đều phải
+   gọi closure kết cục: `applySelectedOffers` bên Android gọi nó cả khi widget đã detach
+   (`EndowApplyOutcome.Failed(GENERAL)`); `PromotionSDKImpl` bên iOS gọi nó cả trong nhánh
+   `guard let self` hỏng. Nhánh `Rejected` **không** cần bắn thêm `ApplyFinished` — `ApplyRejected`
+   đã hạ `isApplying` trong cùng một lượt cập nhật state.
 2. **Chỉ dựa vào `isEnabled`/`alpha` của nút.** Cả hai nền tảng render nút từ state phát ra ở lượt
    sau (Android collect `StateFlow`, iOS `watchState`), nên vẫn hở một khung hình cho cú chạm thứ
    hai. Vì vậy handler đọc thẳng state đồng bộ (`state.value` / `currentState`) rồi mới chạy tiếp.
+
+### 2.2. Server từ chối ưu đãi → disable tại chỗ
+
+`validateStackableDiscounts` trả `valid = false` cho ưu đãi đang chọn thì **không áp gì cả**: widget
+giữ nguyên bộ discount cũ, màn chọn ở lại và ưu đãi đó bị khoá tại chỗ.
+
+Bốn việc xảy ra trong **một lượt cập nhật state** (`ChoosePromotionStore.onApplyRejected`) — tách ra
+là màn vẽ một khung hình có card đã mờ mà vẫn còn tick:
+
+1. Nhập **id** của `items` vào `rejectedIds` (**cộng dồn**, không thay thế — lượt trước từ chối ưu đãi
+   khác thì ưu đãi đó vẫn phải đứng ở trạng thái disable).
+2. Map lại cả hai nhóm qua `toChooseOffer` → `ChooseOffer.isUsable = false`, `isRejected = true`.
+3. **Bỏ tick** các ưu đãi vừa bị từ chối.
+4. Hạ `isApplying` + đặt `applyMessage` (câu đầu tiên không rỗng).
+
+**`rejectedIds` phải sống qua mọi lượt nạp lại**, kể cả kéo-để-tải-lại và load-more: `findEligible`
+vẫn đánh `usable = true` cho ưu đãi mà `validateDiscounts` vừa từ chối (hai API khác nhau, hai câu hỏi
+khác nhau), nên không áp lại override thì user kéo một cái là ưu đãi hỏng sáng lên chọn được. Nó chết
+theo store, tức theo màn — mở lại màn là hỏi server từ đầu.
+
+### Chỉ mờ đi — KHÔNG gắn thêm trạng thái nào
+
+Ưu đãi bị từ chối **không** được đeo nhãn "Đã hết hạn", **không** hiện dải "Chưa đủ điều kiện áp dụng",
+**không** badge "Không đủ điều kiện". Card chỉ mờ, mất ô tick, bấm không ăn — lý do đã nói ở popup
+ngay lúc bấm "Áp dụng".
+
+Dải "Chưa đủ điều kiện áp dụng" nói về **điều kiện của đơn hàng** (`findEligible` trả `usable = false`
+kèm `unmatchedRules`). Bị `validateDiscounts` từ chối là chuyện khác hẳn — đơn hàng không đổi gì — nên
+mượn dải đó là báo sai nguyên nhân.
+
+| | Android | iOS |
+|---|---|---|
+| Card mờ + ẩn tick | `voucher.isEnabled` (`ChoosePromotionMainAdapter`) | `isEnabled` / `showsCheckbox` (`MyPromotionCellViewModel`) |
+| Ẩn nút "Chi tiết" | `lnDetail.isVisible = canUse` | `buttonTitle: offer.isUsable ? .detail : nil` |
+| Dải "Chưa đủ điều kiện" | `showsIneligibleWarning` = `!source.usable` → **false** ở ca này | như Android |
+| Badge trạng thái | `txtExpired.isVisible = !canUse && !voucher.isRejected` | tự đúng — `MyPromotionCell` suy nhãn theo `voucher.displayState()`, tức theo `usable` của **server** (vẫn `true`) |
+| Popup | `showApplyMessageIfAny(state)` trong state collector → `showErrorDialog` | `showApplyMessageIfAny(_:)` cuối `render(_:)` → `showErrorDialog` |
+
+> ⚠️ **Nút "Chi tiết" là chỗ iOS từng hở.** `MyPromotionCell` bỏ nút ở hai nhánh `.expired` /
+> `.ineligible`, nhưng ưu đãi bị validate từ chối rơi vào nhánh `.usable` (server vẫn đánh
+> `usable = true`) nên nút ở lại — card mờ mà vẫn bấm vào "Chi tiết" được, trong khi Android đã ẩn.
+> `PromotionCardView` chỉ chặn tap lên **card** (`toggleCheckbox` có `guard !model.isDisabled`),
+> không chặn tap lên nút. Vì vậy `buttonTitle` phải tự tắt theo `offer.isUsable`.
+
+> ⚠️ **Hai nền tảng cần lượng code khác nhau ở dòng "Badge trạng thái"** và đó không phải lệch parity:
+> badge bên Android bật theo `!isEnabled` (cờ **của client**, đã gồm cả reject) nên phải thêm vế
+> `!isRejected`; badge bên iOS suy từ `displayState()` của **server** nên không thấy reject và tự
+> đúng. Vì vậy `MyVoucherListItem` bên Android có thêm field `isRejected`, iOS thì không.
+
+### Câu báo lấy nguyên văn từ server
+
+`ValidateDiscountsResult.reasonFor(objectId)` bóc từ `data` của response: ưu tiên
+`discountDetails[].validationMessages` (cấp dòng), thiếu thì lùi về `businessRuleViolations` (cấp đơn).
+Đây là lời giải thích **nghiệp vụ** ("Voucher không áp dụng cho đơn này") mà chỉ server biết — cho nó
+đi qua `mapPromotionError` / `PromotionUIStrings.errorMessage` là vứt đúng thứ user cần. Server không
+kèm câu nào (`message` rỗng) thì mới lùi về câu lỗi chung.
+
+State **không giữ** câu này theo từng item (chỉ `rejectedIds`): nó dùng đúng một lần cho popup, giữ
+lại là mời gọi đem ra hiển thị lên card.
+
+> Hiện chỉ làm cho **chế độ chọn đơn** (`isMultiSelection = false`, mặc định). Chế độ chọn nhiều sẽ
+> cần cách gom nhiều câu từ chối vào một popup — `onApplyRejected` đang lấy câu đầu tiên không rỗng.
+
+---
 
 - Use case: `ValidateStackableDiscountsUseCase` (Domain) → repository → API, gọi từ `EndowStore`.
 - `objectId` gửi lên là `EligibleOffer.id`: `voucherId` nếu khách đã sở hữu, ngược lại `campaignId`.
@@ -319,7 +427,7 @@ Mọi **quyết định** đều lấy từ `ChooseOffer` do store dựng — na
 | **Hiện dải "Chưa đủ điều kiện áp dụng"** | `ChooseOffer.showsIneligibleWarning()` = `!source.usable` — **chỉ cờ của server** | `MyVoucherListItem.showsIneligibleWarning` → `ctlNotEnoughApplyVoucher` + `imgCircleNotEnoughApplyVoucher` | `MyPromotionCellViewModel.showsIneligibleWarning` → `warningView.isHidden` |
 | Lý do không đủ điều kiện | `EligibleOffer.unmatchedRules.first`, dự phòng "Không đủ điều kiện" | `displayStatusLabel` → `txtExpired` | `stateText` |
 | **Hết hạn** | `ChooseOffer.isExpired` (quá `expireDate`) — **kéo `isUsable` = false**, nhưng **không** kéo dải | nhãn "Đã hết hạn" (`prm_status_expired`) đè `displayStatusLabel` | `stateText: .expired` truyền từ `buildSections()` |
-| Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate`, lùi về `ExpiryWarning.lastKnownDays` ở luồng preload) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
+| Sắp hết hạn | `ChooseOffer.expiringInDays` (ngưỡng `expireWarningDate` từ response, lùi về `ExpiryWarning.lastKnownDays` ở nhánh `Preload`) | "HSD còn X ngày" (màu cam `#F47527`), dự phòng "HSD: dd/MM/yyyy" (màu mặc định), không có HSD → "HSD: Không hết hạn" | như trên |
 | Highlight từ khoá | `state.keyword.trim()` | `toHighlightedSpannable` | `PromotionCardModel.highlightKeyword` |
 
 ### 3.1. Dải "Chưa đủ điều kiện áp dụng" phải **luồn xuống dưới card**
@@ -401,11 +509,12 @@ danh sách khác nhau, thiếu nó thì widget giữ nguyên kết quả của d
 
 > **Hai điểm từng sai, đừng làm lại:**
 >
-> 1. **Ngưỡng "sắp hết hạn" chỉ có ở response danh sách.** Luồng THƯỜNG của màn này là nhận preload
->    từ widget — không có response, nên `state.expireWarningDate` vẫn là default `null` và
->    `expiringInDays` ra `null` cho mọi item: dòng "HSD còn X ngày" **không bao giờ hiện**. Nay
->    `EndowStore.loadInitial` gọi `ExpiryWarning.remember(...)` khi nạp widget, và `toChooseOffer`
->    lùi về `ExpiryWarning.lastKnownDays`. Sửa một trong hai chỗ là chưa đủ.
+> 1. **Ngưỡng "sắp hết hạn" chỉ có ở response danh sách.** Hồi màn này còn nhận preload từ widget thì
+>    không có response nào để lấy ngưỡng, nên `state.expireWarningDate` vẫn là default `null` và
+>    `expiringInDays` ra `null` cho mọi item: dòng "HSD còn X ngày" **không bao giờ hiện**. Nay màn tự
+>    gọi `findEligible` nên có ngưỡng thật; cơ chế lùi vẫn giữ (`EndowStore.loadInitial` gọi
+>    `ExpiryWarning.remember(...)`, `toChooseOffer` lùi về `ExpiryWarning.lastKnownDays`) cho nhánh
+>    `Preload` và cho khung hình đầu trước khi response về. Sửa một trong hai chỗ là chưa đủ.
 > 2. **Hết hạn ≠ `usable = false`.** `EligibleOffer.usable` chỉ phản ánh `displayMode = "DISABLED"`
 >    của server; ưu đãi quá hạn mà server chưa đánh cờ thì trước đây vẫn sáng và tick chọn được —
 >    lệch "Ưu đãi của tôi", nơi `VoucherStatus.EXPIRED` cho `isUsable = false`. Nay `toChooseOffer`
@@ -427,7 +536,10 @@ danh sách khác nhau, thiếu nó thì widget giữ nguyên kết quả của d
 ## 5. Tái sử dụng
 
 - Dùng lại `MyVoucherListItem`, `TabItem` từ feature **My Promotion** (không định nghĩa lại model voucher).
-- `PreloadVouchers` là tối ưu quan trọng: dữ liệu được nạp ở `PRMEndowView` rồi truyền sang để **tránh double API call**.
+- Dùng lại `RejectedOffer` (`presentation/common`) làm cầu giữa `EndowStore` và store màn này — không
+  định nghĩa hai kiểu "ưu đãi bị từ chối" ở hai nơi.
+- **Tối ưu `PreloadVouchers` đã bỏ** khỏi đường vào màn: nó tiết kiệm một request nhưng đánh đổi bằng
+  dữ liệu cũ ở màn đụng tiền. Xem [Vào màn: luôn nạp lại từ server](#vào-màn-luôn-nạp-lại-từ-server).
 
 ---
 
@@ -435,4 +547,7 @@ danh sách khác nhau, thiếu nó thì widget giữ nguyên kết quả của d
 
 - Hai danh sách (mine/other) có phân trang độc lập — giữ tách biệt `page` và `otherPage`.
 - Mọi thay đổi cấu trúc request stackable discount → đồng bộ với `data/dto/stackablediscount/` và `NetworkingGuide.md`.
+- Thêm nhánh kết cục mới cho `EndowApplyOutcome` → **phải** cập nhật cả `onApplyClicked` (Android) lẫn
+  `handleApplyOutcome` (iOS): `when` bên Kotlin exhaustive nên sẽ báo lỗi biên dịch, còn `as?` bên
+  Swift thì **im lặng rơi vào nhánh cuối** — đó là chỗ hai bên dễ lệch nhất.
 - Liên quan: [EndowView.md](./EndowView.md), [MyPromotion.md](./MyPromotion.md).

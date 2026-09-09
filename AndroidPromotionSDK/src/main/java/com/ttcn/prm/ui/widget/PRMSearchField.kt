@@ -72,7 +72,7 @@ internal class PRMSearchField @JvmOverloads constructor(
             field = value
             if (padding != 0) {
                 viewBinding.searchInput.setPadding(
-                    resources.getDimension(com.intuit.sdp.R.dimen._30sdp).toInt(),
+                    resources.getDimension(R.dimen.prm_30sdp).toInt(),
                     padding,
                     0,
                     padding
@@ -170,7 +170,7 @@ internal class PRMSearchField @JvmOverloads constructor(
                     background = currentBackground
                 }
                 val leftPadding =
-                    iconSize + 2 * resources.getDimension(com.intuit.sdp.R.dimen._6sdp).toInt()
+                    iconSize + 2 * resources.getDimension(R.dimen.prm_6sdp).toInt()
                 val rightPadding = viewBinding.buttonClear.layoutParams.width
                 setPadding(leftPadding, paddingTop, rightPadding, paddingBottom)
             }

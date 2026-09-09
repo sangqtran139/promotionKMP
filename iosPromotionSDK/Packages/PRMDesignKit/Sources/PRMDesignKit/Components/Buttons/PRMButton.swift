@@ -207,39 +207,37 @@ extension PRMButton {
                 layer.borderColor = Colors.tokenViettelPayRed100.cgColor
                 layer.borderWidth = Sizing.tokenSizing01
                 clipsToBounds = true
-                if shadowView != nil {
-                    shadowView!.removeFromSuperview()
-                }
-                if gradientView != nil {
-                    gradientView!.removeFromSuperview()
-                }
+                shadowView?.removeFromSuperview()
+                gradientView?.removeFromSuperview()
             } else {
                 backgroundColor = .clear
-                if shadowView == nil {
-                    shadowView = self.getShadowView()
-                }
-                addSubview(shadowView!)
-                shadowView!.pinEdges(to: self)
-                shadowView!.cornerRadius = maskRadius
+                // Buộc vào biến `let` ngay sau khi dựng, rồi dùng biến đó — thay cho `x!` lặp lại
+                // sau một `if x == nil`. Cùng kết quả, nhưng bỏ được 15 chỗ mà compiler không còn
+                // bảo vệ: chỉ cần ai đó chèn một dòng gán `shadowView = nil` vào giữa khối là mọi
+                // dòng `!` phía dưới thành crash lúc chạy.
+                let shadow = shadowView ?? getShadowView()
+                shadowView = shadow
+                addSubview(shadow)
+                shadow.pinEdges(to: self)
+                shadow.cornerRadius = maskRadius
                 // Theme: override màu đổ bóng nếu host cấu hình.
                 if let shadowColor = themeToken?.shadowColor {
-                    var shadow = shadowView!.shadow
-                    shadow.color = shadowColor
-                    shadowView!.shadow = shadow
+                    var config = shadow.shadow
+                    config.color = shadowColor
+                    shadow.shadow = config
                 }
-                
-                if gradientView == nil {
-                    gradientView = PRMPassThroughView()
-                }
-                addSubview(gradientView!)
-                gradientView!.makeAnchor { make in make.edges(to: self) }
-                gradientView!.backgroundColor = .white
-                gradientView!.layer.cornerRadius = maskRadius
-                sendSubviewToBack(gradientView!)
-                sendSubviewToBack(shadowView!)
-                
-                gradientView!.clipsToBounds = true
-                gradientView!.layer.insertSublayer(gradientLayer, at: 0)
+
+                let gradient = gradientView ?? PRMPassThroughView()
+                gradientView = gradient
+                addSubview(gradient)
+                gradient.makeAnchor { make in make.edges(to: self) }
+                gradient.backgroundColor = .white
+                gradient.layer.cornerRadius = maskRadius
+                sendSubviewToBack(gradient)
+                sendSubviewToBack(shadow)
+
+                gradient.clipsToBounds = true
+                gradient.layer.insertSublayer(gradientLayer, at: 0)
             }
         }
     }
@@ -247,17 +245,14 @@ extension PRMButton {
     private func setupImageViewLoading(isFirstTime: Bool = false) {
         if !isLoading {
             isUserInteractionEnabled = true
-            if imageViewLoading != nil {
-                imageViewLoading!.removeFromSuperview()
-            }
+            imageViewLoading?.removeFromSuperview()
             return
         }
-        if imageViewLoading == nil {
-            imageViewLoading = UIImageView()
-        }
+        let loadingView = imageViewLoading ?? UIImageView()
+        imageViewLoading = loadingView
         isUserInteractionEnabled = false
-        addSubview(imageViewLoading!)
-        imageViewLoading!.backgroundColor = .clear
+        addSubview(loadingView)
+        loadingView.backgroundColor = .clear
         var height = Sizing.tokenSizing16
         switch size {
             
@@ -274,14 +269,14 @@ extension PRMButton {
             height = Sizing.tokenSizing32
         }
         if isFirstTime {
-            imageViewLoading!.makeAnchor { make in
+            loadingView.makeAnchor { make in
                 make.center(in: self)
                     .size(CGSize(width: height, height: height))
             }
         } else {
-            imageViewLoading!.updateSizeConstraints(CGSize(width: height, height: height))
+            loadingView.updateSizeConstraints(CGSize(width: height, height: height))
         }
-        imageViewLoading!.image = imageLoading
+        loadingView.image = imageLoading
         loadingState()
     }
     

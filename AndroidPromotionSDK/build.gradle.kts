@@ -22,13 +22,31 @@ group = sdkGroup
 version = sdkVersion
 
 android {
-    // Giữ đúng namespace của SDK gốc: `R` và `databinding.*` sinh ra ở com.ttcn.promotionsdk.*
+    // `R`, `BuildConfig` và `databinding.*` sinh ra ở **com.ttcn.prm** — đúng bằng giá trị dưới đây.
+    // Comment cũ ghi `com.ttcn.promotionsdk.*`; đó là namespace của module LÕI (`:promotionLogic`),
+    // không phải của module này. Ai đọc rồi đi tìm `com.ttcn.promotionsdk.R` sẽ không thấy gì.
     namespace = "com.ttcn.prm"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    // Rule ở `lint.xml` cạnh file này. `checkDependencies = false`: chỉ soi module này, không lôi
+    // `promotionLogic` (Kotlin thuần, không có resource) vào.
+    lint {
+        lintConfig = file("lint.xml")
+        abortOnError = true
+        // Bật sau khi hạ hết warning còn lại — bật ngay thì phải kèm baseline, mà baseline là chỗ
+        // vi phạm đi vào rồi nằm đó mãi.
+        // warningsAsErrors = true
+    }
+
     buildFeatures {
-        // SDK gốc dùng cả hai: layout bọc `<layout>` sinh binding kiểu Data Binding.
-        dataBinding = true
+        // `dataBinding` đã TẮT. 20/24 layout từng bọc thẻ `<layout>` — thứ bắt trình biên dịch Data
+        // Binding xử lý cả 20 file — nhưng **không file nào có `<data>`/`<variable>`** và không chỗ
+        // nào trong Kotlin dùng `DataBindingUtil`/`ViewDataBinding`. Toàn bộ code đi qua View
+        // Binding (`PrmXxxBinding.inflate`). Tức là trả phí biên dịch cho một tính năng không dùng.
+        //
+        // Thứ tự bắt buộc khi gỡ: bỏ thẻ `<layout>` ở 20 file TRƯỚC, rồi mới tắt cờ này. Tắt trước
+        // là 20 file thành XML không hợp lệ.
+        dataBinding = false
         viewBinding = true
         buildConfig = true
     }
@@ -94,20 +112,41 @@ dependencies {
     implementation(projects.promotionLogic)
 
     implementation(libs.kotlinx.coroutines.core)
-    implementation(libs.androidx.appcompat)
+
+    // ─── `api` vì type nằm trong CHỮ KÝ PUBLIC ────────────────────────────────────────────
+    //
+    // `implementation` đặt dependency vào scope **runtime** trong metadata, nên host KHÔNG thấy nó
+    // lúc biên dịch. Với hai artifact dưới đây thì host bắt buộc phải thấy:
+    //
+    //  - `fragment`: `PromotionSDK.openMyPromotion(activity: FragmentActivity)` và 5 hàm khác nhận
+    //    `FragmentActivity`. Host không có nó trên compile classpath thì không gọi được hàm nào.
+    //  - `constraintlayout`: `PRMEndowView : ConstraintLayout`. Host đặt widget này vào layout XML
+    //    **và** tham chiếu nó trong code; compiler cần cả chuỗi supertype để resolve member.
+    //
+    // Hệ quả trước khi sửa: host phải tự đoán ra và tự khai lại — đúng thứ `api` sinh ra để tránh.
+    // Xem `docs/android/Distribution.md`.
+    api(libs.androidx.fragment.ktx)
+    api(libs.androidx.constraintlayout)
+
+    // ─── `implementation` — chỉ dùng bên trong, host không thấy ───────────────────────────
+    //
     // Không khai core-ktx: bản 1.19.0 trong catalog đòi AGP 9.1.0, còn project đang ở 9.0.1.
     // appcompat + fragment-ktx đã kéo androidx.core về ở version tương thích.
-    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.material)
     implementation(libs.glide)
     implementation(libs.shimmer)
-    implementation(libs.sdp.android)
-    implementation(libs.timber)
+    // `sdp-android` đã GỠ. Resource của thư viện Android merge thẳng vào app host, nên nó đổ
+    // ~600 dimens × 29 bucket vào `R` của host — tên `_1sdp`, `_2sdp`… không prefix, không
+    // namespace; host cũng dùng sdp mà khác version là xung đột, host không dùng thì vẫn phải mang.
+    //
+    // Thay bằng 55 giá trị SDK thật sự dùng, sinh vào `res/values-sw*/prm_sdp.xml` với tên
+    // `prm_Xsdp`. Giữ nguyên giá trị theo TỪNG BUCKET, không quy về dp cố định — sdp là "scalable
+    // dp", thay bằng số cứng là layout đổi trên tablet và máy màn nhỏ.
     // Theme của host truyền vào dạng JSON và được parse ở tầng UI (PromotionThemeJson).
     implementation(libs.gson)
 

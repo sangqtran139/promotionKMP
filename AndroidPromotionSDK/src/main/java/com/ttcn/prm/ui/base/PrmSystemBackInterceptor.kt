@@ -4,7 +4,7 @@ import android.view.KeyEvent
 import android.view.Window
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
-import timber.log.Timber
+import com.ttcn.prm.ui.utils.PRMLog
 
 /**
  * Chặn back **hệ thống** hộ một màn SDK. Tách khỏi [PRMBaseFragment] để base chỉ còn 3 dòng gọi vào
@@ -34,13 +34,13 @@ internal class PrmSystemBackInterceptor(private val handleBack: () -> Boolean) {
         val dispatcher = fragment.requireActivity().onBackPressedDispatcher
         dispatcher.addCallback(fragment.viewLifecycleOwner) {
             if (handleBack()) {
-                Timber.tag(TAG).d("[$screen] back qua dispatcher -> SDK đóng 1 màn")
+                PRMLog.d(TAG, "[$screen] back qua dispatcher -> SDK đóng 1 màn")
                 return@addCallback
             }
             // SDK hết màn để đóng -> nhường host. Phải tự tắt TRƯỚC khi gọi lại dispatcher, nếu không
             // nó chọn đúng callback này (vẫn đang enabled) -> đệ quy vô hạn. Bật lại ngay sau đó:
             // màn SDK vẫn còn sống thì vẫn phải chặn lần back kế tiếp.
-            Timber.tag(TAG).d("[$screen] back qua dispatcher -> SDK không còn màn, nhường host")
+            PRMLog.d(TAG, "[$screen] back qua dispatcher -> SDK không còn màn, nhường host")
             isEnabled = false
             dispatcher.onBackPressed()
             if (fragment.isAdded) isEnabled = true

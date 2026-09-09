@@ -14,8 +14,8 @@
             <item
                 android:drawable="@drawable/prm_ic_tick_white"
                 android:gravity="center"
-                android:width="@dimen/_8sdp"
-                android:height="@dimen/_5sdp" />
+                android:width="@dimen/prm_8sdp"
+                android:height="@dimen/prm_5sdp" />
         </layer-list>
 
     </item>

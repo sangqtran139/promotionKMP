@@ -209,6 +209,10 @@ final class DemoHeadlessViewModel {
         case .timeout:         return "timeout"
         case .parseFailed:     return "parseFailed"
         case .featureDisabled: return "featureDisabled"
+        // Hai case mới: lỗi NGHIỆP VỤ của server (trước đây bị nhét vào `.networkFailure` với
+        // `message = errorCode`), và ca gọi `api` trước `initialize` (trước đây crash app).
+        case .businessRule(let code, _): return "businessRule(\(code))"
+        case .notInitialized:  return "notInitialized"
         case .unknown:         return "unknown"
         }
     }

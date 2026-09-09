@@ -41,11 +41,21 @@ Lịch sử thay đổi: [`CHANGELOG.md`](./CHANGELOG.md). Quy tắc cho AI agen
 
 ## Chạy app demo
 
+App demo build theo **môi trường** — `staging`, `uat`, `product` — chọn lúc build, không phải lúc chạy:
+
 ```bash
-./gradlew :androidApp:assembleDebug     # Android
+./gradlew :androidApp:assembleStagingDebug       # hoặc assembleUatDebug / assembleProductDebug
+./gradlew :androidApp:installProductDebug        # build + cài luôn
+./scripts/build-android.sh local --env product   # publish SDK vào ~/.m2 rồi build đúng môi trường đó
 ```
 
-iOS: mở [`iosApp/`](./iosApp) bằng Xcode rồi run.
+Trong Android Studio thì đổi ở panel **Build Variants**; mặc định là `stagingDebug` (flavor `staging`
+khai `isDefault = true` — bỏ dòng đó là AGP rơi về flavor đầu theo alphabet, tức **`product`**). Tên
+hiện dưới icon nói rõ bản nào: "Promotion SDK (STG)" / "(UAT)" / "(PRODUCT)". URL từng môi trường khai ở khối `productFlavors` trong
+[`androidApp/build.gradle.kts`](./androidApp/build.gradle.kts).
+
+iOS: mở [`iosApp/`](./iosApp) bằng Xcode, chọn scheme theo môi trường
+(`iosApp-Staging` / `iosApp-Uat` / `iosApp-Product`) rồi run.
 
 ## Test
 

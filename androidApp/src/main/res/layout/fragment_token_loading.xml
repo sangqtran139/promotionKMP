@@ -1,110 +1,201 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    Bọc ScrollView: màn nay có 3 ô nhập (số điện thoại / PIN / OTP) + 2 nút bên dưới logo, và bàn
+    phím số che mất gần nửa màn khi đang gõ. Không cuộn được thì trên máy màn nhỏ ô OTP nằm dưới
+    bàn phím, không có cách nào chạm tới.
+
+    `fillViewport=true` để nội dung ngắn hơn màn vẫn giãn kín nền trắng thay vì để lộ nền window.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/demo_tokenWhite">
+    android:background="@color/demo_tokenWhite"
+    android:fillViewport="true">
 
-    <ImageView
-        android:id="@+id/ivLogo"
-        android:layout_width="220dp"
-        android:layout_height="220dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        android:src="@drawable/app_logo"
-        app:layout_constraintBottom_toTopOf="@+id/progressBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.38"
-        app:layout_constraintVertical_chainStyle="packed"
-        tools:ignore="ContentDescription" />
-
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/progressBar"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="48dp"
-        android:layout_marginTop="28dp"
-        android:layout_marginEnd="48dp"
-        android:indeterminate="true"
-        app:indicatorColor="@color/demo_colorPrimary"
-        app:layout_constraintBottom_toTopOf="@+id/tvStatus"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ivLogo"
-        app:trackColor="@color/demo_tokenRed10"
-        app:trackCornerRadius="4dp"
-        app:trackThickness="4dp" />
+        android:paddingBottom="32dp">
 
-    <TextView
-        android:id="@+id/tvStatus"
-        style="@style/DemoFontRegular14"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:gravity="center"
-        android:text="Đang lấy token đăng nhập...."
-        android:textColor="@color/demo_tokenDark60"
-        app:layout_constraintBottom_toTopOf="@+id/btnRetry"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+        <!--
+            Logo nhỏ hơn bản cũ (220dp): phải nhường chỗ cho 3 ô nhập mới. Vẫn là thứ đầu tiên nhìn
+            thấy nên không bỏ hẳn.
+        -->
+        <ImageView
+            android:id="@+id/ivLogo"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_marginTop="24dp"
+            android:adjustViewBounds="true"
+            android:scaleType="fitCenter"
+            android:src="@drawable/app_logo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="ContentDescription" />
 
-    <!--
-        Ô nhập OTP. Ẩn cho tới khi server đã gửi mã (bước 1 xong) — trước đó không có gì để nhập.
-        `inputType=number` + `autofillHints=smsOtpCode` để bàn phím số bật sẵn và Android gợi ý mã
-        vừa nhận từ tin nhắn.
-    -->
-    <EditText
-        android:id="@+id/edtOtp"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="16dp"
-        android:autofillHints="smsOtpCode"
-        android:gravity="center"
-        android:hint="Nhập mã OTP"
-        android:importantForAutofill="yes"
-        android:inputType="number"
-        android:maxLength="8"
-        android:textColor="@color/demo_tokenDark100"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvStatus" />
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="48dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="48dp"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorColor="@color/demo_colorPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ivLogo"
+            app:trackColor="@color/demo_tokenRed10"
+            app:trackCornerRadius="4dp"
+            app:trackThickness="4dp" />
 
-    <!--
-        Nút gọi API lần 2. Tách khỏi btnRetry để LUÔN có đường xác nhận OTP, kể cả khi bước 1 vừa
-        hỏng — trước đây ô và nút cùng bị ẩn ở nhánh lỗi nên không còn thao tác nào.
-    -->
-    <Button
-        android:id="@+id/btnConfirmOtp"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="48dp"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/demo_button_gradient_normal"
-        android:text="Xác nhận OTP"
-        android:textColor="@color/demo_tokenWhite"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/edtOtp" />
+        <TextView
+            android:id="@+id/tvStatus"
+            style="@style/DemoFontRegular14"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:text="Nhập số điện thoại và mã PIN rồi bấm Gửi OTP"
+            android:textColor="@color/demo_tokenDark60"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/progressBar" />
 
-    <Button
-        android:id="@+id/btnRetry"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:background="@drawable/demo_button_gradient_normal"
-        android:paddingLeft="32dp"
-        android:paddingRight="32dp"
-        android:text="Thử lại"
-        android:textColor="@color/demo_tokenWhite"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/edtOtp" />
+        <!--
+            Cả ba ô dùng `TextInputLayout` (Material3, OutlinedBox) chứ không phải `EditText` trần:
+            nút con mắt hiện/ẩn PIN là `app:endIconMode="password_toggle"` **của TextInputLayout** —
+            EditText trần không có, phải tự dựng ImageButton + tự lật `inputType`. Đã dùng cho một
+            ô thì dùng cho cả ba, nếu không một ô có khung viền còn hai ô kia gạch chân.
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+            Id vẫn nằm trên `TextInputEditText` bên trong (`edtMsisdn`/`edtPin`/`edtOtp`) nên code
+            Kotlin đọc `.text` như cũ, không đổi dòng nào.
+
+            `android:hint` đặt ở TextInputLayout, KHÔNG ở edit text con — để ở con thì hint không
+            bay lên thành nhãn nổi mà nằm đè lên chữ đang gõ.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMsisdn"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="20dp"
+            android:hint="Số điện thoại (84… hoặc 09…)"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvStatus">
+
+            <!--
+                `maxLength=15` chứ không phải 11: người dùng được gõ cả `+84 912 345 678` (có dấu
+                cách và dấu `+`), `normalizeMsisdn` lo bóc về `84912345678` trước khi gửi.
+            -->
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtMsisdn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="phoneNumber"
+                android:importantForAutofill="yes"
+                android:inputType="phone"
+                android:maxLength="15"
+                android:textColor="@color/demo_tokenDark100" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--
+            PIN. `numberPassword` để che ký tự và vẫn ra bàn phím số; `password_toggle` gắn nút con
+            mắt vào cuối ô. KHÔNG lưu lại giá trị này — xem `DemoLoginPrefs`.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilPin"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="12dp"
+            android:hint="Mã PIN"
+            app:endIconMode="password_toggle"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilMsisdn">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtPin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="password"
+                android:importantForAutofill="no"
+                android:inputType="numberPassword"
+                android:maxLength="6"
+                android:textColor="@color/demo_tokenDark100" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--
+            Bước 1. Giữ id `btnRetry` (chữ đổi giữa "Gửi OTP" / "Gửi lại OTP" theo trạng thái) —
+            KHÔNG còn `visibility=gone` lúc mở màn: giờ người dùng phải chủ động bấm, màn không tự
+            gửi OTP nữa. Tự gửi thì mỗi lần mở app là một lượt OTP về số điền sẵn, và server đếm
+            số lượt không hoàn tất (quá 5 lần liên tiếp là khoá một phút).
+        -->
+        <Button
+            android:id="@+id/btnRetry"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/demo_button_gradient_normal"
+            android:text="Gửi OTP"
+            android:textColor="@color/demo_tokenWhite"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilPin" />
+
+        <!--
+            Ô nhập OTP. `autofillHints=smsOtpCode` để Android gợi ý mã vừa nhận từ tin nhắn.
+            `maxLength=4` — độ dài mã OTP của hệ thống; đối ứng `LoginService.otpLength` bên iOS.
+        -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilOtp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="20dp"
+            android:hint="Nhập mã OTP"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/btnRetry">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtOtp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:autofillHints="smsOtpCode"
+                android:importantForAutofill="yes"
+                android:inputType="number"
+                android:maxLength="4"
+                android:textColor="@color/demo_tokenDark100" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!--
+            Bước 2. Tách khỏi btnRetry để LUÔN có đường xác nhận OTP, kể cả khi bước 1 vừa hỏng —
+            trước đây ô và nút cùng bị ẩn ở nhánh lỗi nên không còn thao tác nào.
+        -->
+        <Button
+            android:id="@+id/btnConfirmOtp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="48dp"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/demo_button_gradient_normal"
+            android:text="Xác nhận OTP"
+            android:textColor="@color/demo_tokenWhite"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tilOtp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

@@ -18,6 +18,10 @@ public typealias PromotionApiResult<T> = Result<T, PromotionSDKError>
 ///
 /// Bên Android là `sealed class PromotionSDKError : Exception()`, và `errorDescription` ở đây tương
 /// ứng với `message` của `Throwable` bên đó.
+///
+/// ⚠️ **Thêm case là breaking change.** Enum này public, có associated value, và Swift không cho
+/// `@frozen` ở module thường — nên mọi `switch` đã liệt kê đủ case bên host sẽ vỡ khi SDK thêm một
+/// case. Chốt xong danh sách trước go-live; sau đó thêm case = major bump.
 public enum PromotionSDKError: Error, LocalizedError {
     /// Lỗi từ server: `code` là HTTP status nếu có, `message` là mô tả của server.
     case networkFailure(code: Int?, message: String)
@@ -28,6 +32,16 @@ public enum PromotionSDKError: Error, LocalizedError {
     case parseFailed
     /// Tính năng đang TẮT qua feature flag. Tương ứng mã nghiệp vụ `PRM_MOB_021`.
     case featureDisabled
+    /// **Lỗi nghiệp vụ của server**, không phải lỗi mạng: `code` là mã server trả (vd
+    /// `VOUCHER_EXPIRED`), `message` là câu server soạn cho người dùng — `nil` khi server không kèm.
+    ///
+    /// Trước đây nhánh này bị nhét vào `.networkFailure` với `message = errorCode`: host nhận một
+    /// "lỗi mạng" mà thật ra là rule nghiệp vụ, và **mã lỗi thô nằm đúng chỗ đáng lẽ là câu hiển thị
+    /// cho người dùng** — hiện thẳng lên UI là ra chữ `VOUCHER_EXPIRED`.
+    case businessRule(code: String, message: String?)
+    /// Gọi API khi chưa `PromotionSDK.initialize`. Trước đây ca này là `preconditionFailure` —
+    /// SDK làm **crash app của host** vì lỗi thứ tự khởi tạo của host.
+    case notInitialized
     case unknown(Error)
 
     public var errorDescription: String? {
@@ -37,6 +51,8 @@ public enum PromotionSDKError: Error, LocalizedError {
         case .timeout:                        return "Yêu cầu bị timeout, vui lòng thử lại."
         case .parseFailed:                    return "Có lỗi xảy ra với dữ liệu trả về."
         case .featureDisabled:                return "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
+        case .businessRule(_, let message):   return message ?? "Đã có lỗi xảy ra."
+        case .notInitialized:                 return "PromotionSDK chưa được khởi tạo."
         case .unknown(let error):             return error.localizedDescription
         }
     }
@@ -69,13 +85,33 @@ public extension PromotionSDKError {
     /// ```
     ///
     /// Đối ứng `PromotionSDKError.from(errorCode)` bên Android — sửa một bên thì sửa cả hai.
-    static func from(_ errorCode: String) -> PromotionSDKError {
+    /// - Parameters:
+    ///   - serverMessage: câu của server, chỉ có ở bề mặt headless. Callback của widget chỉ có mã.
+    ///   - httpStatus: HTTP status, cùng lý do.
+    static func from(_ errorCode: String,
+                     serverMessage: String? = nil,
+                     httpStatus: Int? = nil) -> PromotionSDKError {
         switch errorCode {
         case PromotionErrorCodes.shared.FEATURE_DISABLED: return .featureDisabled
         case PromotionErrorCodes.shared.TIMEOUT:          return .timeout
         case PromotionErrorCodes.shared.NO_RESULT:        return .parseFailed
-        case PromotionErrorCodes.shared.NETWORK_ERROR:    return .networkFailure(code: nil, message: "")
-        default:                                          return .networkFailure(code: nil, message: errorCode)
+        // Lùi về câu tiếng Việt của SDK khi server không nói gì: đây là case HAY XẢY RA NHẤT, và
+        // trước đây là case DUY NHẤT trả `message: ""` — host hiện `error.localizedDescription` thì
+        // ra popup trắng không chữ. Chuỗi trùng `PromotionUIStrings` để hai bề mặt (headless và UI
+        // của SDK) không nói hai câu khác nhau cho cùng một sự cố.
+        case PromotionErrorCodes.shared.NETWORK_ERROR:
+            let message = serverMessage?.trimmingCharacters(in: .whitespaces)
+            return .networkFailure(code: httpStatus,
+                                   message: (message?.isEmpty == false ? message! : networkErrorMessage))
+        // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) — KHÔNG phải lỗi mạng.
+        default:
+            let message = serverMessage?.trimmingCharacters(in: .whitespaces)
+            return .businessRule(code: errorCode, message: message?.isEmpty == false ? message : nil)
         }
+    }
+
+    /// Trùng `R.string.prm_error_network` bên Android — sửa một bên thì sửa cả hai.
+    private static var networkErrorMessage: String {
+        "Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại"
     }
 }

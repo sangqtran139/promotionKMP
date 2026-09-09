@@ -17,8 +17,10 @@ final class TokenLoadingViewController: UIViewController {
 
     // MARK: - Demo data (giả lập host cung cấp) — đối ứng `initSdk`/`updateDemoContext` bên Android
 
-    /// Base URL Promotion BFF — host cấu hình.
-    private static let baseUrl = "https://api24cdn.vtmoney.vn/uatmm"
+    /// Base URL Promotion BFF — theo **môi trường đang build** (scheme `iosApp-Staging` /
+    /// `iosApp-Uat` / `iosApp-Product`). Xem [DemoEnvironment]; đối ứng `BuildConfig.DEMO_BASE_URL`
+    /// bên `:androidApp`.
+    private static let baseUrl = DemoEnvironment.baseUrl
 
     /// Danh mục dịch vụ HOST cung cấp (cho bottom sheet "Chọn dịch vụ") — đối ứng `demoServices` bên Android.
     ///
@@ -76,6 +78,65 @@ final class TokenLoadingViewController: UIViewController {
         return b
     }()
 
+    /// Ô nhập số điện thoại. Điền sẵn số của lượt đăng nhập gần nhất ([DemoLoginStore]) — lần đầu
+    /// thì trống. Đối ứng `edtMsisdn` bên `:androidApp`.
+    private lazy var msisdnField: UITextField = {
+        let f = UITextField()
+        f.translatesAutoresizingMaskIntoConstraints = false
+        f.borderStyle = .roundedRect
+        f.textAlignment = .center
+        f.keyboardType = .phonePad
+        f.textContentType = .telephoneNumber
+        f.placeholder = "Số điện thoại (84… hoặc 09…)"
+        f.font = .systemFont(ofSize: 17)
+        return f
+    }()
+
+    /// Ô nhập PIN. `isSecureTextEntry` để che ký tự; KHÔNG lưu lại giá trị này — xem [DemoLoginStore].
+    /// Đối ứng `edtPin` bên `:androidApp`.
+    private lazy var pinField: UITextField = {
+        let f = UITextField()
+        f.translatesAutoresizingMaskIntoConstraints = false
+        f.borderStyle = .roundedRect
+        f.textAlignment = .center
+        f.keyboardType = .numberPad
+        f.isSecureTextEntry = true
+        // `.oneTimeCode` cho ô OTP thì đúng, nhưng ở ô PIN nó khiến iOS gợi ý mã SMS vào nhầm chỗ.
+        f.textContentType = .password
+        f.placeholder = "Mã PIN"
+        f.font = .systemFont(ofSize: 17)
+        // Nút con mắt hiện/ẩn PIN. Đối ứng `app:endIconMode="password_toggle"` của
+        // `TextInputLayout` bên `:androidApp` — iOS không có sẵn, phải tự gắn vào `rightView`.
+        f.rightView = self.pinRevealButton
+        f.rightViewMode = .always
+        return f
+    }()
+
+    /// Con mắt của ô PIN. `SF Symbol` đổi theo trạng thái nên người dùng biết bấm sẽ ra gì.
+    private lazy var pinRevealButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "eye.slash"), for: .normal)
+        b.tintColor = .secondaryLabel
+        // Chừa lề phải để icon không dính sát viền bo của `roundedRect`.
+        b.frame = CGRect(x: 0, y: 0, width: 40, height: 44)
+        b.addTarget(self, action: #selector(togglePinVisibility), for: .touchUpInside)
+        return b
+    }()
+
+    /// Hiện/ẩn PIN.
+    ///
+    /// Gán lại `text` sau khi lật `isSecureTextEntry` là **bắt buộc**: UIKit xoá sạch nội dung ở lần
+    /// gõ kế tiếp sau khi đổi cờ này (hành vi cũ của `UITextField`, để tránh lộ mật khẩu đã nhập).
+    /// Thiếu hai dòng đó thì bấm con mắt xong gõ tiếp là mất hết những gì đã nhập.
+    @objc private func togglePinVisibility() {
+        pinField.isSecureTextEntry.toggle()
+        let name = pinField.isSecureTextEntry ? "eye.slash" : "eye"
+        pinRevealButton.setImage(UIImage(systemName: name), for: .normal)
+        let saved = pinField.text
+        pinField.text = ""
+        pinField.text = saved
+    }
+
     /// Chạy progress bar "vô định" (UIProgressView không có chế độ indeterminate như Android).
     /// Ô nhập OTP — ẩn cho tới khi server đã gửi mã (bước 1 xong). `textContentType = .oneTimeCode`
     /// để iOS gợi ý mã vừa nhận từ tin nhắn ngay trên bàn phím.
@@ -94,6 +155,13 @@ final class TokenLoadingViewController: UIViewController {
     /// `nil` = chưa xin OTP hoặc bước 1 vừa hỏng; khác nil = đã có mã, bấm "Xác nhận OTP" là gọi
     /// bước 2 với chính `requestId` này.
     private var otpRequestId: String?
+
+    /// Bộ đăng nhập của lượt xin OTP **đang chờ**, chụp lại đúng lúc bấm "Gửi OTP".
+    ///
+    /// Không đọc lại từ ô lúc bấm "Xác nhận OTP": server gắn mã với đúng cặp msisdn+PIN đã tạo ra
+    /// `requestId`, mà giữa hai lần bấm người dùng hoàn toàn có thể sửa ô số. Gửi lệch là mất một
+    /// lượt trong hạn 5 lần sai mà không hiểu vì sao. Đối ứng `pendingCredentials` bên `:androidApp`.
+    private var pendingCredentials: (msisdn: String, pin: String)?
 
     /// Nút gọi API lần 2. Tách khỏi [retryButton] để **luôn** có đường xác nhận OTP, kể cả khi
     /// bước 1 vừa hỏng — trước đây ô và nút cùng bị ẩn ở nhánh lỗi nên không còn thao tác nào.
@@ -126,7 +194,21 @@ final class TokenLoadingViewController: UIViewController {
         view.addGestureRecognizer(
             UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         )
-        askOtp()
+
+        // Điền sẵn DUY NHẤT số của lượt gần nhất (rỗng nếu chưa từng). PIN luôn để trống:
+        // `DemoLoginStore` cố ý không lưu nó xuống đĩa, và không còn hằng demo nào để điền hộ.
+        msisdnField.text = DemoLoginStore.lastMsisdn
+        // Chặn nhập quá độ dài — UIKit không có `maxLength`, phải qua delegate.
+        pinField.delegate = self
+        otpField.delegate = self
+        statusLabel.text = "Nhập số điện thoại và mã PIN rồi bấm Gửi OTP"
+        retryButton.setTitle("Gửi OTP", for: .normal)
+        retryButton.isHidden = false
+
+        // KHÔNG tự `askOtp()` khi mở màn nữa. Số điện thoại giờ do người dùng nhập, mà tự gửi thì:
+        //  - mỗi lần mở app là một lượt OTP về số đang điền sẵn, kể cả khi định đăng nhập số khác;
+        //  - server đếm số lượt không hoàn tất, quá 5 lần liên tiếp là khoá tài khoản một phút.
+        // Đối ứng `PromotionTokenLoadingFragment.onViewCreated` bên `:androidApp`.
     }
 
     private func observeKeyboard() {
@@ -168,6 +250,8 @@ final class TokenLoadingViewController: UIViewController {
         view.addSubview(progressBar)
         view.addSubview(spinner)
         view.addSubview(statusLabel)
+        view.addSubview(msisdnField)
+        view.addSubview(pinField)
         view.addSubview(otpField)
         view.addSubview(confirmButton)
         view.addSubview(retryButton)
@@ -186,9 +270,19 @@ final class TokenLoadingViewController: UIViewController {
             statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             statusLabel.topAnchor.constraint(equalTo: progressBar.bottomAnchor, constant: 20),
 
-            otpField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
-            otpField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
-            otpField.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
+            msisdnField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 60),
+            msisdnField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -60),
+            msisdnField.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 16),
+            msisdnField.heightAnchor.constraint(equalToConstant: 44),
+
+            pinField.leadingAnchor.constraint(equalTo: msisdnField.leadingAnchor),
+            pinField.trailingAnchor.constraint(equalTo: msisdnField.trailingAnchor),
+            pinField.topAnchor.constraint(equalTo: msisdnField.bottomAnchor, constant: 10),
+            pinField.heightAnchor.constraint(equalToConstant: 44),
+
+            otpField.leadingAnchor.constraint(equalTo: msisdnField.leadingAnchor),
+            otpField.trailingAnchor.constraint(equalTo: msisdnField.trailingAnchor),
+            otpField.topAnchor.constraint(equalTo: pinField.bottomAnchor, constant: 10),
             otpField.heightAnchor.constraint(equalToConstant: 44),
 
             confirmButton.leadingAnchor.constraint(equalTo: otpField.leadingAnchor),
@@ -226,13 +320,35 @@ final class TokenLoadingViewController: UIViewController {
     /// khoá một phút). Vì vậy không tự gọi lại ở bất kỳ nhánh lỗi nào.
     /// Soi gương `askOtp()` bên `PromotionTokenLoadingFragment`.
     private func askOtp() {
-        // GIỮ `otpRequestId` cũ, không xoá: nếu server không cấp mã mới (OTP trước còn hiệu lực)
-        // thì cái đang giữ vẫn là đường duy nhất để gọi bước 2.
-        statusLabel.text = "Đang gửi OTP tới \(LoginService.shared.msisdn)"
-        setLoading(true)
+        // Gõ `09…` hay `84…` đều nhận — chuẩn hoá về dạng server đòi (`84…`) ngay tại đây, và ghi
+        // ngược lại vào ô để người dùng thấy đúng số sắp được gửi đi.
+        let msisdn = LoginService.normalizeMsisdn(msisdnField.text ?? "")
+        let pin = (pinField.text ?? "").trimmingCharacters(in: .whitespaces)
+        guard !msisdn.isEmpty, !pin.isEmpty else {
+            statusLabel.text = "Nhập đủ số điện thoại và mã PIN rồi bấm Gửi OTP"
+            return
+        }
+        msisdnField.text = msisdn
 
-        LoginService.shared.requestOtp(previousRequestId: otpRequestId) { [weak self] result in
+        // Đổi số so với lượt trước → `requestId` cũ thuộc về tài khoản khác, dùng lại là gửi OTP của
+        // người này sang phiên của người kia. Vứt đi để bước 1 xin phiên mới hẳn.
+        if pendingCredentials?.msisdn != msisdn { otpRequestId = nil }
+        pendingCredentials = (msisdn: msisdn, pin: pin)
+
+        // GIỮ `otpRequestId` cũ (cùng số), không xoá: nếu server không cấp mã mới (OTP trước còn
+        // hiệu lực) thì cái đang giữ vẫn là đường duy nhất để gọi bước 2.
+        statusLabel.text = "Đang gửi OTP tới \(msisdn)"
+        setLoading(true)
+        view.endEditing(true)
+
+        LoginService.shared.requestOtp(
+            msisdn: msisdn,
+            pin: pin,
+            previousRequestId: otpRequestId
+        ) { [weak self] result in
             guard let self else { return }
+            // Nhớ số SAU khi server nhận — số gõ sai thì không đáng điền sẵn cho lần sau.
+            if case .success = result { DemoLoginStore.lastMsisdn = msisdn }
             switch result {
             case .success(.token(let login)):
                 self.finishLogin(login)
@@ -243,7 +359,7 @@ final class TokenLoadingViewController: UIViewController {
                 self.setLoading(false)
                 self.otpField.text = ""
                 self.otpField.becomeFirstResponder()
-                self.retryButton.setTitle("Đăng nhập", for: .normal)
+                self.retryButton.setTitle("Gửi lại OTP", for: .normal)
                 self.retryButton.isHidden = false
 
             case .failure(let error):
@@ -256,7 +372,11 @@ final class TokenLoadingViewController: UIViewController {
     private func verifyOtp(requestId: String) {
         let otp = (otpField.text ?? "").trimmingCharacters(in: .whitespaces)
         guard !otp.isEmpty else {
-            statusLabel.text = "Nhập mã OTP đã nhận rồi bấm Đăng nhập"
+            statusLabel.text = "Nhập mã OTP đã nhận rồi bấm Xác nhận OTP"
+            return
+        }
+        guard let credentials = pendingCredentials else {
+            statusLabel.text = "Bấm \"Gửi OTP\" trước để server gửi mã."
             return
         }
 
@@ -264,7 +384,12 @@ final class TokenLoadingViewController: UIViewController {
         setLoading(true)
         view.endEditing(true)
 
-        LoginService.shared.submitOtp(requestId: requestId, otp: otp) { [weak self] result in
+        LoginService.shared.submitOtp(
+            requestId: requestId,
+            otp: otp,
+            msisdn: credentials.msisdn,
+            pin: credentials.pin
+        ) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let login):
@@ -276,7 +401,7 @@ final class TokenLoadingViewController: UIViewController {
                 print("[Demo] Xác thực OTP lỗi: \(error)")
                 self.statusLabel.text = Self.describe(error)
                 self.setLoading(false)
-                self.retryButton.setTitle("Đăng nhập", for: .normal)
+                self.retryButton.setTitle("Gửi lại OTP", for: .normal)
                 self.retryButton.isHidden = false
             }
         }
@@ -308,7 +433,10 @@ final class TokenLoadingViewController: UIViewController {
         // KHÔNG xoá `otpRequestId`: bước 1 hỏng không làm mã đã gửi mất hiệu lực.
         statusLabel.text = Self.describe(error)
         setLoading(false)
-        retryButton.setTitle("Gửi lại OTP", for: .normal)
+        // "Gửi lại OTP" chỉ đúng khi đã từng có mã được gửi. Từ khi PIN do người dùng nhập, bước 1
+        // còn hỏng vì sai PIN — lúc đó chưa có OTP nào để mà "gửi lại", và chữ đó khiến người dùng
+        // tưởng mã đã về máy rồi ngồi chờ tin nhắn không bao giờ tới.
+        retryButton.setTitle(otpRequestId == nil ? "Gửi OTP" : "Gửi lại OTP", for: .normal)
         retryButton.isHidden = false
     }
 
@@ -395,5 +523,29 @@ final class TokenLoadingViewController: UIViewController {
         progressTimer?.invalidate()
         progressTimer = nil
         progressBar.setProgress(completed ? 1 : 0, animated: true)
+    }
+}
+
+// MARK: - UITextFieldDelegate — giới hạn độ dài ô PIN / OTP
+
+extension TokenLoadingViewController: UITextFieldDelegate {
+
+    /// UIKit không có `maxLength` như `android:maxLength`, nên phải tự chặn ở đây.
+    ///
+    /// Tính độ dài **sau khi thay** (`replacingCharacters`) chứ không phải `text.count + string.count`:
+    /// cách sau sai ở mọi thao tác không phải gõ thêm — xoá, chọn một đoạn rồi dán đè, dán nhiều ký
+    /// tự — và sẽ chặn nhầm cả phím xoá khi ô đã đầy.
+    func textField(_ textField: UITextField,
+                   shouldChangeCharactersIn range: NSRange,
+                   replacementString string: String) -> Bool {
+        let limit: Int
+        switch textField {
+        case pinField: limit = LoginService.pinLength
+        case otpField: limit = LoginService.otpLength
+        default: return true
+        }
+        let current = textField.text ?? ""
+        guard let r = Range(range, in: current) else { return true }
+        return current.replacingCharacters(in: r, with: string).count <= limit
     }
 }

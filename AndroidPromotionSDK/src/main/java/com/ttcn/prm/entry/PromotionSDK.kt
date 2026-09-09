@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.View
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
@@ -16,6 +17,7 @@ import com.ttcn.promotionsdk.di.initialize
 import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureFlagUseCases
 import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
+import com.ttcn.prm.BuildConfig
 import com.ttcn.prm.entry.api.PromotionFeature
 import com.ttcn.prm.entry.api.PromotionFeatureFlagsSnapshot
 import com.ttcn.prm.entry.api.PromotionOrderItem
@@ -159,11 +161,14 @@ object PromotionSDK {
         PromotionThemeRegistry.configure(resolved ?: PromotionThemeStore.load())
         sdkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         // Nạp cờ tính năng từ server. `refresh()` không ném lỗi: hỏng thì giữ cache (fail-open).
-        // Nạp xong mới báo host: đây là lúc đầu tiên biết chắc SDK có được bật hay không.
-        sdkScope?.launch {
-            PromotionFeatureGate.refresh()
-            notifyAvailability()
-        }
+        //
+        // KHÔNG báo host sau khi nạp: `PromotionSDKCallback` cố ý không có sự kiện "SDK bật/tắt"
+        // (xem `docs/common/InitParity.md` §3 mục "Đã loại"). Trước đây ở đây gọi
+        // `notifyAvailability()`, mà thân hàm đó chỉ đọc `callback` + `isSdkEnabled()` rồi **không
+        // làm gì** — nên cơ chế này chưa từng phát một lần nào, ở cả hai nền tảng. Host đọc cờ qua
+        // `refreshFeatureFlags`, còn cờ chặn một điểm mở màn thì báo qua `onFeatureDisabled` của
+        // chính hàm `open…`.
+        sdkScope?.launch { PromotionFeatureGate.refresh() }
     }
 
 
@@ -194,6 +199,19 @@ object PromotionSDK {
     @JvmStatic
     fun getCallback(): PromotionSDKCallback? = callback
 
+    /**
+     * Version của SDK đang chạy, vd `"1.0.0"` — đọc được **trước** [initialize].
+     *
+     * Với support và telemetry, "app đang chạy SDK bản nào" là câu hỏi đầu tiên; nó phải trả lời
+     * được bằng một dòng code. Trước đây host phải tự biết `com.ttcn.prm.BuildConfig.SDK_VERSION` —
+     * kiến thức nội bộ, và bên iOS thì phải biết class nào để `Bundle(for:)`.
+     *
+     * Nguồn: `SDK_VERSION` trong `gradle.properties` (xem `docs/release/VersioningPolicy.md`).
+     * Đối ứng `PromotionSDK.sdkVersion` bên iOS, lấy từ `MARKETING_VERSION` — hai số giữ trùng nhau.
+     */
+    @JvmStatic
+    val sdkVersion: String get() = BuildConfig.SDK_VERSION
+
     // ─── Headless API ────────────────────────────────────────────────────────
 
     /**
@@ -210,15 +228,18 @@ object PromotionSDK {
      *
      * Dựng mới mỗi lần đọc: sau [release] + [initialize] lại, instance cũ vẫn giữ use case của đồ thị DI đã bị huỷ.
      *
-     * @throws IllegalStateException khi chưa gọi [initialize].
+     * Đọc trước [initialize] **không ném**: trả về bề mặt mà mọi hàm cho
+     * [PromotionApiResult.Failure] với [PromotionSDKError.NotInitialized]. Trước đây chỗ này
+     * `check(...)` ném [IllegalStateException] — bắt host `try/catch` quanh một property getter,
+     * trong khi mọi hàm của lớp đó vốn đã trả lỗi bằng [PromotionApiResult.Failure]. Đối ứng
+     * `PromotionSDK.api` bên iOS, nơi ca này từng làm crash thẳng app host.
      */
     @JvmStatic
     val api: PromotionSDKApi
-        get() {
-            check(PromotionContainer.isInitialized()) {
-                "PromotionSDK.initialize() must be called before api."
-            }
-            return PromotionSDKApi()
+        get() = if (PromotionContainer.isInitialized()) {
+            PromotionSDKApi()
+        } else {
+            PromotionSDKApi.notInitialized
         }
 
     // ─── Context ─────────────────────────────────────────────────────────────
@@ -303,6 +324,7 @@ object PromotionSDK {
      * View đã render có thể chỉ cập nhật khi được dựng lại (rebind/đẩy màn mới) — nên cấu hình theme
      * **một lần** lúc khởi tạo là tốt nhất.
      */
+    @MainThread
     @JvmStatic
     fun configure(theme: PromotionSDKTheme?) {
         PromotionThemeRegistry.configure(theme)
@@ -404,15 +426,6 @@ object PromotionSDK {
         }
     }
 
-    /**
-     * Báo host trạng thái công tắc tổng sau khi cờ đã được nạp xong ở [initialize].
-     * Chạy sẵn trên coroutine nền nên phải chuyển về main thread trước khi gọi callback của host.
-     */
-    private suspend fun notifyAvailability() {
-        val cb = callback ?: return
-        val enabled = isSdkEnabled()
-    }
-
     // ─── Screens ─────────────────────────────────────────────────────────────
 
     /**
@@ -446,6 +459,7 @@ object PromotionSDK {
         PRMBaseConfirmDialog.showFeatureDisabled(activity, activity.supportFragmentManager)
     }
 
+    @MainThread
     @JvmStatic
     @JvmOverloads
     fun openMyPromotion(
@@ -525,6 +539,7 @@ object PromotionSDK {
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
      */
+    @MainThread
     @JvmStatic
     @JvmOverloads
     fun openPromotionDetail(
@@ -568,15 +583,17 @@ object PromotionSDK {
      * [PromotionFeatureFlag.VOUCHER_SELECTION] (TẮT → thông báo PRM_MOB_021, không mở màn), tự chọn
      * [FragmentManager] theo [containerViewId] (xem [resolveFragmentManager]), dedup theo tag.
      *
-     * Lấy lại ưu đãi widget đã tải (khỏi gọi `findEligible` lần hai), pre-select voucher đang áp, và
-     * đẩy kết quả ngược về widget khi user bấm "Áp dụng" — xem [ChoosePromotionFragment.forEndowView].
+     * Pre-select voucher đang áp và đẩy kết quả ngược về widget khi user bấm "Áp dụng" — xem
+     * [ChoosePromotionFragment.forEndowView]. Danh sách ưu đãi thì màn **tự gọi `findEligible`** mỗi
+     * lần mở, không dùng lại bộ widget đã nạp.
      *
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
-     * @param endowView Instance widget đang hiển thị — dùng để lấy lại data đã tải + đẩy kết quả chọn.
+     * @param endowView Instance widget đang hiển thị — dùng để pre-select + nhận kết quả áp.
      * @param containerViewId Xem [openMyPromotion].
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì**. Xem [requireInitialized].
      */
+    @MainThread
     @JvmStatic
     @JvmOverloads
     fun openChoosePromotion(
@@ -613,11 +630,13 @@ object PromotionSDK {
      * Dùng `POP_BACK_STACK_INCLUSIVE` với **tên entry** chứ không pop mù entry trên cùng: nếu host đã
      * chồng màn của họ lên trên màn chi tiết, pop mù sẽ ăn nhầm màn host.
      */
+    @MainThread
     @JvmStatic
     fun closePromotionDetail(activity: FragmentActivity): Boolean =
         popSdkScreen(activity, TAG_PROMOTION_DETAIL)
 
     /** Đối ứng [closePromotionDetail] cho màn "Ưu đãi của tôi". */
+    @MainThread
     @JvmStatic
     fun closeMyPromotion(activity: FragmentActivity): Boolean =
         popSdkScreen(activity, TAG_MY_PROMOTION)

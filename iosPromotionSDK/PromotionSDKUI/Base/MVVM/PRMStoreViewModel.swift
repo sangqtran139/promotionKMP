@@ -43,6 +43,7 @@ protocol PRMStoreBridge: AnyObject {
 /// default member của interface `PRMStore`, mà Kotlin/Native chỉ đặt default member lên *protocol*
 /// chứ không lên class, và protocol thì bị erase generic → Swift không collect nổi. Ngữ nghĩa vẫn y
 /// hệt: mỗi `errorCode` đi ra đúng một lần rồi tự `ConsumeError`.
+@MainActor
 class PRMStoreViewModel<Store: PRMStoreBridge> {
 
     let store: Store
@@ -50,7 +51,12 @@ class PRMStoreViewModel<Store: PRMStoreBridge> {
     private(set) var state: Store.State {
         didSet { onState?(state) }
     }
-    var onState: ((Store.State) -> Void)? {
+
+    /// Closure `@MainActor`: [bindStore] **luôn** phát trên main thread. Trước đây điều đó chỉ nằm
+    /// trong doc comment, nên nơi nhận (vd `PromotionSDKImpl.render`) phải là hàm nonisolated dù nó
+    /// đụng UIKit — và compiler không có cách nào giữ. Đưa cam kết vào **kiểu** thì nơi nhận đánh
+    /// `@MainActor` được, và ai gán một closure chạy nền vào đây sẽ bị chặn ngay lúc biên dịch.
+    var onState: (@MainActor (Store.State) -> Void)? {
         didSet { onState?(state) }
     }
 
@@ -60,8 +66,8 @@ class PRMStoreViewModel<Store: PRMStoreBridge> {
     /// Nơi nào đọc ngay sau khi [dispatch] (hoặc cần chắc chắn là bản mới nhất) thì dùng cái này.
     var currentState: Store.State { store.currentState() }
 
-    /// Một-lần, KHÔNG replay: subscriber mới không nhận lại lỗi cũ.
-    var onEffect: ((PRMEffect) -> Void)?
+    /// Một-lần, KHÔNG replay: subscriber mới không nhận lại lỗi cũ. `@MainActor` cùng lý do với [onState].
+    var onEffect: (@MainActor (PRMEffect) -> Void)?
 
     /// Mỗi `errorCode` thành một [PRMEffect] rồi tự `ConsumeError`.
     ///
@@ -84,13 +90,23 @@ class PRMStoreViewModel<Store: PRMStoreBridge> {
     }
 
     /// Luôn gọi trên main thread (view chỉ việc render).
+    ///
+    /// Bản thân hàm chạy từ `init` (đã ở MainActor); thứ **không** ở main là closure mà `watchState`
+    /// gọi lại — nó đến từ coroutine của Kotlin (`Dispatchers.Default`). Việc hop nằm bên trong.
+    ///
+    /// `DispatchQueue.main.async` + `assumeIsolated` chứ **không** `Task { @MainActor in }`: `Task`
+    /// không bảo đảm thứ tự giữa nhiều lần phát, mà `StateFlow` là conflated — hai state tới gần nhau
+    /// mà chạy đảo thứ tự là bản cũ ghi đè bản mới. `DispatchQueue.main` giữ FIFO; `assumeIsolated`
+    /// chỉ nói với compiler điều đã đúng ở dòng trên, không thêm một nhịp hop nào.
     private func bindStore() {
         storeCancellable = store.watchState { [weak self] state in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.state = state
-                guard self.autoConsumesError else { return }
-                self.emitErrorIfNeeded(state)
+                MainActor.assumeIsolated {
+                    guard let self = self else { return }
+                    self.state = state
+                    guard self.autoConsumesError else { return }
+                    self.emitErrorIfNeeded(state)
+                }
             }
         }
     }
@@ -99,6 +115,13 @@ class PRMStoreViewModel<Store: PRMStoreBridge> {
         store.dispatch(intent: intent)
     }
 
+    /// `@MainActor` vì nó gọi `PromotionSDK.getCallback()` (bề mặt public, nay MainActor-isolated)
+    /// và đụng `onEffect` — cả hai đều là chuyện của UI.
+    ///
+    /// Không phải ràng buộc mới: hàm này **vốn đã** chỉ được gọi từ trong `DispatchQueue.main.async`
+    /// ở [bindStore]. Khác biệt là trước đây điều đó chỉ được bảo đảm bằng một dòng comment; nay
+    /// compiler giữ. Đây đúng là chỗ mà `@MainActor` ở `PromotionSDK` vừa chỉ ra.
+    @MainActor
     private func emitErrorIfNeeded(_ state: Store.State) {
         guard let code = store.errorOf(state: state) else { return }
         // 401 (map sẵn ở `Throwable.toErrorCode()`, promotionLogic) → báo host qua callback toàn

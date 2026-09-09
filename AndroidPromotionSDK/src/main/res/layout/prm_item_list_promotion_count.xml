@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <com.ttcn.prm.ui.widget.PRMTextView
-        android:id="@+id/txtCount"
-        style="@style/PRMFontSfDisplayRegular10"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/prm_circle_f4f4f4"
-        android:padding="@dimen/_3sdp"
-        android:textColor="@color/prm_color_4e4e4e"
-        tools:text="+2" />
-</layout>
+<com.ttcn.prm.ui.widget.PRMTextView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/txtCount"
+    style="@style/PRMFontSfDisplayRegular10"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/prm_circle_f4f4f4"
+    android:padding="@dimen/prm_3sdp"
+    android:textColor="@color/prm_color_4e4e4e"
+    tools:text="+2" />

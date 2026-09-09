@@ -266,12 +266,9 @@ class EndowStore(
     }
 
     /**
-     * Validate danh sách ưu đãi đã chọn (từ màn "Chọn ưu đãi") với order hiện tại rồi áp:
-     * bất kỳ item nào không hợp lệ → [EndowState.discountUnavailable] = true. Rỗng → xoá áp.
+     * Validate danh sách ưu đãi đã chọn (từ màn "Chọn ưu đãi") với order hiện tại rồi áp — **trả về
+     * kết cục của đúng lượt này** ([EndowApplyOutcome]). Rỗng → xoá áp, coi như [EndowApplyOutcome.Applied].
      * Rule diễn giải valid/discount ở domain ([ValidateDiscountsResult]) — dùng chung 2 nền tảng.
-     */
-    /**
-     * Validate + áp, **trả về state cuối** của vòng validate này.
      *
      * `suspend` chứ không phải fire-and-forget là điểm mấu chốt: trước đây `dispatch` chỉ bắn đi, nên
      * màn "Chọn ưu đãi" muốn biết kết quả phải tự dựng máy trạng thái rình `isValidating` true→false
@@ -279,43 +276,63 @@ class EndowStore(
      * `EndowViewModel` Android lẫn iOS), kèm `consumeErrorUnlessSettling` để lỗi không bị widget xoá
      * mất trước khi nơi gọi kịp đọc (`state` là StateFlow nên **conflated**).
      *
-     * Trả thẳng state thì cả ba thứ đó biến mất: nơi gọi nhận đúng kết quả của lượt mình gọi, không
-     * ai đọc nhờ dòng state chung nữa.
+     * **Chỉ áp khi TẤT CẢ đều hợp lệ.** Có item `valid = false` → [EndowApplyOutcome.Rejected] và
+     * [state] **không đổi** phần đã áp: nơi gọi ở lại màn chọn để user đổi ưu đãi khác, nên widget
+     * phía sau không được phép nhảy sang một bộ discount user chưa xác nhận. Trước đây nhánh này ghi
+     * thẳng `appliedDiscounts` + `discountUnavailable = true`, và vì hàm chỉ trả `EndowState` nên nơi
+     * gọi không phân biệt được nó với thành công — màn chọn đóng lại, widget hiện gạch ngang.
+     *
+     * `UNAVAILABLE` của widget vì thế nay chỉ còn đến từ hai đường **hợp lý**: ưu đãi đang áp hỏng
+     * giữa chừng ([revalidateAfterBudgetError]) và host tự đưa kết quả vào ([EndowIntent.SetApplied] /
+     * [EndowIntent.MarkUnavailable]).
      */
-    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowState {
+    suspend fun validateAndApply(offers: List<EligibleOffer>): EndowApplyOutcome {
         if (offers.isEmpty()) {
             _state.update { it.copy(appliedDiscounts = emptyList(), discountUnavailable = false, errorCode = null) }
-            return _state.value
+            return EndowApplyOutcome.Applied
         }
         val ctx = PromotionContainer.requestContextProvider
-        run {
-            _state.update { it.copy(isValidating = true) }
-            val request = ValidateDiscountsRequest(
-                orderId = ctx.getOrderId().orEmpty(),
-                orderValue = ctx.getOrderValue().orEmpty(),
-                items = offers.map { DiscountItemRequest(objectId = it.id, objectType = it.objectType) },
-            )
-            runCatching { validateStackableDiscountsUseCase(request) }
-                .onSuccess { result ->
-                    // Không có kết quả (HTTP 200 nhưng `data` rỗng/parse hỏng) → **báo lỗi**, KHÔNG
-                    // coi là áp thành công. Trước đây `?.let{}.orEmpty()` biến null thành list rỗng:
-                    // widget về trạng thái "chưa áp gì" còn màn "Chọn ưu đãi" đóng như thành công —
-                    // user chọn voucher xong thấy widget không đổi, không có thông báo nào.
-                    if (result == null) {
-                        _state.update { it.copy(isValidating = false, errorCode = ErrorCodes.NO_RESULT) }
-                        return@onSuccess
-                    }
-                    val details = offers.map { result.toEndowAppliedDiscount(it) }
-                    val hasInvalid = details.any { !it.valid }
-                    _state.update {
-                        it.copy(isValidating = false, appliedDiscounts = details, discountUnavailable = hasInvalid, errorCode = null)
-                    }
-                }
-                .onFailure { throwable ->
-                    _state.update { it.copy(isValidating = false, errorCode = throwable.toErrorCode()) }
-                }
+        _state.update { it.copy(isValidating = true) }
+        val request = ValidateDiscountsRequest(
+            orderId = ctx.getOrderId().orEmpty(),
+            orderValue = ctx.getOrderValue().orEmpty(),
+            items = offers.map { DiscountItemRequest(objectId = it.id, objectType = it.objectType) },
+        )
+        val result = runCatching { validateStackableDiscountsUseCase(request) }
+            .getOrElse { throwable ->
+                val code = throwable.toErrorCode()
+                _state.update { it.copy(isValidating = false, errorCode = code) }
+                return EndowApplyOutcome.Failed(code)
+            }
+
+        // Không có kết quả (HTTP 200 nhưng `data` rỗng/parse hỏng) → **báo lỗi**, KHÔNG coi là áp
+        // thành công. Trước đây `?.let{}.orEmpty()` biến null thành list rỗng: widget về trạng thái
+        // "chưa áp gì" còn màn "Chọn ưu đãi" đóng như thành công — user chọn voucher xong thấy widget
+        // không đổi, không có thông báo nào.
+        if (result == null) {
+            _state.update { it.copy(isValidating = false, errorCode = ErrorCodes.NO_RESULT) }
+            return EndowApplyOutcome.Failed(ErrorCodes.NO_RESULT)
         }
-        return _state.value
+
+        val details = offers.map { result.toEndowAppliedDiscount(it) }
+        val invalid = details.filter { !it.valid }
+        if (invalid.isNotEmpty()) {
+            // KHÔNG đụng `appliedDiscounts`/`discountUnavailable` — xem KDoc. `errorCode` cũng để
+            // nguyên `null`: đây không phải lỗi kỹ thuật, và câu giải thích đi theo `Rejected` chứ
+            // không qua bảng mã lỗi.
+            _state.update { it.copy(isValidating = false, errorCode = null) }
+            return EndowApplyOutcome.Rejected(invalid.map { it.toRejectedOffer() })
+        }
+
+        _state.update {
+            it.copy(
+                isValidating = false,
+                appliedDiscounts = details,
+                discountUnavailable = false,
+                errorCode = null,
+            )
+        }
+        return EndowApplyOutcome.Applied
     }
 
     private companion object {

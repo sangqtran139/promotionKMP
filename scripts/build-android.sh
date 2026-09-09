@@ -12,6 +12,7 @@
 #
 #   ./scripts/build-android.sh local                    # publish ~/.m2 → build APK debug
 #   ./scripts/build-android.sh local --run              # build → cài → mở app trên máy đang cắm
+#   ./scripts/build-android.sh local --env product      # app demo trỏ môi trường product (mặc định staging)
 #   ./scripts/build-android.sh local --skip-app         # chỉ publish vào ~/.m2
 #   ./scripts/build-android.sh publish                  # hỏi version rồi đẩy lên Viettelmoney
 #   ./scripts/build-android.sh publish -v 1.2.0 --yes   # cho CI, không hỏi gì
@@ -22,7 +23,7 @@
 #       --clean             dọn build cũ trước
 #   -h, --help              in phần này
 #
-# Riêng `local`:   --skip-app, --install, --run
+# Riêng `local`:   --skip-app, --install, --run, --env staging|uat|product
 # Riêng `publish`: --target viettelmoney|artifactory|local, --yes, --write, --dry-run
 #
 #   -f, --force             ĐÈ thẳng bản đã có trên server (khỏi hỏi), và dọn cache local của
@@ -76,11 +77,16 @@ DRY_RUN=false
 FORCE=false
 OVERWRITING=false   # bật khi probe thấy version đã tồn tại và người dùng cho đè
 
+# Môi trường của APP DEMO (product flavor trong androidApp/build.gradle.kts). KHÔNG liên quan tới
+# `--target` (nơi PUBLISH SDK lên) — hai khái niệm khác nhau, đừng lẫn.
+# Mặc định `staging`: chạy nhầm vào production thì tốn tiền thật, còn chạy nhầm vào staging thì không.
+APP_ENV="staging"
+
 APP_ID="com.ttcn.promotionsdk.app"
 LAUNCH_ACTIVITY="$APP_ID/.MainActivity"
 VIETTELMONEY_URL="https://mobile-data.viettelmoney.vn/artifactory/gradle-viettelmoney"
 
-usage() { sed -n '3,31p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '3,32p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # ─── Tham số ─────────────────────────────────────────────────────────────────────────────────
 # Chế độ là tham số vị trí ĐẦU TIÊN. Bắt riêng trước vòng lặp để `local`/`publish` không bị nhầm
@@ -96,6 +102,7 @@ while [[ $# -gt 0 ]]; do
         -t|--target)        TARGET="${2:-}"; shift 2 ;;
         --clean)            DO_CLEAN=true; shift ;;
         --skip-app)         SKIP_APP=true; shift ;;
+        --env)              APP_ENV="${2:-}"; shift 2 ;;
         --install)          DO_INSTALL=true; shift ;;
         --run)              DO_RUN=true; shift ;;   # --run bao gồm cả --install
         -y|--yes)           ASSUME_YES=true; shift ;;
@@ -115,6 +122,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ "$DO_RUN" == true ]] && DO_INSTALL=true
+
+# Chốt sớm, trước khi publish SDK: gõ sai tên môi trường mà để Gradle báo thì đã mất mấy phút
+# publish rồi mới biết. Tên flavor phải trùng `productFlavors` trong androidApp/build.gradle.kts.
+case "$APP_ENV" in
+    staging|uat|product) ;;
+    *) echo "--env không hợp lệ: '$APP_ENV' (nhận: staging | uat | product)" >&2; exit 1 ;;
+esac
+
+# Gradle nối tên flavor vào task theo kiểu camelCase: uat → assembleUatDebug. Viết hoa chữ đầu.
+APP_ENV_TASK="$(tr '[:lower:]' '[:upper:]' <<< "${APP_ENV:0:1}")${APP_ENV:1}"
 
 # ─── Chọn chế độ ─────────────────────────────────────────────────────────────────────────────
 
@@ -273,14 +290,17 @@ if [[ "$MODE" == "local" ]]; then
 
     # `-PuseMavenLocal=true` truyền tường minh: script chạy đúng kể cả khi gradle.properties đang
     # khai `false`. Thiếu cờ này thì app đi tìm trên Artifactory chứ không phải bản vừa publish.
-    echo "▸ Build app demo (SDK lấy từ ~/.m2)"
-    gradle :androidApp:assembleDebug -PuseMavenLocal=true
+    # `assemble${Env}Debug` chứ không phải `assembleDebug`: từ khi androidApp có product flavor,
+    # `assembleDebug` là task GỘP — nó build cả ba môi trường (chậm gấp ba, và ra ba APK nên câu
+    # "✓ Xong: …apk" bên dưới không còn chỉ đúng một file). `installDebug` thì biến mất hẳn.
+    echo "▸ Build app demo — môi trường $APP_ENV (SDK lấy từ ~/.m2)"
+    gradle ":androidApp:assemble${APP_ENV_TASK}Debug" -PuseMavenLocal=true
 
-    echo "✓ Xong: androidApp/build/outputs/apk/debug/androidApp-debug.apk"
+    echo "✓ Xong: androidApp/build/outputs/apk/$APP_ENV/debug/androidApp-$APP_ENV-debug.apk"
 
     if [[ "$DO_INSTALL" == true ]]; then
         echo "▸ Cài vào thiết bị đang cắm"
-        gradle :androidApp:installDebug -PuseMavenLocal=true
+        gradle ":androidApp:install${APP_ENV_TASK}Debug" -PuseMavenLocal=true
         echo "✓ Đã cài."
     fi
 

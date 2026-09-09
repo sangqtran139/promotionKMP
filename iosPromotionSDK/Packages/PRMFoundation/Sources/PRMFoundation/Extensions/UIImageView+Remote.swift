@@ -6,17 +6,8 @@
 import UIKit
 import ObjectiveC
 
-/// Cache ảnh trong RAM dùng chung cho toàn SDK.
-public final class RemoteImageCache {
-    public static let shared = RemoteImageCache()
-    private let cache = NSCache<NSURL, UIImage>()
-    private init() {}
+// `RemoteImageCache` (RAM + đĩa + gộp request trùng) nay ở `RemoteImageCache.swift`.
 
-    func image(for url: URL) -> UIImage? { cache.object(forKey: url as NSURL) }
-    func set(_ image: UIImage, for url: URL) { cache.setObject(image, forKey: url as NSURL) }
-}
-
-private var taskKey: UInt8 = 0
 private var urlKey: UInt8 = 0
 
 /// Log lý do ảnh không hiện. Chỉ ở bản DEBUG — bản release không in URL ảnh của khách ra console.
@@ -34,11 +25,9 @@ public extension UIImageView {
         red: 233.0 / 255.0, green: 233.0 / 255.0, blue: 233.0 / 255.0, alpha: 1
     )
 
-    /// Task đang chạy gắn với image view này, để cancel khi gọi load mới (tránh ảnh nhảy khi reuse cell).
-    private var currentImageTask: URLSessionDataTask? {
-        get { objc_getAssociatedObject(self, &taskKey) as? URLSessionDataTask }
-        set { objc_setAssociatedObject(self, &taskKey, newValue, .OBJC_ASSOCIATION_RETAIN) }
-    }
+    // `currentImageTask` đã bỏ cùng lúc bật gộp request: n image view cùng URL nay dùng CHUNG một
+    // lượt tải, nên cancel theo một view sẽ cắt luôn của n-1 view còn lại. Chống ảnh nhảy khi cell
+    // tái sử dụng vẫn nguyên vẹn — và vốn đã đúng hơn — nhờ đối chiếu [currentImageURL] lúc gán.
 
     /// URL mà image view này ĐANG cần hiển thị.
     ///
@@ -61,8 +50,6 @@ public extension UIImageView {
     /// nền xám `remotePlaceholderColor` cho vùng ảnh. Nền xám được giữ khi URL rỗng/không
     /// hợp lệ hoặc khi tải lỗi, và được xóa khi ảnh thật về.
     func setImage(urlString: String?, placeholder: UIImage? = nil) {
-        self.currentImageTask?.cancel()
-        self.currentImageTask = nil
         self.currentImageURL = nil
 
         // Trạng thái chờ/lỗi: có placeholder riêng → dùng nó; không thì phủ nền xám.
@@ -86,21 +73,12 @@ public extension UIImageView {
         // MỌI nhánh lỗi dưới đây đều để nguyên nền xám — nhìn ngoài y như nhau, nên bắt buộc log
         // kèm lý do, không thì "ảnh không hiện" là hộp đen (phân biệt ATS chặn HTTP / 4xx / decode
         // hỏng / server trả ảnh rỗng đều cần log này).
-        let task = URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            if let error = error {
-                let code = (error as NSError).code
-                // Cancel là chủ động (cell tái sử dụng, load URL mới) — không phải lỗi.
-                if code != NSURLErrorCancelled {
-                    logRemoteImageFailure(url, "network error \(code): \(error.localizedDescription)")
-                }
-                return
-            }
-            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                logRemoteImageFailure(url, "HTTP \(http.statusCode)")
-                return
-            }
-            guard let data = data, !data.isEmpty else {
-                logRemoteImageFailure(url, "response rỗng")
+        //
+        // `loadData` lo đĩa + mạng + gộp request trùng, và gọi lại trên hàng đợi NỀN — phần decode
+        // bên dưới nặng, hop về main rồi mới decode là làm giật cuộn.
+        RemoteImageCache.shared.loadData(for: url) { [weak self] data in
+            guard let data else {
+                logRemoteImageFailure(url, "không lấy được dữ liệu (mạng lỗi / HTTP 4xx-5xx / rỗng)")
                 return
             }
             // ─── Chặng 1: hiện ngay ───────────────────────────────────────────────
@@ -141,8 +119,6 @@ public extension UIImageView {
             RemoteImageCache.shared.set(animated, for: url)
             DispatchQueue.main.async { self?.applyLoadedImage(animated, if: url) }
         }
-        self.currentImageTask = task
-        task.resume()
     }
 
     /// Đặt trạng thái placeholder: có ảnh placeholder → hiện ảnh đó (nền trong suốt);

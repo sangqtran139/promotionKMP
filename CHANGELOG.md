@@ -8,6 +8,171 @@ trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### BREAKING (iOS) — bề mặt public là `@MainActor`
+
+`PromotionSDK` bên iOS — và cả cây UI dưới nó (`PromotionSDKImpl`, `PRMStoreViewModel`,
+`PRMBaseBuilder`, `PRMBaseRouter`) — nay đánh `@MainActor`.
+
+Hợp đồng không đổi: đây vốn là API UI (`openMyPromotion(from:)`, `createEndowView(from:)`,
+`configure(theme:)`), luôn phải gọi trên main thread. Cái đổi là **ai bắt lỗi**: trước đây chỉ có
+doc comment, host gọi từ thread nền thì crash lúc chạy ở tầng UIKit; nay compiler chỉ đúng dòng sai.
+Nó cũng đóng phần global mutable state (bốn `private static var`) mà Swift 6 sẽ chặn.
+
+**Cách nâng cấp:** gọi từ ngữ cảnh không phải main thì bọc `await MainActor.run { … }`.
+
+> Thêm `@MainActor` **sau** go-live là source-breaking với mọi host, nên phải làm bây giờ.
+
+Bên Android, cùng hợp đồng đó nay được đánh `@MainThread` (lint) trên 6 điểm UI:
+`configure`, `openMyPromotion`, `openPromotionDetail`, `openChoosePromotion`,
+`closePromotionDetail`, `closeMyPromotion`. Không breaking — annotation chỉ bật cảnh báo lint.
+
+### BREAKING — `PromotionSDKError` thêm hai nhánh, và `PromotionSDK.api` không còn dừng chương trình
+
+Sửa ba lỗi hành vi do bản rà soát SDK chỉ ra (§3), cộng phần "chốt danh sách case" của API-2.
+
+**1. `PromotionSDK.api` gọi trước `initialize` không còn làm crash / ném.** iOS trước đây
+`preconditionFailure` — SDK làm **crash app của host** vì lỗi thứ tự khởi tạo của *host*, loại lỗi
+rất dễ xảy ra khi vào màn bằng deep link. Android ném `IllegalStateException`. Nay cả hai trả một bề
+mặt mà **mọi hàm** cho `PromotionSDKError.NotInitialized`; chữ ký `api` vẫn non-optional.
+
+**2. Lỗi mạng không còn trả message rỗng.** `NETWORK_ERROR` từng map thành
+`NetworkFailure(code = null, message = "")` — host hiện `error.message` thì ra **popup trắng không
+chữ**, ở đúng case hay xảy ra nhất. Nay lùi về câu của SDK khi server không kèm gì (trùng
+`R.string.prm_error_network`).
+
+**3. Mã nghiệp vụ của server không còn giả dạng lỗi mạng.** Nhánh `default` từng nhét mọi mã
+(`VOUCHER_EXPIRED`…) vào `NetworkFailure(code = null, message = errorCode)` — mã lỗi thô nằm đúng chỗ
+đáng lẽ là câu hiển thị cho người dùng. Nay là nhánh riêng `BusinessRule(code, serverMessage)`.
+
+**Gộp hai đường map lỗi về một.** `PromotionSDKError.from(errorCode, serverMessage, httpStatus)` là
+nơi duy nhất; `PromotionSDKApi.toSdkError` (cả hai nền tảng) uỷ thẳng cho nó. Trước đây mỗi bề mặt
+map một bản, và hai bản không khớp nhau.
+
+| Bỏ | Thay bằng |
+|---|---|
+| `api` ném / crash khi chưa init | `PromotionSDKError.NotInitialized` từ mọi hàm |
+| `NetworkFailure(message = "")` | `NetworkFailure` với câu lùi mặc định |
+| `NetworkFailure(message = errorCode)` cho mã nghiệp vụ | `BusinessRule(code, serverMessage)` |
+
+**Cách nâng cấp:** `when`/`switch` trên `PromotionSDKError` phải thêm hai nhánh `BusinessRule` và
+`NotInitialized`. Chỗ nào đang đọc `NetworkFailure.message` để lấy mã lỗi nghiệp vụ thì đọc
+`BusinessRule.code`.
+
+### Changed — dependency Android: `api` cho hai artifact public, bỏ alpha, gỡ `sdp-android`, gỡ Timber
+
+| | Trước | Sau |
+|---|---|---|
+| `androidx.fragment` / `androidx.constraintlayout` | `implementation` — host không thấy lúc biên dịch, phải tự khai lại | **`api`** (chúng nằm trong chữ ký public) |
+| `androidx.constraintlayout` | `2.2.0-alpha10` | `2.2.1` |
+| `androidx.swiperefreshlayout` | `1.1.0-alpha02` | `1.1.0` |
+| `com.intuit.sdp:sdp-android` | dependency — đổ ~600 dimens × 29 bucket vào `R` của host | **gỡ**; 58 giá trị SDK dùng nội bộ hoá thành `prm_Xsdp` |
+| `com.jakewharton.timber` | dependency, 12 chỗ gọi, 0 `plant()` | **gỡ** |
+| Data Binding | bật, 20/24 layout bọc `<layout>`, 0 layout dùng | **tắt** |
+
+`prm_Xsdp` giữ nguyên giá trị **theo từng bucket** của sdp (đã đối chiếu 1624 giá trị với AAR gốc:
+khớp 100%) — không quy về dp cố định, vì sdp là "scalable dp" và số cứng sẽ đổi layout trên tablet.
+
+> **Host có thể đang "ăn ké" resource của SDK.** App demo trong repo build hỏng ngay sau khi gỡ
+> `sdp-android`: layout của **chính nó** dùng `@dimen/_16sdp` mà chưa bao giờ khai dependency đó.
+> Host thật cũng có thể như vậy — nếu build gãy vì thiếu `_Xsdp`, hãy tự khai `sdp-android`.
+
+> **Glide 5.0.5 vẫn đi vào runtime classpath của host** và Gradle luôn chọn version cao nhất. Host
+> đang ở Glide 4.x cần chốt lại — xem `docs/AndroidIntegrationGuide.md` §3.1. Không gỡ được vì luật
+> GIF động, mà `AnimatedImageDrawable` chỉ có từ API 28 còn `minSdk` là 24.
+
+### Changed — tầng ảnh iOS có cache đĩa và gộp request trùng
+
+`RemoteImageCache` trước đây chỉ có `NSCache` (RAM). Hai hệ quả trong luồng thật: mỗi lần mở lại app
+là tải lại toàn bộ logo voucher (và `NSCache` còn bị hệ điều hành xoá bất cứ lúc nào), và cùng một
+logo ở 5 cell là **5 lượt tải song song cho cùng một URL**.
+
+Nay: RAM → đĩa (`Library/Caches`, tên file là SHA256 của URL, cap 50 MB, xoá LRU) → mạng, và các
+request trùng URL được **gộp** thành một. `URLSessionDataTask` gắn theo image view bị bỏ cùng lúc —
+với request đã gộp thì cancel theo một view sẽ cắt luôn của các view còn lại; chống ảnh nhảy khi cell
+tái sử dụng vẫn nguyên vẹn nhờ đối chiếu URL lúc gán.
+
+> Tên file dùng SHA256 chứ **không** phải `hashValue` của Swift: `hashValue` có seed ngẫu nhiên mỗi
+> lần chạy app, nên file ghi phiên này không bao giờ tìm thấy ở phiên sau — cache đĩa thành vô dụng
+> theo cách rất khó nhận ra.
+
+### Removed — Timber khỏi SDK Android
+
+12 chỗ gọi `Timber.x()`, **0** chỗ `Timber.plant()`. Timber không có cây nào thì mọi lời gọi im lặng
+rơi vào hư không — 12 chỗ log đó chưa từng in ra gì. Và nếu SDK *có* plant, nó ghi vào cây **toàn
+cục** dùng chung với app host: log của SDK trộn vào hệ thống log của host.
+
+Thay bằng `PRMLog` nội bộ (`android.util.Log`, gác `BuildConfig.DEBUG` của **module SDK**, một tag
+`PromotionSDK` cho cả SDK). Bỏ luôn `implementation(libs.timber)` — host không còn bị SDK kéo theo
+Timber. Kèm theo: plugin lint của Timber đang **crash** trên repo này
+(`timber.lint.WrongTimberUsageDetector`) làm `lintRelease` fail vì lỗi của chính detector; gỡ Timber
+là hết.
+
+### Added — `PromotionSDK.sdkVersion`
+
+Host đọc được version SDK đang chạy bằng một dòng, **trước** `initialize`. Với support và telemetry,
+"app đang chạy SDK bản nào" là câu hỏi đầu tiên. Trước đây iOS không có API nào — host phải tự biết
+class nào để `Bundle(for:)`, tức kiến thức nội bộ của SDK; đây cũng là **lệch parity** vì Android đã
+có `BuildConfig.SDK_VERSION`. Nay cả hai nền tảng cùng một tên.
+
+Nguồn giữ nguyên: `SDK_VERSION` (`gradle.properties`) và `MARKETING_VERSION` (`PRM.xcodeproj`) —
+hai số vẫn phải giữ trùng nhau, xem `docs/release/VersioningPolicy.md`.
+
+### Fixed — bỏ cơ chế "báo host khi kill-switch tắt" chưa từng chạy
+
+`PromotionSDK.swift` hứa với host ở ba chỗ rằng SDK báo trạng thái cờ qua
+`PromotionSDKCallback.onAvailabilityChanged(enabled:)` — **method đó chưa bao giờ tồn tại**.
+`PromotionSDKImpl.onAvailabilityUpdate` có khai và có chỗ gọi, nhưng `wireCallbacks` không gán nó;
+bên Android `notifyAvailability()` có thân hàm chỉ đọc `callback` rồi không làm gì.
+
+Không thêm callback: `docs/common/InitParity.md` §3 ghi rõ `onAvailabilityChanged` bị **loại có chủ
+đích** — host đọc cờ qua `refreshFeatureFlags`, còn cờ chặn một điểm mở màn thì báo qua
+`onFeatureDisabled` của chính hàm `open…`. Nên phần bị xoá là xác chết và doc nói sai:
+
+- 4 closure không ai gán trong `PromotionSDKImpl` (`onAvailabilityUpdate`, `onClearVoucher`,
+  `onUpdateWidgetCount`, `onClose`) + `typealias OnClearVoucher`.
+- `notifyAvailabilityAfterInitialLoad()` (iOS) và `notifyAvailability()` (Android).
+- 3 doc comment mồ côi trong `PromotionSDKCallback.swift`, 3 lời hứa trong `PromotionSDK.swift`.
+
+Không đổi hành vi nào đang chạy — thứ bị xoá chưa từng chạy.
+
+### Changed — màn "Chọn ưu đãi": luôn nạp lại dữ liệu, và ưu đãi bị từ chối thì disable tại chỗ
+
+Ba thay đổi hành vi thấy được trên UI, **không** đụng public API của host.
+
+**1. Mở màn là luôn gọi lại `findEligible`.** Trước đây màn nhận danh sách widget `PRMEndowView` đã
+nạp và dùng thẳng, không gọi mạng — tiết kiệm một request nhưng user nhìn thấy dữ liệu của *thời điểm
+widget nạp*: ngân sách campaign có thể đã hết, voucher có thể vừa bị dùng ở thiết bị khác, và không có
+gì sửa lại cho tới khi user tự kéo-để-tải-lại. Nay mở màn là hiện shimmer một nhịp rồi ra danh sách
+mới. Cờ phân trang cũng lấy từ chính response đó.
+
+**2. `validateStackableDiscounts` trả `valid = false` → ưu đãi bị disable tại chỗ, màn ở lại.** Card
+mờ đi, mất ô tick, **bỏ chọn** — và **không** đeo thêm nhãn/dải trạng thái nào; lý do hiện ở một popup
+mang **câu nguyên văn của server** (`discountDetails[].validationMessages`, lùi về
+`businessRuleViolations`). Widget ở màn thanh toán **giữ nguyên** bộ discount cũ. Trạng thái disable
+sống qua cả kéo-để-tải-lại — `findEligible` vẫn đánh `usable = true` cho ưu đãi mà `validateDiscounts`
+vừa từ chối.
+
+> Trước đây nhánh này bị gộp với thành công: màn chọn đóng lại như đã áp xong, còn widget lặng lẽ
+> chuyển sang `UNAVAILABLE`. User chọn voucher rồi thấy nó gạch ngang mà không ai nói vì sao. Hệ quả:
+> **`EndowWidgetState.UNAVAILABLE` nay chỉ còn đến từ** ưu đãi đang áp hỏng giữa chừng (hết ngân sách
+> lúc `createRedemption`) và host tự đưa vào (`setDiscountDetails` / `markAppliedVoucherUnavailable`).
+
+**3. Gọi API hỏng → popup + ở lại màn** (không đổi so với trước, nay đi qua nhánh riêng
+`EndowApplyOutcome.Failed`).
+
+Hiện áp dụng cho **chế độ chọn đơn** (mặc định); chế độ chọn nhiều sẽ làm sau.
+
+**Nội bộ SDK** (`internal`, host không chạm tới): `EndowStore.validateAndApply` trả
+`EndowApplyOutcome` (`Applied` / `Rejected(items)` / `Failed(errorCode)`) thay cho `EndowState`;
+`ChoosePromotionIntent.SeedOnce` rút còn `SeedOnce(preSelectedIds)`; thêm intent `ApplyRejected` /
+`ConsumeApplyMessage`, state `rejectedIds` / `applyMessage` và `ChooseOffer.isRejected`; xoá đường preload
+(`PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage`,
+`ChoosePromotionFragment.initial*`, `ChoosePromotionBuilder.DataModel.preloaded*`).
+
+Chi tiết: [`docs/features/ChoosePromotion.md`](docs/features/ChoosePromotion.md),
+[`docs/features/EndowView.md`](docs/features/EndowView.md),
+[`docs/common/InitParity.md`](docs/common/InitParity.md) B12.
+
 ### BREAKING — token vào SDK qua `PromotionTokenSource`, bỏ `accessToken` và `updateToken`
 
 Cả bề mặt token được thay bằng **một** khái niệm:

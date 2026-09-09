@@ -6,6 +6,7 @@ import com.ttcn.promotionsdk.domain.model.redemption.RedemptionItemRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsResult
+import com.ttcn.promotionsdk.presentation.common.RejectedOffer
 
 /**
  * Contract của màn "Endow" — **State / Intent / model hiển thị**, dùng chung Android & iOS.
@@ -104,6 +105,18 @@ internal fun ValidateDiscountsResult.toEndowAppliedDiscount(offer: EligibleOffer
     )
 
 /**
+ * Ưu đãi bị từ chối → [RejectedOffer] cho màn "Chọn ưu đãi" disable tại chỗ.
+ *
+ * Lấy câu **đầu tiên không rỗng** trong [EndowAppliedDiscount.validationMessages] — chuỗi đó đã gộp
+ * sẵn lý do cấp-dòng và cấp-đơn ở [ValidateDiscountsResult.reasonFor]. Không có câu nào thì để rỗng;
+ * native tự lùi về câu lỗi chung của mình, lõi không dựng chuỗi tiếng Việt.
+ */
+internal fun EndowAppliedDiscount.toRejectedOffer() = RejectedOffer(
+    objectId = objectId,
+    message = validationMessages.firstOrNull { it.isNotBlank() }.orEmpty(),
+)
+
+/**
  * Bản dùng cho lượt **validate lại** (hết ngân sách → hỏi giá mới): lúc đó trong tay chỉ còn
  * [previous] chứ không còn `EligibleOffer` gốc. Giữ nguyên tên + logo đã có, chỉ cập nhật phần
  * server vừa tính lại — không thì mỗi lần revalidate là chip mất tên, quay về hiện số tiền.
@@ -129,6 +142,34 @@ sealed interface EndowIntent {
     /** Xoá toàn bộ ưu đãi đã áp → quay về NOT_APPLIED. */
     data object ClearApplied : EndowIntent
     data object ConsumeError : EndowIntent
+}
+
+/**
+ * Kết quả một lượt [EndowStore.validateAndApply] — **một-lần**, nên trả thẳng chứ không nhét vào
+ * [EndowState] (cùng lý lẽ với [EndowConfirmResult]).
+ *
+ * Trước đây hàm đó trả [EndowState] và nơi gọi chỉ đọc được `errorCode`, tức chỉ phân biệt được
+ * "mạng hỏng" với "mọi thứ khác". Ba kết cục thật sự khác nhau về hành động thì bị gộp làm hai:
+ * server **từ chối** ưu đãi (`valid = false`) rơi vào cùng nhánh với thành công, nên màn "Chọn ưu
+ * đãi" đóng lại như thể đã áp xong, còn widget lặng lẽ chuyển sang `UNAVAILABLE` — user chọn voucher
+ * rồi thấy nó gạch đi mà không ai nói vì sao.
+ */
+sealed interface EndowApplyOutcome {
+    /** Áp xong (hoặc danh sách rỗng = xoá áp). Widget đã mang [EndowState.appliedDiscounts] mới. */
+    data object Applied : EndowApplyOutcome
+
+    /**
+     * Server trả `valid = false` cho [items] → **không áp gì cả**: [EndowState.appliedDiscounts] giữ
+     * nguyên bộ cũ, widget không đổi.
+     *
+     * Cố ý không commit: nơi gọi (màn "Chọn ưu đãi") sẽ **ở lại** để user chọn ưu đãi khác, mà widget
+     * ở màn sau lưng thì đã đổi sang một bộ discount user chưa hề xác nhận. Ưu đãi đang áp trước đó
+     * vẫn còn nguyên giá trị cho tới khi user chọn được cái thay thế.
+     */
+    data class Rejected(val items: List<RejectedOffer>) : EndowApplyOutcome
+
+    /** Không hỏi được server (mạng/HTTP/`data` rỗng). [errorCode] để native map sang chuỗi. */
+    data class Failed(val errorCode: String) : EndowApplyOutcome
 }
 
 /**

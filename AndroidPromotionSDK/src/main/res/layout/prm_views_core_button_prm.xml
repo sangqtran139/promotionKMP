@@ -1,70 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/buttonContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <FrameLayout
-        android:id="@+id/buttonContainer"
+    <com.ttcn.prm.ui.widget.PRMSlideButton
+        android:id="@+id/buttonSlide"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <com.ttcn.prm.ui.widget.PRMSlideButton
-            android:id="@+id/buttonSlide"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            app:prmAreaMargin="@dimen/_3sdp"
-            app:prmIconMargin="@dimen/_8sdp"
-            app:prmOuterColor="@color/prm_tokenRedTheme"
-            app:prmRotateIcon="false"
-            app:prmSlideText="@string/prm_slide_to_verify"
-            app:prmSliderIcon="@drawable/prm_ic_slide"
-            app:prmSliderIconColor="@color/prm_tokenRedTheme"
-            app:prmTextAppearance="@style/PRMSlideButtonTextAppreance" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        app:prmAreaMargin="@dimen/prm_3sdp"
+        app:prmIconMargin="@dimen/prm_8sdp"
+        app:prmOuterColor="@color/prm_tokenRedTheme"
+        app:prmRotateIcon="false"
+        app:prmSlideText="@string/prm_slide_to_verify"
+        app:prmSliderIcon="@drawable/prm_ic_slide"
+        app:prmSliderIconColor="@color/prm_tokenRedTheme"
+        app:prmTextAppearance="@style/PRMSlideButtonTextAppreance" />
 
 
-        <LinearLayout
-            android:id="@+id/layoutButtonText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/image_prefix_icon"
-                android:layout_width="@dimen/prm_view_size_25"
-                android:layout_height="@dimen/prm_view_size_25"
-                android:layout_marginEnd="@dimen/_8sdp"
-                android:visibility="gone"
-                tools:ignore="ContentDescription"
-                tools:src="@drawable/prm_foundations_icon_contacts" />
-
-
-            <com.ttcn.prm.ui.widget.PRMTextView
-                android:id="@+id/buttonAction"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/prm_sf_pro_display_medium"
-                android:gravity="center_vertical"
-                android:maxLines="1"
-                android:textColor="@drawable/prm_foundations_button_rainbow_blue_text_color"
-                android:textSize="@dimen/prm_tokenFontSize18"
-                tools:text="Tiep tuc "
-                tools:textColor="@color/prm_tokenBlack" />
-        </LinearLayout>
+    <LinearLayout
+        android:id="@+id/layoutButtonText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="horizontal">
 
         <ImageView
-            android:id="@+id/loadingIndicator"
+            android:id="@+id/image_prefix_icon"
+            android:layout_width="@dimen/prm_view_size_25"
+            android:layout_height="@dimen/prm_view_size_25"
+            android:layout_marginEnd="@dimen/prm_8sdp"
+            android:visibility="gone"
+            android:importantForAccessibility="no"
+            tools:src="@drawable/prm_foundations_icon_contacts" />
+
+
+        <com.ttcn.prm.ui.widget.PRMTextView
+            android:id="@+id/buttonAction"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:adjustViewBounds="true"
-            android:clickable="false"
-            android:scaleType="fitCenter"
-            android:src="@drawable/prm_views_icon_loading_indicator"
-            android:visibility="gone"
-            tools:ignore="ContentDescription"
-            tools:visibility="visible" />
-    </FrameLayout>
-</layout>
+            android:fontFamily="@font/prm_sf_pro_display_medium"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:textColor="@drawable/prm_foundations_button_rainbow_blue_text_color"
+            android:textSize="@dimen/prm_tokenFontSize18"
+            tools:text="Tiep tuc "
+            tools:textColor="@color/prm_tokenBlack" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/loadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:adjustViewBounds="true"
+        android:clickable="false"
+        android:scaleType="fitCenter"
+        android:src="@drawable/prm_views_icon_loading_indicator"
+        android:visibility="gone"
+        android:importantForAccessibility="no"
+        tools:visibility="visible" />
+</FrameLayout>

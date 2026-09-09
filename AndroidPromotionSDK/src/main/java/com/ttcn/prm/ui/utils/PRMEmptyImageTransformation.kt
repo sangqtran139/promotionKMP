@@ -5,7 +5,6 @@ import androidx.annotation.ColorInt
 import com.bumptech.glide.load.Key
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
-import timber.log.Timber
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -38,10 +37,10 @@ internal class PRMEmptyImageTransformation(
         // Không log thì "ảnh không lên" bên Android là hộp đen: ô xám do server trả ảnh rỗng nhìn y hệt
         // ô xám do tải lỗi. Đối ứng log `[PRMRemoteImage] ảnh rỗng …` bên iOS.
         if (isPromotionSdkDebug()) {
-            Timber.tag(PRM_IMAGE_LOG_TAG).w(
-                "ảnh rỗng %d×%d — server không có ảnh thật, hiện nền placeholder thay vì ô trong suốt",
-                toTransform.width,
-                toTransform.height,
+            PRMLog.w(
+                PRM_IMAGE_LOG_TAG,
+                "ảnh rỗng ${toTransform.width}×${toTransform.height} — server không có ảnh thật, " +
+                    "hiện nền placeholder thay vì ô trong suốt",
             )
         }
 

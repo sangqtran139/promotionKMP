@@ -5,6 +5,10 @@
   định, nên một URL http:// lọt vào sau này sẽ lỗi ngay thay vì âm thầm gửi token đi trần.
 
   Host thật của đối tác chạy HTTPS thì file này không cần tồn tại.
+
+  Đây là host của flavor `staging` (`DEMO_BASE_URL` trong androidApp/build.gradle.kts) — hai flavor
+  `uat`/`product` chạy HTTPS nên không cần khai gì. Đổi IP staging thì phải đổi CẢ HAI chỗ, quên file này
+  là mọi request staging chết với `CLEARTEXT communication not permitted`.
 -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">

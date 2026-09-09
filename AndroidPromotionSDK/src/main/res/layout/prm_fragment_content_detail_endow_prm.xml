@@ -1,42 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/prm_color_FBFBFB"
+    app:layoutDescription="@xml/prm_home_scene">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/container"
+    <com.ttcn.prm.ui.widget.PRMCardView
+        android:id="@+id/cardViewTop"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/prm_color_FBFBFB"
-        app:layoutDescription="@xml/prm_home_scene">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
+        app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
+        app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
+        app:prmCvTopRightRadius="@dimen/prm_view_size_16"
+        app:prmSvBackgroundType="fill_stroke"
+        app:prmSvStrokeColor="@color/prm_color_D3D3D3"
+        app:prmSvStrokeWidth="0.5dp">
 
-        <com.ttcn.prm.ui.widget.PRMCardView
-            android:id="@+id/cardViewTop"
+        <com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/prm_color_FBFBFB"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:prmCvBottomLeftRadius="@dimen/prm_view_size_16"
-            app:prmCvBottomRightRadius="@dimen/prm_view_size_16"
-            app:prmCvTopLeftRadius="@dimen/prm_view_size_16"
-            app:prmCvTopRightRadius="@dimen/prm_view_size_16"
-            app:prmSvBackgroundType="fill_stroke"
-            app:prmSvStrokeColor="@color/prm_color_D3D3D3"
-            app:prmSvStrokeWidth="0.5dp">
+            android:layout_height="match_parent">
 
-            <com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost
+            <WebView
+                android:id="@+id/wvContent"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent">
+                android:layout_height="match_parent"
+                android:background="@color/prm_color_FBFBFB"
+                android:paddingTop="@dimen/prm_view_size_10" />
 
-                <WebView
-                    android:id="@+id/wvContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@color/prm_color_FBFBFB"
-                    android:paddingTop="@dimen/prm_view_size_10" />
+        </com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost>
 
-            </com.ttcn.prm.ui.widget.PRMNestedScrollableWebViewHost>
-
-        </com.ttcn.prm.ui.widget.PRMCardView>
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</layout>
+    </com.ttcn.prm.ui.widget.PRMCardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

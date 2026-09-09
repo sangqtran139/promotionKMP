@@ -35,11 +35,29 @@ public final class PromotionSDKApi {
 
     /// Định danh khách không truyền từng request — BFF lấy từ JWT `sub`. Token host cấp qua
     /// `PromotionRequestContextProvider` của lõi ở tầng network.
-    private let useCases: PromotionUseCases
+    /// `@autoclosure` + `lazy`: instance "chưa khởi tạo" (xem [notInitialized]) **không được** dựng
+    /// `PromotionUseCases`, vì lúc đó đồ thị DI của lõi chưa có gì. Với `init` cũ
+    /// (`useCases: PromotionUseCases = PromotionUseCases()`) thì giá trị mặc định được tính ngay lúc
+    /// gọi `PromotionSDKApi()`, không hoãn được.
+    private let makeUseCases: () -> PromotionUseCases
+    private lazy var useCases: PromotionUseCases = makeUseCases()
 
-    init(useCases: PromotionUseCases = PromotionUseCases()) {
-        self.useCases = useCases
+    /// `false` = host lấy `api` trước khi `PromotionSDK.initialize`. Mọi hàm trả
+    /// `.failure(.notInitialized)`; xem [notInitialized].
+    private let isReady: Bool
+
+    init(useCases: @autoclosure @escaping () -> PromotionUseCases = PromotionUseCases(),
+         isReady: Bool = true) {
+        self.makeUseCases = useCases
+        self.isReady = isReady
     }
+
+    /// Bề mặt trả về khi SDK **chưa** `initialize` — mọi hàm về `.failure(.notInitialized)`.
+    ///
+    /// Thay cho `preconditionFailure` ở `PromotionSDK.api`: SDK này nhúng vào luồng thanh toán, làm
+    /// crash app của host vì lỗi thứ tự khởi tạo của host là cái giá không đáng. Giữ được chữ ký
+    /// non-optional của `api` mà không còn điểm dừng chương trình nào trong public API.
+    static let notInitialized = PromotionSDKApi(useCases: PromotionUseCases(), isReady: false)
 
     // MARK: - Public API
 
@@ -249,6 +267,11 @@ public final class PromotionSDKApi {
         map: @escaping (Model) -> Out,
         call: @escaping () async throws -> any PromotionResult
     ) {
+        guard isReady else {
+            // Một chỗ chặn cho cả 5 hàm public: tất cả đều đi qua `handle`.
+            Task { @MainActor in completion(.failure(.notInitialized)) }
+            return
+        }
         Task { @MainActor in
             do {
                 let result = try await call()
@@ -276,21 +299,15 @@ public final class PromotionSDKApi {
         }
     }
 
+    /// Uỷ thẳng cho `PromotionSDKError.from` — **một đường map duy nhất** cho cả hai bề mặt lỗi.
+    ///
+    /// Trước đây hàm này tự map một bản thứ hai, khác bản ở `PromotionApiResult.swift`: cùng một mã
+    /// lỗi ra hai kết quả khác nhau tuỳ host đi vào headless hay vào callback của widget. Đối ứng
+    /// `PromotionSDKApi.toSdkError` bên Android, cũng vừa gộp y hệt.
     private static func toSdkError(_ failure: PromotionResultFailure) -> PromotionSDKError {
-        let codes = PromotionErrorCodes.shared
-        switch failure.errorCode {
-        case codes.FEATURE_DISABLED:
-            return .featureDisabled
-        case codes.TIMEOUT:
-            return .timeout
-        case codes.NO_RESULT:
-            return .parseFailed
-        case codes.NETWORK_ERROR:
-            return .networkFailure(code: nil, message: failure.message ?? "")
-        default:
-            // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) đi kèm httpStatus nếu có.
-            return .networkFailure(code: failure.httpStatus?.intValue, message: failure.message ?? "")
-        }
+        PromotionSDKError.from(failure.errorCode,
+                               serverMessage: failure.message,
+                               httpStatus: failure.httpStatus?.intValue)
     }
 
     private static func bridgeMismatch(_ result: any PromotionResult) -> NSError {
