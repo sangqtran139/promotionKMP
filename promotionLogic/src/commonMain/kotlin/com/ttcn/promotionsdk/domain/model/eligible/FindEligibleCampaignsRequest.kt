@@ -7,7 +7,7 @@ package com.ttcn.promotionsdk.domain.model.eligible
  *
  * Bỏ trống [items] thì server chỉ trả campaign cấp đơn, không có campaign yêu cầu SKU.
  */
-data class FindEligibleCampaignsRequest(
+public data class FindEligibleCampaignsRequest(
     val orderId: String,
     val orderValue: String,
     val items: List<EligibleOrderItem> = emptyList(),
@@ -39,7 +39,7 @@ data class FindEligibleCampaignsRequest(
      * Bản sao với cặp trang cho lần gọi kế — hai nhóm phân trang **độc lập**: chỉ [section] được yêu
      * cầu mới tiến sang [nextPage], nhóm còn lại giữ trang hiện tại. [section] null → cả hai về [nextPage].
      */
-    fun forSectionPage(
+    public fun forSectionPage(
         section: EligibleSection?,
         nextPage: Int,
         currentMyPage: Int = 0,
@@ -54,12 +54,12 @@ data class FindEligibleCampaignsRequest(
     }
 }
 
-enum class EligibleSection(val code: String) {
+public enum class EligibleSection(public val code: String) {
     MY_OFFERS("my_offers"),
     OTHER_OFFERS("other_offers"),
 }
 
-data class EligibleOrderItem(
+public data class EligibleOrderItem(
     /** SKU source id đối tác — rỗng ("") = host không truyền, mapper bỏ hẳn field khi gửi lên server. */
     val skuSourceId: String,
     val quantity: Int,
@@ -70,7 +70,7 @@ data class EligibleOrderItem(
     val productCategory: String? = null,
 )
 
-data class EligibleFilterOptions(
+public data class EligibleFilterOptions(
     /** Lọc theo loại campaign. Null → không lọc. */
     val campaignTypes: List<String>? = null,
     /** Lọc theo kiểu giảm giá. Null → không lọc. */

@@ -50,8 +50,8 @@ custom_rules:
     # `match_kinds` là dòng BẮT BUỘC: chỉ soi string literal, bỏ qua comment. Thiếu nó thì repo ra
     # ~200 false positive vì doc comment viết bằng tiếng Việt.
     match_kinds: [string]
-    excluded: ".*(PromotionUIStrings|PromotionThemeDefaults|PromotionSDKTests|Tests).*"
-    message: "Chuỗi hiển thị khai ở PromotionUIStrings — xem CODE-3 (tham số `language` chưa đổi được UI)."
+    excluded: ".*(PromotionUIStrings|PromotionThemeDefaults|PromotionKitTests|Tests).*"
+    message: "Chuỗi hiển thị khai ở PromotionUIStrings, không viết literal tại chỗ — PromotionUIStrings tra bảng theo `language` mà host truyền (xem PRMLocalization)."
     severity: warning
 
   prm_public_type_prefix:

@@ -15,7 +15,7 @@ import com.ttcn.promotionsdk.data.local.AndroidContextHolder
  * Chỉ `applicationContext` được giữ; SDK không giữ Activity hay View context nào.
  * Gọi thẳng `initialize(config)` trên Android sẽ ném lỗi khi FeatureFlag cần tới storage.
  */
-fun PromotionContainer.initialize(context: Context, config: PromotionSDKConfig) {
+public fun PromotionContainer.initialize(context: Context, config: PromotionSDKConfig) {
     val appContext = context.applicationContext
     AndroidContextHolder.set(appContext)
     val isDebug = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0

@@ -12,14 +12,55 @@
 import Foundation
 @_exported import PromotionLogic
 
-// MARK: - Kiểu bọc số của Kotlin
+/// Namespace của hai helper cầu nối.
+///
+/// Trước đây `boxed(_:)` và `toPromotionError(_:)` là **global function**. `PRMKotlinBridge` được
+/// `@_exported` sang mọi file có `import PRMKotlinBridge`, nên hai cái tên rất chung đó nằm thẳng ở
+/// scope toàn cục của tầng UI — `boxed` là loại tên mà bất kỳ ai cũng có thể định nghĩa trùng, và
+/// khi trùng thì lỗi hiện ra dưới dạng "ambiguous use of" ở chỗ chẳng liên quan.
+///
+/// `enum` không case là cách chuẩn để làm namespace trong Swift: không dựng được instance của nó.
+public enum PRMKotlin {
 
-/// `Int?` của Swift → `KotlinInt?` mà Kotlin/Native chờ đợi.
-/// Kotlin `Int?`, `Boolean?`, `Long?` export thành `KotlinInt`, `KotlinBoolean`, `KotlinLong`
-/// (đều kế thừa `NSNumber`), nên đọc ngược lại bằng `.intValue` / `.boolValue`.
-public func boxed(_ value: Int?) -> KotlinInt? {
-    guard let value else { return nil }
-    return KotlinInt(int: Int32(value))
+    // MARK: - Kiểu bọc số của Kotlin
+
+    /// `Int?` của Swift → `KotlinInt?` mà Kotlin/Native chờ đợi.
+    /// Kotlin `Int?`, `Boolean?`, `Long?` export thành `KotlinInt`, `KotlinBoolean`, `KotlinLong`
+    /// (đều kế thừa `NSNumber`), nên đọc ngược lại bằng `.intValue` / `.boolValue`.
+    public static func boxed(_ value: Int?) -> KotlinInt? {
+        guard let value else { return nil }
+        return KotlinInt(int: Int32(value))
+    }
+
+    /// Bóc exception Kotlin ra khỏi `NSError`.
+    ///
+    /// Kotlin/Native chỉ chuyển exception được đánh `@Throws` thành `NSError`, và nhét object gốc
+    /// vào `userInfo["KotlinException"]`. Exception **không** khai báo sẽ `abort()` tiến trình — vì
+    /// vậy năm use case đều mang `@Throws(PromotionException, NetworkException, CancellationException)`.
+    public static func toPromotionError(_ error: Error) -> PromotionError {
+        let nsError = error as NSError
+        let kotlinException = nsError.userInfo["KotlinException"]
+
+        if let promotionException = kotlinException as? PromotionException {
+            return PromotionError(
+                errorCode: promotionException.errorCode ?? PromotionErrorCodes.shared.GENERAL,
+                message: promotionException.message,
+                httpStatus: promotionException.httpStatus?.intValue
+            )
+        }
+
+        if let networkException = kotlinException as? NetworkException {
+            return PromotionError(
+                errorCode: networkException.errorCode,
+                message: networkException.message
+            )
+        }
+
+        return PromotionError(
+            errorCode: PromotionErrorCodes.shared.GENERAL,
+            message: nsError.localizedDescription
+        )
+    }
 }
 
 // MARK: - Lỗi
@@ -38,32 +79,3 @@ public struct PromotionError: Error {
     }
 }
 
-/// Bóc exception Kotlin ra khỏi `NSError`.
-///
-/// Kotlin/Native chỉ chuyển exception được đánh `@Throws` thành `NSError`, và nhét object gốc vào
-/// `userInfo["KotlinException"]`. Exception **không** khai báo sẽ `abort()` tiến trình — vì vậy năm
-/// use case đều mang `@Throws(PromotionException, NetworkException, CancellationException)`.
-public func toPromotionError(_ error: Error) -> PromotionError {
-    let nsError = error as NSError
-    let kotlinException = nsError.userInfo["KotlinException"]
-
-    if let promotionException = kotlinException as? PromotionException {
-        return PromotionError(
-            errorCode: promotionException.errorCode ?? PromotionErrorCodes.shared.GENERAL,
-            message: promotionException.message,
-            httpStatus: promotionException.httpStatus?.intValue
-        )
-    }
-
-    if let networkException = kotlinException as? NetworkException {
-        return PromotionError(
-            errorCode: networkException.errorCode,
-            message: networkException.message
-        )
-    }
-
-    return PromotionError(
-        errorCode: PromotionErrorCodes.shared.GENERAL,
-        message: nsError.localizedDescription
-    )
-}

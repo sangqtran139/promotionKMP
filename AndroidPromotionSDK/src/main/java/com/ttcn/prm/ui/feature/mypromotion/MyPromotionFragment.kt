@@ -117,7 +117,7 @@ internal class MyPromotionFragment : PRMBaseFragment<PrmFragmentMyPromotionBindi
                 isLoadingMore = state.isLoadingMore,
             )
             adapterItems.forEachIndexed { index, item ->
-                if (item is MyPromotionListItem.Endow) {
+                if (item is MyPromotionListItem.Offer) {
                     PRMLog.d(
                         TAG_VOUCHER_DIFF_DEBUG,
                         "index=$index voucherId=${item.data.voucherId} rowKey=${item.rowKey} title=${item.data.title}",

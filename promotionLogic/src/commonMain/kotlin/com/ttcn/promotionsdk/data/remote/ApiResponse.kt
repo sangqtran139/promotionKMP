@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * [PromotionApiService] trả về `ApiResponseTemplate<T>`, [PromotionRemoteDataSource] bóc tách qua `requireData()`.
  */
 @Serializable
-data class ApiResponseTemplate<T>(
+public data class ApiResponseTemplate<T>(
     @SerialName("status") val status: Int? = null,
     @SerialName("code") val code: String? = null,
     @SerialName("success") val success: Boolean? = null,
@@ -19,7 +19,7 @@ data class ApiResponseTemplate<T>(
 )
 
 @Serializable
-data class ResponseMetadata(
+public data class ResponseMetadata(
     @SerialName("requestId") val requestId: String? = null,
     @SerialName("partial") val partial: Boolean? = null,
 )

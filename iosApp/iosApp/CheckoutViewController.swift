@@ -6,8 +6,8 @@
 //  "Thanh toán" gọi `PromotionSDK.confirmRedemption`.
 //
 //  Luồng: user áp voucher trên widget → SDK giữ state → bấm "Thanh toán" →
-//  `PromotionSDK.confirmRedemption`. Đối ứng `binding.endowView.confirmRedemption(...)` bên Android
-//  (docs/features/EndowView.md §2).
+//  `PromotionSDK.confirmRedemption`. Đối ứng `binding.offerWidget.confirmRedemption(...)` bên Android
+//  (docs/features/OfferWidget.md §2).
 //
 //  **Đây là UI mode** — host nhúng widget thì SDK giữ danh sách ưu đãi đang áp, host KHÔNG tự nhớ.
 //  Trước đây màn này cache `appliedVoucherId` từ callback `onVoucherApplied` rồi gọi API headless
@@ -28,7 +28,7 @@
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 final class CheckoutViewController: UIViewController {
 
@@ -70,7 +70,7 @@ final class CheckoutViewController: UIViewController {
 
     private func setupLayout() {
         // Widget chọn ưu đãi (custom view SDK) — truyền order tại đây, không re-init SDK.
-        let widget = PromotionSDK.createEndowView(from: self, orderId: orderId, orderValue: orderValue)
+        let widget = PromotionSDK.createOfferWidget(from: self, orderId: orderId, orderValue: orderValue)
         widget.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(widget)
         view.addSubview(payButton)
@@ -90,7 +90,7 @@ final class CheckoutViewController: UIViewController {
     // MARK: - Actions
 
     /// KHÔNG chặn khi chưa áp ưu đãi: `confirmRedemption` tự trả `onSuccess` ngay và không gọi mạng
-    /// (docs/features/EndowView.md §2, bước 1). SDK không có quyền chặn thanh toán của host — đơn
+    /// (docs/features/OfferWidget.md §2, bước 1). SDK không có quyền chặn thanh toán của host — đơn
     /// không dùng ưu đãi vẫn phải đi tiếp được.
     @objc private func payTapped() {
         payButton.isEnabled = false

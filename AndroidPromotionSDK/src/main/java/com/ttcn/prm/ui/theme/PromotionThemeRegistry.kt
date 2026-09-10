@@ -1,11 +1,11 @@
 package com.ttcn.prm.ui.theme
 
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
-import com.ttcn.prm.ui.theme.token.SearchBarToken
-import com.ttcn.prm.ui.theme.token.TabChipToken
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 internal object PromotionThemeRegistry {
 
@@ -18,15 +18,15 @@ internal object PromotionThemeRegistry {
 
     fun currentConfig(): PromotionSDKTheme? = config
 
-    fun buttonToken(): ButtonToken? = config?.buttonToken
+    fun buttonToken(): PRMButtonToken? = config?.buttonToken
 
-    fun searchBarToken(): SearchBarToken? = config?.searchBarToken
+    fun searchBarToken(): PRMSearchBarToken? = config?.searchBarToken
 
-    fun listItemToken(): ListItemToken? = config?.listItemToken
+    fun listItemToken(): PRMListItemToken? = config?.listItemToken
 
-    fun tabChipToken(): TabChipToken? = config?.tabChipToken
+    fun tabChipToken(): PRMTabChipToken? = config?.tabChipToken
 
-    fun tabUnderlineToken(): TabUnderlineToken? = config?.tabUnderlineToken
+    fun tabUnderlineToken(): PRMTabUnderlineToken? = config?.tabUnderlineToken
 
-    fun discountBadgeToken(): DiscountBadgeToken? = config?.discountBadgeToken
+    fun discountBadgeToken(): PRMDiscountBadgeToken? = config?.discountBadgeToken
 }

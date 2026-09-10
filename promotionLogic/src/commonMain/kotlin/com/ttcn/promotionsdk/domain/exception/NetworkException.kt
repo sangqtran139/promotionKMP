@@ -5,8 +5,8 @@ package com.ttcn.promotionsdk.domain.exception
  * [PromotionException] (lỗi nghiệp vụ/HTTP có error code từ server).
  * [errorCode] dùng [ErrorCodes.NETWORK_ERROR] hoặc [ErrorCodes.TIMEOUT].
  */
-class NetworkException(
-    val errorCode: String,
+public class NetworkException(
+    public val errorCode: String,
     override val message: String? = null,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)

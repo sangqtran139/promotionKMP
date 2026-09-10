@@ -68,10 +68,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvContentLink">
 
+            <!--
+                `buttonTint` khai TƯỜNG MINH: không có nó thì màu tick lấy từ `colorAccent` của
+                theme cha, tức hình dáng của SDK phụ thuộc vào việc `PRMBaseTheme` đang kế thừa thế
+                hệ theme nào. Ghim vào token của SDK là cắt đứt phụ thuộc đó.
+                (Khối cha đang `visibility="gone"` nên hiện chưa hiển thị ở đâu.)
+            -->
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cbContent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:buttonTint="@color/prm_color_EE0033"
                 android:checked="false" />
 
             <com.ttcn.prm.ui.widget.PRMTextView

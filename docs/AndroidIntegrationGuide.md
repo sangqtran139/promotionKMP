@@ -22,7 +22,7 @@
 - [5. Bơm context đơn hàng](#5-bơm-context-đơn-hàng)
 - [6. Màn hình UI có sẵn](#6-màn-hình-ui-có-sẵn)
   - [6.1. Màn "Ưu đãi của tôi" / "Chi tiết"](#61-màn-ưu-đãi-của-tôi--chi-tiết)
-  - [6.2. Widget checkout — `PRMEndowView`](#62-widget-checkout--prmendowview)
+  - [6.2. Widget checkout — `PRMOfferWidget`](#62-widget-checkout--prmofferwidget)
   - [6.3. Feature flag — SDK tự gác, host hỏi thêm được](#63-feature-flag--sdk-tự-gác-host-hỏi-thêm-được)
 - [7. Nhận sự kiện — `PromotionSDKCallback`](#7-nhận-sự-kiện--promotionsdkcallback)
   - [7.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#71-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
@@ -43,8 +43,8 @@
 - Mọi thứ host chạm đều nằm ở package `com.ttcn.prm.entry.**` — và **chỉ** ở đó:
   `entry` (`PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKOptions`, `PromotionSessionConfig`…),
   `entry.api` (headless). Hai nhóm public **nằm ngoài** `entry` vì lý do lịch sử — `ui.theme`
-  (+ `ui.theme.token`: `PromotionSDKTheme`, 6 token) và `ui.feature.endowview` (widget checkout:
-  `PRMEndowView`, `AppliedDiscount`).
+  (+ `ui.theme.token`: `PromotionSDKTheme`, 6 token) và `ui.feature.offerwidget` (widget checkout:
+  `PRMOfferWidget`, `AppliedDiscount`).
   Mọi class khác của SDK là `internal` — IDE không gợi ý, và import vào là lỗi compile.
 - Cấu hình một lần bằng `PromotionSDK.initialize(context, tokenSource, baseUrl)`, bơm đơn hàng bằng `updateOrderInfo(...)`,
   nhận sự kiện qua `PromotionSDKCallback`.
@@ -121,34 +121,37 @@ Gradle đọc metadata → tự kéo `promotionLogic`, Ktor, coroutines, AppComp
 đã compile. **Không** cần khai tay từng lib. (Cách cũ dùng file-AAR thì host phải tự `implementation(libs.ktor…)`
 — đã bỏ; xem [`android/Distribution.md`](./android/Distribution.md) §2.)
 
-#### Hai thứ host **thấy được** trên compile classpath
+#### 3.1.1. Hai thứ host **thấy được** trên compile classpath
 
 SDK khai `api` cho đúng hai artifact, vì chúng nằm trong **chữ ký public**:
 
 | Artifact | Vì sao |
 |---|---|
 | `androidx.fragment:fragment-ktx` | `PromotionSDK.openMyPromotion(activity: FragmentActivity)` và 5 hàm khác nhận `FragmentActivity` |
-| `androidx.constraintlayout` | `PRMEndowView` kế thừa `ConstraintLayout`; compiler của host cần chuỗi supertype để resolve member |
+| `androidx.constraintlayout` | `PRMOfferWidget` kế thừa `ConstraintLayout`; compiler của host cần chuỗi supertype để resolve member |
 
 Host **không phải khai lại** hai thứ này (trước đây phải, vì SDK khai `implementation` — host không
 thấy lúc biên dịch và phải tự đoán ra). Mọi dependency còn lại của SDK là `implementation`: chúng ở
 runtime classpath nhưng không lọt vào compile classpath của host.
 
-#### ⚠️ SDK mang theo Glide 5.0.5
+#### 3.1.2. SDK mang theo Glide 4.16.0
 
-`implementation` giữ Glide ngoài compile classpath của host, nhưng **không** giữ nó ngoài **runtime
-classpath**: Gradle hợp nhất version và luôn chọn bản **cao nhất**. Host đang ở **Glide 4.x** mà tích
-hợp SDK là cả app bị nâng lên 5.x — và Glide 4→5 có breaking change.
+`implementation` giữ Glide ngoài compile classpath của bạn, nhưng **không** giữ nó ngoài **runtime
+classpath**: Gradle hợp nhất version và luôn chọn bản **cao nhất** trong đồ thị.
 
-Kiểm bằng một lệnh trước khi tích hợp:
+SDK ghim ở nhánh **4.x** chính vì luật đó — ghim bản thấp thì SDK không bao giờ kéo app của bạn lên:
+
+| App của bạn | Kết quả |
+|---|---|
+| Glide 4.x | giữ nguyên 4.x — **không bị nâng** |
+| Glide 5.x | Gradle chọn 5.x của bạn, SDK chạy trên đó |
+| chưa dùng Glide | nhận 4.16.0 từ SDK |
+
+Kiểm nhanh nếu muốn chắc:
 
 ```bash
 ./gradlew :app:dependencies --configuration releaseRuntimeClasspath | grep glide
 ```
-
-- Ra `4.x -> 5.0.5` → app bạn **đang bị nâng version**. Chốt với bên cấp SDK: hoặc bạn lên 5.x cùng
-  lượt, hoặc SDK hạ về nhánh 4.x (API mà SDK dùng có ở cả hai nhánh).
-- Ra `5.x` → không có gì phải làm.
 
 SDK **không bỏ được** Glide: mọi ô ảnh phải chạy GIF động (luật ở
 [`android/UIGuide.md`](./android/UIGuide.md) §11), mà Android chỉ decode GIF động qua Glide —
@@ -377,7 +380,7 @@ SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần g�
 ## 6. Màn hình UI có sẵn
 
 Android dùng **Fragment** cho màn, và **custom View** cho widget checkout (khác iOS dùng factory
-`createEndowView` — N1, xem [`InitParity.md`](./common/InitParity.md) §5.1).
+`createOfferWidget` — N1, xem [`InitParity.md`](./common/InitParity.md) §5.1).
 
 ### 6.1. Màn "Ưu đãi của tôi" / "Chi tiết"
 
@@ -415,13 +418,13 @@ PromotionSDK.openPromotionDetail(
 khác `PromotionSDKCallback` (singleton, set một lần lúc `initialize`, không biết màn nào đã gọi).
 Màn gọi **không cần** là màn thanh toán.
 
-### 6.2. Widget checkout — `PRMEndowView`
+### 6.2. Widget checkout — `PRMOfferWidget`
 
-Đặt `PRMEndowView` vào layout XML; nút thanh toán của host gọi `confirmRedemption` trên chính widget:
+Đặt `PRMOfferWidget` vào layout XML; nút thanh toán của host gọi `confirmRedemption` trên chính widget:
 
 ```xml
-<com.ttcn.prm.ui.feature.endowview.PRMEndowView
-    android:id="@+id/endowView"
+<com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget
+    android:id="@+id/offerWidget"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
 ```
@@ -433,7 +436,7 @@ Màn gọi **không cần** là màn thanh toán.
 // Không cần wiring gì ở đây — host chỉ cần layout XML ở trên là đủ.
 
 btnConfirmPayment.setOnClickListener {
-    binding.endowView.confirmRedemption(
+    binding.offerWidget.confirmRedemption(
         onSuccess = { proceedPayment() },
         onError = { error ->
             when (error) {
@@ -451,10 +454,10 @@ btnConfirmPayment.setOnClickListener {
 > **`confirmRedemption` cũng bị feature flag gác.** Cờ `VOUCHER_REDEEM` (hoặc công tắc tổng
 > `ENABLE_ALL`) TẮT → `onError` với mã `PRM_MOB_021`, **không gọi mạng**, và **không** gọi
 > `onSuccess`. Host phải xử lý như một lỗi chặn thanh toán, đừng cho đi tiếp: giá đang hiển thị ở
-> `PRMEndowView` là giá đã giảm, mà server không hề ghi nhận redemption.
+> `PRMOfferWidget` là giá đã giảm, mà server không hề ghi nhận redemption.
 >
 > **`onError` trả thẳng `PromotionSDKError`** (không phải mã thô) — `when (error)` là xong, không so
-> chuỗi. Áp cho cả `PRMEndowView.onError` và `confirmRedemption(onError:)`.
+> chuỗi. Áp cho cả `PRMOfferWidget.onError` và `confirmRedemption(onError:)`.
 >
 > Có sẵn `PromotionSDKError.from(code)` nếu bạn nhận mã thô từ nguồn khác.
 >
@@ -597,11 +600,11 @@ Mỗi case có sẵn `message` tiếng Việt để hiển thị. `NetworkFailur
 
 ```kotlin
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
-import com.ttcn.prm.ui.theme.token.ButtonToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
 
 PromotionSDK.configure(
     PromotionSDKTheme(
-        buttonToken = ButtonToken(/* ... */),
+        buttonToken = PRMButtonToken(/* ... */),
         // 6 token: buttonToken, searchBarToken, listItemToken, tabChipToken, tabUnderlineToken, discountBadgeToken
     )
 )
@@ -633,7 +636,7 @@ PromotionSDK.configure(
 ```
 login thành công        → PromotionSDK.initialize(context, tokenSource, baseUrl)
 vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId, productId, orderValue, ...)
-mở UI                    → openMyPromotion / openPromotionDetail / PRMEndowView
+mở UI                    → openMyPromotion / openPromotionDetail / PRMOfferWidget
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
 logout                   → PromotionSDK.release()
 ```
@@ -647,7 +650,7 @@ logout                   → PromotionSDK.release()
 | Phân phối | AAR qua Maven | dynamic `Promotion.xcframework` |
 | `initialize` | cần `context` | không cần |
 | Headless async | `suspend` + `PromotionApiResult` (sealed) | closure + `Result` |
-| Widget checkout | `PRMEndowView` (View trong layout) + `confirmRedemption` | `createEndowView(from:)` + `PromotionSDK.confirmRedemption` |
+| Widget checkout | `PRMOfferWidget` (View trong layout) + `confirmRedemption` | `createOfferWidget(from:)` + `PromotionSDK.confirmRedemption` |
 | Mở màn | `Fragment` + `containerViewId?` | push/present `UIViewController` |
 | Ẩn deps | `core.*` giấu; **nhưng** Ktor/coroutines lọt classpath host | giấu tuyệt đối trong 1 framework |
 | Enum môi trường | `PROD` / `STAGING` | `.prod` / `.staging` |

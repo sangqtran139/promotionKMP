@@ -16,7 +16,7 @@ import UIKit
 /// `@MainActor` trên **cả class**, không rải trên từng hàm.
 ///
 /// Hợp đồng thật của bề mặt này vốn đã là "gọi trên main thread" — nó là API UI:
-/// `openMyPromotion(from: UIViewController)`, `createEndowView(from:)`, `configure(theme:)`. Trước
+/// `openMyPromotion(from: UIViewController)`, `createOfferWidget(from:)`, `configure(theme:)`. Trước
 /// đây hợp đồng đó chỉ nằm trong doc comment, nên host gọi từ thread nền sẽ **crash lúc chạy** ở
 /// tầng UIKit thay vì được compiler chỉ đúng chỗ sai.
 ///
@@ -94,6 +94,10 @@ public final class PromotionSDK {
         if isInitialized() { release() }
         staticConfig = StaticConfig(baseUrl: incoming.baseUrl, language: incoming.language,
                                     environment: incoming.environment)
+        // `language` quyết định chữ trên UI, không chỉ header của Ktor. Đặt TRƯỚC khi dựng `impl`:
+        // `restoreOrApplyTheme` và các builder bên dưới đọc `PromotionUIStrings` ngay trong lượt này.
+        // Đối ứng `PRMLocale.configure` bên Android.
+        PRMLocalization.configure(languageCode: incoming.language)
         let impl = PromotionSDKImpl(options: PromotionSDKOptions(
             session: incoming,
             availableServices: options.availableServices,
@@ -212,7 +216,7 @@ public final class PromotionSDK {
     ///
     /// - Parameter orderId: mã đơn hàng — bắt buộc.
     /// - Parameter productId: mã dịch vụ/sản phẩm — bắt buộc, dùng để lấy campaign theo SKU. (Luồng
-    ///   widget có thể dùng `createEndowView(orderItems:)`.)
+    ///   widget có thể dùng `createOfferWidget(orderItems:)`.)
     /// - Parameter skuSourceId: mã SKU đối tác — tuỳ chọn. Bỏ trống thì SDK **không** gửi field này
     ///   lên server (không gửi chuỗi rỗng), server chỉ áp rule cấp sản phẩm/đơn.
     /// - Parameter quantity: số lượng (> 0) — mặc định `1` nếu không truyền.
@@ -413,12 +417,12 @@ public final class PromotionSDK {
     }
 
     /// Create the promotion widget view. Attach it to your layout; it manages its own data loading.
-    public static func createEndowView(from viewController: UIViewController) -> UIView {
+    public static func createOfferWidget(from viewController: UIViewController) -> UIView {
         // Chưa init → trả view rỗng (không crash): host đã gắn nó vào layout rồi, huỷ tiến trình ở đây
         // là tệ nhất. Log ở `requireImpl` cho biết vì sao widget trống.
-        guard let impl = requireImpl("createEndowView(from:)") else { return UIView() }
+        guard let impl = requireImpl("createOfferWidget(from:)") else { return UIView() }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
-        return impl.makeEndowView(presentFrom: viewController, navigator: nav)
+        return impl.makeOfferWidget(presentFrom: viewController, navigator: nav)
     }
 
     /// Gọi khi user bấm nút thanh toán của **host**: tạo phiên redemption cho các ưu đãi đang áp
@@ -434,8 +438,8 @@ public final class PromotionSDK {
     /// Không áp ưu đãi nào → `onSuccess` ngay, không gọi mạng. Hết ngân sách giữa chừng → SDK tự
     /// validate lại, widget hiện giá mới, rồi `onError("INSUFFICIENT_BUDGET")`.
     ///
-    /// Đối ứng `PRMEndowView.confirmRedemption(onSuccess:onError:)` bên Android; nghiệp vụ nằm ở
-    /// `EndowStore.confirmRedemption` nên hai nền tảng chạy một đường. Chưa `initialize` → `onError`.
+    /// Đối ứng `PRMOfferWidget.confirmRedemption(onSuccess:onError:)` bên Android; nghiệp vụ nằm ở
+    /// `OfferWidgetStore.confirmRedemption` nên hai nền tảng chạy một đường. Chưa `initialize` → `onError`.
     public static func confirmRedemption(onSuccess: @escaping () -> Void,
                                          onError: @escaping (PromotionSDKError) -> Void = { _ in }) {
         // Chuỗi mã lỗi viết thẳng: file Entry này KHÔNG import PRMKotlinBridge (type Kotlin lọt vào
@@ -452,25 +456,25 @@ public final class PromotionSDK {
     /// Dùng khi giữ **một** phiên SDK từ lúc login (chưa biết đơn) rồi bơm `orderId`/`orderValue` tại
     /// màn thanh toán. SDK dùng 2 giá trị này để validate voucher khi user bấm "Áp dụng".
     /// Tương đương gọi `impl.updateOrder(orderId:orderValue:)` (không phải `updateOrderInfo`, hàm đó
-    /// yêu cầu thêm `productId` bắt buộc) rồi `createEndowView(from:)`.
+    /// yêu cầu thêm `productId` bắt buộc) rồi `createOfferWidget(from:)`.
     /// - Note: `orderValue` là chuỗi số nguyên (VNĐ), vd `"500000"`.
-    public static func createEndowView(from viewController: UIViewController,
+    public static func createOfferWidget(from viewController: UIViewController,
                                        orderId: String?,
                                        orderValue: String?) -> UIView {
         impl?.updateOrder(orderId: orderId, orderValue: orderValue)
-        return createEndowView(from: viewController)
+        return createOfferWidget(from: viewController)
     }
 
     /// Tạo widget cho luồng thanh toán kèm đơn hàng **và dòng sản phẩm** (`orderItems`).
     ///
     /// Dùng khi cần lấy campaign theo SKU: SDK gọi Find Eligible Campaigns với `orderInfo.items[]`.
     /// - Note: bỏ `orderItems` (dùng overload phía trên) → chỉ nhận campaign cấp đơn.
-    public static func createEndowView(from viewController: UIViewController,
+    public static func createOfferWidget(from viewController: UIViewController,
                                        orderId: String?,
                                        orderValue: String?,
                                        orderItems: [PromotionOrderItem]) -> UIView {
         impl?.updateOrder(orderId: orderId, orderValue: orderValue, orderItems: orderItems)
-        return createEndowView(from: viewController)
+        return createOfferWidget(from: viewController)
     }
 
     // MARK: - Private

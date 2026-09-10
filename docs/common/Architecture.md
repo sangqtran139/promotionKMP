@@ -73,7 +73,7 @@ Sơ đồ §1 là *tầng kiến trúc*. Sơ đồ dưới là *đường đi c�
                             không lộ core type (Android). Android: `object`;
                             iOS: `final class` + `_impl: NSObject` box.
   ├─ vòng đời   initialize · release · isInitialized · updateOrderInfo · configure(theme)
-  ├─ màn hình   openMyPromotion · openPromotionDetail · createEndowView → PRMEndowView
+  ├─ màn hình   openMyPromotion · openPromotionDetail · createOfferWidget → PRMOfferWidget
   ├─ headless   api: PromotionSDKApi
   └─ sự kiện    PromotionSDKCallback (6 sự kiện)
                                       │
@@ -209,7 +209,7 @@ Chi tiết: [AndroidUIGuide.md](../android/UIGuide.md).
 - **ViewModel** (`PRMStoreViewModel<Store>` / `PRMScreenViewModel<R, Store>`): bọc store dùng chung
   ở `promotionLogic`, **đối ứng 1-1 `PRMStoreViewModel<S, I>` bên Android** — phơi `state` /
   `onEffect` / `dispatch(_:)` bằng **callback thuần**, không Combine, không RxSwift.
-  Bản không-router dùng cho widget `PRMEndowView`; bản có router cho ViewModel của màn.
+  Bản không-router dùng cho widget `PRMOfferWidget`; bản có router cho ViewModel của màn.
   Giống Android, **không** còn `UiState`/`Action`/`Effect` riêng từng màn.
 
   > **Một điểm iOS buộc phải khác:** Android collect thẳng `store.effects`; Swift **không** collect

@@ -19,9 +19,9 @@ import com.ttcn.promotionsdk.domain.usecase.SearchCustomerVouchersUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
-import com.ttcn.promotionsdk.presentation.endow.EndowIntent
-import com.ttcn.promotionsdk.presentation.endow.EndowStore
-import com.ttcn.promotionsdk.presentation.endow.EndowWidgetState
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetIntent
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetStore
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetDisplayState
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionIntent
 import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionStore
 import com.ttcn.promotionsdk.presentation.searchmypromotion.SearchMyPromotionIntent
@@ -182,36 +182,36 @@ class NullResponseBranchTest {
         assertTrue(st.otherIsLastPage)   // null → mặc định hết trang, không lặp vô hạn
     }
 
-    // ─── EndowStore ───────────────────────────────────────────────────────────
+    // ─── OfferWidgetStore ───────────────────────────────────────────────────────────
 
     @Test
-    fun endow_nullResponse_countsZeroAndStaysEmpty() = runTest {
+    fun offerWidget_nullResponse_countsZeroAndStaysEmpty() = runTest {
         val repo = NullRepo()
-        val s = EndowStore(
+        val s = OfferWidgetStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
             CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
-        s.dispatch(EndowIntent.LoadInitial)
+        s.dispatch(OfferWidgetIntent.LoadInitial)
         testScheduler.advanceUntilIdle()
 
         val st = s.currentState()
         assertTrue(st.hasLoadedInitial)
         assertFalse(st.isLoading)
         assertEquals(0, st.totalVoucherCount)
-        assertEquals(EndowWidgetState.EMPTY, st.widgetState)
+        assertEquals(OfferWidgetDisplayState.EMPTY, st.widgetState)
         assertNull(st.errorCode)
     }
 
     @Test
-    fun endow_nullValidateResult_appliesNothingAndStaysAvailable() = runTest {
+    fun offerWidget_nullValidateResult_appliesNothingAndStaysAvailable() = runTest {
         val repo = NullRepo()
-        val s = EndowStore(
+        val s = OfferWidgetStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
             CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer(id = "a"))))
+        s.dispatch(OfferWidgetIntent.ValidateAndApply(listOf(com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer(id = "a"))))
         testScheduler.advanceUntilIdle()
 
         val st = s.currentState()

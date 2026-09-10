@@ -1,7 +1,7 @@
 # CompatibilityMatrix — Ma trận tương thích
 
 Số liệu lấy từ `gradle/libs.versions.toml`, `gradle.properties`, `AndroidPromotionSDK/build.gradle.kts`
-và `iosPromotionSDK/PRM.xcodeproj` tại thời điểm lập tài liệu (SDK `1.0.0`).
+và `iosPromotionSDK/PromotionKit.xcodeproj` tại thời điểm lập tài liệu (SDK `1.0.0`).
 
 > Khi nâng bất kỳ dòng nào dưới đây, **cập nhật file này trong cùng thay đổi** và nêu trong
 > [ReleaseNotes](./ReleaseNotes.md).
@@ -75,7 +75,7 @@ và `iosPromotionSDK/PRM.xcodeproj` tại thời điểm lập tài liệu (SDK 
 | androidx.constraintlayout | 2.2.0-alpha10 |
 | androidx.swiperefreshlayout | 1.1.0-alpha02 |
 | com.google.android.material | 1.13.0 |
-| Glide | 5.0.5 |
+| Glide | 4.16.0 |
 | Facebook Shimmer | 0.5.0 |
 | Intuit sdp-android | 1.0.6 |
 | Timber | 4.7.1 |

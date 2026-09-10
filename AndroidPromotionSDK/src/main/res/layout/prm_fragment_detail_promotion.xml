@@ -20,6 +20,7 @@
 
         <com.ttcn.prm.ui.widget.PRMImageView
             android:id="@+id/imgBanner"
+            android:contentDescription="@string/prm_a11y_promotion_banner"
             android:layout_width="match_parent"
             android:layout_height="@dimen/prm_detail_banner_height"
             android:scaleType="centerCrop"
@@ -30,6 +31,7 @@
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/imgBack"
+        android:contentDescription="@string/prm_a11y_back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/prm_tokenSpacing10"
@@ -73,6 +75,7 @@
             -->
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/circleLogo"
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/prm_view_size_44"
                 android:layout_height="@dimen/prm_view_size_44"
                 android:layout_marginStart="@dimen/prm_view_size_16"

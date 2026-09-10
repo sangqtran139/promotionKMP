@@ -39,8 +39,11 @@ public class PRMShimmerReplicatorView: UIView {//swiftlint:disable line_length
         return CAReplicatorLayer.self
     }
 
-    private var replicatorLayer: CAReplicatorLayer {
-        return layer as! CAReplicatorLayer
+    /// `layerClass` đã chốt là `CAReplicatorLayer` nên ép kiểu luôn đúng — nhưng `as!` thì phần
+    /// "luôn đúng" đó do **người đọc** phải tự kiểm, còn `as?` để compiler giữ. Nil chỉ xảy ra nếu
+    /// ai đó sửa `layerClass` mà quên chỗ này, và khi đó shimmer im lặng không chạy — tốt hơn crash.
+    private var replicatorLayer: CAReplicatorLayer? {
+        return layer as? CAReplicatorLayer
     }
 
     private let stackView: UIStackView = {
@@ -143,8 +146,8 @@ public class PRMShimmerReplicatorView: UIView {//swiftlint:disable line_length
             verticalNumber += 1
         }
 
-        replicatorLayer.instanceCount = Int(verticalNumber)
-        replicatorLayer.instanceTransform = CATransform3DMakeTranslation(0, itemSize.height + lineSpacing, 0)
+        replicatorLayer?.instanceCount = Int(verticalNumber)
+        replicatorLayer?.instanceTransform = CATransform3DMakeTranslation(0, itemSize.height + lineSpacing, 0)
 
         // add/remove cells to the stack view
         let currentCount = stackView.arrangedSubviews.count

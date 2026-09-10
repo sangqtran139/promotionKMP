@@ -67,10 +67,17 @@ kotlin {
     // `PromotionLogic.h`** của xcframework, tức thành bề mặt mà iOS nhìn thấy — và không có gì báo
     // khi lỡ tay. Kotlin mặc định là `public`, nên quên gõ `internal` là đã phát hành API mới.
     //
-    // `Warning` chứ chưa `Strict`: bật Strict là build đỏ ngay, còn ở mức này thì mỗi khai báo
-    // thiếu visibility hiện thành một cảnh báo — đó chính là danh sách cần rà. Nâng lên
-    // `explicitApi()` sau khi danh sách đó về 0.
-    explicitApiWarning()
+    // `Strict` (không phải `Warning`): thiếu visibility là **lỗi biên dịch**, không phải cảnh báo
+    // trôi qua trong log — cảnh báo mà không ai đọc thì không phải là gate.
+    //
+    // Lượt bật đầu ra 337 lỗi (315 thiếu visibility + 22 thiếu kiểu trả về). Chúng được khai
+    // `public` — **đúng bằng mặc định của Kotlin**, nên đây là no-op về ngữ nghĩa; `api-baseline.sh
+    // check` xác nhận header ObjC không đổi một dòng nào sau khi bật.
+    //
+    // Cái gate này KHÔNG tự thu hẹp bề mặt: nó chỉ bắt người viết **nói rõ ý định** từ nay. Việc rà
+    // 315 khai báo đó xem cái nào đáng lẽ là `internal` là một lượt riêng — và giờ mới làm được,
+    // vì trước đó không có cách nào biết cái nào là cố ý public, cái nào là quên gõ `internal`.
+    explicitApi()
 
     compilerOptions {
         // SdkLock là expect/actual class; cảnh báo Beta không có giá trị ở đây.

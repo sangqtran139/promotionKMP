@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * tử `content[]` là item phẳng (khuôn giống Detail §6, trừ `codes`). v1.8: thêm `expireWarningDate`.
  */
 @Serializable
-data class SearchCustomerVouchersResponse(
+public data class SearchCustomerVouchersResponse(
     @SerialName("keyword") val keyword: String? = null,
     @SerialName("serviceCode") val serviceCode: String? = null,
     /** Ngưỡng cảnh báo sắp hết hạn (đơn vị ngày) — cấu hình tĩnh tại BFF. */
@@ -33,7 +33,7 @@ data class SearchCustomerVouchersResponse(
 )
 
 @Serializable
-data class VoucherTabInfo(
+public data class VoucherTabInfo(
     @SerialName("code") val code: String,
     @SerialName("label") val label: String,
     @SerialName("labelI18n") val labelI18n: Map<String, String>? = null,
@@ -43,7 +43,7 @@ data class VoucherTabInfo(
 )
 
 @Serializable
-data class PageableInfo(
+public data class PageableInfo(
     @SerialName("pageNumber") val pageNumber: Int? = null,
     @SerialName("pageSize") val pageSize: Int? = null,
     @SerialName("offset") val offset: Long? = null,
@@ -53,7 +53,7 @@ data class PageableInfo(
 )
 
 @Serializable
-data class SortInfo(
+public data class SortInfo(
     @SerialName("sorted") val sorted: Boolean? = null,
     @SerialName("unsorted") val unsorted: Boolean? = null,
     @SerialName("empty") val empty: Boolean? = null,
@@ -64,7 +64,7 @@ data class SortInfo(
  * Gồm object [VoucherInfoDto] + các field ngang hàng.
  */
 @Serializable
-data class VoucherListItem(
+public data class VoucherListItem(
     @SerialName("voucher") val voucher: VoucherInfoDto,
     @SerialName("quantity") val quantity: Int? = null,
     @SerialName("value") val value: Double? = null,

@@ -6,7 +6,7 @@
   trong `public.txt` của AAR, và host tham chiếu tới chúng sẽ ăn lint `PrivateResource`. Danh sách
   rỗng = private toàn bộ 656 resource.
 
-  Bề mặt public của SDK là `com.ttcn.prm.entry.**` (Kotlin) — không có phần resource. `PRMEndowView`
+  Bề mặt public của SDK là `com.ttcn.prm.entry.**` (Kotlin) — không có phần resource. `PRMOfferWidget`
   là view duy nhất host đặt vào layout, và nó không khai `declare-styleable` nào, nên host không cần
   attr hay style nào từ đây.
 

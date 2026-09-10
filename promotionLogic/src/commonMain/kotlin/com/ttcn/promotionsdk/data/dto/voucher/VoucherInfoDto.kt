@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
  * + các field ngang hàng ([CustomerVoucherDetail] / [VoucherListItem]).
  */
 @Serializable
-data class VoucherInfoDto(
+public data class VoucherInfoDto(
     /** ID voucher (= campaign_id sinh ra voucher). Dùng cho API 3.5.9 (Get Customer Voucher Detail). */
     @SerialName("id") val id: String,
     @SerialName("brand") val brand: VoucherBrandDto? = null,
@@ -57,7 +57,7 @@ data class VoucherInfoDto(
  * `servicesForApplicableProducts`. Nhiều SKU có thể chung một `productId`.
  */
 @Serializable
-data class ApplicableProductDto(
+public data class ApplicableProductDto(
     @SerialName("productId") val productId: String? = null,
     @SerialName("skuSourceId") val skuSourceId: String? = null,
     @SerialName("productSourceId") val productSourceId: String? = null,
@@ -71,7 +71,7 @@ data class ApplicableProductDto(
 )
 
 @Serializable
-data class VoucherBrandDto(
+public data class VoucherBrandDto(
     @SerialName("name") val name: String? = null,
     /** Mảng URL logo (nhiều kích cỡ/biến thể). */
     @SerialName("logo") val logo: List<String> = emptyList(),
@@ -82,7 +82,7 @@ data class VoucherBrandDto(
  * khiển hiển thị** đã biết; key custom theo chương trình được `ignoreUnknownKeys` bỏ qua.
  */
 @Serializable
-data class VoucherMetadataDto(
+public data class VoucherMetadataDto(
     /** `"true"` / `"false"` — enable/disable nút "Sử dụng". */
     @SerialName("usable") val usable: String? = null,
     @SerialName("displayMode") val displayMode: String? = null,
@@ -95,7 +95,7 @@ data class VoucherMetadataDto(
 
 /** Một mã (coupon code) đã cấp cho khách — chỉ có ở API Detail (§6.3), list không kèm. */
 @Serializable
-data class VoucherCodeDto(
+public data class VoucherCodeDto(
     @SerialName("phone") val phone: String? = null,
     @SerialName("codex") val codex: String? = null,
     /** Hạn dùng của mã, format `dd/MM/yyyy`. */

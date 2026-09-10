@@ -38,25 +38,25 @@ import com.ttcn.promotionsdk.config.eligibleOrderItems
  * Order items đọc từ [PromotionContainer.requestContextProvider] (`getOrderItems()`) — dùng chung 2
  * nền tảng để lấy campaign theo SKU (host chưa cấp → rỗng, chỉ campaign cấp đơn).
  */
-class ChoosePromotionStore(
+public class ChoosePromotionStore(
     private val findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : PRMStore<ChoosePromotionState, ChoosePromotionIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
-    constructor(findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase) :
+    public constructor(findEligibleCampaignsUseCase: FindEligibleCampaignsUseCase) :
         this(findEligibleCampaignsUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(ChoosePromotionState())
     override val state: StateFlow<ChoosePromotionState> = _state.asStateFlow()
 
-    fun currentState(): ChoosePromotionState = _state.value
+    public fun currentState(): ChoosePromotionState = _state.value
 
-    fun watchState(onEach: (ChoosePromotionState) -> Unit): PromotionCancellable {
+    public fun watchState(onEach: (ChoosePromotionState) -> Unit): PromotionCancellable {
         val job = scope.launch { state.collect { onEach(it) } }
         return PromotionCancellable { job.cancel() }
     }
 
-    fun clear() {
+    public fun clear() {
         scope.cancel()
     }
 
@@ -99,7 +99,7 @@ class ChoosePromotionStore(
             is ChoosePromotionIntent.ToggleSelection -> onToggleSelection(intent.id)
             ChoosePromotionIntent.SeeMoreMy -> onSeeMoreMy()
             ChoosePromotionIntent.ConsumeError -> _state.update { it.copy(errorCode = null) }
-            // Chống spam nút "Áp dụng": lượt validate chạy ở `EndowStore` nên store này không tự
+            // Chống spam nút "Áp dụng": lượt validate chạy ở `OfferWidgetStore` nên store này không tự
             // biết lúc nào bắt đầu/kết thúc — native báo. Chỉ đổi cờ, không đụng dữ liệu danh sách.
             ChoosePromotionIntent.ApplyStarted -> _state.update { it.copy(isApplying = true) }
             ChoosePromotionIntent.ApplyFinished -> _state.update { it.copy(isApplying = false) }
@@ -206,7 +206,7 @@ class ChoosePromotionStore(
         }
         // Preload = dữ liệu widget đưa sang, KHÔNG có response nên không có ngưỡng "sắp hết hạn" đi
         // kèm. `_state.value.expireWarningDate` lúc này vẫn là default null (màn này chưa gọi mạng
-        // lần nào) → lùi về bản nhớ gần nhất, do `EndowStore.loadInitial` ghi lại khi nạp widget.
+        // lần nào) → lùi về bản nhớ gần nhất, do `OfferWidgetStore.loadInitial` ghi lại khi nạp widget.
         // Ghi luôn vào state để `loadMore` sau đó map cùng một ngưỡng.
         val warn = _state.value.expireWarningDate ?: ExpiryWarning.lastKnownDays
         _state.update {

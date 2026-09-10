@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
-data class RedemptionSessionRequest(
+public data class RedemptionSessionRequest(
     @SerialName("idempotencyKey") val idempotencyKey: String = "",
     @SerialName("customerInfo") val customerInfo: RedemptionCustomerInfo,
     @SerialName("orderInfo") val orderInfo: RedemptionOrderInfo,
@@ -14,14 +14,14 @@ data class RedemptionSessionRequest(
 )
 
 @Serializable
-data class RedemptionCustomerInfo(
+public data class RedemptionCustomerInfo(
     @SerialName("customerType") val customerType: String = "",
     @SerialName("segment") val segment: String = "",
     @SerialName("tier") val tier: String = "",
 )
 
 @Serializable
-data class RedemptionOrderInfo(
+public data class RedemptionOrderInfo(
     @SerialName("orderId") val orderId: String,
     @SerialName("orderValue") val orderValue: String,
     @SerialName("currency") val currency: String = "VND",
@@ -32,7 +32,7 @@ data class RedemptionOrderInfo(
 )
 
 @Serializable
-data class RedemptionOrderItem(
+public data class RedemptionOrderItem(
     @SerialName("skuId") val skuId: String,
     @SerialName("productId") val productId: String,
     @SerialName("collectionIds") val collectionIds: List<String> = emptyList(),
@@ -42,7 +42,7 @@ data class RedemptionOrderItem(
 )
 
 @Serializable
-data class RedeemableRequest(
+public data class RedeemableRequest(
     @SerialName("objectType") val objectType: String,
     @SerialName("objectId") val objectId: String,
     @SerialName("priority") val priority: Int,
@@ -52,7 +52,7 @@ data class RedeemableRequest(
 )
 
 @Serializable
-data class SessionOptions(
+public data class SessionOptions(
     @SerialName("timeoutSeconds") val timeoutSeconds: Int = 300,
     @SerialName("holdBudget") val holdBudget: Boolean = true,
     @SerialName("validateOnly") val validateOnly: Boolean = false,

@@ -13,14 +13,14 @@
     <string name="prm_my_promotion">Ưu đãi của tôi</string>
     <string name="prm_get_now">Săn ngay</string>
     <string name="prm_detail">Chi tiết</string>
-    <string name="prm_choose_endow">Chọn ưu đãi</string>
+    <string name="prm_choose_offer">Chọn ưu đãi</string>
     <string name="prm_check">Kiểm tra</string>
-    <string name="prm_please_input_endow">Vui lòng nhập mã ưu đãi</string>
+    <string name="prm_please_input_offer">Vui lòng nhập mã ưu đãi</string>
     <string name="prm_not_enough_apply_voucher">Chưa đủ điều kiện áp dụng</string>
-    <string name="prm_endow">Ưu đãi</string>
-    <string name="prm_no_endow">Bạn không có mã ưu đãi nào</string>
-    <string name="prm_one_endow">Bạn có 1 mã ưu đãi</string>
-    <string name="prm_multiple_endow">Bạn có %d mã ưu đãi</string>
+    <string name="prm_offer">Ưu đãi</string>
+    <string name="prm_no_offer">Bạn không có mã ưu đãi nào</string>
+    <string name="prm_one_offer">Bạn có 1 mã ưu đãi</string>
+    <string name="prm_multiple_offer">Bạn có %d mã ưu đãi</string>
     <string name="prm_use_voucher">Sử dụng</string>
     <string name="prm_change_voucher">Chọn lại</string>
     <string name="prm_is_used">Đã dùng hết</string>
@@ -62,14 +62,27 @@
 
     <!-- FAB cuộn lên đầu ở màn Tìm ưu đãi: nút bấm được nên BẮT BUỘC có nhãn, không phải ảnh trang trí. -->
     <string name="prm_a11y_scroll_to_top">Lên đầu danh sách</string>
+
+    <!--
+        Nhãn cho các control CHỈ CÓ ICON. Giữ trùng câu chữ với `PromotionUIStrings.A11y` bên iOS —
+        cùng một nút thì TalkBack và VoiceOver phải đọc cùng một câu.
+
+        Ảnh TRANG TRÍ (logo voucher, vòng tròn khoét vé, đường kẻ đứt, ảnh empty-state, icon đứng
+        cạnh chữ đã nói đủ) KHÔNG khai ở đây: chúng dùng `android:importantForAccessibility="no"`
+        ngay trong layout, để TalkBack bỏ qua thay vì đọc một nhãn thừa.
+    -->
+    <string name="prm_a11y_back">Quay lại</string>
+    <string name="prm_a11y_search">Tìm ưu đãi</string>
+    <string name="prm_a11y_clear_search">Xoá nội dung tìm kiếm</string>
+    <string name="prm_a11y_promotion_banner">Ảnh ưu đãi</string>
     <string name="prm_error_timeout">Kết nối quá lâu không phản hồi. Vui lòng thử lại</string>
     <!-- PRM_MOB_021. Giữ nguyên câu chữ của iOS (PromotionSDKError.featureDisabled). -->
     <string name="prm_feature_disabled">Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.</string>
     <!-- Title/nút mặc định cho dialog thông báo đơn của PromotionToastGate.showAlways. -->
     <string name="prm_notification_title">Thông báo</string>
     <string name="prm_notification_button_close">Đóng</string>
-    <string name="prm_my_endow">Ưu đãi của tôi</string>
-    <string name="prm_endow_different">Ưu đãi khác</string>
+    <string name="prm_my_offer">Ưu đãi của tôi</string>
+    <string name="prm_offer_different">Ưu đãi khác</string>
     <string name="prm_see_more">Xem thêm</string>
     <string name="prm_collapse">Thu gọn</string>
     <string name="prm_tab_detail_info">Thông tin chi tiết</string>

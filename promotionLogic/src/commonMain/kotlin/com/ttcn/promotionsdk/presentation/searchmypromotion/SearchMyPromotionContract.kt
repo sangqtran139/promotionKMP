@@ -8,7 +8,7 @@ import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionVoucher
  * Tách khỏi [SearchMyPromotionStore] để đọc được "màn này có dữ liệu gì, nhận được lệnh gì" mà không phải
  * lội qua phần điều phối. Logic nằm ở store; ở đây chỉ có cấu trúc, **không** chuỗi hiển thị.
  */
-data class SearchMyPromotionState(
+public data class SearchMyPromotionState(
     val keyword: String = "",
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -30,11 +30,11 @@ data class SearchMyPromotionState(
  * [SearchMyPromotionStore] đã set `isEmpty = false` khi xoá từ khoá; sửa chỗ đó một cái là hai bên
  * lệch âm thầm. Nay là một luật, ở một nơi.
  */
-fun SearchMyPromotionState.showsNoResult(): Boolean =
+public fun SearchMyPromotionState.showsNoResult(): Boolean =
     keyword.isNotBlank() && !isLoading && isEmpty
 
 /** Hiện danh sách kết quả (kèm tiêu đề "Kết quả tìm kiếm"): có từ khoá và có ít nhất một voucher. */
-fun SearchMyPromotionState.showsResults(): Boolean =
+public fun SearchMyPromotionState.showsResults(): Boolean =
     keyword.isNotBlank() && vouchers.isNotEmpty()
 
 /**
@@ -42,14 +42,14 @@ fun SearchMyPromotionState.showsResults(): Boolean =
  * "Chọn dịch vụ". Bên iOS hàm này từng được chép nguyên văn ở **hai** VM (`MyPromotionViewModel`,
  * `SearchMyPromotionViewModel`).
  */
-fun SearchMyPromotionState.voucher(id: String): MyPromotionVoucher? =
+public fun SearchMyPromotionState.voucher(id: String): MyPromotionVoucher? =
     vouchers.firstOrNull { it.source.voucherId == id }
 
-sealed interface SearchMyPromotionIntent {
-    data class QueryChanged(val keyword: String) : SearchMyPromotionIntent
-    data object Search : SearchMyPromotionIntent
-    data object LoadMore : SearchMyPromotionIntent
-    data object ClearKeyword : SearchMyPromotionIntent
-    data object Retry : SearchMyPromotionIntent
-    data object ConsumeError : SearchMyPromotionIntent
+public sealed interface SearchMyPromotionIntent {
+    public data class QueryChanged(val keyword: String) : SearchMyPromotionIntent
+    public data object Search : SearchMyPromotionIntent
+    public data object LoadMore : SearchMyPromotionIntent
+    public data object ClearKeyword : SearchMyPromotionIntent
+    public data object Retry : SearchMyPromotionIntent
+    public data object ConsumeError : SearchMyPromotionIntent
 }

@@ -18,7 +18,7 @@ import com.ttcn.prm.databinding.PrmViewsCoreButtonPrmBinding
 import com.ttcn.prm.ui.utils.enum.PRMCoreButtonSize
 import com.ttcn.prm.ui.utils.enum.PRMCoreButtonType
 import com.ttcn.prm.ui.utils.enum.PRMShadowType
-import com.ttcn.prm.ui.theme.token.ButtonToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.utils.applyTextColorIfSet
 import com.ttcn.prm.ui.utils.extension.getString
@@ -32,7 +32,7 @@ import com.ttcn.prm.ui.utils.extension.retrieveColor
 internal class PRMButton : PRMAbstractButton {
 
     private var viewBinding: PrmViewsCoreButtonPrmBinding? = null
-    private var lastAppliedToken: ButtonToken? = null
+    private var lastAppliedToken: PRMButtonToken? = null
 
     var onSlideListener: OnSlideListener? = null
 
@@ -160,12 +160,12 @@ internal class PRMButton : PRMAbstractButton {
         applyToken(PromotionThemeRegistry.buttonToken())
     }
 
-    fun applyToken(token: ButtonToken?) {
+    fun applyToken(token: PRMButtonToken?) {
         lastAppliedToken = token
         applyTokenInternal(token)
     }
 
-    private fun applyTokenInternal(token: ButtonToken?) {
+    private fun applyTokenInternal(token: PRMButtonToken?) {
         if (token == null) return
         token.backgroundColor?.let { color ->
             applyTokenBackground(color, token.cornerRadius)

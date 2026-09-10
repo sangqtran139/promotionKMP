@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 class ViewController: UIViewController {
 

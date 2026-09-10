@@ -4,13 +4,13 @@
 //
 //  Theme Playground — chỉnh màu/bo góc từng token và xem SDK áp dụng trực tiếp.
 //
-//  LƯU Ý: file này (import PRM) cố tình giữ NHỎ. Toàn bộ UI nặng nằm ở
+//  LƯU Ý: file này (import PromotionKit) cố tình giữ NHỎ. Toàn bộ UI nặng nằm ở
 //  ThemePlaygroundUI.swift (KHÔNG import SDK) để tránh swift-frontend đệ quy quá sâu
 //  (deserializeClass) khi 1 file vừa nạp module SDK vừa type-check khối lượng lớn.
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 final class ThemePreviewViewController: UIViewController {
 
@@ -116,34 +116,34 @@ final class ThemePreviewViewController: UIViewController {
         ])
     }
 
-    // MARK: - SDK touch points (chỉ những hàm này chạm PromotionSDKUI)
+    // MARK: - SDK touch points (chỉ những hàm này chạm PromotionKit)
 
     /// Map DraftTheme (UIColor/CGFloat) → PromotionSDKTheme.
     private func makeTheme() -> PromotionSDKTheme {
-        let button = ButtonToken(
+        let button = PRMButtonToken(
             backgroundColor: draft.buttonBackground, textColor: draft.buttonText,
             shadowColor: draft.buttonShadow, cornerRadius: draft.buttonCorner
         )
-        let search = SearchBarToken(
+        let search = PRMSearchBarToken(
             borderColor: draft.searchBorder, hintTextColor: draft.searchHint,
             textColor: draft.searchText, iconColor: draft.searchIcon, cornerRadius: draft.searchCorner
         )
-        let list = ListItemToken(
+        let list = PRMListItemToken(
             linkTextColor: draft.listLink, usedBadgeTextColor: draft.listUsedText,
             usedBadgeBackgroundColor: draft.listUsedBg,
             radioButtonStrokeColor: draft.listRadioUnselected,
             radioButtonSelectedStrokeColor: draft.listRadioSelected
         )
-        let tabChip = TabChipToken(
+        let tabChip = PRMTabChipToken(
             activeBackgroundColor: draft.tabChipActiveBg, inactiveBackgroundColor: draft.tabChipInactiveBg,
             activeTextColor: draft.tabChipActiveText, inactiveTextColor: draft.tabChipInactiveText,
             cornerRadius: draft.tabChipCorner
         )
-        let tab = TabUnderlineToken(
+        let tab = PRMTabUnderlineToken(
             indicatorColor: draft.tabIndicator, activeTextColor: draft.tabActiveText,
             inactiveTextColor: draft.tabInactiveText, backgroundColor: draft.tabBg
         )
-        let discount = DiscountBadgeToken(
+        let discount = PRMDiscountBadgeToken(
             availableTextColor: draft.dscAvailText, unavailableTextColor: draft.dscUnavailText,
             availableBackgroundColor: draft.dscAvailBg, unavailableBackgroundColor: draft.dscUnavailBg,
             actionTextColor: draft.dscAction
@@ -201,7 +201,7 @@ final class ThemePreviewViewController: UIViewController {
 
     func reloadWidget() {
         widget?.removeFromSuperview()
-        let w: UIView = PromotionSDK.createEndowView(from: self)
+        let w: UIView = PromotionSDK.createOfferWidget(from: self)
         w.translatesAutoresizingMaskIntoConstraints = false
         widgetContainer.addSubview(w)
         NSLayoutConstraint.activate([

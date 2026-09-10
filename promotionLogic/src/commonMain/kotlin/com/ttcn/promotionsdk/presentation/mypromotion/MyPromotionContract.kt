@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
  * Tách khỏi [MyPromotionStore] để đọc được "màn này có dữ liệu gì, nhận được lệnh gì" mà không phải
  * lội qua phần điều phối. Logic nằm ở store; ở đây chỉ có cấu trúc, **không** chuỗi hiển thị.
  */
-data class MyPromotionState(
+public data class MyPromotionState(
     val hasLoadedInitial: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -32,7 +32,7 @@ data class MyPromotionState(
 )
 
 /** Nhãn trạng thái đã QUYẾT ĐỊNH ở store — native chỉ tra chuỗi tương ứng, không tự suy. */
-enum class MyPromotionBadge {
+public enum class MyPromotionBadge {
     /** Không hiện badge (voucher dùng được, chưa sắp hết hạn). */
     NONE,
     /** Sắp hết hạn — native hiển thị "Còn {expiringInDays} ngày". */
@@ -43,7 +43,7 @@ enum class MyPromotionBadge {
 }
 
 /** Nút thao tác đã QUYẾT ĐỊNH ở store — native map sang chuỗi + hiện/ẩn. */
-enum class MyPromotionAction {
+public enum class MyPromotionAction {
     /** Hiện nút "Sử dụng". */
     USE,
     /** Không hiện nút. */
@@ -56,19 +56,19 @@ enum class MyPromotionAction {
  * [SearchMyPromotionState.voucher][com.ttcn.promotionsdk.presentation.searchmypromotion.voucher];
  * bên iOS hàm này từng được chép nguyên văn ở cả hai VM.
  */
-fun MyPromotionState.voucher(id: String): MyPromotionVoucher? =
+public fun MyPromotionState.voucher(id: String): MyPromotionVoucher? =
     vouchers.firstOrNull { it.source.voucherId == id }
 
-sealed interface MyPromotionIntent {
-    data object LoadInitialIfNeeded : MyPromotionIntent
-    data object Refresh : MyPromotionIntent
-    data class SelectTab(val tabCode: String) : MyPromotionIntent
-    data class Search(val keyword: String) : MyPromotionIntent
-    data object LoadMore : MyPromotionIntent
-    data object ConsumeError : MyPromotionIntent
+public sealed interface MyPromotionIntent {
+    public data object LoadInitialIfNeeded : MyPromotionIntent
+    public data object Refresh : MyPromotionIntent
+    public data class SelectTab(val tabCode: String) : MyPromotionIntent
+    public data class Search(val keyword: String) : MyPromotionIntent
+    public data object LoadMore : MyPromotionIntent
+    public data object ConsumeError : MyPromotionIntent
 }
 
-data class MyPromotionTab(
+public data class MyPromotionTab(
     val code: String,
     val label: String,
     val count: Int,
@@ -81,7 +81,7 @@ data class MyPromotionTab(
  * ([isEnabled]/[expiringInDays]/[badge]/[action]). Không chép lại field của domain (tránh trùng model),
  * không chứa chuỗi hiển thị — native đọc `source.*` cho dữ liệu thô và enum/số cho phần đã quyết định.
  */
-data class MyPromotionVoucher(
+public data class MyPromotionVoucher(
     /** Dữ liệu thô tái dùng từ domain (merchantName/title/logo/expirationDate/status...). */
     val source: VoucherItem,
     // ── Quyết định hiển thị (store tính, native chỉ dùng) ──

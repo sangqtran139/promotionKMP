@@ -8,8 +8,8 @@
 //
 
 import UIKit
-// Không còn `import PRMPromotionUI`: `PRMEndowView` — thứ duy nhất file này lấy từ đó — nay nằm
-// trong chính module (`PromotionSDKUI/Endow/`). Entry giờ chỉ chạm hai package: Kotlin bridge và
+// Không còn `import PRMPromotionUI`: `PRMOfferWidget` — thứ duy nhất file này lấy từ đó — nay nằm
+// trong chính module (`PromotionKit/OfferWidget/`). Entry giờ chỉ chạm hai package: Kotlin bridge và
 // design kit.
 @_implementationOnly import PRMKotlinBridge
 @_implementationOnly import PRMDesignKit
@@ -55,18 +55,18 @@ final class PromotionSDKImpl: NSObject {
         get { context.orderItems }
         set { context.orderItems = newValue }
     }
-    /// ViewModel widget checkout — bọc `EndowStore` (findEligible + validate&apply + widget-state),
-    /// đối ứng Android `PRMEndowViewModel`. `PromotionSDKImpl` chỉ observe + render.
-    private let endowVM = EndowViewModel()
+    /// ViewModel widget checkout — bọc `OfferWidgetStore` (findEligible + validate&apply + widget-state),
+    /// đối ứng Android `PRMOfferWidgetViewModel`. `PromotionSDKImpl` chỉ observe + render.
+    private let offerWidgetVM = OfferWidgetViewModel()
 
-    weak var activeWidget: PRMEndowView?
+    weak var activeWidget: PRMOfferWidget?
 
-    // Theo dõi transition để phát callback host đúng một lần (mirror Android `PRMEndowView.notifyHost`):
+    // Theo dõi transition để phát callback host đúng một lần (mirror Android `PRMOfferWidget.notifyHost`):
     // chuyển sang APPLIED → onApplyVoucher. (Nhánh "count đổi" đã bỏ cùng closure của nó.)
     /// Quyết định "khi nào bắn callback host" — rule dùng chung ở `promotionLogic`, có test.
     /// Trước đây là `lastNotifiedCount` + `lastNotifiedApplied` rải trong `render`, còn Android có
     /// bản riêng ba biến: cùng hợp đồng public mà hai cách tính.
-    private let hostNotifier = EndowHostNotifier()
+    private let hostNotifier = OfferWidgetHostNotifier()
 
     init(options: PromotionSDKOptions) {
         self.context = PromotionMutableContext(session: options.session, availableServices: options.availableServices)
@@ -182,19 +182,19 @@ final class PromotionSDKImpl: NSObject {
         guard let config = PRMThemeRegistry.shared.current else { return nil }
         return PromotionSDKTheme(
             buttonToken: config.button.map {
-                ButtonToken(
+                PRMButtonToken(
                     backgroundColor: $0.backgroundColor, textColor: $0.textColor,
                     shadowColor: $0.shadowColor, cornerRadius: $0.cornerRadius
                 )
             },
             searchBarToken: config.searchBar.map {
-                SearchBarToken(
+                PRMSearchBarToken(
                     borderColor: $0.borderColor, hintTextColor: $0.hintTextColor,
                     textColor: $0.textColor, iconColor: $0.iconColor, cornerRadius: $0.cornerRadius
                 )
             },
             listItemToken: config.listItem.map {
-                ListItemToken(
+                PRMListItemToken(
                     linkTextColor: $0.linkTextColor, usedBadgeTextColor: $0.usedBadgeTextColor,
                     usedBadgeBackgroundColor: $0.usedBadgeBackgroundColor,
                     radioButtonStrokeColor: $0.radioUnselectedColor,
@@ -202,7 +202,7 @@ final class PromotionSDKImpl: NSObject {
                 )
             },
             tabChipToken: config.tabChip.map {
-                TabChipToken(
+                PRMTabChipToken(
                     activeBackgroundColor: $0.activeBackgroundColor,
                     inactiveBackgroundColor: $0.inactiveBackgroundColor,
                     activeTextColor: $0.activeTextColor, inactiveTextColor: $0.inactiveTextColor,
@@ -210,13 +210,13 @@ final class PromotionSDKImpl: NSObject {
                 )
             },
             tabUnderlineToken: config.tabUnderline.map {
-                TabUnderlineToken(
+                PRMTabUnderlineToken(
                     indicatorColor: $0.indicatorColor, activeTextColor: $0.activeTextColor,
                     inactiveTextColor: $0.inactiveTextColor, backgroundColor: $0.backgroundColor
                 )
             },
             discountBadgeToken: config.discountBadge.map {
-                DiscountBadgeToken(
+                PRMDiscountBadgeToken(
                     availableTextColor: $0.availableTextColor, unavailableTextColor: $0.unavailableTextColor,
                     availableBackgroundColor: $0.availableBackgroundColor,
                     unavailableBackgroundColor: $0.unavailableBackgroundColor,
@@ -348,7 +348,7 @@ final class PromotionSDKImpl: NSObject {
     /// Kèm theo đó `PRMToast` là code chết (0 chỗ dùng) nên đã xoá — không còn toast nào trong SDK.
     func showFeatureDisabledDialog(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
-            ?? "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
+            ?? PromotionUIStrings.featureDisabled
         PRMConfirmationDialog.showError(message, in: viewController.view)
     }
 
@@ -404,7 +404,7 @@ final class PromotionSDKImpl: NSObject {
         }
     }
 
-    func makeEndowView(presentFrom host: UIViewController, navigator: UINavigationController?) -> UIView {
+    func makeOfferWidget(presentFrom host: UIViewController, navigator: UINavigationController?) -> UIView {
         self._host = host
         self._navigator = navigator
 
@@ -433,7 +433,7 @@ final class PromotionSDKImpl: NSObject {
             container.isHidden = false
             // Đã dựng rồi thì bỏ qua (tránh dựng lại khi `.update` bắn lặp).
             guard self.activeWidget == nil else { return }
-            let widget = PRMEndowView()
+            let widget = PRMOfferWidget()
             widget.delegate = self
             widget.dataSource = self
             self.activeWidget = widget
@@ -449,10 +449,10 @@ final class PromotionSDKImpl: NSObject {
 
         // Cờ nào, đọc thế nào — do store quyết (dùng chung Android), native chỉ hỏi.
         // Gọi ngay với cache hiện có (chưa có cache → bật lạc quan).
-        applyFlag(endowVM.availabilityFromCache())
+        applyFlag(offerWidgetVM.availabilityFromCache())
         // Rồi làm mới từ server và gọi lại nếu giá trị đổi.
         Task { @MainActor in
-            applyFlag(await endowVM.refreshAvailability())
+            applyFlag(await offerWidgetVM.refreshAvailability())
         }
         return container
     }
@@ -474,11 +474,11 @@ final class PromotionSDKImpl: NSObject {
     weak var _host: UIViewController?
     weak var _navigator: UINavigationController?
 
-    /// Bấm "Thanh toán" của host — uỷ thẳng xuống `EndowStore.confirmRedemption` (dùng chung Android).
+    /// Bấm "Thanh toán" của host — uỷ thẳng xuống `OfferWidgetStore.confirmRedemption` (dùng chung Android).
     func confirmRedemption(onSuccess: @escaping () -> Void, onError: @escaping (PromotionSDKError) -> Void) {
         // Không còn `[weak self]`: closure không đụng tới `self` nữa kể từ khi bỏ popup PRM_MOB_021.
-        endowVM.confirmRedemption { result in
-            if let failure = result as? EndowConfirmResultFailure {
+        offerWidgetVM.confirmRedemption { result in
+            if let failure = result as? OfferWidgetConfirmResultFailure {
                 // KHÔNG hiện gì, kể cả `PRM_MOB_021` (cờ `VOUCHER_REDEEM` tắt).
                 //
                 // Khác hẳn các điểm gác khác (`openMyPromotion`, `openPromotionDetail`): ở đó user vừa
@@ -486,11 +486,11 @@ final class PromotionSDKImpl: NSObject {
                 // luồng THANH TOÁN của host — SDK chen một thông báo của mình vào là cướp quyền điều
                 // khiển, trong khi host mới là bên biết phải dừng hay đi tiếp và hiện gì.
                 //
-                // Cờ tắt vẫn KHÔNG gọi API (`EndowStore.confirmRedemption` chặn trước) và vẫn trả đúng
-                // mã lỗi ra đây — chỉ bỏ phần hiển thị. Đối ứng `PRMEndowView.confirmRedemption` Android.
+                // Cờ tắt vẫn KHÔNG gọi API (`OfferWidgetStore.confirmRedemption` chặn trước) và vẫn trả đúng
+                // mã lỗi ra đây — chỉ bỏ phần hiển thị. Đối ứng `PRMOfferWidget.confirmRedemption` Android.
                 //
                 // Trả **kiểu công khai**, không phải mã thô: host `switch` là xong, không phải so
-                // chuỗi. Đối ứng `PRMEndowView.onError` bên Android.
+                // chuỗi. Đối ứng `PRMOfferWidget.onError` bên Android.
                 onError(PromotionSDKError.from(failure.errorCode))
             } else {
                 onSuccess()
@@ -498,28 +498,28 @@ final class PromotionSDKImpl: NSObject {
         }
     }
 
-    /// Map `EndowState` (store) → widget-state — **reactive**, mirror Android `PRMEndowView.renderState`.
+    /// Map `OfferWidgetState` (store) → widget-state — **reactive**, mirror Android `PRMOfferWidget.renderState`.
     ///
-    /// Quyết định 4 trạng thái lấy THẲNG từ `EndowState.widgetState` (rule dùng chung ở
-    /// `promotionLogic`, 8 test phủ ở `EndowStoreTest`). Trước đây hàm này chép lại nguyên 4 nhánh
+    /// Quyết định 4 trạng thái lấy THẲNG từ `OfferWidgetState.widgetState` (rule dùng chung ở
+    /// `promotionLogic`, 8 test phủ ở `OfferWidgetStoreTest`). Trước đây hàm này chép lại nguyên 4 nhánh
     /// bằng Swift — sửa rule bên Kotlin thì Android đổi theo còn iOS lặng lẽ giữ hành vi cũ.
     ///
     /// Ở đây chỉ còn phần **thật sự của native**: format chuỗi tiền và phát callback host theo
     /// transition.
     /// `@MainActor`: hàm này đụng UIKit (`view.setState`) và gọi `PromotionSDK.getCallback()` — bề
-    /// mặt public nay MainActor-isolated. Không phải ràng buộc mới, nó vốn chỉ chạy từ `endowVM.observe`
+    /// mặt public nay MainActor-isolated. Không phải ràng buộc mới, nó vốn chỉ chạy từ `offerWidgetVM.observe`
     /// (base đã hop main); khác biệt là compiler giữ thay cho một dòng comment.
     @MainActor
-    private func render(_ state: EndowState, on view: PRMEndowView) {
+    private func render(_ state: OfferWidgetState, on view: PRMOfferWidget) {
         // Widget không đi qua `PRMStoreViewModel.emitErrorIfNeeded` (đọc thẳng state, `autoConsumesError`
         // tắt) nên phải tự bắt TOKEN_EXPIRED ở đây — 4 màn Store khác đã có base lo hộ. Đối ứng
-        // `PRMEndowView.renderState` bên Android (xử lý TRƯỚC guard `hasLoadedInitial`, vì `loadInitial()`
+        // `PRMOfferWidget.renderState` bên Android (xử lý TRƯỚC guard `hasLoadedInitial`, vì `loadInitial()`
         // hỏng cũng set `hasLoadedInitial = true` kèm `errorCode`).
         if let errorCode = state.errorCode {
             if errorCode == PromotionErrorCodes.shared.TOKEN_EXPIRED {
                 PromotionSDK.getCallback()?.onExpireToken()
             }
-            endowVM.consumeError()
+            offerWidgetVM.consumeError()
         }
 
         // Giữ trạng thái loading (shimmer) tới khi nạp xong — mirror Android `renderState` (return sớm).
@@ -542,18 +542,18 @@ final class PromotionSDKImpl: NSObject {
         emit(hostNotifier.onState(state: state))
     }
 
-    /// Map `EndowHostEvent` dùng chung → callback public của iOS.
+    /// Map `OfferWidgetHostEvent` dùng chung → callback public của iOS.
     ///
     /// Thứ tự do notifier quyết định: **count trước, applied sau**. Bản cũ ở đây bắn ngược lại
     /// (applied trong `switch`, count sau cùng) — host nào dựa vào thứ tự đó sẽ thấy đổi.
     /// `internal` chứ không `private` **để test được**: thứ tự và số lần gọi callback là một phần
     /// của hợp đồng với host — CHANGELOG từng ghi một lần thứ tự phát bị đổi mà không chữ ký nào
-    /// đổi, tức không gì bắt được. Xem `EndowHostNotifierEmitTests`.
-    func emit(_ events: [EndowHostEvent]) {
+    /// đổi, tức không gì bắt được. Xem `OfferWidgetHostNotifierEmitTests`.
+    func emit(_ events: [OfferWidgetHostEvent]) {
         // Cast `as?` cho khớp cách file này vẫn xử lý sealed interface của Kotlin
-        // (`result as? EndowConfirmResultFailure`, `effect as? PRMEffectShowError`).
+        // (`result as? OfferWidgetConfirmResultFailure`, `effect as? PRMEffectShowError`).
         for event in events {
-            if let applied = event as? EndowHostEventVoucherApplied {
+            if let applied = event as? OfferWidgetHostEventVoucherApplied {
                 onApplyVoucher?(applied.voucherId)
             }
         }
@@ -566,7 +566,7 @@ final class PromotionSDKImpl: NSObject {
     /// server gửi kèm bị bỏ qua hoàn toàn. Nay khớp đúng Android.
     ///
     /// Đối ứng `ApplyPromotionAdapter.bind` bên Android — sửa bên nào thì sửa cả bên kia.
-    private static func appliedTitle(_ discount: EndowAppliedDiscount) -> String {
+    private static func appliedTitle(_ discount: OfferWidgetAppliedDiscount) -> String {
         if let tag = discount.tags.first, !tag.isEmpty { return tag }
         return formatDiscount(discount.calculatedDiscount)
     }
@@ -576,16 +576,19 @@ final class PromotionSDKImpl: NSObject {
         guard let value = Int(digits) else { return raw }
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.groupingSeparator = "."
+        // Locale QUYẾT ĐỊNH dấu phân cách, không hardcode `"."`. Trước đây dòng này là
+        // `groupingSeparator = "."` — đúng cho vi-VN và sai cho mọi locale khác, tức là tham số
+        // `language` không đi tới được chỗ nó phải tới.
+        formatter.locale = PRMLocalization.locale
         let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(value)"
-        return "Giảm \(formatted)đ"
+        return PromotionUIStrings.discount(formatted)
     }
 
-    /// Auto-apply voucher `isAutoApplied`: validate qua EndowStore; `render` (observe) lo cập nhật widget
+    /// Auto-apply voucher `isAutoApplied`: validate qua OfferWidgetStore; `render` (observe) lo cập nhật widget
     /// + callback host. Dormant tới khi `findEligible` trả `isAutoApplied` (xem TODO ở attach).
     private func autoApply(_ promotions: [EligibleOffer]) {
         guard !promotions.isEmpty else { return }
-        endowVM.validateAndApply(promotions)
+        offerWidgetVM.validateAndApply(promotions)
     }
 
     func openChoosePromotion() {
@@ -593,25 +596,25 @@ final class PromotionSDKImpl: NSObject {
         let nav = _navigator ?? host.navigationController
 
         // Chỉ còn pre-select: màn chọn **tự gọi `findEligible`** mỗi lần mở (`SeedOnce`), không nhận
-        // danh sách preload của widget nữa — giống Android (`forEndowView`).
+        // danh sách preload của widget nữa — giống Android (`forOfferWidget`).
         // `currentState` (đồng bộ) chứ không phải `state`: đọc ngay lúc user bấm, phải là bản mới nhất.
-        let endowState = endowVM.currentState
+        let offerWidgetState = offerWidgetVM.currentState
         let vc = ChoosePromotionBuilder.build(
             with: .init(
                 orderItems: context.getOrderItems(),
                 // Pre-select TẤT CẢ ưu đãi đang áp (kể cả đang UNAVAILABLE) để user thấy & bỏ chọn
-                // được — khớp Android (`endowView.discountDetails.map { it.objectId }`).
-                preSelectedVoucherIds: endowState.appliedDiscounts.map { $0.objectId }
+                // được — khớp Android (`offerWidget.discountDetails.map { it.objectId }`).
+                preSelectedVoucherIds: offerWidgetState.appliedDiscounts.map { $0.objectId }
             ),
             navigator: nav
         )
-        vc.onApplyVoucher = { [weak self, weak host] (promotions: [EligibleOffer], onOutcome: @escaping (EndowApplyOutcome) -> Void) in
+        vc.onApplyVoucher = { [weak self, weak host] (promotions: [EligibleOffer], onOutcome: @escaping (OfferWidgetApplyOutcome) -> Void) in
             // `onOutcome` mở khoá nút "Áp dụng" (chống spam trong lúc chờ validate) → phải gọi ở MỌI
             // đường ra, kể cả nhánh guard này, nếu không nút khoá vĩnh viễn. Nhánh này chỉ chạy khi
             // SDK đã bị giải phóng — báo lỗi chứ không im lặng, đối ứng nhánh `viewModel == nil` của
-            // `PRMEndowView.applySelectedOffers` bên Android.
+            // `PRMOfferWidget.applySelectedOffers` bên Android.
             guard let self, !promotions.isEmpty else {
-                onOutcome(EndowApplyOutcomeFailed(errorCode: PromotionErrorCodes.shared.GENERAL))
+                onOutcome(OfferWidgetApplyOutcomeFailed(errorCode: PromotionErrorCodes.shared.GENERAL))
                 return
             }
 
@@ -623,18 +626,18 @@ final class PromotionSDKImpl: NSObject {
                 }
             }
 
-            // Bấm "Áp dụng" -> validate qua EndowStore; widget cập nhật qua `render` (observe).
+            // Bấm "Áp dụng" -> validate qua OfferWidgetStore; widget cập nhật qua `render` (observe).
             //
             // Kết cục giao NGUYÊN VẸN cho VC (`handleApplyOutcome`) — nơi quyết định cập nhật state
             // màn và hiện popup, đối ứng từng dòng với `ChoosePromotionFragment.onApplyClicked`.
             // Ở đây chỉ giữ phần **điều hướng**, thứ VC không tự làm được (nó không giữ `host`).
             //
             // Chỉ `Applied` mới đóng màn. Trước đây nhánh "server từ chối ưu đãi" cũng rơi vào đây
-            // (hàm chỉ trả `EndowState`, nơi gọi chỉ đọc được `errorCode`) nên màn đóng lại như đã áp
+            // (hàm chỉ trả `OfferWidgetState`, nơi gọi chỉ đọc được `errorCode`) nên màn đóng lại như đã áp
             // xong trong khi widget hiện ưu đãi bị gạch ngang.
-            self.endowVM.validateAndApply(promotions) { outcome in
+            self.offerWidgetVM.validateAndApply(promotions) { outcome in
                 onOutcome(outcome)
-                if outcome is EndowApplyOutcomeApplied { pop() }
+                if outcome is OfferWidgetApplyOutcomeApplied { pop() }
             }
         }
 
@@ -648,32 +651,32 @@ final class PromotionSDKImpl: NSObject {
     }
 }
 
-// MARK: - PRMEndowViewDataSource (internal conformance)
+// MARK: - PRMOfferWidgetDataSource (internal conformance)
 
-extension PromotionSDKImpl: PRMEndowViewDataSource {
-    func selectPromtionViewDidAttachToWindow(_ view: PRMEndowView) {
-        // Quan sát EndowStore → render widget **reactive** (mirror Android: `PRMEndowView` collect uiState).
+extension PromotionSDKImpl: PRMOfferWidgetDataSource {
+    func selectPromotionViewDidAttachToWindow(_ view: PRMOfferWidget) {
+        // Quan sát OfferWidgetStore → render widget **reactive** (mirror Android: `PRMOfferWidget` collect uiState).
         // Trạng thái áp/không-đủ-điều-kiện persist trong store nên tự khôi phục khi re-attach.
-        endowVM.observe { [weak self, weak view] state in
+        offerWidgetVM.observe { [weak self, weak view] state in
             guard let self, let view else { return }
             self.render(state, on: view)
         }
-        endowVM.loadInitial()   // idempotent — store bỏ qua nếu đã nạp
+        offerWidgetVM.loadInitial()   // idempotent — store bỏ qua nếu đã nạp
         // TODO(auto-apply): `EligibleOffer` không có `isAutoApplied` (API Find Eligible không trả) →
         // nhánh `autoApply` chưa từng chạy. Android auto-apply từ Search API; cần backend xác nhận.
     }
 }
 
-// MARK: - PRMEndowViewDelegate (internal conformance)
+// MARK: - PRMOfferWidgetDelegate (internal conformance)
 
-extension PromotionSDKImpl: PRMEndowViewDelegate {
-    func selectPromtionViewDidTapSelect(_ view: PRMEndowView) {
+extension PromotionSDKImpl: PRMOfferWidgetDelegate {
+    func selectPromotionViewDidTapSelect(_ view: PRMOfferWidget) {
         switch view.currentState {
         case .applied:
             // Huỷ áp: xoá ở store → `render` (observe) tự đưa widget về NOT_APPLIED/EMPTY.
             // KHÔNG báo host: `PromotionSDKCallback` cố ý không có sự kiện "đã huỷ voucher"
             // (`docs/common/InitParity.md` §3). Dòng gọi closure ở đây từng bắn vào `nil`.
-            endowVM.clearApplied()
+            offerWidgetVM.clearApplied()
         default:
             openChoosePromotion()
         }

@@ -53,7 +53,7 @@
     <string name="prm_theme_lbl_unavailable_background_color">unavailableBackgroundColor</string>
     <string name="prm_theme_lbl_action_text_color">actionTextColor</string>
 
-    <string name="prm_theme_sheet_component_prm_endow">PRMEndowView</string>
+    <string name="prm_theme_sheet_component_prm_offer">PRMOfferWidget</string>
 
     <string name="prm_theme_demo_voucher_available_name">Ưu đãi khả dụng</string>
     <string name="prm_theme_demo_voucher_available_discount">Giảm 50.000đ</string>

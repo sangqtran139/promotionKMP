@@ -137,7 +137,7 @@
 
         <!--
           Nội dung tab thật là một `PRMCardView` bo 16 cao `match_parent` (xem
-          `fragment_content_detail_endow_prm.xml`) chứ không phải mấy dòng chữ trần trên nền màn.
+          `fragment_content_detail_offer_prm.xml`) chứ không phải mấy dòng chữ trần trên nền màn.
           Shimmer phải có cùng cái card đó — thiếu nó thì lúc dữ liệu về tự nhiên "mọc" ra một
           khối trắng bo góc. Card căng từ đáy hàng tab tới đỉnh nút, y như bản thật.
         -->

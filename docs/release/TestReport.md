@@ -53,11 +53,11 @@ Nguyên tắc bắt buộc:
 | **Đường ống API** | `PromotionPipelineTest`, `ApiMappingVerifyTest`, `MalformedResponseTest`, `NullResponseBranchTest`, `HttpErrorBranchTest` | JSON → DTO → domain; header; lỗi HTTP; lỗi nghiệp vụ ẩn trong HTTP 200; payload `createRedemption` |
 | **Tìm ưu đãi đủ điều kiện** | `EligibleCampaignsTest`, `EligibleMappingBranchTest`, `EligibleOrderItemsServiceTest`, `ForSectionPageTest` | Map hai nhóm `myOffers`/`otherOffers`, sort tab, payload pagination/section, dòng sản phẩm |
 | **Voucher & mapping** | `VoucherMappingBranchTest`, `VoucherDetailFieldBranchTest`, `VoucherStatusTest`, `NumericAmountTest`, `PromotionHtmlContentTest`, `DiscountMapperTest` | Mapper DTO→domain, trạng thái voucher, số tiền, nội dung HTML |
-| **Store màn hình** | `MyPromotionStoreTest`, `MyPromotionBranchTest`, `MyPromotionLastBranchTest`, `SearchMyPromotionStoreTest`, `PromotionDetailStoreTest`, `ChoosePromotionStoreTest`, `ChoosePromotionStoreBranchTest`, `EndowStoreTest`, `StoreEdgeBranchTest`, `PresentationSharedTest`, `ResolveActiveTabTest` | State/Intent, latest-wins, load-more, tab |
+| **Store màn hình** | `MyPromotionStoreTest`, `MyPromotionBranchTest`, `MyPromotionLastBranchTest`, `SearchMyPromotionStoreTest`, `PromotionDetailStoreTest`, `ChoosePromotionStoreTest`, `ChoosePromotionStoreBranchTest`, `OfferWidgetStoreTest`, `StoreEdgeBranchTest`, `PresentationSharedTest`, `ResolveActiveTabTest` | State/Intent, latest-wins, load-more, tab |
 | **Đồng thời** | `CanApplyDuringRefreshTest`, `RequestAndStaleBranchTest` | Response về muộn, thao tác khi đang refresh |
 | **Token & phiên** | `TokenPullPerRequestTest`, `TokenRefreshGateTest`, `TokenRefreshRetryTest` | Token là pull; 401 thử lại **một lần**; single-flight |
 | **Feature flag** | `FeatureFlagTest`, `FeatureFlagGateTest` | Cache, `ENABLE_ALL` là công tắc tổng, `refresh()` không ném khi API lỗi |
-| **Hạ tầng** | `PromotionContainerTest`, `ComponentRegistryTest`, `PromotionPreferencesTest`, `PromotionClockTest`, `PromotionCurlLoggingTest`, `NoContextProviderTest`, `EndowHostNotifierTest`, `BusinessRuleViolationNullTest`, `RemainingBranchTest`, `ValidateDiscountsOutcomeTest` | DI, storage, clock, logging, thông báo host |
+| **Hạ tầng** | `PromotionContainerTest`, `ComponentRegistryTest`, `PromotionPreferencesTest`, `PromotionClockTest`, `PromotionCurlLoggingTest`, `NoContextProviderTest`, `OfferWidgetHostNotifierTest`, `BusinessRuleViolationNullTest`, `RemainingBranchTest`, `ValidateDiscountsOutcomeTest` | DI, storage, clock, logging, thông báo host |
 
 ---
 

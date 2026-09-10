@@ -19,8 +19,8 @@ kiến trúc **MVI**. Không dùng Compose — xem [ComposeGuide.md](../common/C
 - [9. Custom View](#9-custom-view)
 - [10. Quy tắc riêng cho SDK](#10-quy-tắc-riêng-cho-sdk)
 - [11. Ảnh từ mạng & GIF](#11-ảnh-từ-mạng--gif)
-  - [11.0. Hai nền tảng: khác cơ chế, phải giống **hành vi**](#110-hai-nền-tảng-khác-cơ-chế-phải-giống-hành-vi)
-  - [11.0.1. ⚠️ Glide 5 đi vào đồ thị dependency của host](#1101-️-glide-5-đi-vào-đồ-thị-dependency-của-host)
+  - [11.1. Hai nền tảng: khác cơ chế, phải giống hành vi](#111-hai-nền-tảng-khác-cơ-chế-phải-giống-hành-vi)
+  - [11.2. Glide ghim ở nhánh 4.x — cố ý](#112-glide-ghim-ở-nhánh-4x--cố-ý)
 - [12. Shimmer (skeleton loading)](#12-shimmer-skeleton-loading)
 <!-- /toc -->
 
@@ -188,8 +188,8 @@ Không thêm thư viện UI mới nếu chưa được yêu cầu (AI_AGENT_RULE
 > trong bytecode (chỉ *hàm* internal mới bị mangle tên), nên `LayoutInflater` vẫn dựng được và
 > AAPT2 vẫn tự sinh keep-rule cho R8.
 >
-> Ngoại lệ duy nhất là `PRMEndowView` — host đặt nó vào layout của **chính host**, nên nó nằm ở
-> `entry/endowview/` và là `public`. Cần thêm một widget nữa cho host thì **dời vào `entry`**, đừng
+> Ngoại lệ duy nhất là `PRMOfferWidget` — host đặt nó vào layout của **chính host**, nên nó nằm ở
+> `entry/offerwidget/` và là `public`. Cần thêm một widget nữa cho host thì **dời vào `entry`**, đừng
 > nới `public` tại chỗ ([PublicApi.md §5](../common/PublicApi.md)).
 
 ---
@@ -213,7 +213,7 @@ Mọi ảnh remote đi qua **một cửa**: `ui/utils/PRMImageExt.kt`
 (`loadPromotionVoucherLogo` / `loadPromotionVoucherBanner`) → Glide. Không gọi `Glide.with(...)` rải rác
 ở fragment/adapter.
 
-### 11.0. Hai nền tảng: khác cơ chế, phải giống **hành vi**
+### 11.1. Hai nền tảng: khác cơ chế, phải giống **hành vi**
 
 Android dùng Glide, iOS tự viết (`UIImageView+Remote` + `RemoteImageCache`). Hai cơ chế sẽ **mãi**
 khác nhau — Glide không có bản Swift. Thứ phải khoá lại là **hành vi**, và đây là bảng chốt:
@@ -232,25 +232,32 @@ khác nhau — Glide không có bản Swift. Thứ phải khoá lại là **hàn
 > soát từng nền tảng riêng không bao giờ thấy — nó chỉ hiện ra khi đặt hai bên cạnh nhau. Thêm hành
 > vi mới cho tầng ảnh thì **thêm một dòng vào bảng này trước**, rồi mới làm cả hai bên.
 
-### 11.0.1. ⚠️ Glide 5 đi vào đồ thị dependency của host
+### 11.2. Glide ghim ở nhánh 4.x — cố ý
 
-SDK khai `glide = "5.0.5"` ở `implementation`. `implementation` giữ Glide ngoài **compile classpath**
-của host, nhưng **không** giữ nó ngoài **runtime classpath**: Gradle hợp nhất version và luôn chọn
-bản **cao nhất**. Host đang ở Glide 4.x mà tích hợp SDK là cả app bị nâng lên 5.x — và Glide 4→5 có
-breaking change.
+SDK khai `glide = "4.16.0"` ở `implementation`. `implementation` giữ Glide ngoài **compile
+classpath** của host, nhưng **không** giữ nó ngoài **runtime classpath**: Gradle hợp nhất version và
+luôn chọn bản **cao nhất** trong đồ thị.
 
-**Không gỡ Glide được.** Luật GIF ở §11 là bắt buộc, mà Android chỉ decode được GIF động qua Glide:
+Chính vì luật "chọn bản cao nhất" mà SDK phải ghim bản **thấp**, không phải bản mới:
+
+| Host đang ở | Kết quả |
+|---|---|
+| Glide 4.x | Gradle giữ 4.x — host **không bị nâng version** |
+| Glide 5.x | Gradle chọn 5.x của host — SDK chạy trên 5.x, không sao |
+| Không dùng Glide | Nhận 4.16.0 từ SDK |
+
+Trước đây SDK ghim `5.0.5`, tức mọi host còn ở 4.x đều **bị kéo lên 5.x** — mà Glide 4→5 có breaking
+change. Đó là thứ một SDK ưu đãi không có quyền áp lên cả app.
+
+Hạ được vì bề mặt Glide mà SDK dùng nằm trọn trong phần **không đổi giữa hai nhánh**: `Glide.with()`
+/ `load()` / `apply()` / `into()` / `clear()`, `RequestOptions`, `CircleCrop`, `Transformation` tự
+viết, `diskCacheStrategy`, `override`, `placeholder`, `error`. SDK **không** dùng `@GlideModule` /
+`AppGlideModule` / generated API — nhóm đổi nhiều nhất ở 5.x. Đã kiểm: `assembleRelease`,
+`testDebugUnitTest`, `lintRelease` đều xanh, và `gifdecoder:4.16.0` vẫn vào runtime classpath nên
+luật GIF ở §11 giữ nguyên.
+
+**Không gỡ hẳn Glide được.** Luật GIF là bắt buộc, mà Android chỉ decode được GIF động qua Glide:
 `AnimatedImageDrawable` của hệ điều hành chỉ có từ **API 28**, còn `minSdk` của SDK là **24**.
-
-Vì vậy đây là việc phải **chốt với team app host**, không phải việc sửa trong SDK:
-- Host đã ở Glide 5.x → không cần làm gì, ghi lại là đã xác nhận.
-- Host còn ở Glide 4.x → hoặc host lên 5.x cùng lượt tích hợp, hoặc SDK hạ về nhánh 4.x
-  (`com.github.bumptech.glide:glide:4.16.0`) — API mà SDK dùng (`Glide.with().load().into()`,
-  `CircleCrop`, `Transformation`) có ở cả hai nhánh nên hạ version là đổi đúng một dòng trong
-  `libs.versions.toml`.
-
-Chốt xong thì ghi vào [`AndroidIntegrationGuide.md`](../AndroidIntegrationGuide.md) để người tích hợp
-sau biết ngay, đừng để họ phát hiện lúc build.
 
 > **LUẬT: mọi chỗ có ảnh phải hiển thị được GIF động — cả Android lẫn iOS.**
 > Thêm một ô ảnh mới thì phải test bằng một URL GIF động, không chỉ PNG/JPEG.
@@ -295,7 +302,7 @@ Cách kiểm: mở layout thật và layout shimmer cạnh nhau, đối chiếu 
 |---|---|---|
 | Logo card chi tiết | `view_size_24` | **`view_size_44`** (`circleLogo`) |
 | Hàng tab chi tiết | cao 36dp, không thụt lề | cao **48dp** (`TabLayout` tab-chữ) + thụt thêm `_10sdp` |
-| Nội dung tab chi tiết | mấy dòng trần trên nền màn | **`PRMCardView` bo 16** căng tới nút (`fragment_content_detail_endow_prm.xml`) |
+| Nội dung tab chi tiết | mấy dòng trần trên nền màn | **`PRMCardView` bo 16** căng tới nút (`fragment_content_detail_offer_prm.xml`) |
 | Nút áp dụng | `tokenSizing56` | **`tokenSizing48`** (= `PRMCoreButtonSize.LARGE`) |
 | Card list ưu đãi | `PRMCardView` (**có đổ bóng** — kế thừa `PRMShadowView`, mặc định `TokenShadowsCard`) | `androidx.cardview.widget.CardView` + **`cardElevation="0dp"`** (phẳng) |
 

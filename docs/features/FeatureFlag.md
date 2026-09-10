@@ -76,8 +76,8 @@ ViewModel của UI native dựng thẳng use case đơn lẻ (`SearchCustomerVou
 |---|---|---|
 | Mở màn "Ưu đãi của tôi" | `PromotionSDK.openMyPromotion()` | `PromotionSDK.openMyPromotion(from:)` |
 | Mở màn "Chi tiết ưu đãi" | `PRMBaseFragment.openPromotionDetail()` | `BaseRouter.canOpenVoucherDetail()` |
-| Hiện widget checkout | `PRMEndowView.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
-| Xác nhận thanh toán | `EndowStore.confirmRedemption()` — dùng chung 2 nền tảng | (như Android) |
+| Hiện widget checkout | `PRMOfferWidget.applyFeatureFlag()` | `PromotionSDKImpl.applyFlag()` |
+| Xác nhận thanh toán | `OfferWidgetStore.confirmRedemption()` — dùng chung 2 nền tảng | (như Android) |
 | Nạp cờ lúc init | `PromotionSDK.initialize` → `gate.refresh()` | `PromotionSDKImpl.init` → `gate.refresh()` |
 
 Ngoài hai tầng trên còn **tầng thứ ba, tuỳ chọn**: host tự hỏi để ẩn entry point của chính mình — §3.
@@ -85,7 +85,7 @@ Nó **không** thay thế hai tầng kia; host bỏ qua thì kill-switch vẫn h
 
 `isSdkEnabled()` có người dùng — chính là `PromotionSDK.isSdkEnabled()` ở §3.
 
-`EndowStore.confirmRedemption` hỏi `canRedeemVoucher()`, `revalidateAfterBudgetError` hỏi
+`OfferWidgetStore.confirmRedemption` hỏi `canRedeemVoucher()`, `revalidateAfterBudgetError` hỏi
 `canApplyVoucher()`; cờ tắt → `onError("PRM_MOB_021")`, không gọi mạng. Gác nằm **sau** nhánh
 `discountDetails.isEmpty()`: đơn không có voucher nào thì `onSuccess` chạy bất kể cờ.
 
@@ -133,7 +133,7 @@ DTO public, cũng là **song ánh** hai file (sửa một bên thì sửa cả h
 | `PromotionFeatureMapper.kt` (`internal`) | phần `MARK: - Feature flag` trong `PromotionSDKImpl.swift` |
 
 Vì sao phải có DTO riêng thay vì trả thẳng `PromotionFeatureFlags` của lõi: host chỉ tích hợp
-`AndroidPromotionSDK` / `PRM.framework`, không có type của `promotionLogic` trên compile classpath —
+`AndroidPromotionSDK` / `PromotionKit.framework`, không có type của `promotionLogic` trên compile classpath —
 đúng lý do đã có `PromotionApiModels`. Xem [PublicApi.md](../common/PublicApi.md).
 
 ```kotlin
@@ -201,7 +201,7 @@ số lõi, và khẳng định công tắc tổng tắt thì snapshot tắt hế
 
 **~~`ui/feature/featureflag/` (Android) là code chết~~ — đã xoá.** `FeatureFlagViewModel`,
 `FeatureFlagUIState`, `FeatureFlagUIAction` không còn trong source; `ui/feature/` nay chỉ còn
-`choosepromotion`, `endowview`, `ext`, `mypromotion`, `promotiondetail`, `searchmypromotion`.
+`choosepromotion`, `offerwidget`, `ext`, `mypromotion`, `promotiondetail`, `searchmypromotion`.
 Việc gác cờ do `PromotionFeatureGate` (lõi) lo, host hỏi thêm qua `PromotionSDK.featureFlags()`.
 
 **TODO(feature-flag): schema chưa chốt.** Lõi Kotlin và bản iOS cũ parse **hai schema khác nhau**

@@ -12,7 +12,7 @@ import com.ttcn.promotionsdk.presentation.mypromotion.MyPromotionTab
  * Tách khỏi [ChoosePromotionStore] để đọc được "màn này có dữ liệu gì, nhận được lệnh gì" mà không phải
  * lội qua phần điều phối. Logic nằm ở store; ở đây chỉ có cấu trúc, **không** chuỗi hiển thị.
  */
-data class ChoosePromotionState(
+public data class ChoosePromotionState(
     val hasLoadedInitial: Boolean = false,
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -50,7 +50,7 @@ data class ChoosePromotionState(
      * response (kể cả response lỗi).
      *
      * Chỉ để **khoá nút**, không phải cờ loading của màn: shimmer/pull-to-refresh không đọc cờ này.
-     * Việc validate chạy ở `EndowStore` (widget) chứ không ở store này, nên native phải báo hai đầu
+     * Việc validate chạy ở `OfferWidgetStore` (widget) chứ không ở store này, nên native phải báo hai đầu
      * bằng [ChoosePromotionIntent.ApplyStarted] / [ChoosePromotionIntent.ApplyFinished].
      */
     val isApplying: Boolean = false,
@@ -84,17 +84,17 @@ data class ChoosePromotionState(
     val applyMessage: String? = null,
 )
 
-sealed interface ChoosePromotionIntent {
-    data object LoadInitial : ChoosePromotionIntent
-    data class Preload(
+public sealed interface ChoosePromotionIntent {
+    public data object LoadInitial : ChoosePromotionIntent
+    public data class Preload(
         val myOffers: List<EligibleOffer>,
         val otherOffers: List<EligibleOffer>,
         val myIsLastPage: Boolean,
         val otherIsLastPage: Boolean,
     ) : ChoosePromotionIntent
-    data object Refresh : ChoosePromotionIntent
-    data class QueryChanged(val keyword: String) : ChoosePromotionIntent
-    data object Search : ChoosePromotionIntent
+    public data object Refresh : ChoosePromotionIntent
+    public data class QueryChanged(val keyword: String) : ChoosePromotionIntent
+    public data object Search : ChoosePromotionIntent
     /**
      * Xoá trắng từ khoá → nạp lại danh sách đầy đủ ngay, không chờ debounce.
      *
@@ -103,11 +103,11 @@ sealed interface ChoosePromotionIntent {
      * `ChoosePromotionFragment.setupSearch` lẫn `ChoosePromotionViewModel.query(_:)` bên iOS đều
      * chép cùng một `if keyword.isEmpty()`. Giữ intent này cho nút "X" xoá tường minh.
      */
-    data object ClearKeyword : ChoosePromotionIntent
-    data object LoadMoreMyVouchers : ChoosePromotionIntent
-    data object LoadMoreOtherVouchers : ChoosePromotionIntent
+    public data object ClearKeyword : ChoosePromotionIntent
+    public data object LoadMoreMyVouchers : ChoosePromotionIntent
+    public data object LoadMoreOtherVouchers : ChoosePromotionIntent
     /** Seed các voucher pre-select (từ discount đang áp trước đó). */
-    data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
+    public data class SetPreSelected(val ids: List<String>) : ChoosePromotionIntent
     /**
      * Seed pre-select rồi **nạp lại danh sách từ server**, đúng một lần cho cả vòng đời store.
      *
@@ -122,23 +122,23 @@ sealed interface ChoosePromotionIntent {
      * khác). Nay **luôn** gọi `findEligible`, nên cờ phân trang cũng lấy từ chính response đó.
      * [Preload] vẫn còn cho nơi nào thật sự có dữ liệu sẵn và không muốn gọi mạng.
      */
-    data class SeedOnce(val preSelectedIds: List<String>) : ChoosePromotionIntent
+    public data class SeedOnce(val preSelectedIds: List<String>) : ChoosePromotionIntent
     /** Chọn/bỏ chọn 1 ưu đãi theo id. */
-    data class ToggleSelection(val id: String) : ChoosePromotionIntent
+    public data class ToggleSelection(val id: String) : ChoosePromotionIntent
     /** Bấm "Xem thêm/Thu gọn" nhóm của tôi. */
-    data object SeeMoreMy : ChoosePromotionIntent
-    data object ConsumeError : ChoosePromotionIntent
+    public data object SeeMoreMy : ChoosePromotionIntent
+    public data object ConsumeError : ChoosePromotionIntent
 
     /**
      * User vừa bấm "Áp dụng" và lượt validate đã gửi đi → khoá nút ([ChoosePromotionState.isApplying]).
      *
-     * Phải do native bắn vì lượt validate không chạy ở store này (nó nằm ở `EndowStore` của widget).
+     * Phải do native bắn vì lượt validate không chạy ở store này (nó nằm ở `OfferWidgetStore` của widget).
      * **Bắt buộc có [ApplyFinished] đối xứng ở MỌI nhánh kết thúc** — quên một nhánh là nút chết luôn.
      */
-    data object ApplyStarted : ChoosePromotionIntent
+    public data object ApplyStarted : ChoosePromotionIntent
 
     /** Lượt validate đã có kết quả (thành công hay lỗi đều tính) → mở khoá nút. */
-    data object ApplyFinished : ChoosePromotionIntent
+    public data object ApplyFinished : ChoosePromotionIntent
 
     /**
      * `validateStackableDiscounts` trả `valid = false` cho [items] → **disable tại chỗ** những ưu đãi
@@ -147,14 +147,14 @@ sealed interface ChoosePromotionIntent {
      * Bao luôn phần việc của [ApplyFinished] (mở khoá nút), nên native chỉ bắn một intent cho nhánh
      * này — bắn cả hai cũng vô hại nhưng thừa.
      *
-     * Vì sao là intent chứ không phải store tự biết: lượt validate chạy ở `EndowStore` (widget), y
-     * như [ApplyStarted]/[ApplyFinished]. `EndowStore.validateAndApply` trả
-     * `EndowApplyOutcome.Rejected` và native chuyển thẳng danh sách sang đây.
+     * Vì sao là intent chứ không phải store tự biết: lượt validate chạy ở `OfferWidgetStore` (widget), y
+     * như [ApplyStarted]/[ApplyFinished]. `OfferWidgetStore.validateAndApply` trả
+     * `OfferWidgetApplyOutcome.Rejected` và native chuyển thẳng danh sách sang đây.
      */
-    data class ApplyRejected(val items: List<RejectedOffer>) : ChoosePromotionIntent
+    public data class ApplyRejected(val items: List<RejectedOffer>) : ChoosePromotionIntent
 
     /** Đã hiện xong [ChoosePromotionState.applyMessage] → xoá, để lượt sau không thấy câu cũ. */
-    data object ConsumeApplyMessage : ChoosePromotionIntent
+    public data object ConsumeApplyMessage : ChoosePromotionIntent
 }
 
 /**
@@ -168,15 +168,15 @@ sealed interface ChoosePromotionIntent {
  * Chốt theo cách iOS — nạp khi chạm item cuối, **không** đòi phải có cú cuộn: list ngắn hơn màn hình
  * thì Android cũ không bao giờ nạp thêm được.
  */
-fun ChoosePromotionState.shouldLoadMoreOther(visibleIndex: Int): Boolean =
+public fun ChoosePromotionState.shouldLoadMoreOther(visibleIndex: Int): Boolean =
     !otherIsLastPage && !isLoadingMoreOther && !isLoading &&
         otherOffers.isNotEmpty() && visibleIndex >= otherOffers.lastIndex
 
 /** Số item "Ưu đãi của tôi" hiện khi thu gọn — dùng chung 2 nền tảng. */
-const val COLLAPSED_MY_COUNT = 2
+public const val COLLAPSED_MY_COUNT: Int = 2
 
 /** Trạng thái nút "Xem thêm/Thu gọn" nhóm của tôi — quy tắc dùng chung, native chỉ render. */
-enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
+public enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
 
 /**
  * - `HIDDEN` khi số item đã nạp không vượt [COLLAPSED_MY_COUNT]: lúc thu gọn đã thấy hết, nút không
@@ -185,36 +185,36 @@ enum class ChooseSeeMoreState { HIDDEN, EXPAND, COLLAPSE }
  * - `COLLAPSE` khi đang mở hết và không còn trang.
  * - `EXPAND` cho phần còn lại: hoặc còn item chưa hiện, hoặc còn trang để nạp.
  */
-fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
+public fun ChoosePromotionState.mySeeMoreState(): ChooseSeeMoreState = when {
     myOffers.size <= COLLAPSED_MY_COUNT -> ChooseSeeMoreState.HIDDEN
     myExpanded && myIsLastPage -> ChooseSeeMoreState.COLLAPSE
     else -> ChooseSeeMoreState.EXPAND
 }
 
 /** Danh sách "Ưu đãi của tôi" đang hiển thị theo trạng thái mở/thu gọn — dùng chung. */
-fun ChoosePromotionState.visibleMyOffers(): List<ChooseOffer> =
+public fun ChoosePromotionState.visibleMyOffers(): List<ChooseOffer> =
     if (myExpanded) myOffers else myOffers.take(COLLAPSED_MY_COUNT)
 
 /** Toàn bộ ưu đãi đã nạp của cả hai nhóm, đã bóc về domain model. */
-fun ChoosePromotionState.allOffers(): List<EligibleOffer> =
+public fun ChoosePromotionState.allOffers(): List<EligibleOffer> =
     (myOffers + otherOffers).map { it.source }
 
 /**
- * Ưu đãi user **đang chọn** — thứ bấm "Áp dụng" trả về widget (`EndowStore` lo validate & áp).
+ * Ưu đãi user **đang chọn** — thứ bấm "Áp dụng" trả về widget (`OfferWidgetStore` lo validate & áp).
  *
  * Trước đây mỗi nền tảng tự lọc: `ChoosePromotionViewModel.selectedOffers()` bên Android và
  * `ChoosePromotionViewModel.selectedOffers()` + `allLoaded(_:)` bên iOS — hai đoạn code khác ngôn
  * ngữ nhưng cùng một luật, và luật này quyết định **ưu đãi nào được áp vào đơn**. Lệch một chỗ là
  * lệch tiền.
  */
-fun ChoosePromotionState.selectedOffers(): List<EligibleOffer> =
+public fun ChoosePromotionState.selectedOffers(): List<EligibleOffer> =
     allOffers().filter { it.id in selectedIds }
 
 /**
  * Thanh "Đã chọn N voucher" — chỉ ở chế độ chọn nhiều **và** đang có item được chọn.
  * (Android `updateApplyButtonState`, iOS `Display.showsSelectedCount`.)
  */
-fun ChoosePromotionState.showsSelectedCount(): Boolean =
+public fun ChoosePromotionState.showsSelectedCount(): Boolean =
     isMultiSelection && selectedIds.isNotEmpty()
 
 /**
@@ -240,7 +240,7 @@ fun ChoosePromotionState.showsSelectedCount(): Boolean =
  * — xem [toChooseOffer]). Voucher vừa hết hạn ngay lúc nạp lại thì `source.usable` vẫn `true`, chỉ
  * `isUsable` bắt được.
  */
-fun ChoosePromotionState.canApply(): Boolean {
+public fun ChoosePromotionState.canApply(): Boolean {
     val ids = selectedIds.toSet()
     if (ids.isEmpty()) return false
     if (isRefreshing) return false
@@ -255,7 +255,7 @@ fun ChoosePromotionState.canApply(): Boolean {
  * **Có từ khoá** mới tính — list rỗng lúc không tìm kiếm là "chưa có ưu đãi nào", không phải "tìm
  * không ra". Cùng luật với [SearchMyPromotionState.showsNoResult][com.ttcn.promotionsdk.presentation.searchmypromotion.showsNoResult].
  */
-fun ChoosePromotionState.showsNoResult(): Boolean =
+public fun ChoosePromotionState.showsNoResult(): Boolean =
     keyword.isNotBlank() && !isLoading && isEmpty
 
 /**
@@ -265,20 +265,20 @@ fun ChoosePromotionState.showsNoResult(): Boolean =
  * [showsNoResult] lại đòi có từ khoá — không có nhánh này thì user kéo, API hỏng, và nhận về một màn
  * trắng hoàn toàn không giải thích gì.
  */
-fun ChoosePromotionState.showsEmptyView(): Boolean =
+public fun ChoosePromotionState.showsEmptyView(): Boolean =
     showsNoResult() || (loadFailed && !isLoading && !isRefreshing)
 
 /** Từ khoá dùng để tô đậm đoạn khớp trên card; rỗng = không tô. */
-fun ChoosePromotionState.highlightKeyword(): String = keyword.trim()
+public fun ChoosePromotionState.highlightKeyword(): String = keyword.trim()
 
 /** Ưu đãi [id] có đang được tick không — cả hai nền tảng dựng card bằng cờ này. */
-fun ChoosePromotionState.isSelected(id: String): Boolean = id in selectedIds
+public fun ChoosePromotionState.isSelected(id: String): Boolean = id in selectedIds
 
 /**
  * View-model 1 ưu đãi eligible: **bọc** domain [EligibleOffer] ([source]) + quyết định hiển thị đã tính.
  * Native format chuỗi ("Giảm X đ" từ `source.estimatedDiscount`, "Còn X ngày" từ [expiringInDays]).
  */
-data class ChooseOffer(
+public data class ChooseOffer(
     val source: EligibleOffer,
     val isUsable: Boolean,
     val expiringInDays: Int?,
@@ -315,7 +315,7 @@ data class ChooseOffer(
  *
  * Quyết định nằm ở **một chỗ duy nhất** này, Fragment/Cell chỉ đọc.
  */
-fun ChooseOffer.showsIneligibleWarning(): Boolean = !source.usable
+public fun ChooseOffer.showsIneligibleWarning(): Boolean = !source.usable
 
 internal fun EligibleOffer.toChooseOffer(
     expireWarningDate: Int?,

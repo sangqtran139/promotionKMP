@@ -30,7 +30,7 @@ import com.ttcn.promotionsdk.app.databinding.FragmentThemePreviewBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeColorTokenBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemePreviewCardBinding
 import com.ttcn.promotionsdk.app.databinding.ItemThemeSliderTokenBinding
-import com.ttcn.prm.ui.feature.endowview.PRMEndowView
+import com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget
 import com.ttcn.prm.entry.PromotionSDK
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
 import com.ttcn.prm.ui.theme.PromotionThemeDisplay
@@ -357,7 +357,7 @@ class ThemePreviewFragment : Fragment() {
                     R.string.prm_theme_lbl_action_text_color
                 ),
             ),
-            onPreview = { showEndowPreview() },
+            onPreview = { showOfferWidgetPreview() },
         )
     }
 
@@ -727,24 +727,24 @@ class ThemePreviewFragment : Fragment() {
     }
 
     /**
-     * Chỉ còn **một** preview: widget `PRMEndowView`.
+     * Chỉ còn **một** preview: widget `PRMOfferWidget`.
      *
      * Các preview cũ (PRMButton, PRMSearchField, tab chip, tab gạch chân, item voucher) dựng bằng
      * widget/applier/layout **nội bộ** của SDK. Từ khi bề mặt public gói gọn trong
      * `com.ttcn.prm.entry`, host không với tới chúng nữa — và đó là chủ đích, không phải thiếu sót.
      * Muốn xem token áp vào đâu thì bấm "Áp dụng" rồi mở màn SDK thật.
      */
-    private fun showEndowPreview() {
+    private fun showOfferWidgetPreview() {
         syncFieldsFromViews()
         val token = themeDisplay.discountBadge.toToken()
-        val endow = PRMEndowView(requireContext()).apply {
+        val offerWidget = PRMOfferWidget(requireContext()).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
         }
-        showBottomSheet(R.string.prm_theme_sheet_component_prm_endow, endow)
-        endow.post { endow.applyToken(token) }
+        showBottomSheet(R.string.prm_theme_sheet_component_prm_offer, offerWidget)
+        offerWidget.post { offerWidget.applyToken(token) }
     }
 
     private fun onReset() {

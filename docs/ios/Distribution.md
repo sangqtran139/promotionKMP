@@ -43,12 +43,14 @@ Bước 1 do `iosPromotionSDK/scripts/build-xcframework.sh` lo (nó tự gọi G
 - [2. Slice — host không phải khai gì](#2-slice--host-không-phải-khai-gì)
   - [2.1. Những thứ bị loại khỏi gói phát hành](#21-những-thứ-bị-loại-khỏi-gói-phát-hành)
 - [3. Đóng gói: host không phải cài thêm gì — cơ chế và ràng buộc](#3-đóng-gói-host-không-phải-cài-thêm-gì--cơ-chế-và-ràng-buộc)
+  - [3.1. Sàn iOS — cái gì đã kiểm, cái gì chưa](#31-sàn-ios--cái-gì-đã-kiểm-cái-gì-chưa)
 - [4. Đẩy lên Artifactory](#4-đẩy-lên-artifactory)
   - [4.1. Credentials](#41-credentials)
   - [4.2. Không ghi đè version đã phát hành](#42-không-ghi-đè-version-đã-phát-hành)
 - [5. App demo lấy SDK từ đâu](#5-app-demo-lấy-sdk-từ-đâu)
   - [5.1. Cái giá phải trả (biết trước, đừng ngạc nhiên)](#51-cái-giá-phải-trả-biết-trước-đừng-ngạc-nhiên)
-  - [5.2. Đổi ngược về link cục bộ](#52-đổi-ngược-về-link-cục-bộ)
+  - [5.2. Link bản cục bộ — một biến môi trường](#52-link-bản-cục-bộ--một-biến-môi-trường)
+  - [5.3. Gỡ hẳn package, quay lại link file trực tiếp](#53-gỡ-hẳn-package-quay-lại-link-file-trực-tiếp)
 - [6. Liên quan](#6-liên-quan)
 <!-- /toc -->
 
@@ -64,8 +66,13 @@ SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh
 ```
 
 Nó nhồi vào `MARKETING_VERSION` khi `xcodebuild archive` → thành `CFBundleShortVersionString` trong
-`Info.plist` của `PRM.framework` (host đọc lại lúc runtime qua `Bundle`). Không truyền thì lấy mặc
-định trong pbxproj (`MARKETING_VERSION = 1.0.0`).
+`Info.plist` của `PromotionKit.framework` (host đọc lại lúc runtime qua `Bundle`).
+
+Không truyền thì lấy mặc định ở **`iosPromotionSDK/Config/Version.xcconfig`** — khai ở
+`baseConfigurationReference` cấp project nên mọi target đọc chung một dòng. Trước đây con số này
+hardcode ở **4** khối build configuration trong `project.pbxproj`: script phát hành thì đúng, còn ai
+bấm Archive thẳng trong Xcode là ra `1.0.0` **trong im lặng**. Thứ tự ưu tiên:
+`xcodebuild MARKETING_VERSION=…` (CI) **thắng** file xcconfig.
 
 Mỗi lần build, script tự đóng gói `build/Promotion.xcframework.zip` (**tên cố định**, không kèm version —
 mang đi tích hợp ngay; version đã nằm trong Info.plist). Khác Android đặt version vào tên file
@@ -98,7 +105,7 @@ chỉ trần — kể cả phần Kotlin.
 ```
 iosPromotionSDK/build/
 ├── Promotion.xcframework          ← giao cho host
-└── PRM.framework.dSYM             ← GIỮ LẠI, đừng để rơi
+└── PromotionKit.framework.dSYM             ← GIỮ LẠI, đừng để rơi
 ```
 
 > ⚠️ Thư mục `build/` bị `rm -rf` ở **đầu** mỗi lần chạy script. dSYM không được archive đi nơi khác
@@ -113,12 +120,13 @@ Host không cần dSYM để build — chỉ người giữ bản phát hành c�
 Kiểm tra dSYM đúng với binary đang phát hành (hai UUID phải trùng):
 
 ```bash
-dwarfdump --uuid iosPromotionSDK/build/PRM.framework.dSYM/Contents/Resources/DWARF/PRM
-dwarfdump --uuid iosPromotionSDK/build/Promotion.xcframework/ios-arm64/PRM.framework/PRM
+dwarfdump --uuid iosPromotionSDK/build/PromotionKit.framework.dSYM/Contents/Resources/DWARF/PromotionKit
+dwarfdump --uuid iosPromotionSDK/build/Promotion.xcframework/ios-arm64/PromotionKit.framework/PromotionKit
 ```
 
-> Tên binary là `PRM` (`PRODUCT_NAME`), không phải `PromotionSDKUI` — vỏ xcframework tên
-> `Promotion.xcframework` nhưng framework bên trong là `PRM.framework`, host `import PRM`.
+> Tên binary là `PromotionKit` (`PRODUCT_NAME`) — trùng tên module host viết ở dòng
+> `import PromotionKit`. Chỉ **vỏ** xcframework còn mang tên khác (`Promotion.xcframework`); tên vỏ
+> và đường dẫn phát hành do CI/CD chốt.
 
 ## 2. Slice — host không phải khai gì
 
@@ -158,13 +166,13 @@ quick-help của Xcode bên app host. 143 KB đổi lấy tài liệu hiện nga
 
 ## 3. Đóng gói: host **không phải cài thêm gì** — cơ chế và ràng buộc
 
-Bất biến của SDK iOS: host kéo **đúng một** `Promotion.xcframework`, `import PRM`,
+Bất biến của SDK iOS: host kéo **đúng một** `Promotion.xcframework`, `import PromotionKit`,
 xong. Không khai thư viện nào, không thêm SPM package, không chép resource bundle. Ba cơ chế giữ bất biến
 này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 
 1. **Mọi dependency link tĩnh vào trong framework — và nay gần như không còn dependency ngoài.**
    Các local package (`PRMFoundation`, `PRMDesignKit`, `PRMPromotionUI`, `PRMKotlinBridge`) là static
-   library; khi archive target `PromotionSDKUI` (một framework, `BUILD_LIBRARY_FOR_DISTRIBUTION = YES`)
+   library; khi archive target `PromotionKit` (một framework, `BUILD_LIBRARY_FOR_DISTRIBUTION = YES`)
    chúng bị nhồi thẳng vào binary. Lõi Kotlin `PromotionLogic.xcframework` cũng gộp vào qua
    `binaryTarget`. **RxSwift đã được gỡ hoàn toàn** (tầng UI ràng buộc View↔VM bằng **callback thuần**),
    nên không còn thư viện reactive bên thứ ba nào trong gói — kiểm lại bằng `nm`: 0 symbol RxSwift trong
@@ -201,7 +209,7 @@ này (khác Android — nơi androidx **vẫn** rò ra public API, xem §5.1):
 ### 3.1. Sàn iOS — cái gì đã kiểm, cái gì chưa
 
 SDK dùng Swift concurrency (`Task` / `async` / `await`) và **không bỏ được**: SKIE bridge mọi hàm
-`suspend` của Kotlin thành `async`, nên `PromotionSDKApi`, `EndowViewModel`, `PromotionSDKImpl` đều
+`suspend` của Kotlin thành `async`, nên `PromotionSDKApi`, `OfferWidgetViewModel`, `PromotionSDKImpl` đều
 đi qua nó. Combine còn ở 2 tiện ích (`UITextField+Combine`, `PRMRefreshTableView`) — Combine là
 thành phần của iOS 13, không phải nguồn rủi ro ở đây.
 
@@ -216,7 +224,7 @@ Concurrency runtime chỉ nằm sẵn **trong iOS từ 15.0**. Dưới mức đ�
 | `libswift_Concurrency.dylib` có được nhúng vào `iosApp.app/Frameworks/` | ✅ có, cả bản device lẫn simulator — Xcode tự làm vì SDK nhúng trong app |
 | Sàn của dylib nhúng (**device**) | ✅ `LC_VERSION_MIN_IPHONEOS 7.0` → nạp được trên iOS 13 |
 | Sàn của dylib nhúng (**simulator**) | ⚠️ `minos 14.0` — vô hại, vì **không có** simulator dưới 14 |
-| `PRM.framework` weak-link `@rpath/libswift_Concurrency.dylib` + có rpath `@executable_path/Frameworks` | ✅ |
+| `PromotionKit.framework` weak-link `@rpath/libswift_Concurrency.dylib` + có rpath `@executable_path/Frameworks` | ✅ |
 | App bản sàn-13.0 khởi động trên simulator | ✅ không crash |
 
 **Chưa kiểm (runtime) — và không kiểm được bằng toolchain hiện tại:**
@@ -371,7 +379,26 @@ Cấu hình cũ (link thẳng `../iosPromotionSDK/build/Promotion.xcframework`) 
 `checksum` của SPM = **sha256 thường** của file zip (đã kiểm: `swift package compute-checksum` ra
 đúng số mà `shasum -a 256` cho), nên chép thẳng từ `metadata.json` cạnh zip.
 
-### 5.2. Đổi ngược về link cục bộ
+### 5.2. Link bản cục bộ — một biến môi trường
+
+Không phải publish trước nữa. `PromotionRemote/Package.swift` đọc `PRM_LOCAL_XCFRAMEWORK`; có biến
+thì nó dùng `binaryTarget(path:)` trỏ đĩa, không có thì giữ nguyên `binaryTarget(url:checksum:)`:
+
+```bash
+./iosPromotionSDK/scripts/build-xcframework.sh          # dựng bản cần thử
+
+PRM_LOCAL_XCFRAMEWORK=../../iosPromotionSDK/build/Promotion.xcframework \
+  xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+```
+
+Đường dẫn tương đối tính từ **thư mục chứa `Package.swift`** (`iosApp/PromotionRemote/`), đúng như
+SwiftPM hiểu `path:`. Không đặt biến thì hành vi y hệt trước — CI và máy dev khác không phải đổi gì.
+
+Đây là đường thoát cho hai vấn đề ở §5.1: verify được **trước** khi publish, và thôi đốt một số
+version cho mỗi lần thử.
+
+### 5.3. Gỡ hẳn package, quay lại link file trực tiếp
 
 Bỏ comment các khối `CŨ` trong `project.pbxproj` (5 chỗ: `PBXBuildFile`, `PBXFileReference`,
 `PBXFrameworksBuildPhase`, `PBXCopyFilesBuildPhase`, `FRAMEWORK_SEARCH_PATHS` ×2), rồi gỡ
@@ -382,7 +409,7 @@ Bỏ comment các khối `CŨ` trong `project.pbxproj` (5 chỗ: `PBXBuildFile`,
 ## 6. Liên quan
 
 - [../common/PublicApi.md](../common/PublicApi.md) — bề mặt SDK cho host; đổi là breaking, ảnh hưởng chính sách version.
-- [../common/ProjectStructure.md](../common/ProjectStructure.md) — vai trò `:promotionLogic` / `PromotionSDKUI`.
+- [../common/ProjectStructure.md](../common/ProjectStructure.md) — vai trò `:promotionLogic` / `PromotionKit`.
 - [UIGuide.md](./UIGuide.md) — pattern UI iOS, base class `PRM*`, Combine + async/await.
 - [../android/Distribution.md](../android/Distribution.md) — kênh phát hành Android (Maven).
 - [../AI_AGENT_RULES.md](../AI_AGENT_RULES.md) — điều 6 (thêm thư viện phải có lý do), điều 8 (đổi API thì cập nhật docs).

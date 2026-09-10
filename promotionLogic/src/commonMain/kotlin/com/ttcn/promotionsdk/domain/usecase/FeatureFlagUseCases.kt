@@ -5,37 +5,37 @@ import com.ttcn.promotionsdk.domain.model.featureflag.FeatureFlag
 import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlags
 import com.ttcn.promotionsdk.domain.repository.FeatureFlagRepository
 
-class FetchFeatureFlagsUseCase internal constructor(
+public class FetchFeatureFlagsUseCase internal constructor(
     private val repository: FeatureFlagRepository,
 ) {
-    constructor() : this(get<FeatureFlagRepository>())
+    public constructor() : this(get<FeatureFlagRepository>())
 
-    suspend operator fun invoke() = repository.fetchFlags()
+    public suspend operator fun invoke(): Unit = repository.fetchFlags()
 }
 
-class IsFeatureEnabledUseCase internal constructor(
+public class IsFeatureEnabledUseCase internal constructor(
     private val repository: FeatureFlagRepository,
 ) {
-    constructor() : this(get<FeatureFlagRepository>())
+    public constructor() : this(get<FeatureFlagRepository>())
 
-    operator fun invoke(featureName: String): Boolean = repository.isEnabled(featureName)
+    public operator fun invoke(featureName: String): Boolean = repository.isEnabled(featureName)
 }
 
-class GetFeatureFlagsUseCase internal constructor(
+public class GetFeatureFlagsUseCase internal constructor(
     private val repository: FeatureFlagRepository,
 ) {
-    constructor() : this(get<FeatureFlagRepository>())
+    public constructor() : this(get<FeatureFlagRepository>())
 
-    operator fun invoke(featureNames: List<String>): List<FeatureFlag> =
+    public operator fun invoke(featureNames: List<String>): List<FeatureFlag> =
         featureNames.map { FeatureFlag(name = it, enabled = repository.isEnabled(it)) }
 }
 
-class GetPromotionFeatureFlagsUseCase internal constructor(
+public class GetPromotionFeatureFlagsUseCase internal constructor(
     private val repository: FeatureFlagRepository,
 ) {
-    constructor() : this(get<FeatureFlagRepository>())
+    public constructor() : this(get<FeatureFlagRepository>())
 
-    operator fun invoke(): PromotionFeatureFlags = repository.getPromotionFeatureFlags()
+    public operator fun invoke(): PromotionFeatureFlags = repository.getPromotionFeatureFlags()
 }
 
 /**
@@ -44,24 +44,24 @@ class GetPromotionFeatureFlagsUseCase internal constructor(
  *
  * [refresh] không ném lỗi: gọi API thất bại thì giữ nguyên cờ đang cache.
  */
-class PromotionFeatureFlagUseCases internal constructor(
+public class PromotionFeatureFlagUseCases internal constructor(
     private val fetchFeatureFlags: FetchFeatureFlagsUseCase,
     private val isFeatureEnabled: IsFeatureEnabledUseCase,
     private val getFeatureFlags: GetFeatureFlagsUseCase,
     private val getPromotionFeatureFlags: GetPromotionFeatureFlagsUseCase,
 ) {
-    constructor() : this(
+    public constructor() : this(
         FetchFeatureFlagsUseCase(),
         IsFeatureEnabledUseCase(),
         GetFeatureFlagsUseCase(),
         GetPromotionFeatureFlagsUseCase(),
     )
 
-    suspend fun refresh() = fetchFeatureFlags()
+    public suspend fun refresh(): Unit = fetchFeatureFlags()
 
-    fun isEnabled(featureName: String): Boolean = isFeatureEnabled(featureName)
+    public fun isEnabled(featureName: String): Boolean = isFeatureEnabled(featureName)
 
-    fun flagsOf(featureNames: List<String>): List<FeatureFlag> = getFeatureFlags(featureNames)
+    public fun flagsOf(featureNames: List<String>): List<FeatureFlag> = getFeatureFlags(featureNames)
 
-    fun all(): PromotionFeatureFlags = getPromotionFeatureFlags()
+    public fun all(): PromotionFeatureFlags = getPromotionFeatureFlags()
 }

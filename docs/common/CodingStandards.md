@@ -10,6 +10,7 @@ Repo có hai ngôn ngữ: **Kotlin** (lõi `:promotionLogic` + UI Android) và *
   - [1.1. Riêng cho `commonMain`](#11-riêng-cho-commonmain)
 - [2. Quy ước đặt tên — Kotlin](#2-quy-ước-đặt-tên--kotlin)
   - [2.1. Tiền tố](#21-tiền-tố)
+  - [2.2. Chuỗi hiển thị — không viết literal tại chỗ](#22-chuỗi-hiển-thị--không-viết-literal-tại-chỗ)
 - [3. MVI contract (UI Android)](#3-mvi-contract-ui-android)
 - [4. Coroutines & Flow](#4-coroutines--flow)
 - [5. Visibility](#5-visibility)
@@ -62,21 +63,40 @@ nhúng vào host do **namespace** lo, nên tên type giữ nguyên nghĩa, dễ 
 
 | | Android | iOS |
 |---|---|---|
-| Namespace / module | `com.ttcn.prm` | `PRM` (`import PRM`) |
+| Namespace / module | `com.ttcn.prm` | `PRM` (`import PromotionKit`) |
 | Type bề mặt host | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSessionConfig`, `AppliedDiscount` | y hệt |
 
 - **Lõi `:promotionLogic`**: *không* prefix, package riêng `com.ttcn.promotionsdk.*`.
   `PromotionUseCases`, `PromotionSDKConfig`, `EligibleOffer`.
-- **UI SDK**: base class và custom view **public** vẫn dùng `PRM` — `PRMBaseFragment`, `PRMEndowView`,
+- **UI SDK**: base class và custom view **public** vẫn dùng `PRM` — `PRMBaseFragment`, `PRMOfferWidget`,
   `PRMButton`. Đây là những thứ host **kế thừa/đặt thẳng vào layout** nên tên dễ đụng nhất.
-- Type bề mặt SDK khác giữ tên mô tả: `PromotionSDK`, `PromotionSDKApi`, `ButtonToken`… — **không**
+- Type bề mặt SDK khác giữ tên mô tả: `PromotionSDK`, `PromotionSDKApi`, `PRMButtonToken`… — **không**
   ép thành `PRMSDK`/`PRMButtonToken` (tối nghĩa, và namespace đã đủ tách biệt).
 - **Bắt buộc trùng chữ Android ↔ iOS.** Cùng một khái niệm phải cùng tên type ở hai bên (điều 10
   [AI_AGENT_RULES](../AI_AGENT_RULES.md)). Đổi tên một bên = đổi cả hai trong cùng thay đổi.
 - **Type `internal`/`private`** không cần bận tâm (`MyPromotionViewController`, `PromotionSDKImpl`,
   `PromotionUIStrings`, các ViewModel).
 
-> ⚠️ **Module iOS tên `PRM`, không được đặt trùng tên một type public bên trong.** Nếu module trùng tên
+### 2.2. Chuỗi hiển thị — không viết literal tại chỗ
+
+Mọi câu chữ user nhìn thấy phải đi qua bảng chuỗi, **kể cả khi SDK chỉ chạy tiếng Việt**:
+
+| | Android | iOS |
+|---|---|---|
+| Khai chuỗi | `res/values/strings.xml` + `res/values-en/strings.xml` | `PromotionKit/Resources/{vi,en}.lproj/PromotionKit.strings` |
+| Đọc chuỗi | `PRMLocale.wrap(context).getString(R.string.prm_*)` | `PromotionUIStrings.<tên>` |
+| Chọn ngôn ngữ | `PRMLocale` | `PRMLocalization` |
+
+Ba ràng buộc:
+
+1. **Khoá trùng tên hai nền tảng** (`prm_use_now` ở cả hai). Cùng một câu mà hai bên đặt tên khác
+   nhau thì mỗi lần sửa câu chữ đều phải nhớ bên kia gọi nó là gì.
+2. **Thêm chuỗi là thêm ở CẢ HAI bảng ngôn ngữ.** Android có `MissingTranslation` mức `error` canh;
+   iOS có `PromotionLocalizationTests.test_haiBangChuoi_cungTapKhoa`.
+3. **iOS dùng `static var`, không dùng `static let`.** `static let` đóng băng giá trị ở lần đọc đầu,
+   nên host đổi `language` thì chữ đứng nguyên — và lỗi đó không hiện ra ở lần chạy nào của dev.
+
+> ⚠️ **Module iOS tên `PromotionKit`, không được đặt trùng tên một type public bên trong.** Nếu module trùng tên
 > class (từng thử `PromotionSDK`/`PromotionSDK`), `.swiftinterface` sinh ra `PromotionSDK.PromotionVoucher`
 > và Swift hiểu là type **lồng trong class** → build gãy:
 > `error: 'PromotionVoucher' is not a member type of class 'PromotionSDK.PromotionSDK'`.

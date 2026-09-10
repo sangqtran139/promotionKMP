@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  * Trạng thái dùng được chuyển sang `metadata.usable` + `disabledReason`.
  */
 @Serializable
-data class CustomerVoucherDetail(
+public data class CustomerVoucherDetail(
     @SerialName("voucher") val voucher: VoucherInfoDto,
     @SerialName("codes") val codes: List<VoucherCodeDto> = emptyList(),
     @SerialName("quantity") val quantity: Int? = null,

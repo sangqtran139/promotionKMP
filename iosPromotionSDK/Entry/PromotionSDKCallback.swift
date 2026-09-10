@@ -42,8 +42,8 @@ public protocol PromotionSDKCallback: AnyObject {
     // ba chỗ nữa. Quyết định loại ba sự kiện đó ghi ở `docs/common/InitParity.md` §3 mục "Đã loại".
     // Host cần cờ tính năng thì dùng `PromotionSDK.refreshFeatureFlags`.
 
-    /// Gọi khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget
-    /// Endow) trả về HTTP 401 và **không cứu được** — tức `PromotionTokenSource.refreshToken(_:)` đã
+    /// Gọi khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi /
+    /// widget ưu đãi) trả về HTTP 401 và **không cứu được** — tức `PromotionTokenSource.refreshToken(_:)` đã
     /// báo `false`, hoặc host không cài đặt nó.
     ///
     /// Nghĩa là phiên đã chết thật: host nên điều hướng user về màn đăng nhập. Host **không** cần đẩy

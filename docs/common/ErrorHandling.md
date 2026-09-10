@@ -15,11 +15,11 @@ Phân loại, lan truyền và hiển thị lỗi trong TTCN Promotion SDK. Mụ
 - [4. Quy tắc ở UI](#4-quy-tắc-ở-ui)
   - [4.1. Android (MVI)](#41-android-mvi)
   - [4.2. iOS (MVVM + callback thuần)](#42-ios-mvvm--callback-thuần)
-    - [4.2.1. Một đường map mã lỗi → type công khai](#421-một-đường-map-mã-lỗi--type-công-khai)
   - [4.3. Không còn toast — chỉ còn popup hoặc im lặng](#43-không-còn-toast--chỉ-còn-popup-hoặc-im-lặng)
-    - [4.3.1. Ngoại lệ: câu của server, không qua bảng mã lỗi](#431-ngoại-lệ-câu-của-server-không-qua-bảng-mã-lỗi)
-  - [4.4. PRM_MOB_021 — tính năng bị cờ chặn](#44-prm_mob_021--tính-năng-bị-cờ-chặn)
-  - [4.5. Cả hai](#45-cả-hai)
+  - [4.4. Một đường map mã lỗi → type công khai](#44-một-đường-map-mã-lỗi--type-công-khai)
+  - [4.5. Ngoại lệ: câu của server, không qua bảng mã lỗi](#45-ngoại-lệ-câu-của-server-không-qua-bảng-mã-lỗi)
+  - [4.6. PRM_MOB_021 — tính năng bị cờ chặn](#46-prm_mob_021--tính-năng-bị-cờ-chặn)
+  - [4.7. Cả hai](#47-cả-hai)
 - [5. Quy tắc](#5-quy-tắc)
 <!-- /toc -->
 
@@ -108,13 +108,13 @@ Bắt `IOException` trước sẽ nuốt mất timeout và báo sai mã lỗi.
 `PromotionException.httpStatus`: `401` → luôn trả `TOKEN_EXPIRED`, bất kể `errorCode` server gửi
 kèm là gì. `403` (không đủ quyền, token vẫn hợp lệ) **không** map sang mã này — rơi về nhánh
 `errorCode`/`GENERAL` bình thường, không bắn `onExpireToken()`. Đây là **điểm chặn duy nhất** — cả 5
-store (`MyPromotion`/`SearchMyPromotion`/`ChoosePromotion`/`PromotionDetail`/`Endow`) đi qua hàm này
+store (`MyPromotion`/`SearchMyPromotion`/`ChoosePromotion`/`PromotionDetail`/`OfferWidget`) đi qua hàm này
 nên không phải sửa từng store.
 
 Ở tầng Android UI, mã `TOKEN_EXPIRED` được hai nơi đọc thêm (ngoài đường Popup/Không-hiện-gì bình
 thường ở §4) để bắn `PromotionSDKCallback.onExpireToken()` ra host:
 - `PRMStoreViewModel.effects` — phủ 4 màn Fragment.
-- `PRMEndowView.renderState` — widget Endow không đi qua `effects` nên tự bắt riêng.
+- `PRMOfferWidget.renderState` — widget ưu đãi không đi qua `effects` nên tự bắt riêng.
 
 `onExpireToken()` bắn **thêm**, không thay thế luồng báo lỗi hiện có (Popup/im lặng ở §4 vẫn chạy như
 cũ) — host tự quyết định điều hướng (thường là refresh token/đưa user về màn login). **Chưa áp dụng
@@ -182,11 +182,11 @@ phải Fragment/VC (ví dụ `PromotionSDK` gọi từ Activity, `PRMBaseRouter`
 Đang dùng popup ở: validate hỏng khi bấm "Áp dụng", **ưu đãi bị validate từ chối**, kéo-để-tải-lại
 hỏng (màn "Chọn ưu đãi"), và mọi đường bị feature flag chặn.
 
-### 4.2.1. Một đường map mã lỗi → type công khai
+### 4.4. Một đường map mã lỗi → type công khai
 
 `PromotionSDKError.from(errorCode, serverMessage, httpStatus)` là **nơi duy nhất** quy mã lỗi thô
 sang type mà host bắt được. Cả hai bề mặt gọi chung nó: headless (`PromotionSDKApi.toSdkError`) và
-callback của widget (`PRMEndowView.onError`, `confirmRedemption`).
+callback của widget (`PRMOfferWidget.onError`, `confirmRedemption`).
 
 Trước đây mỗi bề mặt map một bản riêng, và hai bản **không khớp**: bản ở `PromotionApiResult` trả
 `message = ""` cho `NETWORK_ERROR`, bản ở `PromotionSDKApi` trả `failure.message` kèm `httpStatus`.
@@ -202,7 +202,7 @@ Hai luật của hàm này:
   một "lỗi mạng" mà thật ra là rule nghiệp vụ, với **mã lỗi thô nằm đúng chỗ đáng lẽ là câu hiển thị
   cho người dùng** — hiện thẳng lên UI là ra chữ `VOUCHER_EXPIRED`.
 
-### 4.3.1. Ngoại lệ: câu của server, không qua bảng mã lỗi
+### 4.5. Ngoại lệ: câu của server, không qua bảng mã lỗi
 
 Có đúng **một** đường mà popup hiện chuỗi thô từ API thay vì map qua bảng mã: `validateStackableDiscounts`
 trả `valid = false` cho ưu đãi user vừa chọn.
@@ -222,14 +222,14 @@ Server từ chối mà **không** kèm câu nào (`message` rỗng) thì mới l
 
 Chi tiết luồng: [features/ChoosePromotion.md §2.2](../features/ChoosePromotion.md#22-server-từ-chối-ưu-đãi--disable-tại-chỗ).
 
-### 4.4. PRM_MOB_021 — tính năng bị cờ chặn
+### 4.6. PRM_MOB_021 — tính năng bị cờ chặn
 
 **SDK tự hiện popup, host không phải lo câu chữ.** Đây là quyết định của SDK (chính SDK tắt tính
 năng) nên thông báo cũng phải của SDK. Gom đúng một hàm mỗi nền tảng:
 
 | Nền tảng | Hàm | Call site |
 |---|---|---|
-| Android | `PRMBaseConfirmDialog.showFeatureDisabled(context, fm)` | `PRMBaseFragment.openPromotionDetail`, `PromotionSDK.openMyPromotion`, `PromotionSDK.openPromotionDetail`, `PRMEndowView.confirmRedemption` |
+| Android | `PRMBaseConfirmDialog.showFeatureDisabled(context, fm)` | `PRMBaseFragment.openPromotionDetail`, `PromotionSDK.openMyPromotion`, `PromotionSDK.openPromotionDetail`, `PRMOfferWidget.confirmRedemption` |
 | iOS | `PromotionSDKImpl.showFeatureDisabledToast(on:)` | `PRMBaseRouter.canOpenVoucherDetail()`, `PromotionSDKImpl.confirmRedemption` |
 
 Host **vẫn** nhận lỗi qua `onError` — để **dừng luồng thanh toán**, không phải để hiện chữ. Callback
@@ -247,7 +247,7 @@ trên compile classpath của host), nên host chỉ còn cách hardcode `"PRM_M
 `PromotionSDKError.from(code)` cho ai nhận mã thô từ nguồn khác — nó dùng đúng bảng map mà
 `PromotionSDKApi` (headless) đang dùng, một nguồn sự thật.
 
-### 4.5. Cả hai
+### 4.7. Cả hai
 
 Tra message theo `errorCode`, **không** hiển thị thẳng `message` từ server nếu đã có bản dịch cục bộ.
 `:promotionLogic` không chứa chuỗi tiếng Việt (AI_AGENT_RULES).

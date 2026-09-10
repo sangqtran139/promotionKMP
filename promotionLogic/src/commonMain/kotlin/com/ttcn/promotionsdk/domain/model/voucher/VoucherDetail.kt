@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.domain.model.voucher
 
-data class VoucherDetail(
+public data class VoucherDetail(
     val voucherId: String,
     val merchantName: String? = null,
     val logo: String? = null,

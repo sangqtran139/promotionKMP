@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copy resource bundle của các SPM package vào trong PromotionSDKUI.framework.
+# Copy resource bundle của các SPM package vào trong PromotionKit.framework.
 #
 # Vì sao cần: package khai `resources:` (PRMDesignKit, PRMPromotionUI) sinh ra bundle riêng
 # `PRMDesignKit_PRMDesignKit.bundle`, `PRMPromotionUI_PRMPromotionUI.bundle`. Khi package được link **tĩnh** vào

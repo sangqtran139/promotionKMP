@@ -14,13 +14,15 @@
     <!-- ─── Rò rỉ sang app host — nhóm nghiêm trọng nhất với library ─────────────── -->
 
     <!--
-      Cần `resourcePrefix` trong build.gradle.kts mới có tác dụng. CHƯA bật `resourcePrefix` được:
-      38 `<style>` và 16 `<declare-styleable>` đang dùng `PRM` HOA (`PRMBaseTheme`, `PRMEditText`)
-      trong khi 446 resource còn lại dùng `prm` thường. `resourcePrefix` chỉ nhận MỘT chuỗi và so
-      bằng `startsWith` trên chuỗi thô, nên không tiền tố nào phủ được cả hai. Xem UI-1 trong bản rà
-      soát: phải đổi tên 54 chỗ đó trước, rồi mới bật.
+      Đây là NỬA CÒN LẠI của `resourcePrefix = "prm"` trong build.gradle.kts: một mình
+      `resourcePrefix` không chặn gì (đã kiểm — resource tên `totally_wrong_name` vẫn qua
+      `assembleRelease`), nó chỉ là dữ liệu đầu vào cho rule này.
+
+      Ghi chú cũ ở đây nói phải rename 54 chỗ viết `PRM` HOA trước mới bật được. Đã kiểm bằng thực
+      nghiệm: **không cần** — check của AGP không phân biệt hoa/thường ở phần prefix, 31 style
+      `PRMFont*` và 16 `declare-styleable` đi qua bình thường. Bật xong: 0 vi phạm.
     -->
-    <issue id="ResourceName" severity="warning" />
+    <issue id="ResourceName" severity="error" />
 
     <!-- Resource chết vẫn nằm trong AAR và vẫn merge vào host. -->
     <issue id="UnusedResources" severity="error" />
@@ -37,13 +39,23 @@
     <!--
       Đã xử lý hết ImageView trang trí bằng `importantForAccessibility="no"` (đúng cách — nó bảo
       TalkBack bỏ qua, khác `tools:ignore` chỉ làm im lint). Giữ `error` để không quay lại.
+
+      GIỚI HẠN cần biết: rule này **không** soi được `com.ttcn.prm.ui.widget.PRMImageView` —
+      lint bắt theo tên thẻ, mà phần lớn layout của SDK dùng custom view chứ không dùng `<ImageView>`
+      trần. Nên gate xanh KHÔNG có nghĩa là đã phủ hết; 27 trong 31 ảnh của SDK là loại lint không
+      thấy, và chúng được xử lý bằng tay. Thêm ảnh mới thì phải tự đặt thuộc tính, đừng chờ lint nhắc.
     -->
     <issue id="ContentDescription" severity="error" />
     <issue id="LabelFor" severity="warning" />
 
     <!-- ─── Tắt có chủ đích ─────────────────────────────────────────────────────── -->
-    <!-- Ồn, và với SDK thì nền do host quyết (xem docs/features/EndowView.md §1.1). -->
+    <!-- Ồn, và với SDK thì nền do host quyết (xem docs/features/OfferWidget.md §1.1). -->
     <issue id="Overdraw" severity="ignore" />
-    <!-- SDK chỉ có vi-VN — xem CODE-3 trong bản rà soát. -->
-    <issue id="MissingTranslation" severity="ignore" />
+    <!--
+      Trước đây `ignore` vì SDK chỉ có `values/` (vi). Nay đã có `values-en/` và
+      `PromotionSessionConfig.language` **thật sự** đổi được chữ trên UI (xem `PRMLocale`), nên
+      thiếu bản dịch là lỗi thật: màn hình lẫn hai ngôn ngữ, và chỉ QA mắt thường mới bắt được.
+      `error` để mỗi chuỗi mới buộc phải có cả hai bản.
+    -->
+    <issue id="MissingTranslation" severity="error" />
 </lint>

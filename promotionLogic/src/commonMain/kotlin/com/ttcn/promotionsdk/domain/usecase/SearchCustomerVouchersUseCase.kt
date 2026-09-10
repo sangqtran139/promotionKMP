@@ -8,7 +8,7 @@ import com.ttcn.promotionsdk.domain.model.voucher.SearchCustomerVouchersResult
 import com.ttcn.promotionsdk.domain.repository.PromotionRepository
 import kotlin.coroutines.cancellation.CancellationException
 
-class SearchCustomerVouchersUseCase private constructor(
+public class SearchCustomerVouchersUseCase private constructor(
     private val repositoryProvider: () -> PromotionRepository,
 ) {
 
@@ -21,7 +21,7 @@ class SearchCustomerVouchersUseCase private constructor(
      * Repository được lấy từ đồ thị đã dựng bởi `PromotionContainer.initialize(...)`.
      * Gọi trước khi init sẽ ném `IllegalStateException`.
      */
-    constructor() : this({ get<PromotionRepository>() })
+    public constructor() : this({ get<PromotionRepository>() })
 
     /**
      * Ném [PromotionException] (lỗi nghiệp vụ/HTTP) hoặc [NetworkException] (timeout, mất mạng).
@@ -30,7 +30,7 @@ class SearchCustomerVouchersUseCase private constructor(
      * exception không khai báo sẽ `abort()` tiến trình thay vì báo lỗi cho Swift.
      */
     @Throws(PromotionException::class, NetworkException::class, CancellationException::class)
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         request: SearchCustomerVouchersRequest,
     ): SearchCustomerVouchersResult? = promotionCall {
         repository.searchCustomerVouchers(

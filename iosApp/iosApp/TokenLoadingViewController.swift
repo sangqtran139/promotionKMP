@@ -11,7 +11,7 @@
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 final class TokenLoadingViewController: UIViewController {
 

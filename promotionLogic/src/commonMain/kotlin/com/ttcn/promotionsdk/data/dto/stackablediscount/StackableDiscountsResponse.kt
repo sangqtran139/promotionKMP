@@ -6,7 +6,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
-data class StackableDiscountsResponse(
+public data class StackableDiscountsResponse(
     @SerialName("validationResult") val validationResult: StackingValidationResult,
     @SerialName("decisionToken") val decisionToken: String? = null,
     @SerialName("sessionId") val sessionId: String? = null,
@@ -18,7 +18,7 @@ data class StackableDiscountsResponse(
 )
 
 @Serializable
-data class StackingValidationResult(
+public data class StackingValidationResult(
     @SerialName("overallValid") val overallValid: Boolean,
     @SerialName("canStack") val canStack: Boolean = false,
     @SerialName("totalDiscountAmount") val totalDiscountAmount: String = "",
@@ -28,14 +28,14 @@ data class StackingValidationResult(
 )
 
 @Serializable
-data class StackingAnalysis(
+public data class StackingAnalysis(
     @SerialName("stackableGroups") val stackableGroups: List<StackableGroup> = emptyList(),
     @SerialName("conflicts") val conflicts: List<StackingConflict> = emptyList(),
     @SerialName("exclusions") val exclusions: List<StackingExclusion> = emptyList(),
 )
 
 @Serializable
-data class StackableGroup(
+public data class StackableGroup(
     @SerialName("groupId") val groupId: String,
     @SerialName("discounts") val discounts: List<String> = emptyList(),
     @SerialName("stackingRule") val stackingRule: String = "",
@@ -44,20 +44,20 @@ data class StackableGroup(
 )
 
 @Serializable
-data class StackingConflict(
+public data class StackingConflict(
     @SerialName("conflictType") val conflictType: String,
     @SerialName("discounts") val discounts: List<String> = emptyList(),
     @SerialName("reason") val reason: String = "",
 )
 
 @Serializable
-data class StackingExclusion(
+public data class StackingExclusion(
     @SerialName("excludedObjectId") val excludedObjectId: String,
     @SerialName("reason") val reason: String = "",
 )
 
 @Serializable
-data class DiscountDetail(
+public data class DiscountDetail(
     @SerialName("objectId") val objectId: String,
     @SerialName("objectType") val objectType: String,
     @SerialName("valid") val valid: Boolean,
@@ -65,14 +65,14 @@ data class DiscountDetail(
     @SerialName("eligibilityStatus") val eligibilityStatus: String = "",
     @SerialName("budgetStatus") val budgetStatus: String = "",
     @SerialName("validationMessages") val validationMessages: List<String> = emptyList(),
-    /** Nhãn hiển thị cho UI (ví dụ text trên voucher ở widget Endow) — `tags[0]` là nhãn chính. */
+    /** Nhãn hiển thị cho UI (ví dụ text trên voucher ở widget ưu đãi) — `tags[0]` là nhãn chính. */
     @SerialName("tags") val tags: List<String> = emptyList(),
     /** Payload tự do — xem ghi chú ở `RedeemableRequest.metadata`. */
     @SerialName("metadata") val metadata: JsonObject = JsonObject(emptyMap()),
 )
 
 @Serializable
-data class StackingOptimization(
+public data class StackingOptimization(
     @SerialName("recommendedOrder") val recommendedOrder: List<String> = emptyList(),
     /** Server trả mảng object hình dạng chưa cố định; giữ nguyên dạng JSON thay vì `List<Any>`. */
     @SerialName("alternativeStacks") val alternativeStacks: List<JsonElement> = emptyList(),
@@ -92,7 +92,7 @@ data class StackingOptimization(
  * `explicitNulls = false` của [PromotionHttpClient] chỉ bỏ null lúc **ghi**, không cứu lúc **đọc**.
  */
 @Serializable
-data class BusinessRuleViolation(
+public data class BusinessRuleViolation(
     @SerialName("ruleCode") val ruleCode: String? = null,
     @SerialName("message") val message: String? = null,
 )

@@ -48,7 +48,7 @@ Bên nhận **không được**:
 - Phân phối, bán, cho thuê, cấp phép lại SDK dưới dạng thư viện độc lập cho bên thứ ba.
 - Dịch ngược, tháo rời, hoặc tìm cách khôi phục mã nguồn, trừ phạm vi luật pháp cho phép rõ ràng.
 - Gỡ bỏ hoặc che giấu thông báo bản quyền, nhãn hiệu trong SDK và tài liệu.
-- Sử dụng thành phần nội bộ (mọi thứ ngoài bề mặt công khai `com.ttcn.prm.entry.**` và module `PRM`)
+- Sử dụng thành phần nội bộ (mọi thứ ngoài bề mặt công khai `com.ttcn.prm.entry.**` và module `PromotionKit`)
   — bao gồm cả việc tiếp cận qua Java, reflection hay công cụ tương đương.
 - Sửa đổi SDK rồi phát hành như sản phẩm của mình.
 

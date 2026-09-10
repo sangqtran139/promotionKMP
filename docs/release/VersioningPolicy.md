@@ -6,11 +6,6 @@ Cam kết của đội SDK với đối tác tích hợp: **số version nói đ
 
 <!-- toc -->
 - [1. SemVer](#1-semver)
-
-> **Cái gì tính là breaking cho SDK này** — danh sách chốt ở
-> [`common/PublicApi.md` §5b](../common/PublicApi.md#5b-cái-gì-là-breaking--danh-sách-chốt),
-> gồm cả **breaking hành vi** (thứ tự callback, mã lỗi, thời điểm phát) chứ không chỉ breaking
-> chữ ký. Không có danh sách thì loại thứ hai gần như luôn bị bỏ sót — nó không đổi chữ ký nào.
 - [2. Một số version cho cả gói](#2-một-số-version-cho-cả-gói)
 - [3. Bản `-SNAPSHOT`](#3-bản--snapshot)
 - [4. Không ghi đè bản đã phát hành](#4-không-ghi-đè-bản-đã-phát-hành)
@@ -54,7 +49,7 @@ Cam kết của đội SDK với đối tác tích hợp: **số version nói đ
 | Nơi khai | Nền tảng |
 |---|---|
 | `gradle.properties` → `SDK_VERSION` | Android AAR **và** lõi KMP (hai artifact, **một** số) |
-| `iosPromotionSDK/PRM.xcodeproj` → `MARKETING_VERSION` | iOS |
+| `iosPromotionSDK/Config/Version.xcconfig` → `MARKETING_VERSION` | iOS |
 
 Hai chỗ này **phải trùng nhau** và hiện đồng bộ **thủ công**. Đó là điểm dễ sai nhất khi phát hành —
 nó là dòng đầu tiên của [ReleaseChecklist](./ReleaseChecklist.md).

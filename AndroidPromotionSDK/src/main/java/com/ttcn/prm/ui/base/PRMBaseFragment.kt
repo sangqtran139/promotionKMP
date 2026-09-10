@@ -24,6 +24,9 @@ import com.ttcn.promotionsdk.domain.usecase.PromotionFeatureGate
 import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import com.ttcn.prm.ui.utils.PRMLocale
+import android.content.Context
+import androidx.annotation.StringRes
 
 internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
 
@@ -51,9 +54,33 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      */
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
         val base = super.onGetLayoutInflater(savedInstanceState)
-        val themed = ContextThemeWrapper(requireContext(), R.style.PRMForceLight)
+        // Bọc HAI lớp: locale của SDK (PRMLocale) rồi mới tới theme Light. Thứ tự này bắt buộc —
+        // `ContextThemeWrapper` giữ nguyên `Resources` của context nó bọc, nên locale phải nằm
+        // ở lớp trong; đảo lại thì `getString` trong màn SDK lại đọc theo locale của máy.
+        val localized = PRMLocale.wrap(requireContext())
+        val themed = ContextThemeWrapper(localized, R.style.PRMForceLight)
         return base.cloneInContext(themed)
     }
+
+    /**
+     * Đọc chuỗi theo **ngôn ngữ host chọn cho SDK**, không phải ngôn ngữ của máy.
+     *
+     * Phải có hàm riêng vì `Fragment.getString()` là `final` và đọc qua `requireContext()` —
+     * context của Activity host. Bọc locale ở `onGetLayoutInflater` chỉ ảnh hưởng **inflater**
+     * (và `binding.root.context`), không ảnh hưởng `Fragment.getResources()`. Thiếu phân biệt này
+     * thì chữ trong layout đúng ngôn ngữ còn chữ gán từ code lại theo máy — lệch ngay trên một màn.
+     *
+     * Trong adapter/ViewHolder thì dùng `binding.root.context.getString(...)`: context đó đã bọc
+     * sẵn vì view được inflate từ inflater của fragment.
+     */
+    protected fun prmString(@StringRes resId: Int): String =
+        localizedContext.getString(resId)
+
+    protected fun prmString(@StringRes resId: Int, vararg formatArgs: Any): String =
+        localizedContext.getString(resId, *formatArgs)
+
+    /** Bọc một lần cho cả vòng đời fragment — `PRMLocale.wrap` dựng `Context` mới mỗi lần gọi. */
+    private val localizedContext: Context by lazy { PRMLocale.wrap(requireContext()) }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -235,14 +262,14 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      * `PromotionUIStrings.errorMessage`). Gom về đây thay cho `mapErrorMessage` lặp ở từng Fragment.
      */
     protected fun mapPromotionError(code: String): String = when (code) {
-        ErrorCodes.MISSING_CUSTOMER_ID -> getString(R.string.prm_missing_customer_id)
-        ErrorCodes.NO_RESULT, "error_detail_unavailable" -> getString(R.string.prm_no_result)
+        ErrorCodes.MISSING_CUSTOMER_ID -> prmString(R.string.prm_missing_customer_id)
+        ErrorCodes.NO_RESULT, "error_detail_unavailable" -> prmString(R.string.prm_no_result)
         // Lỗi mạng/timeout có câu RIÊNG: tầng data đã cất công phân loại (`NetworkException`), gộp
         // vào lỗi chung là vứt đi thông tin duy nhất mà user hành động được. Thấy rõ nhất ở nút
         // "Áp dụng" màn Chọn ưu đãi — mất mạng lúc validate thì phải báo đúng là mất mạng.
-        ErrorCodes.NETWORK_ERROR -> getString(R.string.prm_error_network)
-        ErrorCodes.TIMEOUT -> getString(R.string.prm_error_timeout)
-        else -> getString(R.string.prm_error_general)
+        ErrorCodes.NETWORK_ERROR -> prmString(R.string.prm_error_network)
+        ErrorCodes.TIMEOUT -> prmString(R.string.prm_error_timeout)
+        else -> prmString(R.string.prm_error_general)
     }
 
     // ─── Điều hướng giữa các màn SDK ──────────────────────────────────────────
@@ -349,7 +376,7 @@ internal abstract class PRMBaseFragment<VB : ViewBinding> : Fragment() {
      */
     open fun goBack() {
         // Fragment có thể đã detach khỏi Activity trước khi hàm này chạy: `ChoosePromotionFragment`
-        // gọi `goBack()` từ callback bất đồng bộ của `PRMEndowView.applySelectedOffers` (chạy trên
+        // gọi `goBack()` từ callback bất đồng bộ của `PRMOfferWidget.applySelectedOffers` (chạy trên
         // `viewScope` riêng của View, không theo lifecycle Fragment) — user bấm back hệ thống trong
         // lúc chờ API trả lời là fragment đã bị pop, callback về sau vẫn cố `requireActivity()` và
         // crash `IllegalStateException`. Cùng guard với `closeTopSdkScreen()`/`showErrorDialog()`.

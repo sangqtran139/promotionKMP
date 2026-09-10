@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class StackableDiscountsRequest(
+public data class StackableDiscountsRequest(
     @SerialName("idempotencyKey") val idempotencyKey: String = "",
     @SerialName("customerInfo") val customerInfo: StackableCustomerInfo,
     @SerialName("orderInfo") val orderInfo: StackableOrderInfo,
@@ -13,14 +13,14 @@ data class StackableDiscountsRequest(
 )
 
 @Serializable
-data class StackableCustomerInfo(
+public data class StackableCustomerInfo(
     @SerialName("customerType") val customerType: String = "",
     @SerialName("segment") val segment: String = "",
     @SerialName("tier") val tier: String = "",
 )
 
 @Serializable
-data class StackableOrderInfo(
+public data class StackableOrderInfo(
     @SerialName("orderId") val orderId: String,
     @SerialName("orderValue") val orderValue: String,
     @SerialName("currency") val currency: String = "VND",
@@ -31,7 +31,7 @@ data class StackableOrderInfo(
 )
 
 @Serializable
-data class StackableOrderItem(
+public data class StackableOrderItem(
     @SerialName("sku") val sku: String,
     @SerialName("productId") val productId: String,
     @SerialName("collectionIds") val collectionIds: List<String> = emptyList(),
@@ -41,7 +41,7 @@ data class StackableOrderItem(
 )
 
 @Serializable
-data class DiscountRequest(
+public data class DiscountRequest(
     @SerialName("objectType") val objectType: String,
     @SerialName("objectId") val objectId: String,
     @SerialName("priority") val priority: Int,
@@ -50,7 +50,7 @@ data class DiscountRequest(
 )
 
 @Serializable
-data class ValidationOptions(
+public data class ValidationOptions(
     @SerialName("checkBudgetAvailability") val checkBudgetAvailability: Boolean = true,
     @SerialName("optimizeOrder") val optimizeOrder: Boolean = true,
     @SerialName("explainLevel") val explainLevel: String = "BASIC",

@@ -11,11 +11,11 @@
 //
 //  Cả hai cho cùng bộ màu (teal #2CA196) để thấy hai đường đi ra cùng kết quả.
 //
-//  File này import PRM nên CỐ TÌNH GIỮ NHỎ — xem ghi chú ở ThemePreviewViewController.
+//  File này import PromotionKit nên CỐ TÌNH GIỮ NHỎ — xem ghi chú ở ThemePreviewViewController.
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 enum DemoThemeSource {
 
@@ -38,40 +38,40 @@ enum DemoThemeSource {
         let greyMid = UIColor(white: 0xA7 / 255, alpha: 1)
 
         return PromotionSDKTheme(
-            buttonToken: ButtonToken(
+            buttonToken: PRMButtonToken(
                 backgroundColor: teal,
                 textColor: white,
                 shadowColor: teal.withAlphaComponent(0.2),
                 cornerRadius: 12
             ),
-            searchBarToken: SearchBarToken(
+            searchBarToken: PRMSearchBarToken(
                 borderColor: teal,
                 hintTextColor: grey,
                 textColor: UIColor(white: 0x22 / 255, alpha: 1),
                 iconColor: teal,
                 cornerRadius: 10
             ),
-            listItemToken: ListItemToken(
+            listItemToken: PRMListItemToken(
                 linkTextColor: teal,
                 usedBadgeTextColor: grey,
                 usedBadgeBackgroundColor: greyLight,
                 radioButtonStrokeColor: greyMid,
                 radioButtonSelectedStrokeColor: teal
             ),
-            tabChipToken: TabChipToken(
+            tabChipToken: PRMTabChipToken(
                 activeBackgroundColor: teal,
                 inactiveBackgroundColor: tealLight,
                 activeTextColor: white,
                 inactiveTextColor: UIColor(white: 0x4E / 255, alpha: 1),
                 cornerRadius: 16
             ),
-            tabUnderlineToken: TabUnderlineToken(
+            tabUnderlineToken: PRMTabUnderlineToken(
                 indicatorColor: teal,
                 activeTextColor: teal,
                 inactiveTextColor: grey,
                 backgroundColor: white
             ),
-            discountBadgeToken: DiscountBadgeToken(
+            discountBadgeToken: PRMDiscountBadgeToken(
                 availableTextColor: teal,
                 unavailableTextColor: greyMid,
                 availableBackgroundColor: tealLight,

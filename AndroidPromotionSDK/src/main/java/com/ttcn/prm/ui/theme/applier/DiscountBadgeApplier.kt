@@ -1,7 +1,7 @@
 package com.ttcn.prm.ui.theme.applier
 
 import androidx.core.content.ContextCompat
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
 
 import com.ttcn.prm.R
 import com.ttcn.prm.databinding.PrmItemListPromotionApplyBinding
@@ -18,7 +18,7 @@ internal object DiscountBadgeApplier {
 
     fun apply(
         binding: PrmItemListPromotionApplyBinding,
-        token: DiscountBadgeToken?,
+        token: PRMDiscountBadgeToken?,
         available: Boolean,
     ) {
         val context = binding.root.context
@@ -34,6 +34,6 @@ internal object DiscountBadgeApplier {
             )
 
         binding.txtName.applyTextColorIfSet(textColor)
-        binding.root.applyDrawableBackgroundTintIfSet(bgColor, R.drawable.prm_bg_apply_endow)
+        binding.root.applyDrawableBackgroundTintIfSet(bgColor, R.drawable.prm_bg_apply_offer)
     }
 }

@@ -30,8 +30,8 @@ interface PromotionSDKCallback {
     fun onServiceSelected(selection: PromotionServiceSelection) {}
 
     /**
-     * Gọi khi 1 API bên trong màn hình SDK (Ưu đãi của tôi, Tìm kiếm, Chi tiết, Chọn ưu đãi, widget
-     * Endow) trả về HTTP 401 và **không cứu được** — tức
+     * Gọi khi 1 API bên trong màn hình SDK (Ưu đãi của tôi, Tìm kiếm, Chi tiết, Chọn ưu đãi,
+     * widget ưu đãi) trả về HTTP 401 và **không cứu được** — tức
      * [PromotionTokenSource.refreshToken] đã báo `false`, hoặc host không cài đặt nó.
      *
      * Nghĩa là phiên đã chết thật: host nên điều hướng user về màn đăng nhập. Host **không** cần

@@ -1,0 +1,16 @@
+// Version.xcconfig — NGUỒN DUY NHẤT của version iOS trong repo.
+//
+// Vì sao tách khỏi project.pbxproj: trước đây `MARKETING_VERSION = 1.0.0` nằm hardcode ở **4** khối
+// build configuration. `build-ios.sh` truyền `MARKETING_VERSION=$SDK_VERSION` khi archive nên bản
+// phát hành qua script vẫn đúng số — nhưng ai bấm Run/Archive thẳng trong Xcode thì ra `1.0.0`
+// **trong im lặng**, không cảnh báo gì. Bốn chỗ hardcode cũng là bốn chỗ có thể lệch nhau.
+//
+// Nay: một dòng ở đây, mọi target đọc chung (khai ở `baseConfigurationReference` cấp **project**).
+//
+// ── Ai ghi đè được, theo thứ tự ưu tiên tăng dần ──────────────────────────────────────────────
+//   1. File này                                — mặc định khi build tay trong Xcode
+//   2. `xcodebuild ... MARKETING_VERSION=x.y.z` — `build-ios.sh` / CI truyền vào, THẮNG file này
+//
+// ⚠️ Số ở đây phải **trùng** `SDK_VERSION` trong `gradle.properties` (nguồn của Android/KMP).
+// Chưa có gì tự kiểm ràng buộc đó — xem `docs/release/ReleaseChecklist.md`.
+MARKETING_VERSION = 1.0.0

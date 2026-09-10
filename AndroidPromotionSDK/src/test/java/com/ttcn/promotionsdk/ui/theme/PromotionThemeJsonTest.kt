@@ -1,7 +1,7 @@
 package com.ttcn.prm.ui.theme
 
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -60,7 +60,7 @@ class PromotionThemeJsonTest {
     @Test
     fun `key nhom la button khong phai buttonToken`() {
         val json = PromotionThemeJson.toJson(
-            PromotionSDKTheme(buttonToken = ButtonToken(backgroundColor = 0xFFEE0033.toInt()))
+            PromotionSDKTheme(buttonToken = PRMButtonToken(backgroundColor = 0xFFEE0033.toInt()))
         )
         assertTrue(json, json.contains("\"button\""))
         assertTrue(json, !json.contains("buttonToken"))
@@ -69,7 +69,7 @@ class PromotionThemeJsonTest {
     @Test
     fun `mau serialize thanh chuoi hex chu khong phai so`() {
         val json = PromotionThemeJson.toJson(
-            PromotionSDKTheme(buttonToken = ButtonToken(backgroundColor = 0xFFEE0033.toInt()))
+            PromotionSDKTheme(buttonToken = PRMButtonToken(backgroundColor = 0xFFEE0033.toInt()))
         )
         assertTrue(json, json.contains("\"#EE0033\""))
         // Bug cu: Gson serialize thang Int? -> {"backgroundColor":-1179597}
@@ -78,7 +78,7 @@ class PromotionThemeJsonTest {
 
     @Test
     fun `nhom khong duoc set thi vang mat khoi json`() {
-        val json = PromotionThemeJson.toJson(PromotionSDKTheme(buttonToken = ButtonToken()))
+        val json = PromotionThemeJson.toJson(PromotionSDKTheme(buttonToken = PRMButtonToken()))
         assertTrue(json, !json.contains("searchBar"))
     }
 
@@ -87,12 +87,12 @@ class PromotionThemeJsonTest {
     @Test
     fun `round trip giu nguyen mau, corner radius va nhom null`() {
         val theme = PromotionSDKTheme(
-            buttonToken = ButtonToken(
+            buttonToken = PRMButtonToken(
                 backgroundColor = 0xFFEE0033.toInt(),
                 textColor = 0x80FFFFFF.toInt(),
                 cornerRadius = 8f,
             ),
-            listItemToken = ListItemToken(
+            listItemToken = PRMListItemToken(
                 radioButtonStrokeColor = 0xFF666666.toInt(),
                 radioButtonSelectedStrokeColor = 0xFFEE0033.toInt(),
             ),

@@ -23,6 +23,7 @@
 
     <com.ttcn.prm.ui.widget.PRMImageView
         android:id="@+id/btnBack"
+        android:contentDescription="@string/prm_a11y_back"
         android:layout_width="@dimen/prm_24sdp"
         android:layout_height="@dimen/prm_24sdp"
         android:layout_marginStart="@dimen/prm_6sdp"
@@ -34,11 +35,11 @@
         app:srcCompat="@drawable/prm_ic_back" />
 
     <com.ttcn.prm.ui.widget.PRMTextView
-        android:id="@+id/tvEndow"
+        android:id="@+id/tvOffer"
         style="@style/PRMFontBold16"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/prm_choose_endow"
+        android:text="@string/prm_choose_offer"
         android:textColor="@color/prm_color_222_cep"
         app:layout_constraintBottom_toBottomOf="@id/btnBack"
         app:layout_constraintEnd_toEndOf="parent"
@@ -56,7 +57,7 @@
         android:paddingBottom="@dimen/prm_12sdp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvEndow">
+        app:layout_constraintTop_toBottomOf="@+id/tvOffer">
 
         <com.ttcn.prm.ui.widget.PRMSearchField
             android:id="@+id/edtVoucher"
@@ -105,6 +106,7 @@
 
         <com.ttcn.prm.ui.widget.PRMImageView
             android:id="@+id/imgNoData"
+            android:importantForAccessibility="no"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/prm_il_chua_co_giao_dich_mau"
@@ -164,7 +166,7 @@
             android:paddingTop="@dimen/prm_12sdp">
 
             <com.ttcn.prm.ui.widget.PRMTextView
-                android:id="@+id/txtNumberChooseEndow"
+                android:id="@+id/txtNumberChooseOffer"
                 style="@style/PRMFontRegular16"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -190,7 +192,7 @@
                 android:id="@+id/layoutReducePrice"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:constraint_referenced_ids="txtNumberChooseEndow, txtReducedPrice" />
+                app:constraint_referenced_ids="txtNumberChooseOffer, txtReducedPrice" />
 
             <com.ttcn.prm.ui.widget.PRMButton
                 android:id="@+id/btnApply"

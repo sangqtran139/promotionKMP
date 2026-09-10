@@ -12,6 +12,7 @@
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/imgBack"
+        android:contentDescription="@string/prm_a11y_back"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/prm_view_size_10"
@@ -24,7 +25,7 @@
         app:srcCompat="@drawable/prm_ic_back_in_onboarding" />
 
     <com.ttcn.prm.ui.widget.PRMSearchField
-        android:id="@+id/sfEndow"
+        android:id="@+id/sfOffer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/prm_view_size_60"
@@ -41,7 +42,7 @@
         android:layout_height="match_parent"
         android:layout_marginTop="@dimen/prm_view_size_70"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sfEndow">
+        app:layout_constraintTop_toBottomOf="@+id/sfOffer">
 
         <com.ttcn.prm.ui.widget.PRMTextView
             android:id="@+id/tvTitle"
@@ -75,10 +76,11 @@
         android:visibility="gone"
         android:layout_marginTop="@dimen/prm_view_size_120"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sfEndow">
+        app:layout_constraintTop_toBottomOf="@+id/sfOffer">
 
         <com.ttcn.prm.ui.widget.PRMImageView
             android:id="@+id/imgNoData"
+            android:importantForAccessibility="no"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/prm_il_chua_co_giao_dich_mau"
@@ -130,7 +132,7 @@
         android:layout_marginTop="@dimen/prm_view_size_70"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sfEndow" />
+        app:layout_constraintTop_toBottomOf="@+id/sfOffer" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"

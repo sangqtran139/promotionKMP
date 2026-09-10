@@ -19,10 +19,10 @@ import os
 /// chỗ gọi, hoặc âm thầm nâng deployment target — cả hai đều tệ hơn. `os_log` có từ iOS 10.
 ///
 /// Subsystem gắn bundle id của SDK nên dev của host lọc được đúng log của SDK trong Console.app:
-/// `subsystem: com.vtm.PRM`.
+/// `subsystem: com.vtm.PromotionKit`.
 enum PRMLog {
 
-    private static let subsystem = Bundle(for: PromotionSDKImpl.self).bundleIdentifier ?? "com.vtm.PRM"
+    private static let subsystem = Bundle(for: PromotionSDKImpl.self).bundleIdentifier ?? "com.vtm.PromotionKit"
 
     /// Sai sót ở phía **tích hợp** — dev của host cần thấy và sửa. Không phải lỗi runtime của user.
     static let integration = OSLog(subsystem: subsystem, category: "integration")

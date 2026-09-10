@@ -16,7 +16,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
 grep -rhoE 'public var [a-zA-Z]+' \
-     iosPromotionSDK/PromotionSDKUI/Theme/Token/*.swift \
+     iosPromotionSDK/PromotionKit/Theme/Token/*.swift \
   | awk '{print $3}' | sort -u > "$tmp/ios.txt"
 
 grep -rhoE 'val [a-zA-Z]+:' \

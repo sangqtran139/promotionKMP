@@ -8,7 +8,7 @@ Toạ độ phát hành:
 | Nền tảng | Toạ độ |
 |---|---|
 | Android | `vn.viettelpay.library:promotion:<version>` (Maven, Artifactory nội bộ) |
-| iOS | `Promotion-<version>.xcframework.zip` trên Artifactory `vdo-ios-frameworks/Martech/Promotion/<version>/` — dùng qua SPM `binaryTarget`, `import PRM` |
+| iOS | `Promotion-<version>.xcframework.zip` trên Artifactory `vdo-ios-frameworks/Martech/Promotion/<version>/` — dùng qua SPM `binaryTarget`, `import PromotionKit` |
 
 ---
 
@@ -30,7 +30,7 @@ Toạ độ phát hành:
 | B-5 | `skuId` đổi thành **`skuSourceId`**; để trống thì **không gửi field** lên server | `skuId` | `skuSourceId` |
 | B-6 | Bỏ tham số `serviceCode` khỏi `updateOrderInfo` | có | không |
 | B-7 | Đổi tên field của `PromotionAvailableService` / `PromotionServiceSelection` | — | xem CHANGELOG mục tương ứng |
-| B-8 | **Chỉ `Entry` mới public** — mọi thứ khác `internal` (cả 2 nền tảng) | host chạm được widget/base/theme nội bộ | chỉ `com.ttcn.prm.entry.**` + theme + `endowview` |
+| B-8 | **Chỉ `Entry` mới public** — mọi thứ khác `internal` (cả 2 nền tảng) | host chạm được widget/base/theme nội bộ | chỉ `com.ttcn.prm.entry.**` + theme + `offerwidget` |
 | B-9 | Widget "Ưu đãi" **tự** mở màn "Chọn ưu đãi"; bỏ `onOpenVoucherSelection` | host tự wiring | không cần wiring |
 | B-10 | Bỏ `PromotionIntegrateManager` | có | luồng thanh toán về lõi dùng chung |
 | B-11 | Bỏ hoàn toàn `customerId` | `initialize(context, customerId, ...)` | BFF lấy định danh từ JWT `sub` |
@@ -92,7 +92,7 @@ nền tảng (Android XML/MVI, iOS UIKit/MVVM). Bề mặt SDK đối xứng 1:1
 
 - Màn "Ưu đãi của tôi" + tìm kiếm.
 - Màn chi tiết ưu đãi, có "Áp dụng" trả voucher về host.
-- Màn "Chọn ưu đãi" cho đơn hàng + widget checkout (`PRMEndowView` / `createEndowView`).
+- Màn "Chọn ưu đãi" cho đơn hàng + widget checkout (`PRMOfferWidget` / `createOfferWidget`).
 - Headless API 5 hàm: `getVouchers`, `findEligible`, `getVoucherDetail`, `validateDiscounts`,
   `createRedemption`.
 - Theming theo brand host qua `PromotionSDKTheme`.

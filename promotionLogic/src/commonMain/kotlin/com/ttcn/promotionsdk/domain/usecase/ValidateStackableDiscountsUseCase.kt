@@ -8,7 +8,7 @@ import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRes
 import com.ttcn.promotionsdk.domain.repository.PromotionRepository
 import kotlin.coroutines.cancellation.CancellationException
 
-class ValidateStackableDiscountsUseCase private constructor(
+public class ValidateStackableDiscountsUseCase private constructor(
     private val repositoryProvider: () -> PromotionRepository,
 ) {
 
@@ -16,7 +16,7 @@ class ValidateStackableDiscountsUseCase private constructor(
 
     private val repository: PromotionRepository get() = repositoryProvider()
 
-    constructor() : this({ get<PromotionRepository>() })
+    public constructor() : this({ get<PromotionRepository>() })
 
     /**
      * Ném [PromotionException] (lỗi nghiệp vụ/HTTP) hoặc [NetworkException] (timeout, mất mạng).
@@ -25,7 +25,7 @@ class ValidateStackableDiscountsUseCase private constructor(
      * exception không khai báo sẽ `abort()` tiến trình thay vì báo lỗi cho Swift.
      */
     @Throws(PromotionException::class, NetworkException::class, CancellationException::class)
-    suspend operator fun invoke(
+    public suspend operator fun invoke(
         request: ValidateDiscountsRequest,
     ): ValidateDiscountsResult? = promotionCall {
         repository.validateStackableDiscounts(request)

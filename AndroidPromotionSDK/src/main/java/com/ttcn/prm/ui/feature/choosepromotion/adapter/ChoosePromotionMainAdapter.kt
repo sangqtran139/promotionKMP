@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
 import com.ttcn.prm.databinding.PrmItemChoosePromotionBinding
 import com.ttcn.prm.databinding.PrmItemLoadingNotifyPrmBinding
-import com.ttcn.prm.databinding.PrmItemTitleMyEndowBinding
+import com.ttcn.prm.databinding.PrmItemTitleMyOfferBinding
 import com.ttcn.prm.databinding.PrmItemSectionDividerBinding
 import com.ttcn.prm.databinding.PrmItemSeeMoreBinding
 import com.ttcn.prm.ui.feature.mypromotion.MyVoucherListItem
@@ -77,7 +77,7 @@ internal class ChoosePromotionMainAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             TYPE_HEADER -> HeaderViewHolder(
-                PrmItemTitleMyEndowBinding.inflate(
+                PrmItemTitleMyOfferBinding.inflate(
                     inflater,
                     parent,
                     false
@@ -135,10 +135,10 @@ internal class ChoosePromotionMainAdapter(
 
     // ─── ViewHolders ──────────────────────────────────────────────────────────
 
-    class HeaderViewHolder(private val binding: PrmItemTitleMyEndowBinding) :
+    class HeaderViewHolder(private val binding: PrmItemTitleMyOfferBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(title: String) {
-            binding.txtTitleEndow.text = title
+            binding.txtTitleOffer.text = title
         }
     }
 
@@ -155,7 +155,7 @@ internal class ChoosePromotionMainAdapter(
             onSeeMore: () -> Unit,
             onCollapse: () -> Unit,
         ) {
-            binding.txtTitleEndow.text =
+            binding.txtTitleOffer.text =
                 binding.root.context.getString(
                     if (isExpanded) R.string.prm_collapse else R.string.prm_see_more
                 )

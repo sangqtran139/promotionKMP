@@ -6,7 +6,7 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_marginEnd="@dimen/prm_5sdp"
-    android:background="@drawable/prm_bg_apply_endow">
+    android:background="@drawable/prm_bg_apply_offer">
 
     <com.ttcn.prm.ui.widget.PRMTextView
         android:id="@+id/txtName"

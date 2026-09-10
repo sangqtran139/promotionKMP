@@ -175,7 +175,7 @@ internal class PromotionMutableContext(
 
     /**
      * Map order items (public) → model lõi cho Find Eligible Campaigns — `ChoosePromotionStore` /
-     * `EndowStore` đọc chung 2 nền tảng. Đối ứng `PromotionMutableContext.getOrderItems()` bên iOS.
+     * `OfferWidgetStore` đọc chung 2 nền tảng. Đối ứng `PromotionMutableContext.getOrderItems()` bên iOS.
      */
     override fun getOrderItems(): List<EligibleOrderItem> = orderItems.map {
         EligibleOrderItem(

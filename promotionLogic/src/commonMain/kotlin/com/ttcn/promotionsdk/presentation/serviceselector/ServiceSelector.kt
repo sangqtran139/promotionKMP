@@ -14,7 +14,7 @@ import com.ttcn.promotionsdk.domain.model.voucher.ApplicableProduct
  * Bản thuần này không đọc config (để test không cần DI); nơi dùng thật gọi
  * [configuredServicesFor].
  */
-fun servicesForApplicableProducts(
+public fun servicesForApplicableProducts(
     applicableProducts: List<ApplicableProduct>,
     availableServices: List<AvailableService>,
 ): List<AvailableService> {
@@ -34,7 +34,7 @@ fun servicesForApplicableProducts(
  * @throws IllegalStateException nếu SDK chưa `initialize()` — màn hình của SDK không tồn tại trước
  *   thời điểm đó, nên đây là lỗi lập trình chứ không phải trạng thái cần xử lý.
  */
-fun configuredServicesFor(applicableProducts: List<ApplicableProduct>): List<AvailableService> =
+public fun configuredServicesFor(applicableProducts: List<ApplicableProduct>): List<AvailableService> =
     servicesForApplicableProducts(
         applicableProducts,
         PromotionContainer.requireConfig().availableServices,

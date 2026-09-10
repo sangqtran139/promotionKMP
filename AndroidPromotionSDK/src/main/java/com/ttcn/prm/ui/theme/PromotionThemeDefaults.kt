@@ -1,11 +1,11 @@
 package com.ttcn.prm.ui.theme
 
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
-import com.ttcn.prm.ui.theme.token.SearchBarToken
-import com.ttcn.prm.ui.theme.token.TabChipToken
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 import android.content.Context
 import androidx.annotation.ColorInt
@@ -24,16 +24,16 @@ internal object PromotionThemeDefaults {
      * Defaults aligned with [PRMButton] PRIMARY (common CTA in promotion screens).
      * Background is gradient in SDK; token stores gradient end color [R.color.prm_tokenRainbowRedEnd].
      * Corner radius follows foundation button drawables ([R.dimen.prm_tokenBorderRadius24] → _19sdp).
-     * Note: sdp scales on device (e.g. ~25dp on a wide screen); that is the physical radius to apply via [ButtonToken].
+     * Note: sdp scales on device (e.g. ~25dp on a wide screen); that is the physical radius to apply via [PRMButtonToken].
      */
-    fun button(context: Context) = ButtonToken(
+    fun button(context: Context) = PRMButtonToken(
         backgroundColor = context.retrieveColor(R.color.prm_tokenRainbowRedEnd),
         textColor = context.retrieveColor(PRMCoreButtonType.PRIMARY.textColorRes),
         shadowColor = context.retrieveColor(R.color.prm_tokenShadowsButtonColor),
         cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_tokenBorderRadius24))
     )
 
-    fun searchBar(context: Context) = SearchBarToken(
+    fun searchBar(context: Context) = PRMSearchBarToken(
         borderColor = context.retrieveColor(R.color.prm_tokenDark10),
         hintTextColor = context.retrieveColor(PRMSearchType.BASIC.hintColorRes),
         textColor = context.retrieveColor(PRMSearchType.BASIC.textColorRes),
@@ -41,7 +41,7 @@ internal object PromotionThemeDefaults {
         cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_tokenBorderRadius08)),
     )
 
-    fun listItem(context: Context) = ListItemToken(
+    fun listItem(context: Context) = PRMListItemToken(
         linkTextColor = context.retrieveColor(R.color.prm_color_EE0033),
         usedBadgeTextColor = context.retrieveColor(R.color.prm_tokenDark100),
         usedBadgeBackgroundColor = context.retrieveColor(R.color.prm_color_f4f4f4),
@@ -49,7 +49,7 @@ internal object PromotionThemeDefaults {
         radioButtonSelectedStrokeColor = context.retrieveColor(R.color.prm_color_EE0033),
     )
 
-    fun tabChip(context: Context) = TabChipToken(
+    fun tabChip(context: Context) = PRMTabChipToken(
         activeBackgroundColor = context.retrieveColor(R.color.prm_color_4e4e4e),
         inactiveBackgroundColor = context.retrieveColor(R.color.prm_color_f4f4f4),
         activeTextColor = context.retrieveColor(R.color.prm_white),
@@ -57,14 +57,14 @@ internal object PromotionThemeDefaults {
         cornerRadius = pxToDp(context, context.resources.getDimension(R.dimen.prm_view_size_7)),
     )
 
-    fun tabUnderline(context: Context) = TabUnderlineToken(
+    fun tabUnderline(context: Context) = PRMTabUnderlineToken(
         indicatorColor = context.retrieveColor(R.color.prm_color_red_EE0033),
         activeTextColor = context.retrieveColor(R.color.prm_black),
         inactiveTextColor = context.retrieveColor(R.color.prm_color_7a7a7a),
         backgroundColor = context.retrieveColor(R.color.prm_color_FBFBFB),
     )
 
-    fun discountBadge(context: Context) = DiscountBadgeToken(
+    fun discountBadge(context: Context) = PRMDiscountBadgeToken(
         availableTextColor = context.retrieveColor(R.color.prm_tokenPineBlue100),
         unavailableTextColor = context.retrieveColor(R.color.prm_color_7A7A7A),
         availableBackgroundColor = context.retrieveColor(R.color.prm_tokenPineBlue10),

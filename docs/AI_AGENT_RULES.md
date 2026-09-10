@@ -58,12 +58,12 @@ và `grep` toàn repo. Nếu source mâu thuẫn với docs → **sửa docs** (
 - Bề mặt host là **`com.ttcn.prm.entry.**`** (Android) và **`iosPromotionSDK/Entry/**`** (iOS).
   Ngoài đó, mọi khai báo top-level phải `internal` (Kotlin) / không có `public` (Swift).
 - Host cần dùng thêm thứ gì → **dời file đó vào `entry`**, KHÔNG nới `public` tại chỗ. Kiểu trả về
-  nên là type chung khi được (vd `PromotionSDK.openChoosePromotion` nhận `PRMEndowView` mà không lộ `Fragment` thật)
+  nên là type chung khi được (vd `PromotionSDK.openChoosePromotion` nhận `PRMOfferWidget` mà không lộ `Fragment` thật)
   để class thật vẫn ẩn.
 - Thêm class mới ngoài `entry` mà quên `internal` là làm phình bề mặt public trong im lặng — chạy
   `./scripts/check-public-api.sh` để kiểm (phải in `✅`).
 - ⚠️ Hai lệnh `grep` chép tay từng nằm ở [PublicApi.md](./common/PublicApi.md) là **sai allowlist**
-  (chỉ loại trừ `/entry/`, bỏ sót `ui.theme` và `ui.feature.endowview`) nên **luôn đỏ 126 dòng** dù
+  (chỉ loại trừ `/entry/`, bỏ sót `ui.theme` và `ui.feature.offerwidget`) nên **luôn đỏ 126 dòng** dù
   code đúng. Gặp lại dạng đó ở đâu thì thay bằng script, đừng đi "sửa cho gate xanh" — cách sửa
   trông-như-tuân-thủ ở đây là đổi `public` → `internal` ở `ui/theme`, tức xoá theme API khỏi bề mặt
   host.

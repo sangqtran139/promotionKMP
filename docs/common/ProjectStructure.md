@@ -42,7 +42,7 @@ Ba module đầu là **sản phẩm phát hành**, hai module cuối chỉ để
 |---|---|---|
 | `:promotionLogic` | `com.ttcn.promotionsdk` | Lõi dùng chung. **Mọi thay đổi nghiệp vụ ở đây.** Phát hành `$SDK_GROUP:promotionLogic`. |
 | `:AndroidPromotionSDK` | `com.ttcn.prm` | UI Android. Phát hành `$SDK_GROUP:promotion` (AAR). |
-| `iosPromotionSDK/` | `PRM.xcodeproj` + SPM | UI iOS. Phát hành `VDSPromotionSDK.xcframework`. |
+| `iosPromotionSDK/` | `PromotionKit.xcodeproj` + SPM | UI iOS. Phát hành `VDSPromotionSDK.xcframework`. |
 
 > ⚠️ `iosPromotionSDK` **không** là module Gradle — nó là project Xcode, tiêu thụ lõi qua
 > XCFramework do `:promotionLogic` sinh ra. Vì vậy `settings.gradle.kts` chỉ có 3 `include`.
@@ -57,7 +57,7 @@ AndroidPromotionSDK/src/main/java/com/ttcn/prm/
     ├── base/         #    PRMBaseFragment, PRMStoreViewModel, PrmSystemBackInterceptor
     ├── di/           #    promotionViewModelFactory()
     ├── feature/      #    mypromotion/ searchmypromotion/ choosepromotion/
-    │                 #      promotiondetail/ endowview/ serviceselector/
+    │                 #      promotiondetail/ offerwidget/ serviceselector/
     ├── theme/        # ⭐ public — PromotionSDKTheme + token/
     ├── utils/        #    extension/, PRMImageExt, PRMClick…
     └── widget/       #    PRMButton, PRMShadowView, PRMSlideButton…
@@ -65,16 +65,21 @@ AndroidPromotionSDK/src/main/java/com/ttcn/prm/
 iosPromotionSDK/
 ├── Entry/            # ⭐ Public API — PromotionSDK, PromotionSDKImpl, Config, Options
 │   └── API/          #    Headless API + model public
-├── PromotionSDKUI/   #    Base/ (MVVM), Common/, Theme/ + một thư mục cho mỗi màn:
-│                     #      MyPromotions/ Search/ SelectPromotion/ DetailPromotion/
-│                     #      Endow/ ServiceSelector/
+├── PromotionKit/   #    Base/ (MVVM), Common/, Theme/ + một thư mục cho mỗi màn:
+│                     #      MyPromotion/ Search/ ChoosePromotion/ PromotionDetail/
+│                     #      OfferWidget/ ServiceSelector/
 ├── Packages/         #    SPM nội bộ — PRMFoundation, PRMDesignKit, PRMPromotionUI, PRMKotlinBridge
 └── Frameworks/       #    XCFramework của lõi (sinh ra, không commit)
 ```
 
 Mỗi màn có **một thư mục ở cả ba module** — ví dụ màn "Ưu đãi của tôi":
 `promotionLogic/…/presentation/mypromotion/` + `AndroidPromotionSDK/…/ui/feature/mypromotion/` +
-`iosPromotionSDK/PromotionSDKUI/MyPromotions/`. Sửa nghiệp vụ ở thư mục đầu, hai thư mục sau chỉ render.
+`iosPromotionSDK/PromotionKit/MyPromotion/`. Sửa nghiệp vụ ở thư mục đầu, hai thư mục sau chỉ render.
+
+Tên thư mục iOS **luôn trùng tiền tố của class trong đó** — trước đây `SelectPromotion/` chứa
+`ChoosePromotion*`, `DetailPromotion/` chứa `PromotionDetail*`, `MyPromotions/` (số nhiều) chứa
+`MyPromotion*`, nên grep tìm một màn phải thử hai từ khoá. Project dùng
+`fileSystemSynchronizedGroups` nên đổi tên thư mục **không** phải sửa `project.pbxproj`.
 
 ---
 
@@ -110,7 +115,7 @@ promotionLogic/src/
 │       ├── base/                #   PRMStore, PRMEffect
 │       ├── common/              #   tiện ích dùng chung giữa các store
 │       └── <feature>/           #   mypromotion/ searchmypromotion/ choosepromotion/
-│                                #     promotiondetail/ endow/ serviceselector/
+│                                #     promotiondetail/ offerwidget/ serviceselector/
 │                                #     mỗi thư mục: XxxStore + XxxContract
 │
 ├── androidMain/kotlin/com/ttcn/promotionsdk/
@@ -160,15 +165,15 @@ promotionLogic/src/
 | Test | `promotionLogic/commonTest/` — chạy trên cả hai nền tảng |
 | **Logic UI** của màn mới | `promotionLogic/…/presentation/<tên>/` — `XxxStore` + `XxxContract`. Viết **một lần**, hai nền tảng dùng chung. |
 | Màn hình Android mới | `AndroidPromotionSDK/…/ui/feature/<tên>/` — Fragment + `PRMStoreViewModel` con + layout XML |
-| Màn hình iOS mới | `iosPromotionSDK/PromotionSDKUI/<Tên>/` — bộ Builder / Router / ViewModel / ViewController |
+| Màn hình iOS mới | `iosPromotionSDK/PromotionKit/<Tên>/` — bộ Builder / Router / ViewModel / ViewController |
 
 ---
 
 ## 4. Quy ước đặt tên
 
 - **Lõi KMP**: không prefix. `PromotionUseCases`, `EligibleOffer`, `PromotionPreferences`.
-- **UI Android**: base class và widget dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMEndowView`).
-  Tiền tố **không** đồng nghĩa với "public": chỉ `PRMEndowView` ở `entry/endowview/` là bề mặt host,
+- **UI Android**: base class và widget dùng tiền tố **`PRM`** (`PRMBaseFragment`, `PRMOfferWidget`).
+  Tiền tố **không** đồng nghĩa với "public": chỉ `PRMOfferWidget` ở `entry/offerwidget/` là bề mặt host,
   còn `PRMBaseFragment`, `PRMButton`… đều `internal`.
 - **UI iOS**: bề mặt SDK **không** prefix, đồng nhất tên với Android (`PromotionSDK`, `PromotionSDKCallback`, `MyPromotionViewController`); riêng design-system dùng chung `PRMDesignKit` dùng tiền tố **`PRM`** (`PRMButton`, `PRMButtonThemeToken`).
 - DTO kết thúc bằng `Request` / `Response`; domain model dùng tên nghiệp vụ (`VoucherDetail`).
@@ -191,11 +196,11 @@ promotionLogic/src/
   — bề mặt lõi. Host **không** thấy chúng (`implementation(projects.promotionLogic)`), nhưng cả hai
   UI SDK đều dựa vào; đổi = sửa Android + iOS cùng lúc.
 - `com.ttcn.prm.entry.**` của `AndroidPromotionSDK` (`entry/`, `entry/api/`) cùng hai nhóm public
-  nằm ngoài nó vì lý do lịch sử — `ui/theme/` (+ `ui/theme/token/`) và `ui/feature/endowview/` —
+  nằm ngoài nó vì lý do lịch sử — `ui/theme/` (+ `ui/theme/token/`) và `ui/feature/offerwidget/` —
   **public API thật sự**: mọi thứ khác đều `internal`. Thay đổi = breaking cho host app, và phải sửa đối ứng bên `iosPromotionSDK/Entry/`
   của iOS. Xem [PublicApi.md](./PublicApi.md).
 - `gradle/libs.versions.toml` — chỉ thêm dependency khi được yêu cầu (AI_AGENT_RULES điều 6).
-- `gradle.properties` (`SDK_VERSION` / `SDK_GROUP`) và `MARKETING_VERSION` trong `PRM.xcodeproj` —
+- `gradle.properties` (`SDK_VERSION` / `SDK_GROUP`) và `MARKETING_VERSION` trong `PromotionKit.xcodeproj` —
   phải **giữ trùng số**. Xem [Distribution.md](../android/Distribution.md).
 - `AndroidPromotionSDK/consumer-rules.pro` — bỏ một `-keep` là host chết `NoClassDefFoundError` ở
   bản minify, mà build debug vẫn xanh nên rất dễ lọt.

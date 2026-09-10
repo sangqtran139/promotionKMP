@@ -85,5 +85,5 @@ và repo gốc có 0 dòng `import androidx.room`. Module này **không** cần 
 
 `DateUtils`, `CoroutineUtils`, `PromotionConfig` — cũng là stub rỗng.
 
-`PRMSimpleSpanBuilder` dùng `android.text.Spannable` và chỉ được `PrmContentDetailEndowFragment` gọi,
+`PRMSimpleSpanBuilder` dùng `android.text.Spannable` và chỉ được `PrmContentDetailOfferFragment` gọi,
 nên nó thuộc tầng UI.

@@ -2,8 +2,9 @@
 #
 # Build Promotion.xcframework (device + simulator slices).
 #
-# Tên "vỏ" xcframework là Promotion.xcframework, nhưng framework BÊN TRONG vẫn là PRM.framework
-# (PRODUCT_NAME=PRM) → host `import PRM`. Xcframework chỉ là gói chứa, tên khác framework là hợp lệ.
+# Tên "vỏ" xcframework là Promotion.xcframework, còn framework BÊN TRONG là PromotionKit.framework
+# (PRODUCT_NAME=PromotionKit) → host `import PromotionKit`. Xcframework chỉ là gói chứa, tên vỏ khác
+# tên framework là hợp lệ. Tên vỏ và đường dẫn phát hành do CI/CD chốt, xem docs/ios/Distribution.md.
 #
 # Usage:
 #   ./scripts/build-xcframework.sh [output_dir]
@@ -19,15 +20,15 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
-PROJECT="$ROOT/PRM.xcodeproj"
-SCHEME="PRM"
-FRAMEWORK="PRM.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
+PROJECT="$ROOT/PromotionKit.xcodeproj"
+SCHEME="PromotionKit"
+FRAMEWORK="PromotionKit.framework"   # = PRODUCT_NAME, khác tên class PromotionSDK
 BUILD_DIR="${1:-$ROOT/build}"
 OUT="$BUILD_DIR/Promotion.xcframework"
 
 # Version của SDK — đối xứng property `SDK_VERSION` bên Android (AndroidPromotionSDK/build.gradle.kts),
 # cùng mặc định "1.0.0". Truyền qua biến môi trường: `SDK_VERSION=1.2.3 ./scripts/build-xcframework.sh`.
-# Được nhồi vào `MARKETING_VERSION` (→ CFBundleShortVersionString trong Info.plist của PRM.framework,
+# Được nhồi vào `MARKETING_VERSION` (→ CFBundleShortVersionString trong Info.plist của PromotionKit.framework,
 # host đọc lại lúc runtime) và dùng để đặt tên gói zip phát hành.
 SDK_VERSION="${SDK_VERSION:-1.0.0}"
 
@@ -142,5 +143,17 @@ echo "🔎 dSYM: $BUILD_DIR/$FRAMEWORK.dSYM"
 echo "   Binary đã strip local symbol — GIỮ dSYM này lại theo từng bản phát hành, không có nó thì"
 echo "   crash report của app host chỉ còn địa chỉ trần."
 echo ""
-echo "ℹ️  Framework động app host cần tự nhúng (nếu có):"
-ls "$BUILD_DIR/dev.xcarchive/Products/Library/Frameworks/" 2>/dev/null | grep -v "^$FRAMEWORK$" || echo "   (không có — mọi dependency đã link tĩnh)"
+# "Host kéo đúng MỘT xcframework, không cài gì thêm" là thứ SDK bán cho bên tích hợp — nên nó phải
+# là điều kiện fail build, không phải một dòng chữ in ra rồi trôi qua. Trước đây đoạn này chỉ `ls` và
+# in danh sách: một framework động lọt vào gói sẽ đi thẳng tới host, và chỗ phát hiện ra là lúc app
+# host crash `dyld: Library not loaded`.
+DYLIBS="$(ls "$BUILD_DIR/dev.xcarchive/Products/Library/Frameworks/" 2>/dev/null | grep -v "^$FRAMEWORK$" || true)"
+if [ -n "$DYLIBS" ]; then
+    echo "" >&2
+    echo "❌ Gói có framework ĐỘNG ngoài $FRAMEWORK — phá cam kết \"host không cài thêm gì\":" >&2
+    echo "$DYLIBS" | sed 's/^/     /' >&2
+    echo "   Sửa: link tĩnh chúng vào $FRAMEWORK, hoặc nếu CỐ Ý ship động thì ghi vào" >&2
+    echo "   docs/ios/Distribution.md và nới điều kiện này." >&2
+    exit 1
+fi
+echo "ℹ️  Framework động app host cần tự nhúng: (không có — mọi dependency đã link tĩnh)"

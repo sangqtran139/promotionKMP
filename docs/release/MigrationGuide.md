@@ -90,18 +90,18 @@ Fragment của SDK, code sẽ không biên dịch.
 Cần dùng thứ gì đó mà `Entry` chưa có → **báo đội SDK dời nó vào `entry`**, đừng tìm đường lách
 (Java/reflection vẫn gọi được nhưng đó là hợp đồng đã gãy, bản sau sẽ vỡ tiếp).
 
-Bề mặt hợp lệ: `com.ttcn.prm.entry.**` + `com.ttcn.prm.ui.theme.**` + `PRMEndowView`.
+Bề mặt hợp lệ: `com.ttcn.prm.entry.**` + `com.ttcn.prm.ui.theme.**` + `PRMOfferWidget`.
 
 ### 1.5. Bước 5 — Bỏ wiring thủ công cho widget
 
 ```kotlin
 // TRƯỚC: host tự bắt sự kiện rồi mở màn chọn ưu đãi
-endowView.onOpenVoucherSelection = { openVoucherSelection() }
+offerWidget.onOpenVoucherSelection = { openVoucherSelection() }
 
 // SAU: xoá dòng trên. Bấm widget → SDK tự mở màn "Chọn ưu đãi".
 ```
 
-Muốn mở màn đó từ nút riêng của host: `PromotionSDK.openChoosePromotion(activity, endowView)`.
+Muốn mở màn đó từ nút riêng của host: `PromotionSDK.openChoosePromotion(activity, offerWidget)`.
 
 **Kiểm lại:** bấm widget mở đúng màn; chọn ưu đãi → áp dụng → widget cập nhật; bấm thanh toán →
 `confirmRedemption` trả `sessionId`.
@@ -111,7 +111,7 @@ Muốn mở màn đó từ nút riêng của host: `PromotionSDK.openChoosePromo
 Callback còn **3 sự kiện**: `onVoucherApplied(voucherId)`, `onServiceSelected(...)`, `onExpireToken()`.
 Xoá `onVoucherCleared` / `onVoucherCountChanged` / `onAvailabilityChanged` / `onClosed`.
 
-Cần biết chi tiết giảm giá: Android nhận qua `PRMEndowView` (`AppliedDiscount`); iOS gọi
+Cần biết chi tiết giảm giá: Android nhận qua `PRMOfferWidget` (`AppliedDiscount`); iOS gọi
 `api.validateDiscounts(...)`.
 
 ### 1.7. Bước 7 — Bỏ `customerId`

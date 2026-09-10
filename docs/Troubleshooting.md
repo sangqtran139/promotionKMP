@@ -64,7 +64,7 @@ version — báo đội SDK, host không tự khắc phục được.
 ### 1.3. `Unresolved reference 'PromotionUseCases'` / `PromotionSDKConfig`
 
 Đang import `com.ttcn.promotionsdk.*`. Đó là **lõi nội bộ**, không nằm trên compile classpath của
-host — đúng thiết kế. Chỉ dùng `com.ttcn.prm.entry.*` (+ `ui.theme.*`, `PRMEndowView`).
+host — đúng thiết kế. Chỉ dùng `com.ttcn.prm.entry.*` (+ `ui.theme.*`, `PRMOfferWidget`).
 
 Cần một thứ mà `entry` chưa có → **báo đội SDK dời nó vào `entry`**, đừng lách bằng Java/reflection.
 
@@ -82,7 +82,7 @@ Framework đang để **Do Not Embed**. `Promotion.xcframework` là **dynamic fr
 ### 1.6. iOS: `Unable to find module dependency: 'PRMKotlinBridge'`
 
 Host đang `import PRMKotlinBridge` hoặc `import PromotionLogic`. Đó là module nội bộ, giấu sau
-`@_implementationOnly`. Chỉ `import PRM`.
+`@_implementationOnly`. Chỉ `import PromotionKit`.
 
 Nếu **không** import mà vẫn gặp: một type nội bộ đã lọt vào chữ ký public của SDK — lỗi phía SDK,
 báo đội SDK.
@@ -102,6 +102,27 @@ cache của version vừa đẩy trên **máy chạy lệnh** — máy khác đ�
 ### 1.8. iOS: đổi chữ ký public rồi mà Xcode vẫn báo lỗi cũ
 
 `⇧⌘K` (Clean Build Folder). Cache module của Xcode có thể nói dối sau khi framework đổi interface.
+
+**Biến thể hay gặp nhất, và nó nguỵ trang rất giỏi** — sau khi dựng lại
+`PromotionLogic.xcframework`, build báo:
+
+```
+error: value of type 'OfferWidgetStore' has no member 'refreshAvailability'
+error: value of type 'OfferWidgetStore' has no member 'validateAndApply'
+```
+
+Toàn bộ hàm `suspend` do **SKIE** sinh biến mất khỏi bảng tra cứu, trong khi hàm thường vẫn thấy.
+Rất dễ kết luận nhầm là SKIE xung đột với `SWIFT_STRICT_CONCURRENCY` hay `@MainActor` — **không
+phải**. Kiểm bằng cách mở `.swiftinterface` trong framework:
+
+```bash
+grep -n "refreshAvailability" \
+  iosPromotionSDK/Frameworks/PromotionLogic.xcframework/ios-arm64_x86_64-simulator/\
+PromotionLogic.framework/Modules/PromotionLogic.swiftmodule/arm64-apple-ios-simulator.swiftinterface
+```
+
+Có dòng đó nghĩa là framework **đúng**, chỉ có DerivedData còn giữ swiftmodule cũ. Xoá DerivedData
+(hoặc `-derivedDataPath` mới) rồi build lại là hết. Đừng đổi build setting nào để "chữa" nó.
 
 ### 1.9. Android: `NoClassDefFoundError` / `AbstractMethodError` chỉ ở bản minify
 

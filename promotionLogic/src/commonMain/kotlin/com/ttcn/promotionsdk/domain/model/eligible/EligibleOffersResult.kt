@@ -2,7 +2,7 @@ package com.ttcn.promotionsdk.domain.model.eligible
 
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherTabItem
 
-data class EligibleOffersResult(
+public data class EligibleOffersResult(
     val myOffers: List<EligibleOffer> = emptyList(),
     val otherOffers: List<EligibleOffer> = emptyList(),
     /** Server đã sắp xếp theo tab đang chọn; giữ nguyên thứ tự, chỉ tabs được sort theo `order`. */
@@ -25,7 +25,7 @@ data class EligibleOffersResult(
  * [usable] = false nghĩa là server trả `displayMode = "DISABLED"`: hiển thị mờ, không cho chọn.
  * Lý do hiển thị lấy từ [minOrderValue] hoặc [unmatchedRules]; SDK trả rule thô, không dựng sẵn câu.
  */
-data class EligibleOffer(
+public data class EligibleOffer(
     val id: String,
     val campaignId: String? = null,
     val voucherId: String? = null,

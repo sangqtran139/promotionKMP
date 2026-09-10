@@ -23,7 +23,7 @@ Dùng cho **mỗi** bản phát hành. In ra hoặc copy thành issue, tick từ
 ## 1. Version & mã nguồn
 
 - [ ] 🔴 `SDK_VERSION` trong `gradle.properties` = version sắp phát hành.
-- [ ] 🔴 `MARKETING_VERSION` trong `iosPromotionSDK/PRM.xcodeproj` **trùng** `SDK_VERSION`.
+- [ ] 🔴 `MARKETING_VERSION` trong `iosPromotionSDK/Config/Version.xcconfig` **trùng** `SDK_VERSION`.
 - [ ] 🔴 Số version tuân thủ [VersioningPolicy](./VersioningPolicy.md) (breaking ⇒ bump major).
 - [ ] 🔴 `git status` sạch; đang ở đúng branch phát hành.
 - [ ] 🔴 `CHANGELOG.md`: mục `[Unreleased]` đã chuyển thành `[<version>] - <ngày>`.
@@ -47,7 +47,7 @@ Dùng cho **mỗi** bản phát hành. In ra hoặc copy thành issue, tick từ
         --include='*.kt' AndroidPromotionSDK/src/main/java/com/ttcn/prm | grep -v '/entry/'
       ```
 - [ ] 🔴 Grep public iOS không in ra gì:
-      `grep -rn '^\s*\(public\|open\)\s' --include='*.swift' iosPromotionSDK/PromotionSDKUI`
+      `grep -rn '^\s*\(public\|open\)\s' --include='*.swift' iosPromotionSDK/PromotionKit`
 - [ ] 🔴 Đổi bề mặt public ⇒ đã sửa **cả Kotlin lẫn Swift** trong cùng một thay đổi, giữ nguyên tên
       và thứ tự khai báo (parity).
 - [ ] 🔴 `docs/common/PublicApi.md` khớp code sau thay đổi.

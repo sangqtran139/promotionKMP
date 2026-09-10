@@ -178,11 +178,11 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         when {
             displayDate.isNotBlank() -> {
                 binding.tvExpired.isVisible = true
-                binding.tvExpired.text = getString(R.string.prm_expiry_short_format, displayDate)
+                binding.tvExpired.text = prmString(R.string.prm_expiry_short_format, displayDate)
             }
             rawExpiration.isNullOrBlank() -> {
                 binding.tvExpired.isVisible = true
-                binding.tvExpired.text = getString(R.string.prm_expiry_never)
+                binding.tvExpired.text = prmString(R.string.prm_expiry_never)
             }
             else -> binding.tvExpired.isVisible = false
         }
@@ -290,14 +290,14 @@ internal class PromotionDetailFragment : PRMBaseFragment<PrmFragmentDetailPromot
         pagerAdapter?.setTabs(
             listOf(
                 PrmPagerTab(
-                    title = getString(R.string.prm_tab_detail_info),
+                    title = prmString(R.string.prm_tab_detail_info),
                     contentKey = descriptionHtml,
-                    createFragment = { PrmContentDetailEndowFragment.newInstance(descriptionHtml) },
+                    createFragment = { PrmContentDetailOfferFragment.newInstance(descriptionHtml) },
                 ),
                 PrmPagerTab(
-                    title = getString(R.string.prm_tab_usage_guide),
+                    title = prmString(R.string.prm_tab_usage_guide),
                     contentKey = guidelineHtml,
-                    createFragment = { PrmContentDetailEndowFragment.newInstance(guidelineHtml) },
+                    createFragment = { PrmContentDetailOfferFragment.newInstance(guidelineHtml) },
                 ),
             )
         )

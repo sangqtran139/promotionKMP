@@ -47,12 +47,12 @@ public enum PromotionSDKError: Error, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .networkFailure(_, let message): return message
-        case .sessionExpired:                 return "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
-        case .timeout:                        return "Yêu cầu bị timeout, vui lòng thử lại."
-        case .parseFailed:                    return "Có lỗi xảy ra với dữ liệu trả về."
-        case .featureDisabled:                return "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau."
-        case .businessRule(_, let message):   return message ?? "Đã có lỗi xảy ra."
-        case .notInitialized:                 return "PromotionSDK chưa được khởi tạo."
+        case .sessionExpired:                 return PromotionUIStrings.sessionExpired
+        case .timeout:                        return PromotionUIStrings.timeout
+        case .parseFailed:                    return PromotionUIStrings.parseFailed
+        case .featureDisabled:                return PromotionUIStrings.featureDisabled
+        case .businessRule(_, let message):   return message ?? PromotionUIStrings.generalError
+        case .notInitialized:                 return PromotionUIStrings.notInitialized
         case .unknown(let error):             return error.localizedDescription
         }
     }
@@ -101,8 +101,8 @@ public extension PromotionSDKError {
         // của SDK) không nói hai câu khác nhau cho cùng một sự cố.
         case PromotionErrorCodes.shared.NETWORK_ERROR:
             let message = serverMessage?.trimmingCharacters(in: .whitespaces)
-            return .networkFailure(code: httpStatus,
-                                   message: (message?.isEmpty == false ? message! : networkErrorMessage))
+            let resolved = message?.isEmpty == false ? message : nil
+            return .networkFailure(code: httpStatus, message: resolved ?? networkErrorMessage)
         // Mã nghiệp vụ của server (vd VOUCHER_EXPIRED) — KHÔNG phải lỗi mạng.
         default:
             let message = serverMessage?.trimmingCharacters(in: .whitespaces)
@@ -111,7 +111,5 @@ public extension PromotionSDKError {
     }
 
     /// Trùng `R.string.prm_error_network` bên Android — sửa một bên thì sửa cả hai.
-    private static var networkErrorMessage: String {
-        "Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại"
-    }
+    private static var networkErrorMessage: String { PromotionUIStrings.networkError }
 }

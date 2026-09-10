@@ -18,6 +18,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.viewbinding.ViewBinding
 import com.ttcn.prm.R
 import com.ttcn.prm.ui.utils.extension.screenWidth
+import com.ttcn.prm.ui.utils.PRMLocale
 
 /**
  * Base cho dialog dùng chung của SDK — song sinh của [PRMBaseFragment] nhưng cho [DialogFragment].
@@ -58,10 +59,14 @@ internal abstract class PRMBaseDialog<VB : ViewBinding> : DialogFragment() {
         setStyle(STYLE_NORMAL, R.style.PRMBaseTheme_Dialog)
     }
 
-    /** Ép LIGHT như [PRMBaseFragment.onGetLayoutInflater] — dialog không đi qua base fragment. */
+    /**
+     * Ép LIGHT + locale của SDK, y như [PRMBaseFragment.onGetLayoutInflater] — dialog **không** đi
+     * qua base fragment nên phải tự bọc, thiếu ở đây thì chữ trong dialog đọc theo ngôn ngữ của
+     * máy chứ không theo `PromotionSessionConfig.language`.
+     */
     override fun onGetLayoutInflater(savedInstanceState: Bundle?): LayoutInflater {
         val base = super.onGetLayoutInflater(savedInstanceState)
-        val themed = ContextThemeWrapper(requireContext(), R.style.PRMForceLight)
+        val themed = ContextThemeWrapper(PRMLocale.wrap(requireContext()), R.style.PRMForceLight)
         return base.cloneInContext(themed)
     }
 

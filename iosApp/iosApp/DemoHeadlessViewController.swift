@@ -9,7 +9,7 @@
 //
 
 import UIKit
-import PRM
+import PromotionKit
 
 final class DemoHeadlessViewController: UIViewController {
 

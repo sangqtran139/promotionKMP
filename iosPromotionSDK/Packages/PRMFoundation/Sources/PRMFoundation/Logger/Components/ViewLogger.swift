@@ -69,7 +69,9 @@ public class ViewLogger: LogHandler {
                                for: UIControl.State.normal)
                 close.addTarget(self, action: #selector(hideOverlayView(_:)), for: .touchDown)
 
-                overlayView.addSubview(textView!)
+                // `textView` vừa gán ngay bên trên nên chắc chắn khác nil — nhưng `!` bắt người đọc
+                // tự đi kiểm điều đó, còn `if let` thì compiler giữ hộ.
+                if let textView { overlayView.addSubview(textView) }
                 overlayView.addSubview(close)
                 window.addSubview(overlayView)
 

@@ -6,9 +6,11 @@ import PackageDescription
 ///
 /// Nghiệp vụ nằm trọn trong `PromotionLogic.xcframework` (Kotlin Multiplatform).
 ///
-/// Gói này chỉ làm các việc keo mà Kotlin không làm được:
-/// 1. `boxed(_:)` — bọc `Int?` của Swift thành `KotlinInt?` mà Kotlin/Native chờ.
-/// 2. `toPromotionError(_:)` — bóc exception Kotlin trong `NSError` thành `PromotionError` chuẩn hoá.
+/// Gói này chỉ làm các việc keo mà Kotlin không làm được — cả hai nằm trong namespace `PRMKotlin`
+/// chứ không phải global function, vì gói này được `@_exported` nên global ở đây là global ở
+/// mọi file của tầng UI:
+/// 1. `PRMKotlin.boxed(_:)` — bọc `Int?` của Swift thành `KotlinInt?` mà Kotlin/Native chờ.
+/// 2. `PRMKotlin.toPromotionError(_:)` — bóc exception Kotlin trong `NSError` thành `PromotionError`.
 /// (Tầng UI gọi `suspend` Kotlin trực tiếp bằng async/await trong `Task`.)
 let package = Package(
     name: "PRMKotlinBridge",

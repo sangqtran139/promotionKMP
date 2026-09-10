@@ -77,6 +77,9 @@ public class PromotionCardView: PRMTapableView {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
+        // Logo thương hiệu là ảnh TRANG TRÍ ở đây: tên thương hiệu đã nằm trong `titleLabel` ngay
+        // cạnh. Để VoiceOver dừng ở nó nghĩa là mỗi thẻ phải vuốt thêm một nhịp chỉ để nghe "ảnh".
+        imageView.isAccessibilityElement = false
         return imageView
     }()
     

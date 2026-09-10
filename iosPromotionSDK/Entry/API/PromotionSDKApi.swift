@@ -80,8 +80,8 @@ public final class PromotionSDKApi {
             keyword: keyword,
             serviceCode: serviceCode,
             tab: tab ?? "all",
-            page: boxed(page),
-            size: boxed(size)
+            page: PRMKotlin.boxed(page),
+            size: PRMKotlin.boxed(size)
         )
         let useCases = self.useCases
         handle(

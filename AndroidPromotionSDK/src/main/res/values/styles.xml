@@ -52,7 +52,18 @@
         <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
-    <style name="PRMBaseTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <!--
+      Cả file này nay dùng MỘT thế hệ theme: Material3. Trước đây trộn ba (AppCompat / Design /
+      Material3) — hoạt động được vì `material` còn giữ alias cho tên thời Design Support Library,
+      nhưng nó nghĩa là cách SDK render phụ thuộc vào **thế hệ nào resolve được attribute trước**,
+      chỗ dễ vỡ khi nâng `material`.
+
+      Theme này chỉ có một đường vào: `PRMBaseTheme.Dialog` ở `PRMBaseDialog.setStyle()`. Thứ duy
+      nhất từng phụ thuộc thế hệ là màu tick `AppCompatCheckBox` trong `prm_dialog_confirm.xml`
+      (không khai `buttonTint` nên lấy `colorAccent`) — đã ghim tint tường minh vào token của SDK,
+      nên đổi parent không còn đụng vào hình.
+    -->
+    <style name="PRMBaseTheme" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:windowTranslucentStatus">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentNavigation">false</item>
@@ -131,11 +142,14 @@
         <item name="lineHeight">@dimen/prm_18sdp</item>
     </style>
 
-    <style name="PRMCustomBottomSheetDialogTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="bottomSheetStyle">@style/PRMBaseBottomSheetDialog</item>
-    </style>
-
-    <style name="PRMCustomBottomSheetStyle" parent="Widget.Design.BottomSheet.Modal">
+    <!--
+      `Widget.Material3.BottomSheet.Modal` thay cho `Widget.Design.BottomSheet.Modal` — tên cũ từ
+      thời Design Support Library, `material` còn giữ alias nên vẫn resolve được, nhưng nó nghĩa là
+      cách SDK render phụ thuộc vào thế hệ nào resolve được attribute trước. Style này chỉ đặt
+      background trong suốt, phần parent đóng góp là shape/elevation vốn đã bị background che, nên
+      đổi thế hệ ở đây không đổi hình.
+    -->
+    <style name="PRMCustomBottomSheetStyle" parent="Widget.Material3.BottomSheet.Modal">
         <item name="android:background">@android:color/transparent</item>
     </style>
 
@@ -154,7 +168,14 @@
         <item name="android:fontFamily">@font/prm_sf_pro_display_medium</item>
     </style>
 
-    <style name="PRMBaseBottomSheetDialog" parent="@style/Theme.Design.Light.BottomSheetDialog">
+    <!--
+      Theme ĐẦY ĐỦ (dùng làm `getTheme()` của `ServiceSelectorBottomSheet`), **không** phải
+      `ThemeOverlay.Material3.BottomSheetDialog`: overlay chỉ resolve đúng khi theme nền đã là
+      Material3, mà theme nền ở đây là theme app host — thứ SDK không kiểm soát. Kế thừa thẳng
+      `Theme.Material3.Light.BottomSheetDialog` thì SDK tự mang đủ attribute, host ở thế hệ nào
+      cũng không ảnh hưởng.
+    -->
+    <style name="PRMBaseBottomSheetDialog" parent="@style/Theme.Material3.Light.BottomSheetDialog">
         <item name="android:windowIsFloating">false</item>
         <item name="android:background">@android:color/transparent</item>
         <item name="bottomSheetStyle">@style/PRMCustomBottomSheetStyle</item>
@@ -211,7 +232,12 @@
         <item name="lineHeight">@dimen/prm_16sdp</item>
     </style>
 
-    <style name="PRMTabLayOutNew" parent="TextAppearance.Design.Tab">
+    <!--
+      Parent đổi từ `TextAppearance.Design.Tab` (tên thời Design Support Library) sang thế hệ
+      Material3. Không đổi hình: bốn attribute mà parent đóng góp — size, style, allCaps, font —
+      đều bị style này ghi đè ngay bên dưới.
+    -->
+    <style name="PRMTabLayOutNew" parent="TextAppearance.Material3.TitleSmall">
         <item name="android:textSize">@dimen/prm_text_size_14</item>
         <item name="android:textStyle">bold</item>
         <item name="textAllCaps">false</item>
@@ -219,13 +245,6 @@
         <item name="fontFamily">@font/prm_sf_pro_display_regular</item>
     </style>
 
-    <style name="PRMButton_gradient_prm" parent="@style/Widget.AppCompat.Button.Colored">
-        <item name="android:textSize">@dimen/prm_10sdp</item>
-        <item name="android:fontFamily">@font/prm_sf_pro_display_regular</item>
-        <item name="android:textColor">@color/prm_white</item>
-        <item name="android:background">@drawable/prm_button_gradient_background</item>
-        <item name="android:gravity">center</item>
-    </style>
 
 
 </resources>

@@ -14,7 +14,7 @@ public class ConsoleLogger: LogHandler {
     /// Subsystem gắn bundle id của gói nên dev của host lọc được đúng log của SDK trong Console.app,
     /// thay vì phải bới toàn bộ syslog của app — thứ `NSLog` không cho làm.
     private static let osLog = OSLog(
-        subsystem: Bundle(for: ConsoleLogger.self).bundleIdentifier ?? "com.vtm.PRM",
+        subsystem: Bundle(for: ConsoleLogger.self).bundleIdentifier ?? "com.vtm.PromotionKit",
         category: "PRMLogger"
     )
 

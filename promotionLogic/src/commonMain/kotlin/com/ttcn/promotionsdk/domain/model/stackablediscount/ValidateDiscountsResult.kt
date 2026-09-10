@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.domain.model.stackablediscount
 
-data class ValidateDiscountsResult(
+public data class ValidateDiscountsResult(
     val overallValid: Boolean,
     val totalDiscountAmount: String,
     val finalAmount: String,
@@ -20,29 +20,29 @@ data class ValidateDiscountsResult(
     // ─── Diễn giải kết quả cho MỘT offer (áp/auto-apply đơn lẻ) — dùng chung Android & iOS ───
 
     /** Dòng kết quả ứng với [objectId]; null nếu server không trả dòng nào cho offer này. */
-    fun itemFor(objectId: String): DiscountItemResult? = items.firstOrNull { it.objectId == objectId }
+    public fun itemFor(objectId: String): DiscountItemResult? = items.firstOrNull { it.objectId == objectId }
 
     /**
      * Offer có được áp không: chỉ chặn khi server nói rõ `valid == false`. Không có dòng riêng
      * ([itemFor] null) → không chặn (khớp hành vi iOS/Android hiện tại).
      */
-    fun isValidFor(objectId: String): Boolean = itemFor(objectId)?.valid != false
+    public fun isValidFor(objectId: String): Boolean = itemFor(objectId)?.valid != false
 
     /**
      * Số tiền giảm áp cho [objectId]: lấy `calculatedDiscount` của dòng riêng, thiếu thì fallback
      * `totalDiscountAmount` của cả kết quả (chuỗi số thô — tầng hiển thị tự format).
      */
-    fun discountFor(objectId: String): String = itemFor(objectId)?.calculatedDiscount ?: totalDiscountAmount
+    public fun discountFor(objectId: String): String = itemFor(objectId)?.calculatedDiscount ?: totalDiscountAmount
 
     /**
      * Lý do đọc được để hiện/log cho [objectId]: ưu tiên thông điệp của chính dòng đó
      * (`validationMessages`), không có thì lùi về lý do cấp đơn ([businessRuleViolations]).
      */
-    fun reasonFor(objectId: String): List<String> =
+    public fun reasonFor(objectId: String): List<String> =
         itemFor(objectId)?.validationMessages?.takeIf { it.isNotEmpty() } ?: businessRuleViolations
 }
 
-data class DiscountItemResult(
+public data class DiscountItemResult(
     val objectId: String,
     val objectType: String,
     val valid: Boolean,

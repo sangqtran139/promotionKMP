@@ -6,15 +6,17 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.ttcn.prm.R
-import com.ttcn.prm.ui.feature.endowview.AppliedDiscount
+import com.ttcn.prm.ui.feature.offerwidget.AppliedDiscount
 import com.ttcn.prm.databinding.PrmItemListPromotionApplyBinding
 import com.ttcn.prm.databinding.PrmItemListPromotionCountBinding
 import com.ttcn.prm.ui.theme.applier.DiscountBadgeApplier
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
+import com.ttcn.prm.ui.utils.PRMLocale
+import java.text.NumberFormat
 
 /**
- * Adapter cho [rcvEndow] trong PRMEndowView.
+ * Adapter cho [rcvOffer] trong PRMOfferWidget.
  *
  * Luôn render từ [AppliedDiscount] — dữ liệu trực tiếp từ discountDetails
  * trong response của validateStackableDiscounts.
@@ -26,9 +28,9 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
 
     private val items = mutableListOf<AppliedDiscount>()
     private val maxVisibleVouchers = 2
-    private var badgeTokenOverride: DiscountBadgeToken? = null
+    private var badgeTokenOverride: PRMDiscountBadgeToken? = null
 
-    fun applyToken(token: DiscountBadgeToken?) {
+    fun applyToken(token: PRMDiscountBadgeToken?) {
         badgeTokenOverride = token
         if (items.isEmpty()) return
         notifyItemRangeChanged(0, minOf(items.size, maxVisibleVouchers))
@@ -40,9 +42,9 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
     }
 
     /**
-     * Danh sách y hệt thì thôi: `PRMEndowView.renderState` nay chạy theo **[EndowState] dùng chung**,
+     * Danh sách y hệt thì thôi: `PRMOfferWidget.renderState` nay chạy theo **[OfferWidgetState] dùng chung**,
      * tức nó thức dậy cả với những field widget không vẽ (`isValidating`, `isLoading`) — trước đây
-     * `PRMEndowUiState` không có mấy field đó nên nuốt luôn. Không chặn ở đây thì mỗi vòng validate
+     * `PRMOfferWidgetUiState` không có mấy field đó nên nuốt luôn. Không chặn ở đây thì mỗi vòng validate
      * lại một lần `notifyDataSetChanged` rebind toàn bộ hàng với đúng dữ liệu cũ.
      */
     @SuppressLint("NotifyDataSetChanged")
@@ -96,7 +98,7 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
         private val binding: PrmItemListPromotionApplyBinding,
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(item: AppliedDiscount, token: DiscountBadgeToken?) {
+        fun bind(item: AppliedDiscount, token: PRMDiscountBadgeToken?) {
             // Thứ tự: `tags[0]` (nhãn server) → TÊN VOUCHER → số tiền giảm.
             //
             // `tags[0]` đứng đầu vì đó là nhãn server chủ động gửi cho đúng lượt validate này —
@@ -137,6 +139,9 @@ internal class ApplyPromotionAdapter : RecyclerView.Adapter<RecyclerView.ViewHol
 private fun formatDiscountAmount(context: Context, raw: String): String {
     val digits = raw.filter { it.isDigit() }
     val value = digits.toLongOrNull() ?: return raw
-    val grouped = value.toString().reversed().chunked(3).joinToString(".").reversed()
-    return context.getString(R.string.prm_discount_amount_format, grouped)
+    // Locale QUYẾT ĐỊNH dấu phân cách nghìn. Trước đây dòng này tự chèn `"."` bằng
+    // `chunked(3).joinToString(".")` — đúng cho vi-VN và sai cho mọi ngôn ngữ khác, tức là tham số
+    // `language` không đi tới được chỗ nó phải tới. Đối ứng `PromotionSDKImpl.formatDiscount` bên iOS.
+    val grouped = NumberFormat.getIntegerInstance(PRMLocale.current()).format(value)
+    return PRMLocale.wrap(context).getString(R.string.prm_discount_amount_format, grouped)
 }

@@ -21,7 +21,7 @@ internal class ChoosePromotionViewModel(
 ) {
 
     /**
-     * Ưu đãi user đang chọn, để bấm "Áp dụng" trả về widget — validate & áp do `EndowStore` lo
+     * Ưu đãi user đang chọn, để bấm "Áp dụng" trả về widget — validate & áp do `OfferWidgetStore` lo
      * (dùng chung iOS), màn này không tự validate.
      *
      * Là **hàm gọi lúc bấm** chứ không phải effect: nó chỉ đọc selection hiện tại của store, không

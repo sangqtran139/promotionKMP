@@ -65,7 +65,7 @@
 | Mở "Ưu đãi của tôi" | `openMyPromotion(host[, containerViewId])` | `openMyPromotion(activity, containerViewId?)` | `openMyPromotion(from:)` | N1 (Fragment/containerViewId Android-only) |
 | *Gác chưa-init của 2 hàm mở màn* | log rồi bỏ qua, **không ném** | `requireInitialized(caller)` | `requireImpl(_:)` | ✅ |
 | Mở chi tiết | `openPromotionDetail(voucherId, host[, containerViewId], returnVoucherOnApply, onVoucherApplied)` | `openPromotionDetail(voucherId, activity, containerViewId?, returnVoucherOnApply = true, hostHandlesDismiss = false, onVoucherApplied: ((PromotionVoucherDetail) -> Unit)? = null)` | `openPromotionDetail(voucherId:from:returnVoucherOnApply:hostHandlesDismiss:onVoucherApplied:)` | ✅ boolean + closure đối xứng, **không enum ở nền tảng nào**; cờ xuống thẳng `arguments` (Android) / `DataModel` (iOS). Callback trả object `PromotionVoucherDetail`; UI nội bộ chuyền `VoucherDetail` domain, map sang DTO ở ranh giới public. `hostHandlesDismiss` = ai pop màn chi tiết sau khi "Áp dụng" (mặc định SDK tự pop) |
-| Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMEndowView` (View) | `createEndowView(from:)` ×3 | N1 (xem [§5.1](#51-widget)) |
+| Widget checkout | *(không nằm trên `PromotionSDK`)* | `PRMOfferWidget` (View) | `createOfferWidget(from:)` ×3 | N1 (xem [§5.1](#51-widget)) |
 
 **Callback identity:** bỏ tham số `sdk` ở **mọi** method callback trên cả 2 nền tảng (SDK là singleton →
 không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
@@ -136,7 +136,7 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
 |---|---|---|
 | `onVoucherApplied(voucherId)` | `String` | Theo iOS (voucherId). Android đã **rút về voucherId** (bỏ `List<AppliedDiscount>` ở callback); `AppliedDiscount` vẫn dùng ở luồng widget, không ở callback. |
 | `onServiceSelected(selection)` | `PromotionServiceSelection` (`voucherId, productId, productName, skuSourceId = "", iconUrl`) | Đã đổi tên type `PromotionSDKServiceSelection` → **`PromotionServiceSelection`** (trùng cả 2). Từ 2026-08-04: thêm field `skuSourceId` (lấy từ `PromotionAvailableService.skuSourceId` host cấu hình), map xuyên suốt `AvailableService`/`ServiceSelectorUiItem` (Android) và `AvailableService`/`ServiceSelectorItem` (iOS). |
-| `onExpireToken()` | *(không tham số)* | Từ 2026-08-18: bắn khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget Endow) trả HTTP 401. `toErrorCode()` map `httpStatus` 401 → `PromotionErrorCodes.TOKEN_EXPIRED` (`promotionLogic`, dùng chung 5 store, cả 2 nền tảng); từ 2026-08-19 **403 không còn map sang mã này** (không đủ quyền ≠ hết hạn token) — chỉ 401. Android: `PRMStoreViewModel.effects` (4 màn Fragment) và `PRMEndowView.renderState` (widget) tự bắn `PromotionSDK.getCallback()?.onExpireToken()` khi thấy mã này. iOS (từ 2026-08-18): `PRMStoreViewModel.emitErrorIfNeeded` (4 màn Store-based) và `PromotionSDKImpl.render(_:on:)` (widget Endow) làm y hệt — effect/state vẫn chảy tiếp xuống UI như cũ (không nuốt lỗi). Headless (`PromotionSDKApi`) **không** đi qua callback này, xem [HeadlessAPI.md](./HeadlessAPI.md)/[PublicApi.md](./PublicApi.md). |
+| `onExpireToken()` | *(không tham số)* | Từ 2026-08-18: bắn khi 1 API bên trong màn SDK (Ưu đãi của tôi / Tìm kiếm / Chi tiết / Chọn ưu đãi / widget ưu đãi) trả HTTP 401. `toErrorCode()` map `httpStatus` 401 → `PromotionErrorCodes.TOKEN_EXPIRED` (`promotionLogic`, dùng chung 5 store, cả 2 nền tảng); từ 2026-08-19 **403 không còn map sang mã này** (không đủ quyền ≠ hết hạn token) — chỉ 401. Android: `PRMStoreViewModel.effects` (4 màn Fragment) và `PRMOfferWidget.renderState` (widget) tự bắn `PromotionSDK.getCallback()?.onExpireToken()` khi thấy mã này. iOS (từ 2026-08-18): `PRMStoreViewModel.emitErrorIfNeeded` (4 màn Store-based) và `PromotionSDKImpl.render(_:on:)` (widget ưu đãi) làm y hệt — effect/state vẫn chảy tiếp xuống UI như cũ (không nuốt lỗi). Headless (`PromotionSDKApi`) **không** đi qua callback này, xem [HeadlessAPI.md](./HeadlessAPI.md)/[PublicApi.md](./PublicApi.md). |
 
 **Đã loại:**
 - Android `onError(errorCode)` — iOS không có, bỏ theo lựa chọn "hợp nhất theo iOS".
@@ -196,9 +196,9 @@ ba màn ở cả hai nền tảng**: `MyPromotion` / `SearchMyPromotion` / `Prom
 | Kiểu host khi mở màn | `activity: FragmentActivity` | `from: UIViewController` | Kiểu nền tảng khác nhau. |
 | Tham số `containerViewId` | có | *(không)* | Chỉ Android có FragmentContainer. |
 | Facade/Impl | 1 `object` gộp | `PromotionSDK` + `PromotionSDKImpl` | iOS cần box giấu type để tránh cross-module deserialization (binary-interface trick). |
-| Widget | `PRMEndowView` (View) | `createEndowView` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.1](#51-widget). |
+| Widget | `PRMOfferWidget` (View) | `createOfferWidget` (factory) | Idiom nền tảng (XML View vs factory UIView). Wrapper chuẩn hoá — [§5.1](#51-widget). |
 | Enum case | `PROD/STAGING` | `prod/staging` | **N1 — đã chốt (2026-09-10)**: giữ convention enum của mỗi ngôn ngữ. Kotlin `PROD` và Swift `prod` đều đang đúng chuẩn bên mình; ép giống nhau từng chữ sẽ làm một trong hai bên trông sai với dev của nền tảng đó. Quyết định gốc ở B1 (§7), bảng §2 trước đây còn để ⚠️ nên nhìn như đang treo. Nằm trên public API cả hai bên → sau go-live không đổi được nữa. |
-| Ràng buộc thread ở bề mặt public | `@MainThread` (lint) | `@MainActor` (compiler) | Cùng **một** hợp đồng — "gọi trên main thread" — nhưng mỗi nền tảng ép bằng công cụ mạnh nhất nó có. Áp cho 6 điểm UI: `configure(theme:)`, `openMyPromotion`, `openPromotionDetail`, `openChoosePromotion`, `closePromotionDetail`, `closeMyPromotion`. iOS đánh `@MainActor` lên **cả class** `PromotionSDK` nên phủ rộng hơn; Kotlin không có annotation cấp class tương đương. Chi tiết: [PublicApi.md §5b.0](./PublicApi.md#5b0-bề-mặt-ios-là-mainactor). |
+| Ràng buộc thread ở bề mặt public | `@MainThread` (lint) | `@MainActor` (compiler) | Cùng **một** hợp đồng — "gọi trên main thread" — nhưng mỗi nền tảng ép bằng công cụ mạnh nhất nó có. Áp cho 6 điểm UI: `configure(theme:)`, `openMyPromotion`, `openPromotionDetail`, `openChoosePromotion`, `closePromotionDetail`, `closeMyPromotion`. iOS đánh `@MainActor` lên **cả class** `PromotionSDK` nên phủ rộng hơn; Kotlin không có annotation cấp class tương đương. Chi tiết: [PublicApi.md §6.2](./PublicApi.md#62-bề-mặt-ios-là-mainactor). |
 | Ràng buộc View↔ViewModel | `StateFlow` + `collectFlow` | closure `onState`/`onEffect` | Không có `Flow` trong Swift. Hình dạng đã **ép trùng**: cùng `handleAction`, cùng `UiState`/`Effect`, `onState` replay state hiện tại khi gán (mô phỏng `StateFlow`). Từ 2026-07-23 iOS **không** còn Combine. |
 | Cách hiện lỗi / thông báo | popup | popup | **Đã đồng nhất: toast bỏ hẳn ở cả 2 bên.** Cần báo user → `PRMBaseFragment.showErrorDialog` (Android, `PRMBaseConfirmDialog`) ↔ `PRMBaseViewController.showErrorDialog` (iOS, `PRMConfirmationDialog`). Màn đã có shimmer/empty-view nói thay thì **không hiện gì**. Chuỗi lỗi trùng nhau: `mapPromotionError` ↔ `PromotionUIStrings.errorMessage`. Xem [ErrorHandling.md](./ErrorHandling.md). |
 
@@ -230,12 +230,12 @@ qua **một** hàm dùng chung `configuredServicesFor(applicableProducts)` ở `
 
 ### 5.1. Widget
 
-Giữ lệch có chủ đích: Android `PRMEndowView` (View đặt trong layout), iOS `createEndowView(from:)`.
+Giữ lệch có chủ đích: Android `PRMOfferWidget` (View đặt trong layout), iOS `createOfferWidget(from:)`.
 Wrapper phơi **một** API chung `makeCheckoutWidget(...)` để host không thấy khác biệt.
 
 **Chi tiết giảm giá (`AppliedDiscount`) — N1, đã duyệt:** chỉ **Android** phơi `AppliedDiscount` +
-`PRMEndowView.setDiscountDetails(...)` để host đọc breakdown giảm giá **trực tiếp** từ widget. **iOS
-cố tình KHÔNG phơi** type này: `createEndowView(from:)` trả `UIView` đục (che type nội bộ theo box
+`PRMOfferWidget.setDiscountDetails(...)` để host đọc breakdown giảm giá **trực tiếp** từ widget. **iOS
+cố tình KHÔNG phơi** type này: `createOfferWidget(from:)` trả `UIView` đục (che type nội bộ theo box
 binary-interface — [§4](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)), nên host iOS chỉ nhận **id** voucher đã áp qua
 `onVoucherApplied(voucherId)`; muốn biết số tiền giảm thì gọi headless `PromotionSDK.api.validateDiscounts(...)`
 với `voucherId` đó (trả `PromotionValidationResult` — cùng dữ liệu, đi qua ranh giới DTO hợp lệ). Đây
@@ -292,7 +292,7 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
   rỗng); Android bổ sung bottom sheet "Chọn dịch vụ" ở màn Tìm kiếm; màn "Chọn ưu đãi" của Android
   **chờ validate xong** rồi mới đóng (lỗi → ở lại + báo, như iOS); màn chi tiết **bỏ hẳn seed từ ngoài**
   ở cả 2 bên — chỉ hiển thị khi API detail trả về (xem [features/PromotionDetail.md](../features/PromotionDetail.md));
-  `PRMEndowViewModel`
+  `PRMOfferWidgetViewModel`
   Android đổi tên hàm khớp iOS (`loadInitial`/`setApplied`/`markUnavailable`/`clearApplied`/`consumeError`);
   iOS bỏ `baseUrl` fallback hardcode, dùng rule "Xem thêm" dùng chung (`mySeeMoreState`/`visibleMyOffers`)
   và nhận `isEnabled` từ store thay vì tự suy lại.
@@ -302,7 +302,7 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
   `productCategory`/`quantity`/`unitPrice` (đều tuỳ chọn, mặc định `nil`/`null`); SDK tự bọc lại
   thành `List<PromotionOrderItem>` 1 phần tử hoặc rỗng trước khi ghi vào
   `PromotionMutableContext.orderItems` — tầng dưới (`getOrderItems()`, `ChoosePromotionStore`/
-  `EndowStore`) không đổi. Điều kiện có/không item ban đầu khoá theo `skuId`, sau đổi sang `productId`
+  `OfferWidgetStore`) không đổi. Điều kiện có/không item ban đầu khoá theo `skuId`, sau đổi sang `productId`
   ở B9.
 - [x] **B8.** (2026-08-14) Bỏ tham số `serviceCode` khỏi `updateOrderInfo` ở **cả 2** nền tảng — không
   còn cách nào để host set `PromotionMutableContext.serviceCode` qua public API. Field nội bộ
@@ -339,11 +339,11 @@ làm bằng chứng SDK đủ đơn giản để dùng không cần wrapper.
     bên** — `ChoosePromotionFragment.initialMyOffers`/`initialOtherOffers`/`initialMyIsLastPage`/
     `initialOtherIsLastPage` (Android) và `ChoosePromotionBuilder.DataModel.preloadedMy`/
     `preloadedOther`/`myIsLastPage`/`otherIsLastPage` (iOS), kèm
-    `PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage` (`internal`, chỉ tồn
+    `PRMOfferWidget.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage` (`internal`, chỉ tồn
     tại để feed chúng). Thứ duy nhất còn truyền từ widget sang là `preSelectedVoucherIds`.
-  - **`EndowStore.validateAndApply` trả `EndowApplyOutcome`** thay cho `EndowState` →
-    `EndowViewModel.validateAndApply` đổi theo ở cả 2 bên (Android `suspend` trả thẳng, iOS
-    `completion: ((EndowApplyOutcome) -> Void)?`). Nhánh `Rejected` **không commit** `appliedDiscounts`.
+  - **`OfferWidgetStore.validateAndApply` trả `OfferWidgetApplyOutcome`** thay cho `OfferWidgetState` →
+    `OfferWidgetViewModel.validateAndApply` đổi theo ở cả 2 bên (Android `suspend` trả thẳng, iOS
+    `completion: ((OfferWidgetApplyOutcome) -> Void)?`). Nhánh `Rejected` **không commit** `appliedDiscounts`.
   - **Ba nhánh kết cục xử lý y hệt nhau**: `ChoosePromotionFragment.onApplyClicked` (Android) ↔
     `ChoosePromotionViewController.handleApplyOutcome` (iOS). Điều hướng vẫn theo kiến trúc mỗi bên —
     Android `goBack()` ngay trong Fragment, iOS pop ở `PromotionSDKImpl.openChoosePromotion` vì VC

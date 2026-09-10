@@ -13,7 +13,7 @@ package com.ttcn.promotionsdk.domain.exception
  * `onExpireToken()`. Còn lại: [PromotionException]/[NetworkException] → `errorCode`; throwable
  * khác → `message`; fallback [PromotionErrorCodes.GENERAL].
  */
-fun Throwable.toErrorCode(): String =
+public fun Throwable.toErrorCode(): String =
     when {
         this is PromotionException && httpStatus == 401 -> PromotionErrorCodes.TOKEN_EXPIRED
         this is PromotionException -> errorCode ?: PromotionErrorCodes.GENERAL

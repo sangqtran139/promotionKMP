@@ -110,8 +110,8 @@ PromotionSDK.updateOrderInfo(orderId = orderId, productId = productId, orderValu
 ```
 
 ```xml
-<com.ttcn.prm.ui.feature.endowview.PRMEndowView
-    android:id="@+id/endowView"
+<com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget
+    android:id="@+id/offerWidget"
     android:layout_width="match_parent"
     android:layout_height="wrap_content" />
 ```
@@ -120,7 +120,7 @@ Bấm vào widget → SDK **tự** mở màn "Chọn ưu đãi". Host không c�
 
 ```kotlin
 // khi user bấm nút thanh toán của host
-binding.endowView.confirmRedemption(
+binding.offerWidget.confirmRedemption(
     onSuccess = { result -> proceedPayment(result) },
     onError   = { error -> stopCheckout(error) },
 )
@@ -142,7 +142,7 @@ Kênh chính là **SPM `binaryTarget`** trỏ tới zip trên Artifactory nội 
 
 ```swift
 .binaryTarget(
-    name: "Promotion",          // BẮT BUỘC trùng tên xcframework trong zip, không phải module `PRM`
+    name: "Promotion",          // BẮT BUỘC trùng tên xcframework trong zip, không phải module `PromotionKit`
     url: "https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/1.0.0/Promotion-1.0.0.xcframework.zip",
     checksum: "<sha256 lấy từ metadata.json cạnh zip>"
 )
@@ -164,7 +164,7 @@ xem [IosIntegrationGuide §3.2](./IosIntegrationGuide.md).
 ### 3.2. Nối nguồn token
 
 ```swift
-import PRM
+import PromotionKit
 
 final class AppPromotionTokenSource: PromotionTokenSource {   // KHÔNG @MainActor
     func currentToken() -> String? { tokenStore.accessToken }

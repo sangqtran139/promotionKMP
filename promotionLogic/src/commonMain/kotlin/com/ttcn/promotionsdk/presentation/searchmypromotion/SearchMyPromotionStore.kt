@@ -27,25 +27,25 @@ import kotlinx.coroutines.launch
  * (voucher + quyết định hiển thị) của màn "Ưu đãi của tôi" — không tạo model trùng.
  * Cùng khuôn với `MyPromotionStore`: `state` / `dispatch` / `watchState` / `currentState` / `clear`.
  */
-class SearchMyPromotionStore(
+public class SearchMyPromotionStore(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : PRMStore<SearchMyPromotionState, SearchMyPromotionIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
-    constructor(searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase) :
+    public constructor(searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase) :
         this(searchCustomerVouchersUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(SearchMyPromotionState())
     override val state: StateFlow<SearchMyPromotionState> = _state.asStateFlow()
 
-    fun currentState(): SearchMyPromotionState = _state.value
+    public fun currentState(): SearchMyPromotionState = _state.value
 
-    fun watchState(onEach: (SearchMyPromotionState) -> Unit): PromotionCancellable {
+    public fun watchState(onEach: (SearchMyPromotionState) -> Unit): PromotionCancellable {
         val job = scope.launch { state.collect { onEach(it) } }
         return PromotionCancellable { job.cancel() }
     }
 
-    fun clear() {
+    public fun clear() {
         scope.cancel()
     }
 

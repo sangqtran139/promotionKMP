@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  * Port từ `MyPromotionViewModel` (Android) — nguồn logic gốc; sau khi hai nền tảng dùng store này,
  * ViewModel hai bên trở thành lớp bọc mỏng.
  */
-class MyPromotionStore(
+public class MyPromotionStore(
     private val searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase,
     /**
      * Scope chạy use case. Android truyền `viewModelScope` (theo lifecycle, tự huỷ — KHÔNG gọi [clear]).
@@ -46,7 +46,7 @@ class MyPromotionStore(
      * iOS/Swift: khởi tạo không cần truyền `scope` (default param của Kotlin KHÔNG bridge sang Swift,
      * và tạo `CoroutineScope` từ Swift rất bất tiện). Store tự sở hữu scope; gọi [clear] khi rời màn.
      */
-    constructor(searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase) :
+    public constructor(searchCustomerVouchersUseCase: SearchCustomerVouchersUseCase) :
         this(searchCustomerVouchersUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(MyPromotionState())
@@ -55,20 +55,20 @@ class MyPromotionStore(
     override val state: StateFlow<MyPromotionState> = _state.asStateFlow()
 
     /** State hiện tại (đồng bộ) cho iOS đọc nhanh khi cần (vd seed trước khi observe). */
-    fun currentState(): MyPromotionState = _state.value
+    public fun currentState(): MyPromotionState = _state.value
 
     /**
      * Quan sát state từ iOS/Swift bằng callback (SKIE version này không bridge Flow của class
      * ObjC-exposed sang `for await`, nên dùng cầu callback thuần — bridge ObjC lambda, không thư viện).
      * [onEach] phát trên dispatcher của store; Swift tự hop về main. Trả [PromotionCancellable] để huỷ.
      */
-    fun watchState(onEach: (MyPromotionState) -> Unit): PromotionCancellable {
+    public fun watchState(onEach: (MyPromotionState) -> Unit): PromotionCancellable {
         val job = scope.launch { state.collect { onEach(it) } }
         return PromotionCancellable { job.cancel() }
     }
 
     /** Huỷ scope do store tự sở hữu (iOS gọi khi deinit). KHÔNG gọi nếu đã inject scope ngoài (Android). */
-    fun clear() {
+    public fun clear() {
         scope.cancel()
     }
 

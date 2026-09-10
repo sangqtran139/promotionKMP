@@ -1,0 +1,63 @@
+/*
+  PromotionKit.strings (vi)
+
+  Bảng chuỗi hiển thị của SDK. Khoá GIỮ TRÙNG tên với `R.string.prm_*` bên Android — cùng một câu
+  trên hai nền tảng phải tra bằng cùng một khoá, nếu không thì lần sửa câu chữ nào cũng phải nhớ
+  rằng bên kia đặt tên khác.
+
+  Định dạng tham số theo chuẩn Foundation: `%1$@` cho chuỗi, `%1$d` cho số. (Android dùng `%1$s`
+  cho chuỗi — khác nhau là đúng, đó là hai hệ format khác nhau.)
+*/
+
+"prm_use_now" = "Sử dụng ngay";
+"prm_use" = "Sử dụng";
+"prm_apply" = "Áp dụng";
+"prm_detail" = "Chi tiết";
+
+"prm_status_used" = "Đã sử dụng";
+"prm_status_expired" = "Đã hết hạn";
+"prm_status_ineligible" = "Không đủ điều kiện";
+
+"prm_my_offer" = "Ưu đãi của tôi";
+"prm_offer_different" = "Ưu đãi khác";
+"prm_tab_detail_info" = "Thông tin chi tiết";
+"prm_tab_usage_guide" = "Hướng dẫn sử dụng";
+
+"prm_deal_hot" = "Ngàn deal HOT chờ bạn";
+"prm_hot_deal_description" = "Lấp đầy kho quà với thật nhiều ưu đãi hấp dẫn bạn nhé!";
+
+"prm_expiry_short_format" = "HSD: %1$@";
+"prm_expiry_long_format" = "Hạn sử dụng %1$@";
+"prm_expiry_remaining_days" = "HSD còn %1$d ngày";
+"prm_expiry_never" = "HSD: Không hết hạn";
+"prm_discount_amount_format" = "Giảm %1$@đ";
+"prm_selected_voucher_count" = "Đã chọn %1$d voucher";
+
+"prm_a11y_back" = "Quay lại";
+"prm_a11y_search" = "Tìm ưu đãi";
+"prm_a11y_promotion_banner" = "Ảnh ưu đãi";
+
+"prm_missing_customer_id" = "Không tìm thấy thông tin khách hàng";
+"prm_no_result" = "Không tìm thấy kết quả phù hợp";
+"prm_error_network" = "Không có kết nối mạng. Vui lòng kiểm tra rồi thử lại";
+"prm_error_timeout" = "Kết nối quá lâu không phản hồi. Vui lòng thử lại";
+"prm_error_general" = "Đã có lỗi xảy ra. Vui lòng thử lại sau";
+
+/* Widget ưu đãi */
+"prm_offer" = "Ưu đãi";
+"prm_cancel_voucher" = "Huỷ";
+"prm_change_voucher" = "Chọn lại";
+"prm_no_offer" = "Bạn không có mã ưu đãi nào";
+"prm_one_offer" = "Bạn có 1 mã ưu đãi";
+"prm_multiple_offer" = "Bạn có %1$d mã ưu đãi";
+
+/* Danh sách */
+"prm_see_more" = "Xem thêm";
+"prm_collapse" = "Thu gọn";
+"prm_remaining_days_short" = "Còn %1$d ngày";
+
+/* Lỗi trả cho host qua PromotionSDKError.errorDescription */
+"prm_feature_disabled" = "Tính năng ưu đãi hiện đang tạm thời không khả dụng. Vui lòng thử lại sau.";
+"prm_error_session_expired" = "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.";
+"prm_error_parse_failed" = "Có lỗi xảy ra với dữ liệu trả về.";
+"prm_error_not_initialized" = "PromotionSDK chưa được khởi tạo.";

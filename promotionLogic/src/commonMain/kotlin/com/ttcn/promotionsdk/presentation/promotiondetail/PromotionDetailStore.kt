@@ -24,25 +24,25 @@ import kotlinx.coroutines.launch
  * quyết định nút "Dùng ngay" (visible/enabled/label) từ trạng thái, xử lý lỗi. Cùng khuôn với
  * `MyPromotionStore`: `state` / `dispatch` / `watchState` / `currentState` / `clear`.
  */
-class PromotionDetailStore(
+public class PromotionDetailStore(
     private val getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : PRMStore<PromotionDetailState, PromotionDetailIntent> {
     /** iOS/Swift: khởi tạo không cần truyền scope (xem `MyPromotionStore`). */
-    constructor(getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase) :
+    public constructor(getCustomerVoucherDetailUseCase: GetCustomerVoucherDetailUseCase) :
         this(getCustomerVoucherDetailUseCase, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     private val _state = MutableStateFlow(PromotionDetailState())
     override val state: StateFlow<PromotionDetailState> = _state.asStateFlow()
 
-    fun currentState(): PromotionDetailState = _state.value
+    public fun currentState(): PromotionDetailState = _state.value
 
-    fun watchState(onEach: (PromotionDetailState) -> Unit): PromotionCancellable {
+    public fun watchState(onEach: (PromotionDetailState) -> Unit): PromotionCancellable {
         val job = scope.launch { state.collect { onEach(it) } }
         return PromotionCancellable { job.cancel() }
     }
 
-    fun clear() {
+    public fun clear() {
         scope.cancel()
     }
 

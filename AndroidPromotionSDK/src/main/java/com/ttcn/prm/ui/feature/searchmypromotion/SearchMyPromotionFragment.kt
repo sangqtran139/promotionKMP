@@ -53,8 +53,8 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
         }
 
         // Chặn nhập quá giới hạn (TLNV MOB_001 control 5.2 — maxlength 255).
-        binding.sfEndow.maxLength = PROMOTION_SEARCH_MAX_LENGTH
-        binding.sfEndow.onTextChangeListener = { keyword ->
+        binding.sfOffer.maxLength = PROMOTION_SEARCH_MAX_LENGTH
+        binding.sfOffer.onTextChangeListener = { keyword ->
             viewModel.dispatch(SearchMyPromotionIntent.QueryChanged(keyword))
         }
         // Phím Done chỉ ĐÓNG BÀN PHÍM, không gọi lại API.
@@ -66,7 +66,7 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
         // Truyền `null` chứ không xoá hẳn lời gọi: `setOnDoneKeyboardListener` là chỗ duy nhất gọi
         // `hideSoftInput()`, bỏ đi thì bàn phím không đóng nữa.
         // Đối ứng `ChoosePromotionFragment.setupSearch`.
-        binding.sfEndow.setOnDoneKeyboardListener(null)
+        binding.sfOffer.setOnDoneKeyboardListener(null)
 
         binding.rcvSearchList.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -105,7 +105,7 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
             }
         }
 
-        binding.sfEndow.getInputField().requestFocus()
+        binding.sfOffer.getInputField().requestFocus()
     }
 
     /** Giống hệt `MyPromotionFragment.showServiceSelector` — cùng bottom sheet, cùng sự kiện host. */
@@ -139,10 +139,10 @@ internal class SearchMyPromotionFragment : PRMBaseFragment<PrmFragmentSearchMyPr
         binding.tvNoResultSubtext.isVisible = showNoResult
 
         binding.tvNoResult.text = when {
-            showNoResult -> getString(R.string.prm_search_no_result)
+            showNoResult -> prmString(R.string.prm_search_no_result)
             else -> ""
         }
-        binding.tvNoResultSubtext.text = getString(R.string.prm_discover_voucher)
+        binding.tvNoResultSubtext.text = prmString(R.string.prm_discover_voucher)
 
         searchListAdapter.submitList(
             buildPromotionListItems(

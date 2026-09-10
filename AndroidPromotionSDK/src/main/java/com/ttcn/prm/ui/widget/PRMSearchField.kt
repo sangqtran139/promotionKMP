@@ -13,7 +13,7 @@ import androidx.core.widget.addTextChangedListener
 import com.ttcn.prm.R
 import com.ttcn.prm.databinding.PrmViewsSearchFieldBinding
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
-import com.ttcn.prm.ui.theme.token.SearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
 import com.ttcn.prm.ui.utils.applyCornerRadiusDp
 import com.ttcn.prm.ui.utils.applyImageTintIfSet
 import com.ttcn.prm.ui.utils.applyStrokeColorIfSet
@@ -87,7 +87,7 @@ internal class PRMSearchField @JvmOverloads constructor(
 
     private var previousKeyword: String = ""
 
-    private var lastAppliedToken: SearchBarToken? = null
+    private var lastAppliedToken: PRMSearchBarToken? = null
 
     init {
         viewBinding.searchInput.onFocusChangeListener = this
@@ -127,12 +127,12 @@ internal class PRMSearchField @JvmOverloads constructor(
         applyTokenInternal(lastAppliedToken ?: PromotionThemeRegistry.searchBarToken())
     }
 
-    fun applyToken(token: SearchBarToken?) {
+    fun applyToken(token: PRMSearchBarToken?) {
         lastAppliedToken = token
         applyTokenInternal(token)
     }
 
-    private fun applyTokenInternal(token: SearchBarToken?) {
+    private fun applyTokenInternal(token: PRMSearchBarToken?) {
         if (token == null) return
         token.borderColor?.let { viewBinding.searchInput.applyStrokeColorIfSet(it) }
         token.hintTextColor?.let { viewBinding.searchInput.setHintTextColor(it) }

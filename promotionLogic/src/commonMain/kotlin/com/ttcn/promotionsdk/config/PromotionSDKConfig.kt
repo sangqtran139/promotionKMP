@@ -2,14 +2,14 @@ package com.ttcn.promotionsdk.config
 
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOrderItem
 
-data class AvailableService(
+public data class AvailableService(
     val productId: String,
     val productName: String,
     val skuSourceId: String,
     val iconUrl: String
 )
 
-data class PromotionSDKConfig(
+public data class PromotionSDKConfig(
     val baseUrl: String,
     val requestContextProvider: PromotionRequestContextProvider? = null,
     val environment: SdkEnvironment = SdkEnvironment.PROD,
@@ -18,15 +18,15 @@ data class PromotionSDKConfig(
     val isDebug: Boolean = false,
 )
 
-interface PromotionRequestContextProvider {
-    fun getService(): String? = null
-    fun getAccessToken(): String? = null
-    fun getLanguage(): String? = null
-    fun getOrderId(): String? = null
-    fun getOrderValue(): String? = null
-    fun getMetaData(): String? = null
+public interface PromotionRequestContextProvider {
+    public fun getService(): String? = null
+    public fun getAccessToken(): String? = null
+    public fun getLanguage(): String? = null
+    public fun getOrderId(): String? = null
+    public fun getOrderValue(): String? = null
+    public fun getMetaData(): String? = null
 
-    fun getOrderItems(): List<EligibleOrderItem> = emptyList()
+    public fun getOrderItems(): List<EligibleOrderItem> = emptyList()
 
     /**
      * Xin host lấy access token mới, gọi khi một request đã ăn **HTTP 401**. Host gọi lại [onResult]
@@ -48,7 +48,7 @@ interface PromotionRequestContextProvider {
      * Được gọi từ thread nền, và **tối đa một lượt refresh tại một thời điểm** cho toàn SDK dù có
      * bao nhiêu request cùng ăn 401.
      */
-    fun refreshAccessToken(onResult: (Boolean) -> Unit) = onResult(false)
+    public fun refreshAccessToken(onResult: (Boolean) -> Unit): Unit = onResult(false)
 }
 
 /**
@@ -66,7 +66,7 @@ interface PromotionRequestContextProvider {
  * **Item tự khai `productId` thì giữ nguyên** — host biết rõ dòng hàng của mình hơn context cấp đơn.
  * Chỉ điền vào chỗ còn trống.
  *
- * Một hàm dùng chung thay vì lặp ở `ChoosePromotionStore.buildRequest` và `EndowStore.loadInitial`:
+ * Một hàm dùng chung thay vì lặp ở `ChoosePromotionStore.buildRequest` và `OfferWidgetStore.loadInitial`:
  * hai chỗ đó lệch nhau là widget và màn chọn hỏi server hai câu khác nhau.
  */
 internal fun PromotionRequestContextProvider.eligibleOrderItems(): List<EligibleOrderItem> {
@@ -76,9 +76,9 @@ internal fun PromotionRequestContextProvider.eligibleOrderItems(): List<Eligible
     }
 }
 
-class EmptyPromotionRequestContextProvider : PromotionRequestContextProvider
+public class EmptyPromotionRequestContextProvider : PromotionRequestContextProvider
 
-enum class SdkEnvironment {
+public enum class SdkEnvironment {
     PROD,
     STAGING
 }

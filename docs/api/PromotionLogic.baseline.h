@@ -5,8 +5,8 @@
 #import <Foundation/NSSet.h>
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
-@class PromotionLogic__SkieTypeExportsKt, PromotionLogic__SkieSuspendWrappersKt, PromotionLogicVoucherTabItem, PromotionLogicVoucherTabInfoCompanion, PromotionLogicVoucherTabInfo, PromotionLogicVoucherStatusCompanion, PromotionLogicVoucherStatus, PromotionLogicVoucherMetadataDtoCompanion, PromotionLogicVoucherMetadataDto, PromotionLogicVoucherListItemCompanion, PromotionLogicVoucherListItem, PromotionLogicVoucherItem, PromotionLogicVoucherInfoDtoCompanion, PromotionLogicVoucherInfoDto, PromotionLogicVoucherDisplayState, PromotionLogicVoucherDetail, PromotionLogicVoucherCodeDtoCompanion, PromotionLogicVoucherCodeDto, PromotionLogicVoucherBrandDtoCompanion, PromotionLogicVoucherBrandDto, PromotionLogicValidationOptionsCompanion, PromotionLogicValidationOptions, PromotionLogicValidateStackableDiscountsUseCase, PromotionLogicValidateDiscountsResult, PromotionLogicValidateDiscountsRequest, PromotionLogicUShort, PromotionLogicULong, PromotionLogicUInt, PromotionLogicUByte, PromotionLogicStackingValidationResultCompanion, PromotionLogicStackingValidationResult, PromotionLogicStackingOptimizationCompanion, PromotionLogicStackingOptimization, PromotionLogicStackingExclusionCompanion, PromotionLogicStackingExclusion, PromotionLogicStackingConflictCompanion, PromotionLogicStackingConflict, PromotionLogicStackingAnalysisCompanion, PromotionLogicStackingAnalysis, PromotionLogicStackableOrderItemCompanion, PromotionLogicStackableOrderItem, PromotionLogicStackableOrderInfoCompanion, PromotionLogicStackableOrderInfo, PromotionLogicStackableGroupCompanion, PromotionLogicStackableGroup, PromotionLogicStackableDiscountsResponseCompanion, PromotionLogicStackableDiscountsResponse, PromotionLogicStackableDiscountsRequestCompanion, PromotionLogicStackableDiscountsRequest, PromotionLogicStackableCustomerInfoCompanion, PromotionLogicStackableCustomerInfo, PromotionLogicSortInfoCompanion, PromotionLogicSortInfo, PromotionLogicSkie_SuspendResultSuccess, PromotionLogicSkie_SuspendResultError, PromotionLogicSkie_SuspendResultCanceled, PromotionLogicSkie_SuspendResult, PromotionLogicSkie_SuspendHandler, PromotionLogicSkie_CancellationHandler, PromotionLogicSkieKotlinStateFlow<T>, PromotionLogicSkieKotlinSharedFlow<T>, PromotionLogicSkieKotlinOptionalStateFlow<T>, PromotionLogicSkieKotlinOptionalSharedFlow<T>, PromotionLogicSkieKotlinOptionalMutableStateFlow<T>, PromotionLogicSkieKotlinOptionalMutableSharedFlow<T>, PromotionLogicSkieKotlinOptionalFlow<T>, PromotionLogicSkieKotlinMutableStateFlow<T>, PromotionLogicSkieKotlinMutableSharedFlow<T>, PromotionLogicSkieKotlinFlow<T>, PromotionLogicSkieColdFlowIterator<E>, PromotionLogicShort, PromotionLogicSessionPreviewCompanion, PromotionLogicSessionPreview, PromotionLogicSessionOptionsCompanion, PromotionLogicSessionOptions, PromotionLogicServiceSelectorKt, PromotionLogicSearchMyPromotionStore, PromotionLogicSearchMyPromotionState, PromotionLogicSearchMyPromotionIntentSearch, PromotionLogicSearchMyPromotionIntentRetry, PromotionLogicSearchMyPromotionIntentQueryChanged, PromotionLogicSearchMyPromotionIntentLoadMore, PromotionLogicSearchMyPromotionIntentConsumeError, PromotionLogicSearchMyPromotionIntentClearKeyword, PromotionLogicSearchCustomerVouchersUseCase, PromotionLogicSearchCustomerVouchersResult, PromotionLogicSearchCustomerVouchersResponseCompanion, PromotionLogicSearchCustomerVouchersResponse, PromotionLogicSearchCustomerVouchersRequest, PromotionLogicSearchConfigKt, PromotionLogicSdkEnvironment, PromotionLogicResponseMetadataCompanion, PromotionLogicResponseMetadata, PromotionLogicRejectedOffer, PromotionLogicRedemptionValidationErrorResponseCompanion, PromotionLogicRedemptionValidationErrorResponse, PromotionLogicRedemptionValidationError, PromotionLogicRedemptionSessionResponseCompanion, PromotionLogicRedemptionSessionResponse, PromotionLogicRedemptionSessionRequestCompanion, PromotionLogicRedemptionSessionRequest, PromotionLogicRedemptionOrderItemCompanion, PromotionLogicRedemptionOrderItem, PromotionLogicRedemptionOrderInfoCompanion, PromotionLogicRedemptionOrderInfo, PromotionLogicRedemptionItemRequest, PromotionLogicRedemptionCustomerInfoCompanion, PromotionLogicRedemptionCustomerInfo, PromotionLogicRedeemableRequestCompanion, PromotionLogicRedeemableRequest, PromotionLogicPromotionUseCases, PromotionLogicPromotionSDKConfig, PromotionLogicPromotionResultSuccess<T>, PromotionLogicPromotionResultFailure, PromotionLogicPromotionPreferencesCompanion, PromotionLogicPromotionHtmlContentKt, PromotionLogicPromotionFeatureGate, PromotionLogicPromotionFeatureFlagsCompanion, PromotionLogicPromotionFeatureFlags, PromotionLogicPromotionFeatureFlagUseCases, PromotionLogicPromotionFeatureFlag, PromotionLogicPromotionException, PromotionLogicPromotionErrorCodes, PromotionLogicPromotionDetailStore, PromotionLogicPromotionDetailState, PromotionLogicPromotionDetailIntentLoadDetail, PromotionLogicPromotionDetailIntentConsumeError, PromotionLogicPromotionContainer, PromotionLogicPromotionCancellable, PromotionLogicPageableInfoCompanion, PromotionLogicPageableInfo, PromotionLogicPRMEffectShowError, PromotionLogicNumber, PromotionLogicNetworkException, PromotionLogicMyPromotionVoucher, PromotionLogicMyPromotionTab, PromotionLogicMyPromotionStore, PromotionLogicMyPromotionState, PromotionLogicMyPromotionIntentSelectTab, PromotionLogicMyPromotionIntentSearch, PromotionLogicMyPromotionIntentRefresh, PromotionLogicMyPromotionIntentLoadMore, PromotionLogicMyPromotionIntentLoadInitialIfNeeded, PromotionLogicMyPromotionIntentConsumeError, PromotionLogicMyPromotionBadge, PromotionLogicMyPromotionAction, PromotionLogicMutableSet<ObjectType>, PromotionLogicMutableDictionary<KeyType, ObjectType>, PromotionLogicLong, PromotionLogicKotlinx_serialization_jsonJsonPrimitiveCompanion, PromotionLogicKotlinx_serialization_jsonJsonPrimitive, PromotionLogicKotlinx_serialization_jsonJsonNull, PromotionLogicKotlinx_serialization_jsonJsonElementCompanion, PromotionLogicKotlinx_serialization_jsonJsonElement, PromotionLogicKotlinx_serialization_coreStructureKindOBJECT, PromotionLogicKotlinx_serialization_coreStructureKindMAP, PromotionLogicKotlinx_serialization_coreStructureKindLIST, PromotionLogicKotlinx_serialization_coreStructureKindCLASS, PromotionLogicKotlinx_serialization_coreStructureKind, PromotionLogicKotlinx_serialization_coreSerializersModule, PromotionLogicKotlinx_serialization_coreSerialKindENUM, PromotionLogicKotlinx_serialization_coreSerialKindCONTEXTUAL, PromotionLogicKotlinx_serialization_coreSerialKind, PromotionLogicKotlinx_serialization_corePrimitiveKindSTRING, PromotionLogicKotlinx_serialization_corePrimitiveKindSHORT, PromotionLogicKotlinx_serialization_corePrimitiveKindLONG, PromotionLogicKotlinx_serialization_corePrimitiveKindINT, PromotionLogicKotlinx_serialization_corePrimitiveKindFLOAT, PromotionLogicKotlinx_serialization_corePrimitiveKindDOUBLE, PromotionLogicKotlinx_serialization_corePrimitiveKindCHAR, PromotionLogicKotlinx_serialization_corePrimitiveKindBYTE, PromotionLogicKotlinx_serialization_corePrimitiveKindBOOLEAN, PromotionLogicKotlinx_serialization_corePrimitiveKind, PromotionLogicKotlinx_serialization_corePolymorphicKindSEALED, PromotionLogicKotlinx_serialization_corePolymorphicKindOPEN, PromotionLogicKotlinx_serialization_corePolymorphicKind, PromotionLogicKotlinThrowable, PromotionLogicKotlinRuntimeException, PromotionLogicKotlinNothing, PromotionLogicKotlinIllegalStateException, PromotionLogicKotlinException, PromotionLogicKotlinEnumCompanion, PromotionLogicKotlinEnum<E>, PromotionLogicKotlinCancellationException, PromotionLogicKotlinArray<T>, PromotionLogicIsFeatureEnabledUseCase, PromotionLogicInt, PromotionLogicGetPromotionFeatureFlagsUseCase, PromotionLogicGetFeatureFlagsUseCase, PromotionLogicGetCustomerVoucherDetailUseCase, PromotionLogicFloat, PromotionLogicFindEligibleCampaignsUseCase, PromotionLogicFindEligibleCampaignsRequest, PromotionLogicFetchFeatureFlagsUseCase, PromotionLogicFeatureFlagException, PromotionLogicFeatureFlag, PromotionLogicEndowWidgetState, PromotionLogicEndowStore, PromotionLogicEndowState, PromotionLogicEndowIntentValidateAndApply, PromotionLogicEndowIntentSetApplied, PromotionLogicEndowIntentMarkUnavailable, PromotionLogicEndowIntentLoadInitial, PromotionLogicEndowIntentConsumeError, PromotionLogicEndowIntentClearApplied, PromotionLogicEndowHostNotifier, PromotionLogicEndowHostEventVoucherApplied, PromotionLogicEndowConfirmResultSuccess, PromotionLogicEndowConfirmResultFailure, PromotionLogicEndowApplyOutcomeRejected, PromotionLogicEndowApplyOutcomeFailed, PromotionLogicEndowApplyOutcomeApplied, PromotionLogicEndowAppliedDiscount, PromotionLogicEmptyPromotionRequestContextProvider, PromotionLogicEligibleSection, PromotionLogicEligibleOrderItem, PromotionLogicEligibleOffersResult, PromotionLogicEligibleOffer, PromotionLogicEligibleFilterOptions, PromotionLogicDouble, PromotionLogicDiscountRequestCompanion, PromotionLogicDiscountRequest, PromotionLogicDiscountItemResult, PromotionLogicDiscountItemRequest, PromotionLogicDiscountDetailCompanion, PromotionLogicDiscountDetail, PromotionLogicCustomerVoucherDetailCompanion, PromotionLogicCustomerVoucherDetail, PromotionLogicCreateRedemptionSessionUseCase, PromotionLogicCreateRedemptionResult, PromotionLogicCreateRedemptionRequest, PromotionLogicChooseSeeMoreState, PromotionLogicChoosePromotionStore, PromotionLogicChoosePromotionState, PromotionLogicChoosePromotionIntentToggleSelection, PromotionLogicChoosePromotionIntentSetPreSelected, PromotionLogicChoosePromotionIntentSeedOnce, PromotionLogicChoosePromotionIntentSeeMoreMy, PromotionLogicChoosePromotionIntentSearch, PromotionLogicChoosePromotionIntentRefresh, PromotionLogicChoosePromotionIntentQueryChanged, PromotionLogicChoosePromotionIntentPreload, PromotionLogicChoosePromotionIntentLoadMoreOtherVouchers, PromotionLogicChoosePromotionIntentLoadMoreMyVouchers, PromotionLogicChoosePromotionIntentLoadInitial, PromotionLogicChoosePromotionIntentConsumeError, PromotionLogicChoosePromotionIntentConsumeApplyMessage, PromotionLogicChoosePromotionIntentClearKeyword, PromotionLogicChoosePromotionIntentApplyStarted, PromotionLogicChoosePromotionIntentApplyRejected, PromotionLogicChoosePromotionIntentApplyFinished, PromotionLogicChoosePromotionContractKt, PromotionLogicChooseOffer, PromotionLogicByte, PromotionLogicBusinessRuleViolationCompanion, PromotionLogicBusinessRuleViolation, PromotionLogicBudgetHoldCompanion, PromotionLogicBudgetHold, PromotionLogicBoolean, PromotionLogicBase, PromotionLogicAvailableService, PromotionLogicAppliedDiscountCompanion, PromotionLogicAppliedDiscount, PromotionLogicApplicableProductDtoCompanion, PromotionLogicApplicableProductDto, PromotionLogicApplicableProduct, PromotionLogicApiResponseTemplateCompanion, PromotionLogicApiResponseTemplate<T>, NSString, NSSet<ObjectType>, NSObject, NSNumber, NSMutableSet<ObjectType>, NSMutableDictionary<KeyType, ObjectType>, NSMutableArray<ObjectType>, NSError, NSDictionary<KeyType, ObjectType>, NSArray<ObjectType>;
-@protocol PromotionLogicSkie_DispatcherDelegate, PromotionLogicSearchMyPromotionIntent, PromotionLogicPromotionResult, PromotionLogicPromotionRequestContextProvider, PromotionLogicPromotionPreferences, PromotionLogicPromotionDetailIntent, PromotionLogicPRMStore, PromotionLogicPRMEffect, PromotionLogicMyPromotionIntent, PromotionLogicKotlinx_serialization_coreSerializersModuleCollector, PromotionLogicKotlinx_serialization_coreSerializationStrategy, PromotionLogicKotlinx_serialization_coreSerialDescriptor, PromotionLogicKotlinx_serialization_coreKSerializer, PromotionLogicKotlinx_serialization_coreEncoder, PromotionLogicKotlinx_serialization_coreDeserializationStrategy, PromotionLogicKotlinx_serialization_coreDecoder, PromotionLogicKotlinx_serialization_coreCompositeEncoder, PromotionLogicKotlinx_serialization_coreCompositeDecoder, PromotionLogicKotlinx_coroutines_coreStateFlow, PromotionLogicKotlinx_coroutines_coreSharedFlow, PromotionLogicKotlinx_coroutines_coreRunnable, PromotionLogicKotlinx_coroutines_coreMutableStateFlow, PromotionLogicKotlinx_coroutines_coreMutableSharedFlow, PromotionLogicKotlinx_coroutines_coreFlowCollector, PromotionLogicKotlinx_coroutines_coreFlow, PromotionLogicKotlinx_coroutines_coreCoroutineScope, PromotionLogicKotlinKDeclarationContainer, PromotionLogicKotlinKClassifier, PromotionLogicKotlinKClass, PromotionLogicKotlinKAnnotatedElement, PromotionLogicKotlinIterator, PromotionLogicKotlinCoroutineContextKey, PromotionLogicKotlinCoroutineContextElement, PromotionLogicKotlinCoroutineContext, PromotionLogicKotlinComparable, PromotionLogicKotlinAnnotation, PromotionLogicEndowIntent, PromotionLogicEndowHostEvent, PromotionLogicEndowConfirmResult, PromotionLogicEndowApplyOutcome, PromotionLogicChoosePromotionIntent, NSCopying;
+@class PromotionLogic__SkieTypeExportsKt, PromotionLogic__SkieSuspendWrappersKt, PromotionLogicVoucherTabItem, PromotionLogicVoucherTabInfoCompanion, PromotionLogicVoucherTabInfo, PromotionLogicVoucherStatusCompanion, PromotionLogicVoucherStatus, PromotionLogicVoucherMetadataDtoCompanion, PromotionLogicVoucherMetadataDto, PromotionLogicVoucherListItemCompanion, PromotionLogicVoucherListItem, PromotionLogicVoucherItem, PromotionLogicVoucherInfoDtoCompanion, PromotionLogicVoucherInfoDto, PromotionLogicVoucherDisplayState, PromotionLogicVoucherDetail, PromotionLogicVoucherCodeDtoCompanion, PromotionLogicVoucherCodeDto, PromotionLogicVoucherBrandDtoCompanion, PromotionLogicVoucherBrandDto, PromotionLogicValidationOptionsCompanion, PromotionLogicValidationOptions, PromotionLogicValidateStackableDiscountsUseCase, PromotionLogicValidateDiscountsResult, PromotionLogicValidateDiscountsRequest, PromotionLogicUShort, PromotionLogicULong, PromotionLogicUInt, PromotionLogicUByte, PromotionLogicStackingValidationResultCompanion, PromotionLogicStackingValidationResult, PromotionLogicStackingOptimizationCompanion, PromotionLogicStackingOptimization, PromotionLogicStackingExclusionCompanion, PromotionLogicStackingExclusion, PromotionLogicStackingConflictCompanion, PromotionLogicStackingConflict, PromotionLogicStackingAnalysisCompanion, PromotionLogicStackingAnalysis, PromotionLogicStackableOrderItemCompanion, PromotionLogicStackableOrderItem, PromotionLogicStackableOrderInfoCompanion, PromotionLogicStackableOrderInfo, PromotionLogicStackableGroupCompanion, PromotionLogicStackableGroup, PromotionLogicStackableDiscountsResponseCompanion, PromotionLogicStackableDiscountsResponse, PromotionLogicStackableDiscountsRequestCompanion, PromotionLogicStackableDiscountsRequest, PromotionLogicStackableCustomerInfoCompanion, PromotionLogicStackableCustomerInfo, PromotionLogicSortInfoCompanion, PromotionLogicSortInfo, PromotionLogicSkie_SuspendResultSuccess, PromotionLogicSkie_SuspendResultError, PromotionLogicSkie_SuspendResultCanceled, PromotionLogicSkie_SuspendResult, PromotionLogicSkie_SuspendHandler, PromotionLogicSkie_CancellationHandler, PromotionLogicSkieKotlinStateFlow<T>, PromotionLogicSkieKotlinSharedFlow<T>, PromotionLogicSkieKotlinOptionalStateFlow<T>, PromotionLogicSkieKotlinOptionalSharedFlow<T>, PromotionLogicSkieKotlinOptionalMutableStateFlow<T>, PromotionLogicSkieKotlinOptionalMutableSharedFlow<T>, PromotionLogicSkieKotlinOptionalFlow<T>, PromotionLogicSkieKotlinMutableStateFlow<T>, PromotionLogicSkieKotlinMutableSharedFlow<T>, PromotionLogicSkieKotlinFlow<T>, PromotionLogicSkieColdFlowIterator<E>, PromotionLogicShort, PromotionLogicSessionPreviewCompanion, PromotionLogicSessionPreview, PromotionLogicSessionOptionsCompanion, PromotionLogicSessionOptions, PromotionLogicServiceSelectorKt, PromotionLogicSearchMyPromotionStore, PromotionLogicSearchMyPromotionState, PromotionLogicSearchMyPromotionIntentSearch, PromotionLogicSearchMyPromotionIntentRetry, PromotionLogicSearchMyPromotionIntentQueryChanged, PromotionLogicSearchMyPromotionIntentLoadMore, PromotionLogicSearchMyPromotionIntentConsumeError, PromotionLogicSearchMyPromotionIntentClearKeyword, PromotionLogicSearchCustomerVouchersUseCase, PromotionLogicSearchCustomerVouchersResult, PromotionLogicSearchCustomerVouchersResponseCompanion, PromotionLogicSearchCustomerVouchersResponse, PromotionLogicSearchCustomerVouchersRequest, PromotionLogicSearchConfigKt, PromotionLogicSdkEnvironment, PromotionLogicResponseMetadataCompanion, PromotionLogicResponseMetadata, PromotionLogicRejectedOffer, PromotionLogicRedemptionValidationErrorResponseCompanion, PromotionLogicRedemptionValidationErrorResponse, PromotionLogicRedemptionValidationError, PromotionLogicRedemptionSessionResponseCompanion, PromotionLogicRedemptionSessionResponse, PromotionLogicRedemptionSessionRequestCompanion, PromotionLogicRedemptionSessionRequest, PromotionLogicRedemptionOrderItemCompanion, PromotionLogicRedemptionOrderItem, PromotionLogicRedemptionOrderInfoCompanion, PromotionLogicRedemptionOrderInfo, PromotionLogicRedemptionItemRequest, PromotionLogicRedemptionCustomerInfoCompanion, PromotionLogicRedemptionCustomerInfo, PromotionLogicRedeemableRequestCompanion, PromotionLogicRedeemableRequest, PromotionLogicPromotionUseCases, PromotionLogicPromotionSDKConfig, PromotionLogicPromotionResultSuccess<T>, PromotionLogicPromotionResultFailure, PromotionLogicPromotionPreferencesCompanion, PromotionLogicPromotionHtmlContentKt, PromotionLogicPromotionFeatureGate, PromotionLogicPromotionFeatureFlagsCompanion, PromotionLogicPromotionFeatureFlags, PromotionLogicPromotionFeatureFlagUseCases, PromotionLogicPromotionFeatureFlag, PromotionLogicPromotionException, PromotionLogicPromotionErrorCodes, PromotionLogicPromotionDetailStore, PromotionLogicPromotionDetailState, PromotionLogicPromotionDetailIntentLoadDetail, PromotionLogicPromotionDetailIntentConsumeError, PromotionLogicPromotionContainer, PromotionLogicPromotionCancellable, PromotionLogicPageableInfoCompanion, PromotionLogicPageableInfo, PromotionLogicPRMEffectShowError, PromotionLogicOfferWidgetStore, PromotionLogicOfferWidgetState, PromotionLogicOfferWidgetIntentValidateAndApply, PromotionLogicOfferWidgetIntentSetApplied, PromotionLogicOfferWidgetIntentMarkUnavailable, PromotionLogicOfferWidgetIntentLoadInitial, PromotionLogicOfferWidgetIntentConsumeError, PromotionLogicOfferWidgetIntentClearApplied, PromotionLogicOfferWidgetHostNotifier, PromotionLogicOfferWidgetHostEventVoucherApplied, PromotionLogicOfferWidgetDisplayState, PromotionLogicOfferWidgetConfirmResultSuccess, PromotionLogicOfferWidgetConfirmResultFailure, PromotionLogicOfferWidgetApplyOutcomeRejected, PromotionLogicOfferWidgetApplyOutcomeFailed, PromotionLogicOfferWidgetApplyOutcomeApplied, PromotionLogicOfferWidgetAppliedDiscount, PromotionLogicNumber, PromotionLogicNetworkException, PromotionLogicMyPromotionVoucher, PromotionLogicMyPromotionTab, PromotionLogicMyPromotionStore, PromotionLogicMyPromotionState, PromotionLogicMyPromotionIntentSelectTab, PromotionLogicMyPromotionIntentSearch, PromotionLogicMyPromotionIntentRefresh, PromotionLogicMyPromotionIntentLoadMore, PromotionLogicMyPromotionIntentLoadInitialIfNeeded, PromotionLogicMyPromotionIntentConsumeError, PromotionLogicMyPromotionBadge, PromotionLogicMyPromotionAction, PromotionLogicMutableSet<ObjectType>, PromotionLogicMutableDictionary<KeyType, ObjectType>, PromotionLogicLong, PromotionLogicKotlinx_serialization_jsonJsonPrimitiveCompanion, PromotionLogicKotlinx_serialization_jsonJsonPrimitive, PromotionLogicKotlinx_serialization_jsonJsonNull, PromotionLogicKotlinx_serialization_jsonJsonElementCompanion, PromotionLogicKotlinx_serialization_jsonJsonElement, PromotionLogicKotlinx_serialization_coreStructureKindOBJECT, PromotionLogicKotlinx_serialization_coreStructureKindMAP, PromotionLogicKotlinx_serialization_coreStructureKindLIST, PromotionLogicKotlinx_serialization_coreStructureKindCLASS, PromotionLogicKotlinx_serialization_coreStructureKind, PromotionLogicKotlinx_serialization_coreSerializersModule, PromotionLogicKotlinx_serialization_coreSerialKindENUM, PromotionLogicKotlinx_serialization_coreSerialKindCONTEXTUAL, PromotionLogicKotlinx_serialization_coreSerialKind, PromotionLogicKotlinx_serialization_corePrimitiveKindSTRING, PromotionLogicKotlinx_serialization_corePrimitiveKindSHORT, PromotionLogicKotlinx_serialization_corePrimitiveKindLONG, PromotionLogicKotlinx_serialization_corePrimitiveKindINT, PromotionLogicKotlinx_serialization_corePrimitiveKindFLOAT, PromotionLogicKotlinx_serialization_corePrimitiveKindDOUBLE, PromotionLogicKotlinx_serialization_corePrimitiveKindCHAR, PromotionLogicKotlinx_serialization_corePrimitiveKindBYTE, PromotionLogicKotlinx_serialization_corePrimitiveKindBOOLEAN, PromotionLogicKotlinx_serialization_corePrimitiveKind, PromotionLogicKotlinx_serialization_corePolymorphicKindSEALED, PromotionLogicKotlinx_serialization_corePolymorphicKindOPEN, PromotionLogicKotlinx_serialization_corePolymorphicKind, PromotionLogicKotlinThrowable, PromotionLogicKotlinRuntimeException, PromotionLogicKotlinNothing, PromotionLogicKotlinIllegalStateException, PromotionLogicKotlinException, PromotionLogicKotlinEnumCompanion, PromotionLogicKotlinEnum<E>, PromotionLogicKotlinCancellationException, PromotionLogicKotlinArray<T>, PromotionLogicIsFeatureEnabledUseCase, PromotionLogicInt, PromotionLogicGetPromotionFeatureFlagsUseCase, PromotionLogicGetFeatureFlagsUseCase, PromotionLogicGetCustomerVoucherDetailUseCase, PromotionLogicFloat, PromotionLogicFindEligibleCampaignsUseCase, PromotionLogicFindEligibleCampaignsRequest, PromotionLogicFetchFeatureFlagsUseCase, PromotionLogicFeatureFlagException, PromotionLogicFeatureFlag, PromotionLogicEmptyPromotionRequestContextProvider, PromotionLogicEligibleSection, PromotionLogicEligibleOrderItem, PromotionLogicEligibleOffersResult, PromotionLogicEligibleOffer, PromotionLogicEligibleFilterOptions, PromotionLogicDouble, PromotionLogicDiscountRequestCompanion, PromotionLogicDiscountRequest, PromotionLogicDiscountItemResult, PromotionLogicDiscountItemRequest, PromotionLogicDiscountDetailCompanion, PromotionLogicDiscountDetail, PromotionLogicCustomerVoucherDetailCompanion, PromotionLogicCustomerVoucherDetail, PromotionLogicCreateRedemptionSessionUseCase, PromotionLogicCreateRedemptionResult, PromotionLogicCreateRedemptionRequest, PromotionLogicChooseSeeMoreState, PromotionLogicChoosePromotionStore, PromotionLogicChoosePromotionState, PromotionLogicChoosePromotionIntentToggleSelection, PromotionLogicChoosePromotionIntentSetPreSelected, PromotionLogicChoosePromotionIntentSeedOnce, PromotionLogicChoosePromotionIntentSeeMoreMy, PromotionLogicChoosePromotionIntentSearch, PromotionLogicChoosePromotionIntentRefresh, PromotionLogicChoosePromotionIntentQueryChanged, PromotionLogicChoosePromotionIntentPreload, PromotionLogicChoosePromotionIntentLoadMoreOtherVouchers, PromotionLogicChoosePromotionIntentLoadMoreMyVouchers, PromotionLogicChoosePromotionIntentLoadInitial, PromotionLogicChoosePromotionIntentConsumeError, PromotionLogicChoosePromotionIntentConsumeApplyMessage, PromotionLogicChoosePromotionIntentClearKeyword, PromotionLogicChoosePromotionIntentApplyStarted, PromotionLogicChoosePromotionIntentApplyRejected, PromotionLogicChoosePromotionIntentApplyFinished, PromotionLogicChoosePromotionContractKt, PromotionLogicChooseOffer, PromotionLogicByte, PromotionLogicBusinessRuleViolationCompanion, PromotionLogicBusinessRuleViolation, PromotionLogicBudgetHoldCompanion, PromotionLogicBudgetHold, PromotionLogicBoolean, PromotionLogicBase, PromotionLogicAvailableService, PromotionLogicAppliedDiscountCompanion, PromotionLogicAppliedDiscount, PromotionLogicApplicableProductDtoCompanion, PromotionLogicApplicableProductDto, PromotionLogicApplicableProduct, PromotionLogicApiResponseTemplateCompanion, PromotionLogicApiResponseTemplate<T>, NSString, NSSet<ObjectType>, NSObject, NSNumber, NSMutableSet<ObjectType>, NSMutableDictionary<KeyType, ObjectType>, NSMutableArray<ObjectType>, NSError, NSDictionary<KeyType, ObjectType>, NSArray<ObjectType>;
+@protocol PromotionLogicSkie_DispatcherDelegate, PromotionLogicSearchMyPromotionIntent, PromotionLogicPromotionResult, PromotionLogicPromotionRequestContextProvider, PromotionLogicPromotionPreferences, PromotionLogicPromotionDetailIntent, PromotionLogicPRMStore, PromotionLogicPRMEffect, PromotionLogicOfferWidgetIntent, PromotionLogicOfferWidgetHostEvent, PromotionLogicOfferWidgetConfirmResult, PromotionLogicOfferWidgetApplyOutcome, PromotionLogicMyPromotionIntent, PromotionLogicKotlinx_serialization_coreSerializersModuleCollector, PromotionLogicKotlinx_serialization_coreSerializationStrategy, PromotionLogicKotlinx_serialization_coreSerialDescriptor, PromotionLogicKotlinx_serialization_coreKSerializer, PromotionLogicKotlinx_serialization_coreEncoder, PromotionLogicKotlinx_serialization_coreDeserializationStrategy, PromotionLogicKotlinx_serialization_coreDecoder, PromotionLogicKotlinx_serialization_coreCompositeEncoder, PromotionLogicKotlinx_serialization_coreCompositeDecoder, PromotionLogicKotlinx_coroutines_coreStateFlow, PromotionLogicKotlinx_coroutines_coreSharedFlow, PromotionLogicKotlinx_coroutines_coreRunnable, PromotionLogicKotlinx_coroutines_coreMutableStateFlow, PromotionLogicKotlinx_coroutines_coreMutableSharedFlow, PromotionLogicKotlinx_coroutines_coreFlowCollector, PromotionLogicKotlinx_coroutines_coreFlow, PromotionLogicKotlinx_coroutines_coreCoroutineScope, PromotionLogicKotlinKDeclarationContainer, PromotionLogicKotlinKClassifier, PromotionLogicKotlinKClass, PromotionLogicKotlinKAnnotatedElement, PromotionLogicKotlinIterator, PromotionLogicKotlinCoroutineContextKey, PromotionLogicKotlinCoroutineContextElement, PromotionLogicKotlinCoroutineContext, PromotionLogicKotlinComparable, PromotionLogicKotlinAnnotation, PromotionLogicChoosePromotionIntent, NSCopying;
 @interface __SkieLambdaErrorType : NSObject
 - (instancetype _Nonnull)init __attribute__((unavailable));
 + (instancetype _Nonnull)new __attribute__((unavailable));
@@ -3598,237 +3598,6 @@ __attribute__((swift_name("RejectedOffer")))
 - (NSString *)description __attribute__((swift_name("description()")));
 @end
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowAppliedDiscount")))
-@interface PromotionLogicEndowAppliedDiscount : PromotionLogicBase
-@property (readonly) NSString *calculatedDiscount __attribute__((swift_name("calculatedDiscount")));
-@property (readonly) NSString *eligibilityStatus __attribute__((swift_name("eligibilityStatus")));
-@property (readonly) NSString * _Nullable logoUrl __attribute__((swift_name("logoUrl")));
-@property (readonly) NSString *objectId __attribute__((swift_name("objectId")));
-@property (readonly) NSString *objectType __attribute__((swift_name("objectType")));
-@property (readonly) NSArray<NSString *> *tags __attribute__((swift_name("tags")));
-@property (readonly) BOOL valid __attribute__((swift_name("valid")));
-@property (readonly) NSArray<NSString *> *validationMessages __attribute__((swift_name("validationMessages")));
-@property (readonly) NSString * _Nullable voucherName __attribute__((swift_name("voucherName")));
-- (instancetype)initWithObjectId:(NSString *)objectId objectType:(NSString *)objectType valid:(BOOL)valid calculatedDiscount:(NSString *)calculatedDiscount eligibilityStatus:(NSString *)eligibilityStatus tags:(NSArray<NSString *> *)tags voucherName:(NSString * _Nullable)voucherName logoUrl:(NSString * _Nullable)logoUrl validationMessages:(NSArray<NSString *> *)validationMessages __attribute__((swift_name("init(objectId:objectType:valid:calculatedDiscount:eligibilityStatus:tags:voucherName:logoUrl:validationMessages:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowAppliedDiscount *)doCopyObjectId:(NSString *)objectId objectType:(NSString *)objectType valid:(BOOL)valid calculatedDiscount:(NSString *)calculatedDiscount eligibilityStatus:(NSString *)eligibilityStatus tags:(NSArray<NSString *> *)tags voucherName:(NSString * _Nullable)voucherName logoUrl:(NSString * _Nullable)logoUrl validationMessages:(NSArray<NSString *> *)validationMessages __attribute__((swift_name("doCopy(objectId:objectType:valid:calculatedDiscount:eligibilityStatus:tags:voucherName:logoUrl:validationMessages:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((swift_name("EndowApplyOutcome")))
-@protocol PromotionLogicEndowApplyOutcome
-@required
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowApplyOutcomeApplied")))
-@interface PromotionLogicEndowApplyOutcomeApplied : PromotionLogicBase <PromotionLogicEndowApplyOutcome>
-@property (class, readonly, getter=shared) PromotionLogicEndowApplyOutcomeApplied *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)applied __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowApplyOutcomeFailed")))
-@interface PromotionLogicEndowApplyOutcomeFailed : PromotionLogicBase <PromotionLogicEndowApplyOutcome>
-@property (readonly) NSString *errorCode __attribute__((swift_name("errorCode")));
-- (instancetype)initWithErrorCode:(NSString *)errorCode __attribute__((swift_name("init(errorCode:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowApplyOutcomeFailed *)doCopyErrorCode:(NSString *)errorCode __attribute__((swift_name("doCopy(errorCode:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowApplyOutcomeRejected")))
-@interface PromotionLogicEndowApplyOutcomeRejected : PromotionLogicBase <PromotionLogicEndowApplyOutcome>
-@property (readonly) NSArray<PromotionLogicRejectedOffer *> *items __attribute__((swift_name("items")));
-- (instancetype)initWithItems:(NSArray<PromotionLogicRejectedOffer *> *)items __attribute__((swift_name("init(items:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowApplyOutcomeRejected *)doCopyItems:(NSArray<PromotionLogicRejectedOffer *> *)items __attribute__((swift_name("doCopy(items:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((swift_name("EndowConfirmResult")))
-@protocol PromotionLogicEndowConfirmResult
-@required
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowConfirmResultFailure")))
-@interface PromotionLogicEndowConfirmResultFailure : PromotionLogicBase <PromotionLogicEndowConfirmResult>
-@property (readonly) NSString *errorCode __attribute__((swift_name("errorCode")));
-- (instancetype)initWithErrorCode:(NSString *)errorCode __attribute__((swift_name("init(errorCode:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowConfirmResultFailure *)doCopyErrorCode:(NSString *)errorCode __attribute__((swift_name("doCopy(errorCode:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowConfirmResultSuccess")))
-@interface PromotionLogicEndowConfirmResultSuccess : PromotionLogicBase <PromotionLogicEndowConfirmResult>
-@property (class, readonly, getter=shared) PromotionLogicEndowConfirmResultSuccess *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)success __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((swift_name("EndowHostEvent")))
-@protocol PromotionLogicEndowHostEvent
-@required
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowHostEventVoucherApplied")))
-@interface PromotionLogicEndowHostEventVoucherApplied : PromotionLogicBase <PromotionLogicEndowHostEvent>
-@property (readonly) NSString *voucherId __attribute__((swift_name("voucherId")));
-- (instancetype)initWithVoucherId:(NSString *)voucherId __attribute__((swift_name("init(voucherId:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowHostEventVoucherApplied *)doCopyVoucherId:(NSString *)voucherId __attribute__((swift_name("doCopy(voucherId:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowHostNotifier")))
-@interface PromotionLogicEndowHostNotifier : PromotionLogicBase
-- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
-+ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
-- (NSArray<id<PromotionLogicEndowHostEvent>> *)onStateState:(PromotionLogicEndowState *)state __attribute__((swift_name("onState(state:)")));
-@end
-__attribute__((swift_name("EndowIntent")))
-@protocol PromotionLogicEndowIntent
-@required
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentClearApplied")))
-@interface PromotionLogicEndowIntentClearApplied : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (class, readonly, getter=shared) PromotionLogicEndowIntentClearApplied *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)clearApplied __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentConsumeError")))
-@interface PromotionLogicEndowIntentConsumeError : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (class, readonly, getter=shared) PromotionLogicEndowIntentConsumeError *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)consumeError __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentLoadInitial")))
-@interface PromotionLogicEndowIntentLoadInitial : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (class, readonly, getter=shared) PromotionLogicEndowIntentLoadInitial *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)loadInitial __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentMarkUnavailable")))
-@interface PromotionLogicEndowIntentMarkUnavailable : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (class, readonly, getter=shared) PromotionLogicEndowIntentMarkUnavailable *shared __attribute__((swift_name("shared")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)markUnavailable __attribute__((swift_name("init()")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentSetApplied")))
-@interface PromotionLogicEndowIntentSetApplied : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (readonly) NSArray<PromotionLogicEndowAppliedDiscount *> *discounts __attribute__((swift_name("discounts")));
-@property (readonly) BOOL unavailable __attribute__((swift_name("unavailable")));
-- (instancetype)initWithDiscounts:(NSArray<PromotionLogicEndowAppliedDiscount *> *)discounts unavailable:(BOOL)unavailable __attribute__((swift_name("init(discounts:unavailable:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowIntentSetApplied *)doCopyDiscounts:(NSArray<PromotionLogicEndowAppliedDiscount *> *)discounts unavailable:(BOOL)unavailable __attribute__((swift_name("doCopy(discounts:unavailable:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowIntentValidateAndApply")))
-@interface PromotionLogicEndowIntentValidateAndApply : PromotionLogicBase <PromotionLogicEndowIntent>
-@property (readonly) NSArray<PromotionLogicEligibleOffer *> *offers __attribute__((swift_name("offers")));
-- (instancetype)initWithOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers __attribute__((swift_name("init(offers:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowIntentValidateAndApply *)doCopyOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers __attribute__((swift_name("doCopy(offers:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowState")))
-@interface PromotionLogicEndowState : PromotionLogicBase
-@property (readonly) NSArray<PromotionLogicEndowAppliedDiscount *> *appliedDiscounts __attribute__((swift_name("appliedDiscounts")));
-@property (readonly) BOOL discountUnavailable __attribute__((swift_name("discountUnavailable")));
-@property (readonly) NSString * _Nullable errorCode __attribute__((swift_name("errorCode")));
-@property (readonly) BOOL hasLoadedInitial __attribute__((swift_name("hasLoadedInitial")));
-@property (readonly) BOOL isLoading __attribute__((swift_name("isLoading")));
-@property (readonly) BOOL isValidating __attribute__((swift_name("isValidating")));
-@property (readonly) BOOL myIsLastPage __attribute__((swift_name("myIsLastPage")));
-@property (readonly) NSArray<PromotionLogicEligibleOffer *> *myOffers __attribute__((swift_name("myOffers")));
-@property (readonly) BOOL otherIsLastPage __attribute__((swift_name("otherIsLastPage")));
-@property (readonly) NSArray<PromotionLogicEligibleOffer *> *otherOffers __attribute__((swift_name("otherOffers")));
-@property (readonly) int32_t totalVoucherCount __attribute__((swift_name("totalVoucherCount")));
-@property (readonly) PromotionLogicEndowWidgetState *widgetState __attribute__((swift_name("widgetState")));
-- (instancetype)initWithHasLoadedInitial:(BOOL)hasLoadedInitial isLoading:(BOOL)isLoading myOffers:(NSArray<PromotionLogicEligibleOffer *> *)myOffers otherOffers:(NSArray<PromotionLogicEligibleOffer *> *)otherOffers myIsLastPage:(BOOL)myIsLastPage otherIsLastPage:(BOOL)otherIsLastPage totalVoucherCount:(int32_t)totalVoucherCount appliedDiscounts:(NSArray<PromotionLogicEndowAppliedDiscount *> *)appliedDiscounts discountUnavailable:(BOOL)discountUnavailable isValidating:(BOOL)isValidating errorCode:(NSString * _Nullable)errorCode __attribute__((swift_name("init(hasLoadedInitial:isLoading:myOffers:otherOffers:myIsLastPage:otherIsLastPage:totalVoucherCount:appliedDiscounts:discountUnavailable:isValidating:errorCode:)"))) __attribute__((objc_designated_initializer));
-- (PromotionLogicEndowState *)doCopyHasLoadedInitial:(BOOL)hasLoadedInitial isLoading:(BOOL)isLoading myOffers:(NSArray<PromotionLogicEligibleOffer *> *)myOffers otherOffers:(NSArray<PromotionLogicEligibleOffer *> *)otherOffers myIsLastPage:(BOOL)myIsLastPage otherIsLastPage:(BOOL)otherIsLastPage totalVoucherCount:(int32_t)totalVoucherCount appliedDiscounts:(NSArray<PromotionLogicEndowAppliedDiscount *> *)appliedDiscounts discountUnavailable:(BOOL)discountUnavailable isValidating:(BOOL)isValidating errorCode:(NSString * _Nullable)errorCode __attribute__((swift_name("doCopy(hasLoadedInitial:isLoading:myOffers:otherOffers:myIsLastPage:otherIsLastPage:totalVoucherCount:appliedDiscounts:discountUnavailable:isValidating:errorCode:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowStore")))
-@interface PromotionLogicEndowStore : PromotionLogicBase <PromotionLogicPRMStore>
-@property (readonly) id<PromotionLogicEndowIntent> consumeErrorIntent __attribute__((swift_name("consumeErrorIntent")));
-@property (readonly) id<PromotionLogicKotlinx_coroutines_coreStateFlow> state __attribute__((swift_name("state")));
-- (instancetype)initWithFindEligibleCampaignsUseCase:(PromotionLogicFindEligibleCampaignsUseCase *)findEligibleCampaignsUseCase validateStackableDiscountsUseCase:(PromotionLogicValidateStackableDiscountsUseCase *)validateStackableDiscountsUseCase createRedemptionSessionUseCase:(PromotionLogicCreateRedemptionSessionUseCase *)createRedemptionSessionUseCase __attribute__((swift_name("init(findEligibleCampaignsUseCase:validateStackableDiscountsUseCase:createRedemptionSessionUseCase:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithFindEligibleCampaignsUseCase:(PromotionLogicFindEligibleCampaignsUseCase *)findEligibleCampaignsUseCase validateStackableDiscountsUseCase:(PromotionLogicValidateStackableDiscountsUseCase *)validateStackableDiscountsUseCase createRedemptionSessionUseCase:(PromotionLogicCreateRedemptionSessionUseCase *)createRedemptionSessionUseCase scope:(id<PromotionLogicKotlinx_coroutines_coreCoroutineScope>)scope __attribute__((swift_name("init(findEligibleCampaignsUseCase:validateStackableDiscountsUseCase:createRedemptionSessionUseCase:scope:)"))) __attribute__((objc_designated_initializer));
-- (BOOL)availabilityFromCache __attribute__((swift_name("availabilityFromCache()")));
-- (void)clear __attribute__((swift_name("clear()")));
-/**
- * @note This method converts instances of CancellationException to errors.
- * Other uncaught Kotlin exceptions are fatal.
-*/
-- (void)confirmRedemptionWithCompletionHandler:(void (^)(id<PromotionLogicEndowConfirmResult> _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("confirmRedemption(completionHandler:)")));
-- (PromotionLogicEndowState *)currentState __attribute__((swift_name("currentState()")));
-- (void)dispatchIntent:(id<PromotionLogicEndowIntent>)intent __attribute__((swift_name("dispatch(intent:)")));
-- (NSString * _Nullable)errorOfState:(PromotionLogicEndowState *)state __attribute__((swift_name("errorOf(state:)")));
-/**
- * @note This method converts instances of CancellationException to errors.
- * Other uncaught Kotlin exceptions are fatal.
-*/
-- (void)refreshAvailabilityWithCompletionHandler:(void (^)(PromotionLogicBoolean * _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("refreshAvailability(completionHandler:)")));
-/**
- * @note This method converts instances of CancellationException to errors.
- * Other uncaught Kotlin exceptions are fatal.
-*/
-- (void)validateAndApplyOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers completionHandler:(void (^)(id<PromotionLogicEndowApplyOutcome> _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("validateAndApply(offers:completionHandler:)")));
-- (PromotionLogicPromotionCancellable *)watchStateOnEach:(void (^)(PromotionLogicEndowState *))onEach __attribute__((swift_name("watchState(onEach:)")));
-@end
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("EndowWidgetState")))
-@interface PromotionLogicEndowWidgetState : PromotionLogicKotlinEnum<PromotionLogicEndowWidgetState *>
-@property (class, readonly) PromotionLogicEndowWidgetState *empty __attribute__((swift_name("empty")));
-@property (class, readonly) PromotionLogicEndowWidgetState *notApplied __attribute__((swift_name("notApplied")));
-@property (class, readonly) PromotionLogicEndowWidgetState *applied __attribute__((swift_name("applied")));
-@property (class, readonly) PromotionLogicEndowWidgetState *unavailable __attribute__((swift_name("unavailable")));
-@property (class, readonly) NSArray<PromotionLogicEndowWidgetState *> *entries __attribute__((swift_name("entries")));
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
-+ (PromotionLogicKotlinArray<PromotionLogicEndowWidgetState *> *)values __attribute__((swift_name("values()")));
-@end
-__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("MyPromotionAction")))
 @interface PromotionLogicMyPromotionAction : PromotionLogicKotlinEnum<PromotionLogicMyPromotionAction *>
 @property (class, readonly) PromotionLogicMyPromotionAction *use __attribute__((swift_name("use")));
@@ -3984,6 +3753,237 @@ __attribute__((swift_name("MyPromotionVoucher")))
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetAppliedDiscount")))
+@interface PromotionLogicOfferWidgetAppliedDiscount : PromotionLogicBase
+@property (readonly) NSString *calculatedDiscount __attribute__((swift_name("calculatedDiscount")));
+@property (readonly) NSString *eligibilityStatus __attribute__((swift_name("eligibilityStatus")));
+@property (readonly) NSString * _Nullable logoUrl __attribute__((swift_name("logoUrl")));
+@property (readonly) NSString *objectId __attribute__((swift_name("objectId")));
+@property (readonly) NSString *objectType __attribute__((swift_name("objectType")));
+@property (readonly) NSArray<NSString *> *tags __attribute__((swift_name("tags")));
+@property (readonly) BOOL valid __attribute__((swift_name("valid")));
+@property (readonly) NSArray<NSString *> *validationMessages __attribute__((swift_name("validationMessages")));
+@property (readonly) NSString * _Nullable voucherName __attribute__((swift_name("voucherName")));
+- (instancetype)initWithObjectId:(NSString *)objectId objectType:(NSString *)objectType valid:(BOOL)valid calculatedDiscount:(NSString *)calculatedDiscount eligibilityStatus:(NSString *)eligibilityStatus tags:(NSArray<NSString *> *)tags voucherName:(NSString * _Nullable)voucherName logoUrl:(NSString * _Nullable)logoUrl validationMessages:(NSArray<NSString *> *)validationMessages __attribute__((swift_name("init(objectId:objectType:valid:calculatedDiscount:eligibilityStatus:tags:voucherName:logoUrl:validationMessages:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetAppliedDiscount *)doCopyObjectId:(NSString *)objectId objectType:(NSString *)objectType valid:(BOOL)valid calculatedDiscount:(NSString *)calculatedDiscount eligibilityStatus:(NSString *)eligibilityStatus tags:(NSArray<NSString *> *)tags voucherName:(NSString * _Nullable)voucherName logoUrl:(NSString * _Nullable)logoUrl validationMessages:(NSArray<NSString *> *)validationMessages __attribute__((swift_name("doCopy(objectId:objectType:valid:calculatedDiscount:eligibilityStatus:tags:voucherName:logoUrl:validationMessages:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((swift_name("OfferWidgetApplyOutcome")))
+@protocol PromotionLogicOfferWidgetApplyOutcome
+@required
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetApplyOutcomeApplied")))
+@interface PromotionLogicOfferWidgetApplyOutcomeApplied : PromotionLogicBase <PromotionLogicOfferWidgetApplyOutcome>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetApplyOutcomeApplied *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)applied __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetApplyOutcomeFailed")))
+@interface PromotionLogicOfferWidgetApplyOutcomeFailed : PromotionLogicBase <PromotionLogicOfferWidgetApplyOutcome>
+@property (readonly) NSString *errorCode __attribute__((swift_name("errorCode")));
+- (instancetype)initWithErrorCode:(NSString *)errorCode __attribute__((swift_name("init(errorCode:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetApplyOutcomeFailed *)doCopyErrorCode:(NSString *)errorCode __attribute__((swift_name("doCopy(errorCode:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetApplyOutcomeRejected")))
+@interface PromotionLogicOfferWidgetApplyOutcomeRejected : PromotionLogicBase <PromotionLogicOfferWidgetApplyOutcome>
+@property (readonly) NSArray<PromotionLogicRejectedOffer *> *items __attribute__((swift_name("items")));
+- (instancetype)initWithItems:(NSArray<PromotionLogicRejectedOffer *> *)items __attribute__((swift_name("init(items:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetApplyOutcomeRejected *)doCopyItems:(NSArray<PromotionLogicRejectedOffer *> *)items __attribute__((swift_name("doCopy(items:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((swift_name("OfferWidgetConfirmResult")))
+@protocol PromotionLogicOfferWidgetConfirmResult
+@required
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetConfirmResultFailure")))
+@interface PromotionLogicOfferWidgetConfirmResultFailure : PromotionLogicBase <PromotionLogicOfferWidgetConfirmResult>
+@property (readonly) NSString *errorCode __attribute__((swift_name("errorCode")));
+- (instancetype)initWithErrorCode:(NSString *)errorCode __attribute__((swift_name("init(errorCode:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetConfirmResultFailure *)doCopyErrorCode:(NSString *)errorCode __attribute__((swift_name("doCopy(errorCode:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetConfirmResultSuccess")))
+@interface PromotionLogicOfferWidgetConfirmResultSuccess : PromotionLogicBase <PromotionLogicOfferWidgetConfirmResult>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetConfirmResultSuccess *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)success __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetDisplayState")))
+@interface PromotionLogicOfferWidgetDisplayState : PromotionLogicKotlinEnum<PromotionLogicOfferWidgetDisplayState *>
+@property (class, readonly) PromotionLogicOfferWidgetDisplayState *empty __attribute__((swift_name("empty")));
+@property (class, readonly) PromotionLogicOfferWidgetDisplayState *notApplied __attribute__((swift_name("notApplied")));
+@property (class, readonly) PromotionLogicOfferWidgetDisplayState *applied __attribute__((swift_name("applied")));
+@property (class, readonly) PromotionLogicOfferWidgetDisplayState *unavailable __attribute__((swift_name("unavailable")));
+@property (class, readonly) NSArray<PromotionLogicOfferWidgetDisplayState *> *entries __attribute__((swift_name("entries")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
++ (PromotionLogicKotlinArray<PromotionLogicOfferWidgetDisplayState *> *)values __attribute__((swift_name("values()")));
+@end
+__attribute__((swift_name("OfferWidgetHostEvent")))
+@protocol PromotionLogicOfferWidgetHostEvent
+@required
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetHostEventVoucherApplied")))
+@interface PromotionLogicOfferWidgetHostEventVoucherApplied : PromotionLogicBase <PromotionLogicOfferWidgetHostEvent>
+@property (readonly) NSString *voucherId __attribute__((swift_name("voucherId")));
+- (instancetype)initWithVoucherId:(NSString *)voucherId __attribute__((swift_name("init(voucherId:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetHostEventVoucherApplied *)doCopyVoucherId:(NSString *)voucherId __attribute__((swift_name("doCopy(voucherId:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetHostNotifier")))
+@interface PromotionLogicOfferWidgetHostNotifier : PromotionLogicBase
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (NSArray<id<PromotionLogicOfferWidgetHostEvent>> *)onStateState:(PromotionLogicOfferWidgetState *)state __attribute__((swift_name("onState(state:)")));
+@end
+__attribute__((swift_name("OfferWidgetIntent")))
+@protocol PromotionLogicOfferWidgetIntent
+@required
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentClearApplied")))
+@interface PromotionLogicOfferWidgetIntentClearApplied : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetIntentClearApplied *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)clearApplied __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentConsumeError")))
+@interface PromotionLogicOfferWidgetIntentConsumeError : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetIntentConsumeError *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)consumeError __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentLoadInitial")))
+@interface PromotionLogicOfferWidgetIntentLoadInitial : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetIntentLoadInitial *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)loadInitial __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentMarkUnavailable")))
+@interface PromotionLogicOfferWidgetIntentMarkUnavailable : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (class, readonly, getter=shared) PromotionLogicOfferWidgetIntentMarkUnavailable *shared __attribute__((swift_name("shared")));
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)markUnavailable __attribute__((swift_name("init()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentSetApplied")))
+@interface PromotionLogicOfferWidgetIntentSetApplied : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (readonly) NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *discounts __attribute__((swift_name("discounts")));
+@property (readonly) BOOL unavailable __attribute__((swift_name("unavailable")));
+- (instancetype)initWithDiscounts:(NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *)discounts unavailable:(BOOL)unavailable __attribute__((swift_name("init(discounts:unavailable:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetIntentSetApplied *)doCopyDiscounts:(NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *)discounts unavailable:(BOOL)unavailable __attribute__((swift_name("doCopy(discounts:unavailable:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetIntentValidateAndApply")))
+@interface PromotionLogicOfferWidgetIntentValidateAndApply : PromotionLogicBase <PromotionLogicOfferWidgetIntent>
+@property (readonly) NSArray<PromotionLogicEligibleOffer *> *offers __attribute__((swift_name("offers")));
+- (instancetype)initWithOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers __attribute__((swift_name("init(offers:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetIntentValidateAndApply *)doCopyOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers __attribute__((swift_name("doCopy(offers:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetState")))
+@interface PromotionLogicOfferWidgetState : PromotionLogicBase
+@property (readonly) NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *appliedDiscounts __attribute__((swift_name("appliedDiscounts")));
+@property (readonly) BOOL discountUnavailable __attribute__((swift_name("discountUnavailable")));
+@property (readonly) NSString * _Nullable errorCode __attribute__((swift_name("errorCode")));
+@property (readonly) BOOL hasLoadedInitial __attribute__((swift_name("hasLoadedInitial")));
+@property (readonly) BOOL isLoading __attribute__((swift_name("isLoading")));
+@property (readonly) BOOL isValidating __attribute__((swift_name("isValidating")));
+@property (readonly) BOOL myIsLastPage __attribute__((swift_name("myIsLastPage")));
+@property (readonly) NSArray<PromotionLogicEligibleOffer *> *myOffers __attribute__((swift_name("myOffers")));
+@property (readonly) BOOL otherIsLastPage __attribute__((swift_name("otherIsLastPage")));
+@property (readonly) NSArray<PromotionLogicEligibleOffer *> *otherOffers __attribute__((swift_name("otherOffers")));
+@property (readonly) int32_t totalVoucherCount __attribute__((swift_name("totalVoucherCount")));
+@property (readonly) PromotionLogicOfferWidgetDisplayState *widgetState __attribute__((swift_name("widgetState")));
+- (instancetype)initWithHasLoadedInitial:(BOOL)hasLoadedInitial isLoading:(BOOL)isLoading myOffers:(NSArray<PromotionLogicEligibleOffer *> *)myOffers otherOffers:(NSArray<PromotionLogicEligibleOffer *> *)otherOffers myIsLastPage:(BOOL)myIsLastPage otherIsLastPage:(BOOL)otherIsLastPage totalVoucherCount:(int32_t)totalVoucherCount appliedDiscounts:(NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *)appliedDiscounts discountUnavailable:(BOOL)discountUnavailable isValidating:(BOOL)isValidating errorCode:(NSString * _Nullable)errorCode __attribute__((swift_name("init(hasLoadedInitial:isLoading:myOffers:otherOffers:myIsLastPage:otherIsLastPage:totalVoucherCount:appliedDiscounts:discountUnavailable:isValidating:errorCode:)"))) __attribute__((objc_designated_initializer));
+- (PromotionLogicOfferWidgetState *)doCopyHasLoadedInitial:(BOOL)hasLoadedInitial isLoading:(BOOL)isLoading myOffers:(NSArray<PromotionLogicEligibleOffer *> *)myOffers otherOffers:(NSArray<PromotionLogicEligibleOffer *> *)otherOffers myIsLastPage:(BOOL)myIsLastPage otherIsLastPage:(BOOL)otherIsLastPage totalVoucherCount:(int32_t)totalVoucherCount appliedDiscounts:(NSArray<PromotionLogicOfferWidgetAppliedDiscount *> *)appliedDiscounts discountUnavailable:(BOOL)discountUnavailable isValidating:(BOOL)isValidating errorCode:(NSString * _Nullable)errorCode __attribute__((swift_name("doCopy(hasLoadedInitial:isLoading:myOffers:otherOffers:myIsLastPage:otherIsLastPage:totalVoucherCount:appliedDiscounts:discountUnavailable:isValidating:errorCode:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@end
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("OfferWidgetStore")))
+@interface PromotionLogicOfferWidgetStore : PromotionLogicBase <PromotionLogicPRMStore>
+@property (readonly) id<PromotionLogicOfferWidgetIntent> consumeErrorIntent __attribute__((swift_name("consumeErrorIntent")));
+@property (readonly) id<PromotionLogicKotlinx_coroutines_coreStateFlow> state __attribute__((swift_name("state")));
+- (instancetype)initWithFindEligibleCampaignsUseCase:(PromotionLogicFindEligibleCampaignsUseCase *)findEligibleCampaignsUseCase validateStackableDiscountsUseCase:(PromotionLogicValidateStackableDiscountsUseCase *)validateStackableDiscountsUseCase createRedemptionSessionUseCase:(PromotionLogicCreateRedemptionSessionUseCase *)createRedemptionSessionUseCase __attribute__((swift_name("init(findEligibleCampaignsUseCase:validateStackableDiscountsUseCase:createRedemptionSessionUseCase:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithFindEligibleCampaignsUseCase:(PromotionLogicFindEligibleCampaignsUseCase *)findEligibleCampaignsUseCase validateStackableDiscountsUseCase:(PromotionLogicValidateStackableDiscountsUseCase *)validateStackableDiscountsUseCase createRedemptionSessionUseCase:(PromotionLogicCreateRedemptionSessionUseCase *)createRedemptionSessionUseCase scope:(id<PromotionLogicKotlinx_coroutines_coreCoroutineScope>)scope __attribute__((swift_name("init(findEligibleCampaignsUseCase:validateStackableDiscountsUseCase:createRedemptionSessionUseCase:scope:)"))) __attribute__((objc_designated_initializer));
+- (BOOL)availabilityFromCache __attribute__((swift_name("availabilityFromCache()")));
+- (void)clear __attribute__((swift_name("clear()")));
+/**
+ * @note This method converts instances of CancellationException to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (void)confirmRedemptionWithCompletionHandler:(void (^)(id<PromotionLogicOfferWidgetConfirmResult> _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("confirmRedemption(completionHandler:)")));
+- (PromotionLogicOfferWidgetState *)currentState __attribute__((swift_name("currentState()")));
+- (void)dispatchIntent:(id<PromotionLogicOfferWidgetIntent>)intent __attribute__((swift_name("dispatch(intent:)")));
+- (NSString * _Nullable)errorOfState:(PromotionLogicOfferWidgetState *)state __attribute__((swift_name("errorOf(state:)")));
+/**
+ * @note This method converts instances of CancellationException to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (void)refreshAvailabilityWithCompletionHandler:(void (^)(PromotionLogicBoolean * _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("refreshAvailability(completionHandler:)")));
+/**
+ * @note This method converts instances of CancellationException to errors.
+ * Other uncaught Kotlin exceptions are fatal.
+*/
+- (void)validateAndApplyOffers:(NSArray<PromotionLogicEligibleOffer *> *)offers completionHandler:(void (^)(id<PromotionLogicOfferWidgetApplyOutcome> _Nullable, NSError * _Nullable))completionHandler __attribute__((swift_name("validateAndApply(offers:completionHandler:)")));
+- (PromotionLogicPromotionCancellable *)watchStateOnEach:(void (^)(PromotionLogicOfferWidgetState *))onEach __attribute__((swift_name("watchState(onEach:)")));
 @end
 __attribute__((swift_name("PromotionDetailIntent")))
 @protocol PromotionLogicPromotionDetailIntent
@@ -4203,9 +4203,9 @@ __attribute__((swift_name("__SkieSuspendWrappersKt")))
 + (void)Skie_Suspend__13__validateDiscountsDispatchReceiver:(PromotionLogicPromotionUseCases *)dispatchReceiver request:(PromotionLogicValidateDiscountsRequest *)request suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__13__validateDiscounts(dispatchReceiver:request:suspendHandler:)")));
 + (void)Skie_Suspend__14__invokeDispatchReceiver:(PromotionLogicSearchCustomerVouchersUseCase *)dispatchReceiver request:(PromotionLogicSearchCustomerVouchersRequest *)request suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__14__invoke(dispatchReceiver:request:suspendHandler:)")));
 + (void)Skie_Suspend__15__invokeDispatchReceiver:(PromotionLogicValidateStackableDiscountsUseCase *)dispatchReceiver request:(PromotionLogicValidateDiscountsRequest *)request suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__15__invoke(dispatchReceiver:request:suspendHandler:)")));
-+ (void)Skie_Suspend__16__confirmRedemptionDispatchReceiver:(PromotionLogicEndowStore *)dispatchReceiver suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__16__confirmRedemption(dispatchReceiver:suspendHandler:)")));
-+ (void)Skie_Suspend__17__refreshAvailabilityDispatchReceiver:(PromotionLogicEndowStore *)dispatchReceiver suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__17__refreshAvailability(dispatchReceiver:suspendHandler:)")));
-+ (void)Skie_Suspend__18__validateAndApplyDispatchReceiver:(PromotionLogicEndowStore *)dispatchReceiver offers:(NSArray<PromotionLogicEligibleOffer *> *)offers suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__18__validateAndApply(dispatchReceiver:offers:suspendHandler:)")));
++ (void)Skie_Suspend__16__confirmRedemptionDispatchReceiver:(PromotionLogicOfferWidgetStore *)dispatchReceiver suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__16__confirmRedemption(dispatchReceiver:suspendHandler:)")));
++ (void)Skie_Suspend__17__refreshAvailabilityDispatchReceiver:(PromotionLogicOfferWidgetStore *)dispatchReceiver suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__17__refreshAvailability(dispatchReceiver:suspendHandler:)")));
++ (void)Skie_Suspend__18__validateAndApplyDispatchReceiver:(PromotionLogicOfferWidgetStore *)dispatchReceiver offers:(NSArray<PromotionLogicEligibleOffer *> *)offers suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__18__validateAndApply(dispatchReceiver:offers:suspendHandler:)")));
 + (void)Skie_Suspend__1__collectDispatchReceiver:(id<PromotionLogicKotlinx_coroutines_coreFlow>)dispatchReceiver collector:(id<PromotionLogicKotlinx_coroutines_coreFlowCollector>)collector suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__1__collect(dispatchReceiver:collector:suspendHandler:)")));
 + (void)Skie_Suspend__2__emitDispatchReceiver:(id<PromotionLogicKotlinx_coroutines_coreFlowCollector>)dispatchReceiver value:(id _Nullable)value suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__2__emit(dispatchReceiver:value:suspendHandler:)")));
 + (void)Skie_Suspend__3__invokeDispatchReceiver:(PromotionLogicCreateRedemptionSessionUseCase *)dispatchReceiver request:(PromotionLogicCreateRedemptionRequest *)request suspendHandler:(PromotionLogicSkie_SuspendHandler *)suspendHandler __attribute__((swift_name("Skie_Suspend__3__invoke(dispatchReceiver:request:suspendHandler:)")));

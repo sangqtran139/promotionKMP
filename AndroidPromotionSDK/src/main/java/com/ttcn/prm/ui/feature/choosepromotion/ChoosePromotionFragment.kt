@@ -13,7 +13,7 @@ import com.ttcn.promotionsdk.domain.exception.ErrorCodes
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.presentation.common.PROMOTION_SEARCH_MAX_LENGTH
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChooseSeeMoreState
-import com.ttcn.promotionsdk.presentation.endow.EndowApplyOutcome
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetApplyOutcome
 import com.ttcn.prm.databinding.PrmFragmentChoosePromotionBinding
 import com.ttcn.prm.ui.base.PRMBaseFragment
 import com.ttcn.prm.ui.feature.choosepromotion.adapter.ChoosePromotionListItem
@@ -31,7 +31,7 @@ import com.ttcn.promotionsdk.presentation.choosepromotion.showsEmptyView
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsNoResult
 import com.ttcn.promotionsdk.presentation.choosepromotion.showsSelectedCount
 import com.ttcn.promotionsdk.presentation.choosepromotion.visibleMyOffers
-import com.ttcn.prm.ui.feature.endowview.PRMEndowView
+import com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget
 import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.utils.extension.VerticalSpaceItemDecoration
 
@@ -51,16 +51,16 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
     internal var preSelectedVoucherIds: Set<String> = emptySet()
 
     /**
-     * Callback trả về **offers đang chọn** khi bấm "Áp dụng"; validate + áp do `EndowStore` lo.
-     * [forEndowView] tự nối vào [PRMEndowView.applySelectedOffers].
+     * Callback trả về **offers đang chọn** khi bấm "Áp dụng"; validate + áp do `OfferWidgetStore` lo.
+     * [forOfferWidget] tự nối vào [PRMOfferWidget.applySelectedOffers].
      *
-     * Tham số thứ hai là hàm báo **đã validate xong** kèm [EndowApplyOutcome] — màn chỉ đóng khi áp
+     * Tham số thứ hai là hàm báo **đã validate xong** kèm [OfferWidgetApplyOutcome] — màn chỉ đóng khi áp
      * được; server từ chối thì ở lại + disable ưu đãi; lỗi thì ở lại + báo. Đối ứng completion của
-     * `endowVM.validateAndApply` iOS.
+     * `offerWidgetVM.validateAndApply` iOS.
      *
      * `internal`: [EligibleOffer] thuộc `promotionLogic`.
      */
-    internal var onApplySelectedOffers: ((List<EligibleOffer>, (EndowApplyOutcome) -> Unit) -> Unit)? = null
+    internal var onApplySelectedOffers: ((List<EligibleOffer>, (OfferWidgetApplyOutcome) -> Unit) -> Unit)? = null
 
     // ─── Internal state ───────────────────────────────────────────────────────
     // Selection + trạng thái mở/thu gọn nay do store (promotionLogic) quản — Fragment chỉ render.
@@ -252,7 +252,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         val highlightKeyword = state.highlightKeyword()
 
         if (state.myOffers.isNotEmpty()) {
-            items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_my_endow)))
+            items.add(ChoosePromotionListItem.SectionHeader(prmString(R.string.prm_my_offer)))
             state.visibleMyOffers().forEach { offer ->
                 val voucher = offer.toVoucherListItem()
                 val isSelected = state.isSelected(voucher.voucherId)
@@ -280,7 +280,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
             if (items.isNotEmpty()) {
                 items.add(ChoosePromotionListItem.SectionDivider)
             }
-            items.add(ChoosePromotionListItem.SectionHeader(getString(R.string.prm_endow_different)))
+            items.add(ChoosePromotionListItem.SectionHeader(prmString(R.string.prm_offer_different)))
             // Vị trí item ĐẦU TIÊN của nhóm "Ưu đãi khác" trên list phẳng. Scroll listener trừ đi số
             // này để ra chỉ số TRONG NHÓM, thứ mà rule dùng chung `shouldLoadMoreOther` nhận.
             otherSectionOffset = items.size
@@ -312,7 +312,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
     }
 
     /**
-     * Bấm "Áp dụng" → trả offers đang chọn cho widget (`EndowStore` validate). Ba kết cục, ba hành
+     * Bấm "Áp dụng" → trả offers đang chọn cho widget (`OfferWidgetStore` validate). Ba kết cục, ba hành
      * động khác nhau — giống hệt iOS (`PromotionSDKImpl.openChoosePromotion`):
      *
      * | Kết cục | Widget | Màn này |
@@ -334,7 +334,7 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         val apply = onApplySelectedOffers
         if (apply == null) {
             // Không có widget để áp (fragment bị FragmentManager tái tạo nên mất closure, hoặc host
-            // tự dựng màn này không qua `forEndowView`). Báo lỗi rồi Ở LẠI — đóng màn ở đây là nói
+            // tự dựng màn này không qua `forOfferWidget`). Báo lỗi rồi Ở LẠI — đóng màn ở đây là nói
             // dối user rằng đã áp xong.
             showErrorDialog(mapPromotionError(ErrorCodes.GENERAL))
             return
@@ -345,19 +345,19 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         apply(offers) { outcome ->
             when (outcome) {
                 // Áp được → đóng màn, quay về màn thanh toán với widget đã cập nhật.
-                is EndowApplyOutcome.Applied -> {
+                is OfferWidgetApplyOutcome.Applied -> {
                     viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
                     goBack()
                 }
                 // Server từ chối ưu đãi đang chọn → **ở lại**: store disable ưu đãi đó, bỏ tick và
                 // đặt câu giải thích; popup hiện ở `showApplyMessageIfAny`. `ApplyRejected` đã bao
                 // luôn phần mở khoá nút của `ApplyFinished` nên không bắn thêm.
-                is EndowApplyOutcome.Rejected ->
+                is OfferWidgetApplyOutcome.Rejected ->
                     viewModel.dispatch(ChoosePromotionIntent.ApplyRejected(outcome.items))
                 // Không hỏi được server → popup + ở lại. Popup chứ không toast: user vừa chủ động
                 // bấm và đang chờ kết quả, im lặng là màn đứng im không một thông báo.
                 // (iOS dùng popup `PRMConfirmationDialog`.)
-                is EndowApplyOutcome.Failed -> {
+                is OfferWidgetApplyOutcome.Failed -> {
                     viewModel.dispatch(ChoosePromotionIntent.ApplyFinished)
                     showErrorDialog(mapPromotionError(outcome.errorCode))
                 }
@@ -377,8 +377,8 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
         val show = state.showsSelectedCount()
         binding.layoutReducePrice.isVisible = show
         if (show) {
-            binding.txtNumberChooseEndow.text =
-                getString(R.string.prm_selected_voucher_count, state.selectedIds.size)
+            binding.txtNumberChooseOffer.text =
+                prmString(R.string.prm_selected_voucher_count, state.selectedIds.size)
         }
         binding.btnApply.isEnabled = state.canApply()
     }
@@ -415,28 +415,28 @@ internal class ChoosePromotionFragment : PRMBaseFragment<PrmFragmentChoosePromot
 
     companion object {
         /**
-         * Dựng màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
+         * Dựng màn "Chọn ưu đãi" nối sẵn với widget [offerWidget] ở màn thanh toán.
          *
          * Pre-select voucher đang áp và đẩy kết quả ngược về widget khi user bấm "Áp dụng". Danh
          * sách ưu đãi thì màn tự gọi `findEligible` lấy mới, không nhận preload từ widget nữa.
          *
-         * `internal`: fragment này là UI nội bộ. `PRMEndowView` tự gọi hàm này qua
-         * `PromotionSDK.openChoosePromotion(activity, endowView)` khi user bấm widget — host không
+         * `internal`: fragment này là UI nội bộ. `PRMOfferWidget` tự gọi hàm này qua
+         * `PromotionSDK.openChoosePromotion(activity, offerWidget)` khi user bấm widget — host không
          * đụng tới class này, kể cả gián tiếp.
          *
          * Host muốn làm thêm việc gì đó lúc áp thì ghi đè [onApplySelectedOffers] — nhớ tự gọi
-         * `endowView.setDiscountDetails(...)` và hàm báo-đã-xong, vì set lại sẽ thay callback mặc định.
+         * `offerWidget.setDiscountDetails(...)` và hàm báo-đã-xong, vì set lại sẽ thay callback mặc định.
          */
         @JvmStatic
-        fun forEndowView(endowView: PRMEndowView): ChoosePromotionFragment =
+        fun forOfferWidget(offerWidget: PRMOfferWidget): ChoosePromotionFragment =
             ChoosePromotionFragment().apply {
                 // Pre-select TẤT CẢ ưu đãi đang áp (kể cả đang UNAVAILABLE) để user thấy & bỏ chọn
                 // được — khớp iOS (`appliedDiscounts.map { $0.objectId }`, không lọc `valid`).
-                preSelectedVoucherIds = endowView.discountDetails
+                preSelectedVoucherIds = offerWidget.discountDetails
                     .map { it.objectId }
                     .toSet()
                 onApplySelectedOffers = { offers, onSettled ->
-                    endowView.applySelectedOffers(offers, onSettled)
+                    offerWidget.applySelectedOffers(offers, onSettled)
                 }
             }
     }

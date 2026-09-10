@@ -3,7 +3,7 @@ package com.ttcn.promotionsdk.domain.model.voucher
 /**
  * Mã trạng thái thô của voucher do server trả. Dùng chung Android & iOS.
  */
-enum class VoucherStatus {
+public enum class VoucherStatus {
     // Dùng được
     ACTIVE,
     AVAILABLE,
@@ -29,7 +29,7 @@ enum class VoucherStatus {
     /** Server trả mã lạ. Xử lý **fail-closed**: xem như không dùng được. */
     UNKNOWN;
 
-    fun displayState(): VoucherDisplayState = when (this) {
+    public fun displayState(): VoucherDisplayState = when (this) {
         ACTIVE, AVAILABLE, USABLE, AVAILABLE_TO_CLAIM -> VoucherDisplayState.USABLE
         REDEEMED, USED -> VoucherDisplayState.USED
         EXPIRED -> VoucherDisplayState.EXPIRED
@@ -38,8 +38,8 @@ enum class VoucherStatus {
         UNKNOWN -> VoucherDisplayState.INELIGIBLE
     }
 
-    companion object {
-        fun from(raw: String?): VoucherStatus =
+    public companion object {
+        public fun from(raw: String?): VoucherStatus =
             entries.firstOrNull { it.name.equals(raw?.trim(), ignoreCase = true) } ?: UNKNOWN
     }
 }
@@ -48,7 +48,7 @@ enum class VoucherStatus {
  * Trạng thái hiển thị, dùng chung cho `AndroidPromotionSDK` và `iosPromotionUI`.
  * Thay cho `PromotionDisplayState` (Swift) và phép so sánh `status == ACTIVE` (Android).
  */
-enum class VoucherDisplayState {
+public enum class VoucherDisplayState {
     /** Còn dùng được → hiện nút "Dùng ngay". */
     USABLE,
     USED,
@@ -57,13 +57,13 @@ enum class VoucherDisplayState {
     /** Hiển thị mờ, không cho chọn. */
     INELIGIBLE;
 
-    val isUsable: Boolean get() = this == USABLE
+    public val isUsable: Boolean get() = this == USABLE
 }
 
 /**
  * Trạng thái hiển thị của một voucher. **Không** kiểm tra hạn dùng ở client
  * (`expirationDate < now`) — hoàn toàn dựa vào `status` của server.
  */
-fun VoucherItem.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()
+public fun VoucherItem.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()
 
-fun VoucherDetail.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()
+public fun VoucherDetail.displayState(): VoucherDisplayState = VoucherStatus.from(status).displayState()

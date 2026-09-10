@@ -34,7 +34,7 @@
                 android:id="@+id/ctlPartOne"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:background="@drawable/prm_bg_item_endow_part_one"
+                android:background="@drawable/prm_bg_item_offer_part_one"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -42,6 +42,7 @@
 
                 <com.ttcn.prm.ui.widget.PRMCircleImageView
                     android:id="@+id/imgVoucher"
+                    android:importantForAccessibility="no"
                     android:layout_width="@dimen/prm_view_size_48"
                     android:layout_height="@dimen/prm_view_size_48"
                     android:background="@drawable/prm_background_shimmer_circle"
@@ -53,10 +54,11 @@
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgLine"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="0dp"
                 android:layout_marginVertical="@dimen/prm_7sdp"
-                android:background="@drawable/prm_bg_line_my_endow"
+                android:background="@drawable/prm_bg_line_my_offer"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/ctlPartOne"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -65,7 +67,7 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:background="@drawable/prm_bg_item_endow_part_two"
+                android:background="@drawable/prm_bg_item_offer_part_two"
                 android:paddingHorizontal="@dimen/prm_11sdp"
                 android:paddingTop="@dimen/prm_9sdp"
                 app:layout_constraintBottom_toBottomOf="parent"

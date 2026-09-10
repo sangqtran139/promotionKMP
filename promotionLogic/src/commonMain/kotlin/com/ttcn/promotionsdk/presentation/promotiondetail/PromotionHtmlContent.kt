@@ -10,7 +10,7 @@ package com.ttcn.promotionsdk.presentation.promotiondetail
  *
  * @return chuỗi rỗng khi [content] rỗng/trắng — native hiển thị trang trống (không có chữ mặc định).
  */
-fun wrapPromotionHtml(content: String): String {
+public fun wrapPromotionHtml(content: String): String {
     if (content.isBlank()) return ""
     val normalized = content
         .replace("style=\"width:(| )\\w{1,}pt;\"".toRegex(), " ")

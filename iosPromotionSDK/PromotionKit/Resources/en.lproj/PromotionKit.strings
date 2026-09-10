@@ -1,0 +1,66 @@
+/*
+  PromotionKit.strings (en)
+
+  Bản tiếng Anh của bảng chuỗi SDK. Chỉ được dùng khi host truyền `language: "en"` (mặc định vẫn là
+  `"vi-VN"`), nên nó KHÔNG ảnh hưởng tới host hiện tại.
+
+  ⚠️ Câu chữ ở đây do đội SDK dịch, **chưa qua duyệt nội dung của product**. Trước khi quảng bá là
+  SDK "hỗ trợ tiếng Anh", cần đội nội dung rà lại — đặc biệt là các câu lỗi (chúng hiện thẳng cho
+  người dùng cuối trong luồng thanh toán).
+
+  Khoá phải khớp 1-1 với `vi.lproj/PromotionKit.strings`; thiếu khoá nào thì khoá đó rơi về chuỗi
+  tiếng Việt khai ở `PromotionUIStrings` (an toàn, nhưng lẫn hai ngôn ngữ trên cùng màn hình).
+*/
+
+"prm_use_now" = "Use now";
+"prm_use" = "Use";
+"prm_apply" = "Apply";
+"prm_detail" = "Details";
+
+"prm_status_used" = "Used";
+"prm_status_expired" = "Expired";
+"prm_status_ineligible" = "Not eligible";
+
+"prm_my_offer" = "My offers";
+"prm_offer_different" = "Other offers";
+"prm_tab_detail_info" = "Details";
+"prm_tab_usage_guide" = "How to use";
+
+"prm_deal_hot" = "Thousands of hot deals await";
+"prm_hot_deal_description" = "Fill your wallet with great offers!";
+
+"prm_expiry_short_format" = "Valid until %1$@";
+"prm_expiry_long_format" = "Valid until %1$@";
+"prm_expiry_remaining_days" = "%1$d days left";
+"prm_expiry_never" = "No expiry date";
+"prm_discount_amount_format" = "Save %1$@đ";
+"prm_selected_voucher_count" = "%1$d voucher(s) selected";
+
+"prm_a11y_back" = "Back";
+"prm_a11y_search" = "Search offers";
+"prm_a11y_promotion_banner" = "Offer image";
+
+"prm_missing_customer_id" = "Customer information not found";
+"prm_no_result" = "No matching results";
+"prm_error_network" = "No internet connection. Please check and try again";
+"prm_error_timeout" = "The request timed out. Please try again";
+"prm_error_general" = "Something went wrong. Please try again later";
+
+/* Widget ưu đãi */
+"prm_offer" = "Offers";
+"prm_cancel_voucher" = "Cancel";
+"prm_change_voucher" = "Change";
+"prm_no_offer" = "You have no offers";
+"prm_one_offer" = "You have 1 offer";
+"prm_multiple_offer" = "You have %1$d offers";
+
+/* Danh sách */
+"prm_see_more" = "See more";
+"prm_collapse" = "Collapse";
+"prm_remaining_days_short" = "%1$d days left";
+
+/* Lỗi trả cho host qua PromotionSDKError.errorDescription */
+"prm_feature_disabled" = "The offers feature is temporarily unavailable. Please try again later.";
+"prm_error_session_expired" = "Your session has expired, please sign in again.";
+"prm_error_parse_failed" = "Something went wrong with the response data.";
+"prm_error_not_initialized" = "PromotionSDK has not been initialized.";

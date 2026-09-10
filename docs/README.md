@@ -57,7 +57,7 @@ Hai chế độ dùng SDK:
 |---|---|
 | `:promotionLogic` (KMP) | ✅ Xong. Build Android + iOS, **43 file test / 383 case** `commonTest` chạy trên cả hai. |
 | `:AndroidPromotionSDK` (Android) | ✅ Đã ở trong repo (module `AndroidPromotionSDK/`). Phát hành Maven — xem [android/Distribution.md](./android/Distribution.md). |
-| `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PRM.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
+| `iosPromotionSDK` (iOS) | ✅ Đã ở trong repo (`iosPromotionSDK/`, project `PromotionKit.xcodeproj`). Phát hành **XCFramework** — xem [ios/Distribution.md](./ios/Distribution.md). |
 | App demo host | ✅ `androidApp/` và `iosApp/` — host mẫu tiêu thụ SDK. |
 | Compose Multiplatform | 🔜 Để ngỏ, chưa dùng. Xem [common/ComposeGuide.md](./common/ComposeGuide.md). |
 

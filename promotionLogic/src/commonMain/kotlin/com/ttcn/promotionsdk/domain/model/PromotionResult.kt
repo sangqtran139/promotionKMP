@@ -13,11 +13,11 @@ package com.ttcn.promotionsdk.domain.model
  * }
  * ```
  */
-sealed interface PromotionResult<out T> {
+public sealed interface PromotionResult<out T> {
 
-    data class Success<out T>(val data: T) : PromotionResult<T>
+    public data class Success<out T>(val data: T) : PromotionResult<T>
 
-    data class Failure(
+    public data class Failure(
         val errorCode: String,
         val message: String? = null,
         val httpStatus: Int? = null,

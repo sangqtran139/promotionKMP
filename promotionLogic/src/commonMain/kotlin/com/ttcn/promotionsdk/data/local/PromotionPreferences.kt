@@ -11,20 +11,20 @@ import com.russhwolf.settings.Settings
  * không phải thêm type mới. Tầng UI lấy instance qua `PromotionContainer.preferences` — giống nhau
  * trên Android và iOS.
  *
- * Public vì tầng UI nằm ở **module khác** (AndroidPromotionSDK / PromotionSDKUI); hiện thực
+ * Public vì tầng UI nằm ở **module khác** (AndroidPromotionSDK / PromotionKit); hiện thực
  * ([SettingsPreferences]) và hàm dựng nó vẫn nội bộ.
  */
-interface PromotionPreferences {
-    fun putBoolean(key: String, value: Boolean)
-    fun getBoolean(key: String, default: Boolean = false): Boolean
-    fun putString(key: String, value: String)
-    fun getString(key: String): String?
-    fun contains(key: String): Boolean
-    fun remove(key: String)
-    fun clear()
+public interface PromotionPreferences {
+    public fun putBoolean(key: String, value: Boolean)
+    public fun getBoolean(key: String, default: Boolean = false): Boolean
+    public fun putString(key: String, value: String)
+    public fun getString(key: String): String?
+    public fun contains(key: String): Boolean
+    public fun remove(key: String)
+    public fun clear()
 
-    companion object {
-        const val PREFS_NAME = "promotion_sdk_prefs"
+    public companion object {
+        public const val PREFS_NAME: String = "promotion_sdk_prefs"
     }
 }
 

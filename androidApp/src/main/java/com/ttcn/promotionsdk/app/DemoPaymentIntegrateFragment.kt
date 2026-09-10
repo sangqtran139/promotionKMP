@@ -8,7 +8,7 @@ import com.ttcn.promotionsdk.app.databinding.FragmentPaymentDemoBinding
 
 /**
  * Màn thanh toán mẫu — tất cả những gì màn này chạm vào SDK đều nằm ở `com.ttcn.prm.entry`:
- * widget `PRMEndowView` (đặt trong layout của host). Widget tự điều hướng sang màn "Chọn ưu đãi"
+ * widget `PRMOfferWidget` (đặt trong layout của host). Widget tự điều hướng sang màn "Chọn ưu đãi"
  * khi user bấm — host không cần wiring gì cho việc đó. Không có lớp nội bộ nào của SDK ở đây.
  */
 class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>() {
@@ -17,13 +17,13 @@ class DemoPaymentIntegrateFragment : AppBaseFragment<FragmentPaymentDemoBinding>
         FragmentPaymentDemoBinding.inflate(inflater, container, false)
 
     override fun setupUI() {
-        // ─── Wire endowView callbacks ─────────────────────────────────────────
-        binding.endowView.onError = { error -> handleSdkError(error) }
+        // ─── Wire offerWidget callbacks ─────────────────────────────────────────
+        binding.offerWidget.onError = { error -> handleSdkError(error) }
 
         // ─── Confirm thanh toán ───────────────────────────────────────────────
         // Gọi thẳng trên widget: không còn class manager riêng, cũng không còn `clear()` phải nhớ.
         binding.btnConfirmPayment.setOnClickListener {
-            binding.endowView.confirmRedemption(
+            binding.offerWidget.confirmRedemption(
                 onSuccess = { proceedPayment() },
                 onError = { error -> handleSdkError(error) },
             )

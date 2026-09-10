@@ -105,7 +105,7 @@ Hệ quả cần nhớ khi nghiệm thu:
 | Nền tảng | Artifact | Cách phân phối |
 |---|---|---|
 | Android | AAR qua Maven — `vn.viettelpay.library:promotion:1.0.0` (kéo theo `:promotionLogic`) | JFrog Artifactory nội bộ |
-| iOS | `Promotion.xcframework` (dynamic framework, module `PRM`) | Zip **có version** trên repo generic Artifactory `vdo-ios-frameworks/Martech/Promotion/<version>/`, host tiêu thụ bằng SPM `binaryTarget` |
+| iOS | `Promotion.xcframework` (dynamic framework, module `PromotionKit`) | Zip **có version** trên repo generic Artifactory `vdo-ios-frameworks/Martech/Promotion/<version>/`, host tiêu thụ bằng SPM `binaryTarget` |
 
 ### 1.4. Phạm vi
 
@@ -203,7 +203,7 @@ HOST APP (đối tác)
    ▼
 PromotionSDK                 ← entry công khai; chữ ký sạch, không lộ type lõi
    ├─ vòng đời   initialize · release · isInitialized · updateOrderInfo · configure(theme)
-   ├─ màn hình   openMyPromotion · openPromotionDetail · openChoosePromotion · PRMEndowView
+   ├─ màn hình   openMyPromotion · openPromotionDetail · openChoosePromotion · PRMOfferWidget
    ├─ headless   api: PromotionSDKApi
    └─ sự kiện    PromotionSDKCallback
    ▼
@@ -221,7 +221,7 @@ DOMAIN ← DATA                ← UseCase → Repository → RemoteDataSource (
 | `PromotionSDK` | `AndroidPromotionSDK/entry/`, `iosPromotionSDK/Entry/` | Entry công khai: vòng đời, mở màn, phát sự kiện | Host |
 | `PromotionSDKApi` | `entry/api/`, `Entry/API/` | Headless: uỷ quyền use case + map sang DTO public | Host (headless) |
 | `PromotionSDKCallback` | `entry/` | 3 sự kiện: `onVoucherApplied`, `onServiceSelected`, `onExpireToken` | SDK → Host |
-| `PRMEndowView` | `ui/feature/endowview/` (Android), `Endow/` (iOS) | Widget ưu đãi ở màn thanh toán | Host |
+| `PRMOfferWidget` | `ui/feature/offerwidget/` (Android), `OfferWidget/` (iOS) | Widget ưu đãi ở màn thanh toán | Host |
 | `PromotionSDKTheme` | `ui/theme/` | Token màu/typography theo brand host | Host |
 | `PRMStore<S, I>` | `promotionLogic/presentation/` | Logic hiển thị dùng chung: nhận Intent, gọi use case, phát State/Effect | UI hai nền tảng |
 | `PromotionUseCases` | `promotionLogic/domain/usecase/` | Facade nghiệp vụ: gác cờ, bọc lỗi thành `PromotionResult` | `PromotionSDKApi`, Store |
@@ -252,8 +252,8 @@ Nguyên tắc một dòng: **chỉ `Entry` mới public.**
 
 | | Bề mặt public | Mọi thứ khác |
 |---|---|---|
-| Android | `com.ttcn.prm.entry.**` + `ui.theme.**` + `ui.feature.endowview` | `internal` |
-| iOS | `iosPromotionSDK/Entry/**` trong module `PRM` | không có `public` |
+| Android | `com.ttcn.prm.entry.**` + `ui.theme.**` + `ui.feature.offerwidget` | `internal` |
+| iOS | `iosPromotionSDK/Entry/**` trong module `PromotionKit` | không có `public` |
 
 Cơ chế cưỡng chế (không phải quy ước lỏng):
 
@@ -268,7 +268,7 @@ Chi tiết đầy đủ (chữ ký từng hàm, 10 DTO public, song ánh Android
 
 | Chế độ | Host làm gì | Ai vẽ UI |
 |---|---|---|
-| **UI mode** | `PromotionSDK.openMyPromotion(...)`, nhúng `PRMEndowView` | SDK |
+| **UI mode** | `PromotionSDK.openMyPromotion(...)`, nhúng `PRMOfferWidget` | SDK |
 | **Headless** | `PromotionSDK.api.getVouchers(...)` … | Host |
 
 Cả hai đi qua **cùng** `PromotionUseCases`, nên gác cờ và chuẩn hoá lỗi giống hệt nhau — không có
@@ -467,17 +467,17 @@ S  → tự pop màn (trừ khi hostHandlesDismiss = true)
 ### 7.4. Widget checkout + "Chọn ưu đãi" (E5 → E4 → E3)
 
 ```
-H  nhúng <PRMEndowView> vào layout màn thanh toán;  updateOrderInfo(...) trước đó
-S  EndowStore → FindEligibleCampaignsUseCase → E5 (myOffers + otherOffers)
+H  nhúng <PRMOfferWidget> vào layout màn thanh toán;  updateOrderInfo(...) trước đó
+S  OfferWidgetStore → FindEligibleCampaignsUseCase → E5 (myOffers + otherOffers)
 S  widget hiển thị: có ưu đãi / chưa áp / không khả dụng
    │
-   └─ user bấm widget → PRMEndowView tự gọi PromotionSDK.openChoosePromotion(activity, this)
+   └─ user bấm widget → PRMOfferWidget tự gọi PromotionSDK.openChoosePromotion(activity, this)
 S     màn "Chọn ưu đãi" DÙNG LẠI dữ liệu widget đã tải (không gọi E5 lần hai), pre-select ưu đãi đang áp
 S     user chọn → "Áp dụng" → ValidateStackableDiscountsUseCase → E4
 C        không hợp lệ → popup lỗi, KHÔNG đóng màn
 C        hợp lệ      → đẩy AppliedDiscount ngược về widget + đóng màn
    │
-H  bấm nút thanh toán của host → PRMEndowView.confirmRedemption(onSuccess, onError)
+H  bấm nút thanh toán của host → PRMOfferWidget.confirmRedemption(onSuccess, onError)
 S     → CreateRedemptionSessionUseCase → E3 → sessionId, totalDiscount, finalAmount
 H  ← onSuccess(...) → host tiếp tục luồng thanh toán của mình
 ```
@@ -551,7 +551,7 @@ MVVM + **Builder** (lắp ráp VC+VM+Router) + **Router** (điều hướng); Vi
 | Tìm kiếm ưu đãi | `SearchMyPromotionFragment` | `SearchMyPromotionViewController` | E1 (kèm `keyword`) |
 | Chi tiết ưu đãi | `PromotionDetailFragment` | `PromotionDetailViewController` | E2 |
 | Chọn ưu đãi | `ChoosePromotionFragment` | `ChoosePromotionViewController` | E5, E4, E3 |
-| Widget checkout | `PRMEndowView` | `PRMEndowView` | E5 |
+| Widget checkout | `PRMOfferWidget` | `PRMOfferWidget` | E5 |
 
 ---
 
@@ -742,7 +742,7 @@ Hai luật kiểm thử đặc thù của SDK này:
 
 | # | Rủi ro / điểm lệch | Mức | Cách xử lý hiện tại |
 |---|---|---|---|
-| R-1 | **Lệch Android ↔ iOS (N1)**: `AppliedDiscount` chỉ có ở Android; widget iOS là factory `createEndowView(...)`; `openChoosePromotion` là Android-only | Trung bình | Ghi rõ trong `PublicApi.md` và `InitParity.md`; host iOS gọi `api.validateDiscounts` nếu cần breakdown |
+| R-1 | **Lệch Android ↔ iOS (N1)**: `AppliedDiscount` chỉ có ở Android; widget iOS là factory `createOfferWidget(...)`; `openChoosePromotion` là Android-only | Trung bình | Ghi rõ trong `PublicApi.md` và `InitParity.md`; host iOS gọi `api.validateDiscounts` nếu cần breakdown |
 | R-2 | **`onExpireToken()` chưa áp dụng cho headless** `PromotionSDKApi` (`SessionExpired` chưa wiring) | Trung bình | Host headless phải tự bắt `PromotionSDKError.SessionExpired` |
 | R-3 | Host Android **vẫn** thấy Ktor/coroutines/AppCompat/Glide/Gson trên compile classpath (khác iOS giấu tuyệt đối) | Thấp | Ghi trong Integration Guide §1; xung đột version xử lý bằng `resolutionStrategy` phía host |
 | R-4 | AAR **không obfuscate** ⇒ decompile đọc được tên class | Thấp (đã cân nhắc) | Hàng rào là *hợp đồng*: `internal` + không phát hành sources.jar + resource private. Bật R8 trên chính SDK đã thử và **gỡ bỏ** vì rút gọn nhầm mapper Data Binding → host crash `AbstractMethodError` |
@@ -763,7 +763,7 @@ Dùng cho nghiệm thu: mỗi tài liệu nghiệp vụ → màn hình → use c
 | MOB_001 Ưu đãi của tôi | Danh sách + tìm kiếm | `MyPromotionFragment` / `MyPromotionViewController`, `SearchMyPromotion…` | `searchVouchers` | E1 | `MyPromotionStoreTest`, `MyPromotionBranchTest`, `SearchMyPromotionStoreTest`, `ResolveActiveTabTest` |
 | MOB_002 Xem chi tiết | Chi tiết + Áp dụng | `PromotionDetailFragment` / `…ViewController` | `getVoucherDetail` | E2 | `PromotionDetailStoreTest`, `VoucherDetailFieldBranchTest`, `PromotionHtmlContentTest` |
 | MOB_003 Đánh dấu đã sử dụng | *(chưa triển khai bản 1.0.0)* | — | — | — | — |
-| MOB_004 Áp dụng ưu đãi | Chọn ưu đãi + widget + thanh toán | `ChoosePromotionFragment` / `…ViewController`, `PRMEndowView` | `findEligible`, `validateDiscounts`, `createRedemption` | E5, E4, E3 | `EligibleCampaignsTest`, `ChoosePromotionStoreTest`, `EndowStoreTest`, `ValidateDiscountsOutcomeTest`, `DiscountMapperTest` |
+| MOB_004 Áp dụng ưu đãi | Chọn ưu đãi + widget + thanh toán | `ChoosePromotionFragment` / `…ViewController`, `PRMOfferWidget` | `findEligible`, `validateDiscounts`, `createRedemption` | E5, E4, E3 | `EligibleCampaignsTest`, `ChoosePromotionStoreTest`, `OfferWidgetStoreTest`, `ValidateDiscountsOutcomeTest`, `DiscountMapperTest` |
 | — (yêu cầu vận hành) | Kill-switch | mọi điểm vào | `featureFlags.*` | E6 | `FeatureFlagTest`, `FeatureFlagGateTest` |
 | — (yêu cầu vận hành) | Phiên & token | mọi API | — | mọi endpoint | `TokenPullPerRequestTest`, `TokenRefreshGateTest`, `TokenRefreshRetryTest` |
 

@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.onEach
 /**
  * Bộ ba **State / Intent / Effect** của MVI, phần dùng chung Android & iOS.
  *
- * Năm store (`MyPromotion`, `ChoosePromotion`, `SearchMyPromotion`, `PromotionDetail`, `Endow`) vốn
+ * Năm store (`MyPromotion`, `ChoosePromotion`, `SearchMyPromotion`, `PromotionDetail`, `OfferWidget`) vốn
  * đã cùng khuôn — interface này chỉ **ghi thành lời** cái khuôn đó để tầng native bọc chúng bằng
  * **một** lớp chung thay vì mỗi màn một bản sao.
  *
@@ -22,19 +22,19 @@ import kotlinx.coroutines.flow.onEach
  * mọi hành vi đi qua [dispatch] với `Intent` sealed riêng của từng store, nên interface không có lý
  * do phình. Nới nó ra là quay lại đúng thứ base class cũ đã mắc.
  */
-interface PRMStore<S : Any, I : Any> {
+public interface PRMStore<S : Any, I : Any> {
 
     /** Nguồn sự thật của màn. Phát lại được — collect lúc nào cũng có giá trị hiện tại. */
-    val state: StateFlow<S>
+    public val state: StateFlow<S>
 
     /** Đưa một **Intent** (ý định của user) vào store; store xử lý rồi cập nhật [state]. */
-    fun dispatch(intent: I)
+    public fun dispatch(intent: I)
 
     /** Mã lỗi đang chờ báo trong [state]; `null` = không có. */
-    fun errorOf(state: S): String?
+    public fun errorOf(state: S): String?
 
     /** Intent xoá lỗi sau khi đã báo — cả năm store đều có `ConsumeError`. */
-    val consumeErrorIntent: I
+    public val consumeErrorIntent: I
 
     /**
      * Sự kiện **một lần**, đối lập với [state] là thứ phát lại được.
@@ -50,7 +50,7 @@ interface PRMStore<S : Any, I : Any> {
      * phần dùng chung mọi màn. Màn nào cần một one-shot của riêng nó thì tự phơi một `Flow` trong
      * ViewModel của mình, đừng nới sealed này ra.
      */
-    val effects: Flow<PRMEffect>
+    public val effects: Flow<PRMEffect>
         get() = state
             .mapNotNull { errorOf(it) }
             .onEach { dispatch(consumeErrorIntent) }
@@ -58,7 +58,7 @@ interface PRMStore<S : Any, I : Any> {
 }
 
 /** Sự kiện một lần dùng chung mọi màn — xem [PRMStore.effects]. */
-sealed interface PRMEffect {
+public sealed interface PRMEffect {
     /** Mã lỗi thô; tầng native map sang chuỗi hiển thị (SDK không giữ chuỗi tiếng Việt ở lõi). */
-    data class ShowError(val errorCode: String) : PRMEffect
+    public data class ShowError(val errorCode: String) : PRMEffect
 }

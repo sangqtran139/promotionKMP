@@ -10,6 +10,7 @@ import com.ttcn.prm.R
 import com.ttcn.prm.databinding.PrmDialogConfirmBinding
 import com.ttcn.prm.ui.utils.extension.retrieveColor
 import com.ttcn.prm.ui.utils.extension.setFont
+import com.ttcn.prm.ui.utils.PRMLocale
 
 /**
  * Dialog xác nhận dùng chung của SDK (đồng ý / bỏ qua), gồm tiêu đề, nội dung, link phụ và
@@ -147,16 +148,19 @@ internal class PRMBaseConfirmDialog : PRMBaseDialog<PrmDialogConfirmBinding>() {
          * trong Fragment thì gọi `PRMBaseFragment.showErrorDialog` cho gọn.
          */
         fun showError(context: Context, fragmentManager: FragmentManager, message: CharSequence) {
+            // `PRMLocale.wrap`: [context] truyền vào đây là của **Activity host** (hàm này gọi được
+            // từ ngoài Fragment), tức locale của máy — không phải ngôn ngữ host chọn cho SDK.
+            val localized = PRMLocale.wrap(context)
             newInstance(
-                title = context.getString(R.string.prm_notification_title),
+                title = localized.getString(R.string.prm_notification_title),
                 content = message,
-                buttonPositive = context.getString(R.string.prm_notification_button_close),
+                buttonPositive = localized.getString(R.string.prm_notification_button_close),
             ).show(fragmentManager, PRMBaseConfirmDialog::class.java.simpleName)
         }
 
         /** "Tính năng đang tắt" (PRM_MOB_021) — user bấm mà màn không mở, im lặng thành "app đơ". */
         fun showFeatureDisabled(context: Context, fragmentManager: FragmentManager) {
-            showError(context, fragmentManager, context.getString(R.string.prm_feature_disabled))
+            showError(context, fragmentManager, PRMLocale.wrap(context).getString(R.string.prm_feature_disabled))
         }
     }
 }

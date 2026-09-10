@@ -35,7 +35,7 @@ import kotlin.coroutines.cancellation.CancellationException
  * }
  * ```
  */
-class PromotionUseCases internal constructor(
+public class PromotionUseCases internal constructor(
     private val searchVouchersUseCase: SearchCustomerVouchersUseCase,
     private val voucherDetailUseCase: GetCustomerVoucherDetailUseCase,
     private val validateDiscountsUseCase: ValidateStackableDiscountsUseCase,
@@ -45,7 +45,7 @@ class PromotionUseCases internal constructor(
     private val isFeatureEnabled: (String) -> Boolean = PromotionFeatureGate::isEnabled,
 ) {
     /** Dựng thẳng sau khi `PromotionContainer.initialize(...)`: `PromotionUseCases()`. */
-    constructor() : this(
+    public constructor() : this(
         SearchCustomerVouchersUseCase(),
         GetCustomerVoucherDetailUseCase(),
         ValidateStackableDiscountsUseCase(),
@@ -56,7 +56,7 @@ class PromotionUseCases internal constructor(
     /**
      * Tìm kiếm danh sách voucher của khách hàng. Gác bởi [PromotionFeatureFlag.VOUCHER_LIST].
      */
-    suspend fun searchVouchers(
+    public suspend fun searchVouchers(
         request: SearchCustomerVouchersRequest,
     ): PromotionResult<SearchCustomerVouchersResult> =
         gated(PromotionFeatureFlag.VOUCHER_LIST) { searchVouchersUseCase(request) }
@@ -64,7 +64,7 @@ class PromotionUseCases internal constructor(
     /**
      * Lấy chi tiết một voucher. Gác bởi [PromotionFeatureFlag.VOUCHER_DETAIL].
      */
-    suspend fun getVoucherDetail(
+    public suspend fun getVoucherDetail(
         voucherId: String,
         service: String? = null,
     ): PromotionResult<VoucherDetail> =
@@ -77,7 +77,7 @@ class PromotionUseCases internal constructor(
      *
      * Khác [searchVouchers] — hàm đó chỉ trả voucher khách **đã sở hữu**, không xét đơn hàng.
      */
-    suspend fun findEligible(
+    public suspend fun findEligible(
         request: FindEligibleCampaignsRequest,
     ): PromotionResult<EligibleOffersResult> =
         gated(PromotionFeatureFlag.VOUCHER_SELECTION) { findEligibleCampaignsUseCase(request) }
@@ -86,7 +86,7 @@ class PromotionUseCases internal constructor(
      * Validate danh sách voucher trước khi áp dụng vào đơn hàng.
      * Gác bởi [PromotionFeatureFlag.VOUCHER_APPLY].
      */
-    suspend fun validateDiscounts(
+    public suspend fun validateDiscounts(
         request: ValidateDiscountsRequest,
     ): PromotionResult<ValidateDiscountsResult> =
         gated(PromotionFeatureFlag.VOUCHER_APPLY) { validateDiscountsUseCase(request) }
@@ -95,7 +95,7 @@ class PromotionUseCases internal constructor(
      * Tạo redemption session để xác nhận thanh toán với voucher đã chọn.
      * Gác bởi [PromotionFeatureFlag.VOUCHER_REDEEM].
      */
-    suspend fun createRedemption(
+    public suspend fun createRedemption(
         request: CreateRedemptionRequest,
     ): PromotionResult<CreateRedemptionResult> =
         gated(PromotionFeatureFlag.VOUCHER_REDEEM) { createRedemptionUseCase(request) }

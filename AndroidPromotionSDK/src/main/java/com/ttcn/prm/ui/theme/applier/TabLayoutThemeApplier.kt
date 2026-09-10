@@ -1,6 +1,6 @@
 package com.ttcn.prm.ui.theme.applier
 
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 import android.graphics.drawable.GradientDrawable
 import androidx.annotation.ColorInt
@@ -9,7 +9,7 @@ import com.ttcn.prm.R
 
 internal object TabLayoutThemeApplier {
 
-    fun apply(tabs: TabLayout, token: TabUnderlineToken?) {
+    fun apply(tabs: TabLayout, token: PRMTabUnderlineToken?) {
         if (token == null) return
 
         token.indicatorColor?.let { color ->

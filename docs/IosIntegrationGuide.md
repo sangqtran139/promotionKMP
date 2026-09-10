@@ -36,7 +36,7 @@
 - Khai **một** `binaryTarget` Swift Package trỏ tới zip trên Artifactory nội bộ, đặt **Embed & Sign**.
   Xong. Không CocoaPods, không cài Kotlin hay thư viện nào khác — SDK là **một** xcframework khép kín.
 - Mọi thứ host chạm đều bắt đầu bằng `Promotion*` (`PromotionSDK`, `PromotionSDKApi`, `PromotionSDKTheme`…).
-- `import PRM` là import **duy nhất** host cần.
+- `import PromotionKit` là import **duy nhất** host cần.
 - Cấu hình một lần bằng `PromotionSDK.initialize(tokenSource:baseUrl:)`, bơm đơn hàng bằng `updateOrderInfo(...)`, nhận
   sự kiện qua `PromotionSDKCallback`.
 
@@ -70,7 +70,7 @@ Hệ quả cho host:
 | Kênh phát hành | Artifactory nội bộ, repo generic **`vdo-ios-frameworks`**:<br>`https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/<version>/` |
 | Cách tiêu thụ | **SPM `binaryTarget`** (`url:` + `checksum:`) — xem §3.1. Kéo tay vẫn dùng được, xem §3.2 |
 | Xác thực | Basic auth qua `~/.netrc` — SwiftPM **không bao giờ hỏi mật khẩu** |
-| Module import | `import PRM` |
+| Module import | `import PromotionKit` |
 | iOS tối thiểu | **iOS 13.0** |
 | Slice | `ios-arm64` (thiết bị) + `ios-arm64_x86_64-simulator` (simulator) |
 | UI | UIKit — API trả `UIViewController` / `UIView` |
@@ -151,7 +151,7 @@ CI runner đều phải tự khai.
 ### 3.3. Kiểm tra nhanh
 
 ```swift
-import PRM
+import PromotionKit
 
 print(PromotionSDK.isInitialized()) // false — link OK là được
 ```
@@ -163,7 +163,7 @@ print(PromotionSDK.isInitialized()) // false — link OK là được
 `PromotionSDK` là **singleton tĩnh** — mọi điểm vào là `static`. SDK giữ **một** phiên sống tại một thời điểm.
 
 ```swift
-import PRM
+import PromotionKit
 
 // Cách tối giản — đủ cho phần lớn host, chỉ 2 tham số bắt buộc:
 PromotionSDK.initialize(
@@ -328,7 +328,7 @@ SDK đọc lại các giá trị này ở **mỗi** request, nên chỉ cần g�
 qua `PromotionSDK.currentOrderId / currentOrderValue / currentServiceCode / currentMetaData` và `PromotionSDK.session`.
 
 > ⚠️ Gọi trước `initialize`: `updateOrderInfo` / `openMyPromotion` / `openPromotionDetail` /
-> `createEndowView` **không crash** — chúng bỏ qua lệnh và ghi một dòng cảnh báo qua `NSLog`
+> `createOfferWidget` **không crash** — chúng bỏ qua lệnh và ghi một dòng cảnh báo qua `NSLog`
 > (`[PromotionSDK] … bị gọi trước initialize()`). Riêng **`api`** vẫn `preconditionFailure` vì kiểu trả
 > về không optional. SDK khởi tạo thường là **bất đồng bộ** (chờ login), nên hãy gác điểm vào bằng
 > `PromotionSDK.isInitialized()` — nếu không, nút bấm sẽ như "không ăn" và widget sẽ trống.
@@ -363,11 +363,11 @@ PromotionSDK.openPromotionDetail(
 }
 
 // Widget checkout — gắn vào layout của bạn, tự load dữ liệu
-let widget = PromotionSDK.createEndowView(from: self, orderId: order.id, orderValue: "500000")
+let widget = PromotionSDK.createOfferWidget(from: self, orderId: order.id, orderValue: "500000")
 container.addSubview(widget)
 
 // Widget checkout kèm dòng sản phẩm (lấy campaign theo SKU)
-let widget2 = PromotionSDK.createEndowView(
+let widget2 = PromotionSDK.createOfferWidget(
     from: self, orderId: order.id, orderValue: "500000",
     orderItems: [PromotionOrderItem(skuSourceId: "SKU1", quantity: 1, unitPrice: "500000")]
 )
@@ -395,7 +395,7 @@ PromotionSDK.confirmRedemption(onSuccess: { proceedPayment() }, onError: { error
 })
 ```
 
-Đối ứng `PRMEndowView.onError` / `confirmRedemption(onError:)` bên Android — cùng kiểu lỗi.
+Đối ứng `PRMOfferWidget.onError` / `confirmRedemption(onError:)` bên Android — cùng kiểu lỗi.
 
 Muốn mượt hơn — ẩn hẳn nút trước khi user kịp bấm — thì hỏi SDK:
 
@@ -523,7 +523,7 @@ Mỗi case có sẵn `errorDescription` tiếng Việt để hiển thị. `.net
 
 ```swift
 PromotionSDK.configure(theme: PromotionSDKTheme(
-    buttonToken: ButtonToken(/* ... */),
+    buttonToken: PRMButtonToken(/* ... */),
     // 6 token: buttonToken, searchBarToken, listItemToken, tabChipToken, tabUnderlineToken, discountBadgeToken
 ))
 ```
@@ -543,7 +543,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 | Gọi `api` / `updateOrderInfo` trước `initialize` | Luôn `initialize` sau login trước tiên |
 | Đổi token bằng cách sửa field | Gọi lại `initialize(options:)` với session mới |
 | Đặt xcframework "Do Not Embed" | **Embed & Sign** (framework có resource bundle) |
-| `import PromotionLogic` / `PRMKotlinBridge` | Chỉ `import PRM` |
+| `import PromotionLogic` / `PRMKotlinBridge` | Chỉ `import PromotionKit` |
 | Tự hỏi feature flag để ẩn UI | Dùng `isSdkEnabled()` / `isFeatureEnabled(_:)` khi dựng UI |
 | Tưởng phải tự viết wrapper `PromotionManager` | Gọi thẳng `PromotionSDK` — SDK đã tự lo token/context/callback |
 
@@ -554,7 +554,7 @@ PromotionSDK.configure(theme: PromotionSDKTheme(
 ```
 login thành công        → PromotionSDK.initialize(tokenSource:baseUrl:)
 vào màn có voucher       → PromotionSDK.updateOrderInfo(orderId:productId:orderValue:...)
-mở UI                    → openMyPromotion / openPromotionDetail / createEndowView
+mở UI                    → openMyPromotion / openPromotionDetail / createOfferWidget
 login lại (phiên mới)    → PromotionSDK.initialize(...)   (SDK khoá field cố định)
 logout                   → PromotionSDK.release()
 ```

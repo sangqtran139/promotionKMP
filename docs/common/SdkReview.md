@@ -36,15 +36,15 @@ ngoài không, có ảnh hưởng lúc tích hợp host app không?
 
 **Kết luận: KHÔNG public.** Chúng là **dependency nội bộ**, được **ẩn** khỏi module interface và **link tĩnh**
 vào **một** framework `Promotion.xcframework`. Host tích hợp chỉ cần thêm **1 xcframework** và
-`import PRM` — không thấy, không cần khai báo package con nào.
+`import PromotionKit` — không thấy, không cần khai báo package con nào.
 
 **Dẫn chứng:**
-- Mọi chỗ `PromotionSDKUI` dùng package con đều qua `@_implementationOnly import` → **không tái xuất** sang
+- Mọi chỗ `PromotionKit` dùng package con đều qua `@_implementationOnly import` → **không tái xuất** sang
   module interface (host không import xuyên được): `PRMKotlinBridge` (×23), `PRMDesignKit` (×13),
   `PRMFoundation` (×9), `PRMPromotionUI` (×6).
 - `iosPromotionSDK/scripts/build-xcframework.sh` archive rồi `-create-xcframework`; cuối script **verify** archive
-  **chỉ** chứa `PromotionSDKUI.framework` → in *"(không có — mọi dependency đã link tĩnh)"* (dòng 111).
-- Host thật (`iosApp/iosApp/*.swift`) chỉ có `import PRM` (+ `UIKit`/`Foundation`) — **không** import
+  **chỉ** chứa `PromotionKit.framework` → in *"(không có — mọi dependency đã link tĩnh)"* (dòng 111).
+- Host thật (`iosApp/iosApp/*.swift`) chỉ có `import PromotionKit` (+ `UIKit`/`Foundation`) — **không** import
   package con nào.
 
 **Ảnh hưởng tích hợp:** Tối thiểu & đúng ý đồ đóng gói — 1 xcframework, 1 import. Không xung đột version SPM,
@@ -52,7 +52,7 @@ không lộ symbol nội bộ. (Bề mặt API public đầy đủ & đối xứ
 
 **Câu hỏi phụ:**
 - *Host muốn tuỳ biến theme (PRMDesignKit)?* → Không import PRMDesignKit; theme cấu hình qua **public API**
-  `PromotionSDKTheme` trong `PromotionSDKOptions` (bề mặt `PromotionSDKUI`).
+  `PromotionSDKTheme` trong `PromotionSDKOptions` (bề mặt `PromotionKit`).
 - *Link tĩnh có phình app?* → Static, symbol dedup khi link vào app; đổi lại chỉ **1** binary, tránh
   "dylib not found" runtime.
 - *Đối xứng Android?* → Android phát hành 2 AAR Maven (§5), nhưng nguyên tắc "host chỉ chạm bề mặt" giống nhau (§2).
@@ -76,11 +76,11 @@ quyết định widget-state) — **viết một lần, chạy cả Android & iO
 | `SearchMyPromotionStore` | Tìm ưu đãi | debounce, search server-side, phân trang |
 | `ChoosePromotionStore` | Chọn ưu đãi | 2 nhóm phân trang độc lập, selection, see-more |
 | `PromotionDetailStore` | Chi tiết | fetch detail, seed nút, quyết định "Dùng ngay" |
-| `EndowStore` | Widget checkout | findEligible + **validate&apply** + widget-state |
+| `OfferWidgetStore` | Widget checkout | findEligible + **validate&apply** + widget-state |
 
 **Chuỗi bọc:** `View` → `ViewModel/Impl (mỏng)` → **`Store` (UI-logic)** → `UseCase` → `Repository` →
 `RemoteDataSource` → Ktor. Android `*ViewModel` (kế `PRMStoreViewModel`) và iOS `*ViewModel`/`PromotionSDKImpl`
-+ `EndowViewModel` chỉ **forward intent + map state → bề mặt view**.
++ `OfferWidgetViewModel` chỉ **forward intent + map state → bề mặt view**.
 
 **Quan điểm "host dùng model của SDK UI, KHÔNG phải SDK Logic"** (đảm bảo host không chọc xuống tầng sâu) —
 dẫn chứng bảo vệ:
@@ -88,7 +88,7 @@ dẫn chứng bảo vệ:
   `VoucherDetail`…) **không** lộ qua interface → host **không** tham chiếu được. Host dùng **DTO public của UI**:
   `PromotionVoucher`, `PromotionVoucherDetail`, `PromotionEligibleOffer`, `PromotionEligibleResult`,
   `AppliedDiscount`, `PromotionApiResult` (`Entry/API/PromotionApiModels.swift`).
-- **Android:** thành viên mang type Logic để `internal` — vd `PRMEndowView.myVouchers/otherVouchers:
+- **Android:** thành viên mang type Logic để `internal` — vd `PRMOfferWidget.myVouchers/otherVouchers:
   List<EligibleOffer>` và `ChoosePromotionFragment.onApplySelectedOffers` đều `internal`. **Public API** chỉ
   dùng DTO ở `entry`: `PromotionVoucher`, `PromotionVoucherDetail`, `PromotionEligibleOffer`,
   `AppliedDiscount`, `PromotionApiResult`.
@@ -111,8 +111,8 @@ dẫn chứng bảo vệ:
 |---|---|---|
 | `PromotionSDK*` | **Bề mặt public** host gọi | `PromotionSDK`, `PromotionSDKOptions`, `PromotionSDKConfig`, `PromotionSDKTheme` |
 | `Promotion*` (DTO) | **Model public UI** trả cho host | `PromotionVoucher`, `AppliedDiscount`, `PromotionEligibleOffer` |
-| `PRM*` | **Nội bộ** (view/base/package con) | `PRMEndowView`, `PRMStoreViewModel`, `PRMKotlinBridge` |
-| `*Store` | **UI-logic dùng chung** ở `promotionLogic` | `EndowStore`, `MyPromotionStore` |
+| `PRM*` | **Nội bộ** (view/base/package con) | `PRMOfferWidget`, `PRMStoreViewModel`, `PRMKotlinBridge` |
+| `*Store` | **UI-logic dùng chung** ở `promotionLogic` | `OfferWidgetStore`, `MyPromotionStore` |
 | `*UseCase` / `*Repository` | domain / data (lõi) | `FindEligibleCampaignsUseCase` |
 
 Bề mặt public **không** prefix (trùng tên Android để đối xứng); nội bộ dùng `PRM`. Xem
@@ -125,13 +125,13 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 ### 4.1. Module & tầng
 ```
 ┌───────────────────────── Host app (Android / iOS) ─────────────────────────┐
-│  chỉ chạm: PromotionSDK(.initialize/open*/makeEndowView/api) + DTO public   │
+│  chỉ chạm: PromotionSDK(.initialize/open*/makeOfferWidget/api) + DTO public   │
 └─────────────────────────────────────────────────────────────────────────────┘
    │ Android: Maven vn.viettelpay.library:promotion      │ iOS: Promotion.xcframework
    ▼                                                     ▼
-┌──────────── AndroidPromotionSDK ───────────┐  ┌──────── iosPromotionSDK/PromotionSDKUI ────────┐
+┌──────────── AndroidPromotionSDK ───────────┐  ┌──────── iosPromotionSDK/PromotionKit ────────┐
 │ entry PromotionSDK · Fragment/View         │  │ entry PromotionSDK · PromotionSDKImpl · VC     │
-│ · *ViewModel (kế PRMStoreViewModel) — MỎNG │  │ · *ViewModel · EndowViewModel · PRMEndowView   │
+│ · *ViewModel (kế PRMStoreViewModel) — MỎNG │  │ · *ViewModel · OfferWidgetViewModel · PRMOfferWidget   │
 └───────────────────────┬─────────────────────┘  └───────────────────────┬────────────────────────┘
                         └──────────────┬─────────────────────────────────┘
                                        ▼   promotionLogic (KMP shared — Clean Arch + MVI-store)
@@ -149,12 +149,12 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 | `PromotionRequestContextProvider` | Host cấp token/order mỗi request: `getOrderId/getOrderValue/getOrderItems/getService/getAccessToken` |
 | `*Store` (×5) | UI-logic dùng chung — `state`/`dispatch`/`watchState`/`currentState`/`clear` |
 | `PromotionRepository(Impl)` + `RemoteDataSource` + `PromotionApiService` | data layer; envelope `ApiResponseTemplate<T>` bóc qua `requireData()` |
-| `PromotionSDK` (Android/iOS) + `PromotionSDKImpl` (iOS) | facade public: init / open màn / `makeEndowView` / headless api |
+| `PromotionSDK` (Android/iOS) + `PromotionSDKImpl` (iOS) | facade public: init / open màn / `makeOfferWidget` / headless api |
 | `PRMStoreViewModel` (Android) · `PRMStoreViewModel`/`PRMScreenViewModel`/`PromotionSDKImpl` (iOS) | lớp bọc mỏng quanh store |
 
 ### 4.3. Luồng hoạt động
 1. Host: `PromotionSDK.initialize(options)` → `PromotionContainer.initialize(config)` (base URL, provider…).
-2. Host mở màn: `openMyPromotion(...)` / `makeEndowView(...)` (hoặc headless `PromotionSDK.api`).
+2. Host mở màn: `openMyPromotion(...)` / `makeOfferWidget(...)` (hoặc headless `PromotionSDK.api`).
 3. `ViewModel/Impl` tạo `Store`, `dispatch(intent)`; `Store` gọi `UseCase` → `Repository` → Ktor.
 4. `Store.state` (StateFlow) phát ngược → VM map `state → bề mặt view` (Android `setState`/collect; iOS
    `watchState` → publisher). Lỗi: `state.errorCode` one-shot → VM phát effect → view map code → chuỗi.
@@ -172,7 +172,7 @@ Bề mặt public **không** prefix (trùng tên Android để đối xứng); n
 **Nguồn version tập trung:** `gradle.properties:19` → **`SDK_VERSION=1.0.0`**.
 - `promotionLogic/build.gradle.kts` và `AndroidPromotionSDK/build.gradle.kts` đọc `findProperty("SDK_VERSION") ?: "1.0.0"`;
   `group = "vn.viettelpay.library"`; `AndroidPromotionSDK` artifactId = **`promotion`**; expose `BuildConfig.SDK_VERSION`.
-- iOS: `MARKETING_VERSION = 1.0.0` (`PRM.xcodeproj`) — giữ trùng số.
+- iOS: `MARKETING_VERSION = 1.0.0` (`PromotionKit.xcodeproj`) — giữ trùng số.
 - **`CHANGELOG.md`** (Keep a Changelog + SemVer): mục `[1.0.0] — 2026-07-20`.
 
 **Publish (Android → Maven):**
@@ -198,8 +198,8 @@ Host Android khai `implementation("vn.viettelpay.library:promotion:<SDK_VERSION>
 ## 6. Phụ lục — nơi kiểm chứng
 | # | Nơi kiểm chứng |
 |---|---|
-| 1 | `@_implementationOnly import` trong `iosPromotionSDK/PromotionSDKUI/**`; `iosPromotionSDK/scripts/build-xcframework.sh:111`; `iosApp/iosApp/*.swift` |
-| 2 | `promotionLogic/presentation/*Store.kt`; `entry/*` (Android) & `Entry/API/PromotionApiModels.swift` (iOS); `PRMEndowView.myVouchers` (internal) |
+| 1 | `@_implementationOnly import` trong `iosPromotionSDK/PromotionKit/**`; `iosPromotionSDK/scripts/build-xcframework.sh:111`; `iosApp/iosApp/*.swift` |
+| 2 | `promotionLogic/presentation/*Store.kt`; `entry/*` (Android) & `Entry/API/PromotionApiModels.swift` (iOS); `PRMOfferWidget.myVouchers` (internal) |
 | 3 | [CodingStandards.md](./CodingStandards.md), [ProjectStructure.md](./ProjectStructure.md) |
 | 4 | [Architecture.md](./Architecture.md); `di/PromotionContainer.kt`; 5 `*Store.kt` |
-| 5 | `gradle.properties:19`; `*/build.gradle.kts`; `PRM.xcodeproj` (`MARKETING_VERSION`); `CHANGELOG.md` |
+| 5 | `gradle.properties:19`; `*/build.gradle.kts`; `PromotionKit.xcodeproj` (`MARKETING_VERSION`); `CHANGELOG.md` |

@@ -1,11 +1,11 @@
 package com.ttcn.prm.ui.theme
 
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
-import com.ttcn.prm.ui.theme.token.SearchBarToken
-import com.ttcn.prm.ui.theme.token.TabChipToken
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 import android.content.Context
 import androidx.annotation.ColorInt
@@ -103,11 +103,11 @@ object PromotionThemeDisplay {
     private fun resolveTabUnderlineToken(
         display: TabUnderlineValues,
         sdk: TabUnderlineValues,
-    ): TabUnderlineToken? {
+    ): PRMTabUnderlineToken? {
         if (display == sdk) return null
         val displayToken = display.toToken()
         val sdkToken = sdk.toToken()
-        return TabUnderlineToken(
+        return PRMTabUnderlineToken(
             indicatorColor = displayToken.indicatorColor ?: sdkToken.indicatorColor,
             activeTextColor = displayToken.activeTextColor ?: sdkToken.activeTextColor,
             inactiveTextColor = displayToken.inactiveTextColor ?: sdkToken.inactiveTextColor,
@@ -211,14 +211,14 @@ object PromotionThemeDisplay {
     )
 }
 
-fun PromotionThemeDisplay.ButtonValues.toToken(): ButtonToken = ButtonToken(
+fun PromotionThemeDisplay.ButtonValues.toToken(): PRMButtonToken = PRMButtonToken(
     backgroundColor = TokenColorParser.parse(backgroundColor),
     textColor = TokenColorParser.parse(textColor),
     shadowColor = TokenColorParser.parse(shadowColor),
     cornerRadius = cornerRadius,
 )
 
-fun PromotionThemeDisplay.SearchBarValues.toToken(): SearchBarToken = SearchBarToken(
+fun PromotionThemeDisplay.SearchBarValues.toToken(): PRMSearchBarToken = PRMSearchBarToken(
     borderColor = TokenColorParser.parse(borderColor),
     hintTextColor = TokenColorParser.parse(hintTextColor),
     textColor = TokenColorParser.parse(textColor),
@@ -226,7 +226,7 @@ fun PromotionThemeDisplay.SearchBarValues.toToken(): SearchBarToken = SearchBarT
     cornerRadius = cornerRadius,
 )
 
-fun PromotionThemeDisplay.ListItemValues.toToken(): ListItemToken = ListItemToken(
+fun PromotionThemeDisplay.ListItemValues.toToken(): PRMListItemToken = PRMListItemToken(
     linkTextColor = TokenColorParser.parse(linkTextColor),
     usedBadgeTextColor = TokenColorParser.parse(usedBadgeTextColor),
     usedBadgeBackgroundColor = TokenColorParser.parse(usedBadgeBackgroundColor),
@@ -234,7 +234,7 @@ fun PromotionThemeDisplay.ListItemValues.toToken(): ListItemToken = ListItemToke
     radioButtonSelectedStrokeColor = TokenColorParser.parse(radioButtonSelectedStrokeColor),
 )
 
-fun PromotionThemeDisplay.TabChipValues.toToken(): TabChipToken = TabChipToken(
+fun PromotionThemeDisplay.TabChipValues.toToken(): PRMTabChipToken = PRMTabChipToken(
     activeBackgroundColor = TokenColorParser.parse(activeBackgroundColor),
     inactiveBackgroundColor = TokenColorParser.parse(inactiveBackgroundColor),
     activeTextColor = TokenColorParser.parse(activeTextColor),
@@ -242,14 +242,14 @@ fun PromotionThemeDisplay.TabChipValues.toToken(): TabChipToken = TabChipToken(
     cornerRadius = cornerRadius,
 )
 
-fun PromotionThemeDisplay.TabUnderlineValues.toToken(): TabUnderlineToken = TabUnderlineToken(
+fun PromotionThemeDisplay.TabUnderlineValues.toToken(): PRMTabUnderlineToken = PRMTabUnderlineToken(
     indicatorColor = TokenColorParser.parse(indicatorColor),
     activeTextColor = TokenColorParser.parse(activeTextColor),
     inactiveTextColor = TokenColorParser.parse(inactiveTextColor),
     backgroundColor = TokenColorParser.parse(backgroundColor),
 )
 
-fun PromotionThemeDisplay.DiscountBadgeValues.toToken(): DiscountBadgeToken = DiscountBadgeToken(
+fun PromotionThemeDisplay.DiscountBadgeValues.toToken(): PRMDiscountBadgeToken = PRMDiscountBadgeToken(
     availableTextColor = TokenColorParser.parse(availableTextColor),
     unavailableTextColor = TokenColorParser.parse(unavailableTextColor),
     availableBackgroundColor = TokenColorParser.parse(availableBackgroundColor),

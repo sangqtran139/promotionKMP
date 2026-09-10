@@ -1,6 +1,6 @@
 package com.ttcn.prm.ui.theme.applier
 
-import com.ttcn.prm.ui.theme.token.TabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
 
 import android.widget.TextView
 import com.ttcn.prm.ui.utils.applyBackgroundColorIfSet
@@ -12,7 +12,7 @@ internal object TabChipThemeApplier {
     fun applyChip(
         textView: TextView,
         selected: Boolean,
-        token: TabChipToken?,
+        token: PRMTabChipToken?,
     ) {
         if (token == null) return
         if (selected) {

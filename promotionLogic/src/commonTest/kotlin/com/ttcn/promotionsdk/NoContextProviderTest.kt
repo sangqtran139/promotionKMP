@@ -16,8 +16,8 @@ import com.ttcn.promotionsdk.domain.usecase.FindEligibleCampaignsUseCase
 import com.ttcn.promotionsdk.domain.usecase.ValidateStackableDiscountsUseCase
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionIntent
 import com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionStore
-import com.ttcn.promotionsdk.presentation.endow.EndowIntent
-import com.ttcn.promotionsdk.presentation.endow.EndowStore
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetIntent
+import com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -69,14 +69,14 @@ class NoContextProviderTest {
     }
 
     @Test
-    fun endow_withoutOrderContext_stillLoads() = runTest {
+    fun offerWidget_withoutOrderContext_stillLoads() = runTest {
         val repo = CapturingRepo()
-        val s = EndowStore(
+        val s = OfferWidgetStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
             CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
-        s.dispatch(EndowIntent.LoadInitial)
+        s.dispatch(OfferWidgetIntent.LoadInitial)
         testScheduler.advanceUntilIdle()
 
         assertEquals("", repo.last!!.orderId)
@@ -85,14 +85,14 @@ class NoContextProviderTest {
     }
 
     @Test
-    fun endowValidate_withoutOrderContext_sendsEmptyStrings() = runTest {
+    fun offerWidgetValidate_withoutOrderContext_sendsEmptyStrings() = runTest {
         val repo = CapturingRepo()
-        val s = EndowStore(
+        val s = OfferWidgetStore(
             FindEligibleCampaignsUseCase(repo), ValidateStackableDiscountsUseCase(repo),
             CreateRedemptionSessionUseCase(repo),
             CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
-        s.dispatch(EndowIntent.ValidateAndApply(listOf(com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer(id = "a"))))
+        s.dispatch(OfferWidgetIntent.ValidateAndApply(listOf(com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer(id = "a"))))
         testScheduler.advanceUntilIdle()
 
         assertEquals("", repo.lastValidate!!.orderId)

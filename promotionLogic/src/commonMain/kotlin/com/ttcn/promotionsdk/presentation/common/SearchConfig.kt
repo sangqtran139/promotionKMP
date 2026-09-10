@@ -6,4 +6,4 @@ package com.ttcn.promotionsdk.presentation.common
  *
  * iOS khai lại hằng số này ở `PromotionSearchLimit.maxKeywordLength` — đổi thì đổi cả hai.
  */
-const val PROMOTION_SEARCH_MAX_LENGTH = 255
+public const val PROMOTION_SEARCH_MAX_LENGTH: Int = 255

@@ -9,10 +9,10 @@ Màn hình hiển thị **danh sách voucher của khách hàng** với tab, ph�
 ## Mục lục
 
 <!-- toc -->
-- [1. Contract (MVI)](#1-contract-mvi)
-  - [1.1. State — `MyPromotionUiState`](#11-state--mypromotionuistate)
-  - [1.2. Action — `MyPromotionAction`](#12-action--mypromotionaction)
-  - [1.3. Effect — `MyPromotionEffect`](#13-effect--mypromotioneffect)
+- [1. Contract (dùng chung 2 nền tảng)](#1-contract-dùng-chung-2-nền-tảng)
+  - [1.1. State — `MyPromotionState`](#11-state--mypromotionstate)
+  - [1.2. Intent — `MyPromotionIntent`](#12-intent--mypromotionintent)
+  - [1.3. Lỗi và điều hướng — không có `Effect` riêng của màn](#13-lỗi-và-điều-hướng--không-có-effect-riêng-của-màn)
 - [2. Luồng dữ liệu](#2-luồng-dữ-liệu)
 - [3. UI item & mapping](#3-ui-item--mapping)
 - [4. API backend](#4-api-backend)

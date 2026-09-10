@@ -32,6 +32,29 @@ public enum FontSizes {
 }
 
 public enum Typography {
+
+    // MARK: - Dynamic Type
+
+    /// Trần phóng to của cỡ chữ, tính theo bội số cỡ gốc.
+    ///
+    /// Vì sao phải có trần: iOS cho user kéo cỡ chữ tới **AX5** — khoảng 3,8× cỡ mặc định. Nhiều ô
+    /// trong XIB của SDK đang cố định chiều cao (13 ràng buộc: 13, 30, 32, 44, 48, 50, 128, 173pt),
+    /// nên để chữ phóng tự do là **chữ bị cắt** — tệ hơn hiện trạng, không phải tốt hơn.
+    ///
+    /// `1.3` là mức chữ vẫn nằm gọn trong mọi ô đang có (14pt → 18,2pt trong ô 48pt). Muốn nới thì
+    /// **phải gỡ chiều cao cố định trong XIB trước**, rồi mới nâng số này và duyệt lại bằng mắt ở
+    /// cỡ chữ lớn nhất — đó là hai việc, không phải một.
+    public static let dynamicTypeMaxScale: CGFloat = 1.3
+
+    /// Cỡ gốc → cỡ đã scale theo cài đặt cỡ chữ của user, chặn trần ở ``dynamicTypeMaxScale``.
+    ///
+    /// `static var` (computed) chứ **không** phải `static let`: `static let` chỉ tính một lần cho cả
+    /// vòng đời tiến trình, nên user đổi cỡ chữ giữa chừng thì mọi label vẫn giữ cỡ của lần đọc đầu.
+    private static func scaled(_ size: CGFloat, _ weight: UIFont.Weight) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        return UIFontMetrics(forTextStyle: .body)
+            .scaledFont(for: base, maximumPointSize: size * dynamicTypeMaxScale)
+    }
     // Line Heights
     public static let tokenLineHeight28: CGFloat = 28.0
     public static let tokenLineHeight26: CGFloat = 26.0
@@ -44,63 +67,63 @@ public enum Typography {
     public static let tokenLineHeight10: CGFloat = 10.0
     
     // Font 32
-    public static let fontRegular40: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize40, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium40: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize40, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold40: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize40, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular40: UIFont { scaled(FontSizes.tokenFontSize40, FontWeights.tokenFontWeight400) }
+    public static var fontMedium40: UIFont { scaled(FontSizes.tokenFontSize40, FontWeights.tokenFontWeight500) }
+    public static var fontBold40: UIFont { scaled(FontSizes.tokenFontSize40, FontWeights.tokenFontWeight700) }
     
     
     // Font 32
-    public static let fontRegular32: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize32, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium32: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize32, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold32: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize32, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular32: UIFont { scaled(FontSizes.tokenFontSize32, FontWeights.tokenFontWeight400) }
+    public static var fontMedium32: UIFont { scaled(FontSizes.tokenFontSize32, FontWeights.tokenFontWeight500) }
+    public static var fontBold32: UIFont { scaled(FontSizes.tokenFontSize32, FontWeights.tokenFontWeight700) }
     
     // Font 24
-    public static let fontRegular24: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize24, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium24: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize24, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold24: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize24, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular24: UIFont { scaled(FontSizes.tokenFontSize24, FontWeights.tokenFontWeight400) }
+    public static var fontMedium24: UIFont { scaled(FontSizes.tokenFontSize24, FontWeights.tokenFontWeight500) }
+    public static var fontBold24: UIFont { scaled(FontSizes.tokenFontSize24, FontWeights.tokenFontWeight700) }
 
     // Font 22
-    public static let fontRegular22: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize22, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium22: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize22, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold22: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize22, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular22: UIFont { scaled(FontSizes.tokenFontSize22, FontWeights.tokenFontWeight400) }
+    public static var fontMedium22: UIFont { scaled(FontSizes.tokenFontSize22, FontWeights.tokenFontWeight500) }
+    public static var fontBold22: UIFont { scaled(FontSizes.tokenFontSize22, FontWeights.tokenFontWeight700) }
     
     // Font 18
-    public static let fontRegular18: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize18, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium18: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize18, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold18: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize18, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular18: UIFont { scaled(FontSizes.tokenFontSize18, FontWeights.tokenFontWeight400) }
+    public static var fontMedium18: UIFont { scaled(FontSizes.tokenFontSize18, FontWeights.tokenFontWeight500) }
+    public static var fontBold18: UIFont { scaled(FontSizes.tokenFontSize18, FontWeights.tokenFontWeight700) }
     
     // Font 16
-    public static let fontRegular16: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize16, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium16: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize16, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold16: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize16, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular16: UIFont { scaled(FontSizes.tokenFontSize16, FontWeights.tokenFontWeight400) }
+    public static var fontMedium16: UIFont { scaled(FontSizes.tokenFontSize16, FontWeights.tokenFontWeight500) }
+    public static var fontBold16: UIFont { scaled(FontSizes.tokenFontSize16, FontWeights.tokenFontWeight700) }
     
     // Font 14
-    public static let fontRegular14: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize14, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium14: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize14, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold14: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize14, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular14: UIFont { scaled(FontSizes.tokenFontSize14, FontWeights.tokenFontWeight400) }
+    public static var fontMedium14: UIFont { scaled(FontSizes.tokenFontSize14, FontWeights.tokenFontWeight500) }
+    public static var fontBold14: UIFont { scaled(FontSizes.tokenFontSize14, FontWeights.tokenFontWeight700) }
     
     // Font 13
-    public static let fontRegular13: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize13, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium13: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize13, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold13: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize13, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular13: UIFont { scaled(FontSizes.tokenFontSize13, FontWeights.tokenFontWeight400) }
+    public static var fontMedium13: UIFont { scaled(FontSizes.tokenFontSize13, FontWeights.tokenFontWeight500) }
+    public static var fontBold13: UIFont { scaled(FontSizes.tokenFontSize13, FontWeights.tokenFontWeight700) }
     
     // Font 12
-    public static let fontRegular12: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize12, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium12: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize12, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold12: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize12, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular12: UIFont { scaled(FontSizes.tokenFontSize12, FontWeights.tokenFontWeight400) }
+    public static var fontMedium12: UIFont { scaled(FontSizes.tokenFontSize12, FontWeights.tokenFontWeight500) }
+    public static var fontBold12: UIFont { scaled(FontSizes.tokenFontSize12, FontWeights.tokenFontWeight700) }
     
     // Font 10
-    public static let fontRegular10: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize10, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium10: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize10, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold10: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize10, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular10: UIFont { scaled(FontSizes.tokenFontSize10, FontWeights.tokenFontWeight400) }
+    public static var fontMedium10: UIFont { scaled(FontSizes.tokenFontSize10, FontWeights.tokenFontWeight500) }
+    public static var fontBold10: UIFont { scaled(FontSizes.tokenFontSize10, FontWeights.tokenFontWeight700) }
 
     // Font 9
-    public static let fontRegular9: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize9, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium9: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize9, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold9: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize9, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular9: UIFont { scaled(FontSizes.tokenFontSize9, FontWeights.tokenFontWeight400) }
+    public static var fontMedium9: UIFont { scaled(FontSizes.tokenFontSize9, FontWeights.tokenFontWeight500) }
+    public static var fontBold9: UIFont { scaled(FontSizes.tokenFontSize9, FontWeights.tokenFontWeight700) }
     
     // Font 8
-    public static let fontRegular8: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize8, weight: FontWeights.tokenFontWeight400)
-    public static let fontMedium8: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize8, weight: FontWeights.tokenFontWeight500)
-    public static let fontBold8: UIFont = UIFont.systemFont(ofSize: FontSizes.tokenFontSize8, weight: FontWeights.tokenFontWeight700)
+    public static var fontRegular8: UIFont { scaled(FontSizes.tokenFontSize8, FontWeights.tokenFontWeight400) }
+    public static var fontMedium8: UIFont { scaled(FontSizes.tokenFontSize8, FontWeights.tokenFontWeight500) }
+    public static var fontBold8: UIFont { scaled(FontSizes.tokenFontSize8, FontWeights.tokenFontWeight700) }
 }

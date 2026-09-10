@@ -29,7 +29,7 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 | Chọn ưu đãi (checkout) | `ChoosePromotionFragment` | `ChoosePromotionViewController` | `findEligible`, `validateDiscounts`, `createRedemption` |
 | Chi tiết ưu đãi | `PromotionDetailFragment` | `PromotionDetailViewController` | `getVoucherDetail` |
 | Tìm kiếm ưu đãi | `SearchMyPromotionFragment` | `SearchMyPromotionViewController` | `searchVouchers` (kèm `keyword`) |
-| Widget nhúng | `PRMEndowView` | `PRMEndowView` | `findEligible` |
+| Widget nhúng | `PRMOfferWidget` | `PRMOfferWidget` | `findEligible` |
 | Entry point | `PromotionSDK` | `PromotionSDK` | — |
 | Callback host | `PromotionSDKCallback` | `PromotionSDKCallback` | — |
 | Theme | `PromotionSDKTheme` | `PromotionSDKTheme` | — |
@@ -54,11 +54,11 @@ Tên class đã được **đồng nhất giữa hai nền tảng** — iOS đ�
 | Chọn ưu đãi | [ChoosePromotion.md](./ChoosePromotion.md) |
 | Chi tiết ưu đãi | [PromotionDetail.md](./PromotionDetail.md) |
 | Tìm kiếm | [SearchMyPromotion.md](./SearchMyPromotion.md) |
-| Widget nhúng | [EndowView.md](./EndowView.md) |
+| Widget nhúng | [OfferWidget.md](./OfferWidget.md) |
 | Feature flag | [FeatureFlag.md](./FeatureFlag.md) |
 
 > ⚠️ **Sáu file trên hiện mô tả kỹ phía Android**; phần triển khai iOS tương ứng **đã có trong repo**
-> tại `iosPromotionSDK/PromotionSDKUI/` (không còn ở repo `ttcn-promotion-ios-sdk` riêng nữa). Bảng ánh xạ
+> tại `iosPromotionSDK/PromotionKit/` (không còn ở repo `ttcn-promotion-ios-sdk` riêng nữa). Bảng ánh xạ
 > class iOS ↔ Android ở §1 là điểm tra cứu chính; xem thêm [ios/UIGuide.md](../ios/UIGuide.md) cho pattern
 > Builder/Router/ViewModel/ViewController. Khi cập nhật từng file feature, bổ sung mục iOS ngay bên cạnh mục Android.
 >
@@ -93,7 +93,7 @@ ui/feature/<feature>/          # phẳng, KHÔNG có cấp <nhóm>
 ### 3.3. iOS (`iosPromotionSDK`)
 
 ```
-PromotionSDKUI/<Feature>/
+PromotionKit/<Feature>/
 ├── XxxBuilder.swift          # lắp ráp VC + VM + Router
 ├── XxxRouter.swift           # điều hướng
 ├── XxxViewModel.swift        # lớp con của PRMStoreViewModel

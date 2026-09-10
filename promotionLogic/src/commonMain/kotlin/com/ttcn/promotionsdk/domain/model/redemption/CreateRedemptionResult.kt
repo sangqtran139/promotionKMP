@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.domain.model.redemption
 
-data class CreateRedemptionResult(
+public data class CreateRedemptionResult(
     val sessionId: String,
     val totalDiscount: String,
     val finalAmount: String,
@@ -10,7 +10,7 @@ data class CreateRedemptionResult(
     val hasBudgetError: Boolean get() = validationErrors.any { it.code == "INSUFFICIENT_BUDGET" }
 }
 
-data class RedemptionValidationError(
+public data class RedemptionValidationError(
     val code: String,
     val message: String,
 )

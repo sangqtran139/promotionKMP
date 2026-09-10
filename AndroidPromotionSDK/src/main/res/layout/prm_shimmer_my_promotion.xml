@@ -10,7 +10,7 @@ android:layout_height="match_parent"
 android:orientation="vertical">
 
 <com.facebook.shimmer.ShimmerFrameLayout
-  android:id="@+id/shimmer_my_endow_list"
+  android:id="@+id/shimmer_my_offer_list"
   android:layout_width="match_parent"
   android:layout_height="wrap_content"
   app:shimmer_base_color="@color/prm_colorWhite"

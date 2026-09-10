@@ -28,7 +28,7 @@ import kotlin.concurrent.Volatile
  * Trên Android dùng overload `initialize(context, config)` ở androidMain — nó nạp `applicationContext`
  * cho `SharedPreferences` và suy ra cờ debug.
  */
-object PromotionContainer {
+public object PromotionContainer {
 
     @Volatile
     private var config: PromotionSDKConfig? = null
@@ -40,7 +40,7 @@ object PromotionContainer {
      *
      * Không còn `FeatureFlagModule` cắt ngang bốn lớp — mỗi binding của nó về đúng tầng của mình.
      */
-    fun initialize(config: PromotionSDKConfig) {
+    public fun initialize(config: PromotionSDKConfig) {
         this.config = config
         SdkDi.getInstance().start(
             config = config,
@@ -51,7 +51,7 @@ object PromotionContainer {
         )
     }
 
-    fun clear() {
+    public fun clear() {
         // Chỉ đóng client nếu nó đã thực sự được dựng — resolve() thẳng sẽ tạo mới rồi đóng ngay.
         if (SdkDi.getInstance().hasInstance(HttpClient::class)) {
             runCatching { get<HttpClient>().close() }
@@ -61,14 +61,14 @@ object PromotionContainer {
         config = null
     }
 
-    fun isInitialized(): Boolean = config != null
+    public fun isInitialized(): Boolean = config != null
 
-    fun requireConfig(): PromotionSDKConfig = requireNotNull(config) {
+    public fun requireConfig(): PromotionSDKConfig = requireNotNull(config) {
         "PromotionSDKConfig is unavailable. Call PromotionContainer.initialize() first."
     }
 
     /** Nguồn token / ngôn ngữ / context đơn hàng do host cấp. Thuộc cấu hình, nên nằm ở đây. */
-    val requestContextProvider: PromotionRequestContextProvider
+    public val requestContextProvider: PromotionRequestContextProvider
         get() = get()
 
     /**
@@ -76,6 +76,6 @@ object PromotionContainer {
      * duy nhất, chung với FeatureFlag, giống nhau trên Android và iOS. Chỉ đọc được sau
      * [initialize]; tầng UI tự đặt key (vd `PromotionThemeStore`). Xem [PromotionPreferences].
      */
-    val preferences: PromotionPreferences
+    public val preferences: PromotionPreferences
         get() = get()
 }

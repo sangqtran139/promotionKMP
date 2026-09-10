@@ -42,34 +42,34 @@ import kotlin.coroutines.cancellation.CancellationException
  * Nếu schema đổi, parse sẽ hỏng và `FeatureFlagRepositoryImpl.fetchFlags` **log cảnh báo** rồi giữ
  * cache; đừng bỏ dòng log đó, nó là thứ duy nhất báo kill-switch đang chết lặng.
  */
-object PromotionFeatureGate {
+public object PromotionFeatureGate {
 
     /**
      * Tra một cờ bất kỳ theo tên hằng trong [PromotionFeatureFlag].
      * `PROMOTION.ENABLE_ALL` gate ngầm mọi cờ con — xem [PromotionFeatureFlags.isEnabled].
      */
-    fun isEnabled(flagName: String): Boolean =
+    public fun isEnabled(flagName: String): Boolean =
         runCatching { PromotionFeatureFlagUseCases().isEnabled(flagName) }.getOrDefault(true)
 
     /**
      * Công tắc tổng `PROMOTION.ENABLE_ALL`. Tắt nó thì mọi hàm `canX()` dưới đây đều trả `false`.
      */
-    fun isSdkEnabled(): Boolean = isEnabled(PromotionFeatureFlag.ENABLE_ALL)
+    public fun isSdkEnabled(): Boolean = isEnabled(PromotionFeatureFlag.ENABLE_ALL)
 
     /** Mở màn "Ưu đãi của tôi". */
-    fun canOpenVoucherList(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_LIST)
+    public fun canOpenVoucherList(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_LIST)
 
     /** Mở màn "Chi tiết ưu đãi". */
-    fun canOpenVoucherDetail(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_DETAIL)
+    public fun canOpenVoucherDetail(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_DETAIL)
 
     /** Hiện widget chọn ưu đãi ở màn thanh toán, và mở màn "Chọn ưu đãi". */
-    fun canShowVoucherSelection(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_SELECTION)
+    public fun canShowVoucherSelection(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_SELECTION)
 
     /** Áp voucher vào đơn hàng (`validateDiscounts`). */
-    fun canApplyVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_APPLY)
+    public fun canApplyVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_APPLY)
 
     /** Tạo phiên thanh toán (`createRedemption`). */
-    fun canRedeemVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_REDEEM)
+    public fun canRedeemVoucher(): Boolean = isEnabled(PromotionFeatureFlag.VOUCHER_REDEEM)
 
     /**
      * Làm mới cờ từ server. **Không ném**: `FeatureFlagRepositoryImpl.fetchFlags` tự nuốt lỗi mạng và
@@ -77,7 +77,7 @@ object PromotionFeatureGate {
      * để ngoài nên `CancellationException` truyền tiếp lên caller.
      */
     @Throws(CancellationException::class)
-    suspend fun refresh() {
+    public suspend fun refresh() {
         val useCases = runCatching { PromotionFeatureFlagUseCases() }.getOrNull() ?: return
         useCases.refresh()
     }

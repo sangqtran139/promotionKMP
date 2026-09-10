@@ -19,7 +19,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-pbx="iosPromotionSDK/PRM.xcodeproj/project.pbxproj"
+pbx="iosPromotionSDK/PromotionKit.xcodeproj/project.pbxproj"
 
 # Sàn SDK khai — lấy giá trị THẤP NHẤT trong pbxproj (nếu các configuration lệch nhau thì chỗ thấp
 # nhất mới là lời hứa thực tế với host).

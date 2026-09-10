@@ -59,7 +59,7 @@ giữ nguyên. **RxSwift/RxCocoa/RxRelay đã bị gỡ** — tầng UI dùng Co
 
 ## 2. Pattern: MVVM + Builder + Router
 
-Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDKUI/Base/MVVM/`:
+Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionKit/Base/MVVM/`:
 
 | Thành phần | Base class (thật, trong code) | Trách nhiệm |
 |-----------|-----------|-------------|
@@ -69,7 +69,7 @@ Mỗi màn hình gồm bốn thành phần, kế thừa base trong `PromotionSDK
 | **ViewController** | `PRMBaseViewController<VM>` | Load XIB, `setupUI()` + `bindViewModel()` |
 
 > Toàn bộ base class mang tiền tố `PRM` (điều 3 [CodingStandards.md](../common/CodingStandards.md)) — đây là tên thật
-> trong `PromotionSDKUI/Base/MVVM/`. Bản iOS cũ (`BaseViewController`, `SelectPromotionViewController`) đã được
+> trong `PromotionKit/Base/MVVM/`. Bản iOS cũ (`BaseViewController`, `SelectPromotionViewController`) đã được
 > đổi tên khi kéo về repo này; đừng dùng tên cũ.
 
 ```swift
@@ -227,14 +227,14 @@ nội bộ). RxSwift thì đã gỡ hẳn khỏi SDK.
 | `PRMDesignKit` | Design system | Token (`Colors`, `Typography`, `Spacing`…) + component (`PRMButton`, `Shimmer`, `PRMRefreshTableView`, `PRMMarqueeLabel`…) |
 | `PRMPromotionUI` | Feature UI | View nghiệp vụ **tái sử dụng**: `PromotionCardView`, `CouponViews`, `TabView`, `Search` |
 | `PRMKotlinBridge` | Keo | `boxed(_:)` (`Int?`→`KotlinInt?`) + `toPromotionError(_:)` (bóc exception Kotlin). **Không nghiệp vụ.** |
-| `PromotionSDKUI` | Facade | Public API + màn hình (MVVM) + **widget `PRMEndowView`** (`Endow/`), phụ thuộc mọi module qua `@_implementationOnly` |
+| `PromotionKit` | Facade | Public API + màn hình (MVVM) + **widget `PRMOfferWidget`** (`OfferWidget/`), phụ thuộc mọi module qua `@_implementationOnly` |
 
-> **`PRMEndowView` ở trong module SDK, không ở `PRMPromotionUI`.** Hai lý do: (1) soi gương Android —
-> bên kia widget nằm ở `ui/feature/endowview/` cạnh `EndowViewModel`, không nằm trong thư viện design;
+> **`PRMOfferWidget` ở trong module SDK, không ở `PRMPromotionUI`.** Hai lý do: (1) soi gương Android —
+> bên kia widget nằm ở `ui/feature/offerwidget/` cạnh `OfferWidgetViewModel`, không nằm trong thư viện design;
 > (2) **host không được biết tới bốn package trong `Packages/`** — mọi khai báo `public` của module
 > PRM đều bị ghi vào `.swiftinterface` mà host compile theo, nên widget để `public` ở package ngoài là
 > buộc host phải `import PRMPromotionUI` (thứ không hề có trong gói phát hành). Ở trong module và để
-> `internal` thì host chỉ thấy `PromotionSDK.createEndowView(...) -> UIView`. Xem
+> `internal` thì host chỉ thấy `PromotionSDK.createOfferWidget(...) -> UIView`. Xem
 > [Distribution.md](./Distribution.md).
 
 Đã **xoá** khỏi bản KMP: `PromotionLogic` (Swift), `Repository`, `CoreNetwork`, `CoreDatabase` —
@@ -251,7 +251,7 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 | Business rule / endpoint | **`:promotionLogic` (Kotlin)** — không phải Swift |
 | Component UI tái dùng, generic | `PRMDesignKit` |
 | Component UI gắn nghiệp vụ ưu đãi | `PRMPromotionUI` |
-| Màn hình mới | `PromotionSDKUI` — bộ Builder/Router/ViewModel/ViewController |
+| Màn hình mới | `PromotionKit` — bộ Builder/Router/ViewModel/ViewController |
 | Public method cho đối tác | `PromotionSDK` / `PromotionSDKApi` — chỉ Foundation/UIKit type ở chữ ký |
 | Extension/helper chung | `PRMFoundation` |
 
@@ -259,7 +259,7 @@ Nguyên tắc: phụ thuộc **một chiều**, tầng trên biết tầng dư�
 
 `PromotionSDK`, `PromotionSDKCallback`, `PromotionSDKTheme`, `MyPromotionViewController`,
 `ChoosePromotionViewController`, `PromotionDetailViewController`, `SearchMyPromotionViewController`,
-`PRMEndowView`. Tên hàm cũng vậy: `openMyPromotion`, `openPromotionDetail`, `createEndowView`.
+`PRMOfferWidget`. Tên hàm cũng vậy: `openMyPromotion`, `openPromotionDetail`, `createOfferWidget`.
 
 Riêng token theme của `PRMDesignKit` (`PRMButtonThemeToken`…) dùng prefix `PRM` — đó là design system
 dùng chung, không thuộc bề mặt SDK.

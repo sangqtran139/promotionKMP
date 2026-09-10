@@ -7,7 +7,7 @@ import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
 import com.ttcn.promotionsdk.domain.model.stackablediscount.DiscountItemRequest
 import com.ttcn.promotionsdk.domain.model.stackablediscount.ValidateDiscountsRequest
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
-import com.ttcn.prm.ui.feature.endowview.AppliedDiscount
+import com.ttcn.prm.ui.feature.offerwidget.AppliedDiscount
 import com.ttcn.prm.ui.feature.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.feature.mypromotion.ServiceSelectorUiItem
 
@@ -16,7 +16,7 @@ import com.ttcn.prm.ui.feature.mypromotion.ServiceSelectorUiItem
  *
  *  1. Dựng **domain request** từ model UI / [AppliedDiscount].
  *  2. Diễn giải **kết quả validate → [AppliedDiscount]** per-offer qua `ValidateDiscountsResult`
- *     ([appliedDiscountFor]) cho public surface (callback, [PRMEndowView]).
+ *     ([appliedDiscountFor]) cho public surface (callback, [PRMOfferWidget]).
  *  3. Map **domain model ([EligibleOffer], [AvailableService]) → model UI**.
  *
  * [AppliedDiscount] là model **public** của SDK (ui/entry); domain (use case, repository)
@@ -80,7 +80,7 @@ internal fun AvailableService.toServiceSelectorUiItem(): ServiceSelectorUiItem =
  * TODO(auto-apply): `findEligible` chưa trả `isAutoApplied` (không có ở `EligibleOfferDto` lẫn các
  * DTO lồng bên trong). Voucher tự-áp-dụng vì thế **không chạy** ở luồng checkout. Khi backend bổ
  * sung field, thêm vào `EligibleOfferDto` + [EligibleOffer], gán ở đây, rồi bật lại nhánh
- * auto-apply trong `EndowViewModel`.
+ * auto-apply trong `OfferWidgetViewModel`.
  */
 internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherListItem(
     voucherId = id,
@@ -112,7 +112,7 @@ internal fun EligibleOffer.toMyVoucherListItem(): MyVoucherListItem = MyVoucherL
 )
 
 // `formatEstimatedDiscount` + `groupedByThousands` đã xoá cùng lúc bỏ dòng "Giảm 50.000đ" khỏi card
-// màn Chọn ưu đãi — không còn nơi nào gọi. Widget `PRMEndowView` format số tiền theo đường riêng
+// màn Chọn ưu đãi — không còn nơi nào gọi. Widget `PRMOfferWidget` format số tiền theo đường riêng
 // (`ApplyPromotionAdapter`), không đi qua đây.
 
 // Cảnh báo "sắp hết hạn" (expireWarningDate) nay do store (promotionLogic) tính một lần cho cả 2 nền

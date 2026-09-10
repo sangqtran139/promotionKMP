@@ -10,7 +10,7 @@ Sửa một bên thì sửa cả hai.
 > **SDK chỉ chạy LIGHT mode.** Màu SDK không có biến thể dark → dark mode làm lệch UI, nên mọi màn
 > SDK bị **ép light** bất kể hệ thống, **không đụng app host**:
 > - **iOS:** `overrideUserInterfaceStyle = .light` ở `PRMBaseViewController` (+ `navigationController`)
->   và widget `PRMEndowView`.
+>   và widget `PRMOfferWidget`.
 > - **Android:** theme Light đầy đủ `R.style.PRMForceLight` (parent `Theme.Material3.Light.NoActionBar`)
 >   áp qua `onGetLayoutInflater` ở `PRMBaseFragment` + `ServiceSelectorBottomSheet`. Phải là theme Light
 >   **đầy đủ** chứ không chỉ `forceDarkAllowed`: host có thể dùng `Theme.Material3.DayNight` (như app demo)
@@ -20,7 +20,7 @@ Sửa một bên thì sửa cả hai.
 >   có API 29+ nên đặt ở `res/values-v29/styles.xml`; bản `res/values/styles.xml` vẫn là theme Light đầy đủ.
 
 **Nhóm theme nằm hai bên ranh giới public**, nhưng **cùng một thư mục**: cả phần host cầm trên tay
-lẫn phần SDK tự dùng đều ở `ui/theme/` (Android) / `PromotionSDKUI/Theme/` (iOS); ranh giới do
+lẫn phần SDK tự dùng đều ở `ui/theme/` (Android) / `PromotionKit/Theme/` (iOS); ranh giới do
 `internal` vẽ ra chứ không do vị trí file — xem luật ở [PublicApi.md](./PublicApi.md).
 
 > Theme **không** nằm trong `entry/`. Đã có lần chuyển nhóm public lên `Entry/Theme/` bên iOS
@@ -30,13 +30,13 @@ lẫn phần SDK tự dùng đều ở `ui/theme/` (Android) / `PromotionSDKUI/T
 
 | | Android | iOS |
 |---|---|---|
-| **Public** (host dùng) | `ui/theme/PromotionSDKTheme.kt` | `PromotionSDKUI/Theme/PromotionSDKTheme.swift` |
-| | `ui/theme/token/*.kt` (6 token) | `PromotionSDKUI/Theme/Token/*.swift` (6 token) |
-| | `ui/theme/PromotionThemeJson.kt` | `PromotionSDKUI/Theme/PromotionThemeJson.swift` |
-| | `ui/theme/PromotionThemeDisplay.kt` | `PromotionSDKUI/Theme/PromotionThemeDisplay.swift` |
-| **Internal** (SDK tự dùng) | `ui/theme/ThemeHex.kt` | `PromotionSDKUI/Theme/ThemeHex.swift` |
-| | `ui/theme/PromotionThemeStore.kt` | `PromotionSDKUI/Theme/PromotionThemeStore.swift` |
-| | `ui/theme/PromotionThemeDefaults.kt` | `PromotionSDKUI/Theme/PromotionThemeDefaults.swift` |
+| **Public** (host dùng) | `ui/theme/PromotionSDKTheme.kt` | `PromotionKit/Theme/PromotionSDKTheme.swift` |
+| | `ui/theme/token/*.kt` (6 token) | `PromotionKit/Theme/Token/*.swift` (6 token) |
+| | `ui/theme/PromotionThemeJson.kt` | `PromotionKit/Theme/PromotionThemeJson.swift` |
+| | `ui/theme/PromotionThemeDisplay.kt` | `PromotionKit/Theme/PromotionThemeDisplay.swift` |
+| **Internal** (SDK tự dùng) | `ui/theme/ThemeHex.kt` | `PromotionKit/Theme/ThemeHex.swift` |
+| | `ui/theme/PromotionThemeStore.kt` | `PromotionKit/Theme/PromotionThemeStore.swift` |
+| | `ui/theme/PromotionThemeDefaults.kt` | `PromotionKit/Theme/PromotionThemeDefaults.swift` |
 | | `ui/theme/PromotionThemeRegistry.kt` | `PRMThemeRegistry` trong PRMDesignKit — cố hữu, §4 |
 | | `ui/theme/applier/`, `ui/theme/applytoken/` | applier rải trong PRMDesignKit |
 
@@ -105,12 +105,12 @@ SDK" (applier bỏ qua). Nhóm `null` = giữ nguyên cả nhóm.
 
 | Token | Field | Áp vào |
 |-------|-------|--------|
-| `ButtonToken` | `backgroundColor`, `textColor`, `shadowColor`, `cornerRadius` | `PRMButton` / `PRMButton` |
-| `SearchBarToken` | `borderColor`, `hintTextColor`, `textColor`, `iconColor`, `cornerRadius` | `PRMSearchField` / `PRMSearchTextField` |
-| `ListItemToken` | `linkTextColor`, `usedBadgeTextColor`, `usedBadgeBackgroundColor`, `radioButtonStrokeColor`, `radioButtonSelectedStrokeColor` | Item voucher (`PromotionListItemApplier` / `PromotionCardView`) |
-| `TabChipToken` | `activeBackgroundColor`, `inactiveBackgroundColor`, `activeTextColor`, `inactiveTextColor`, `cornerRadius` | Tab chip (`TabChipThemeApplier` / `PromotionTabView`) |
-| `TabUnderlineToken` | `indicatorColor`, `activeTextColor`, `inactiveTextColor`, `backgroundColor` | Tab gạch chân (`TabLayoutThemeApplier` / `UnderlinedSegmentControlItem`) |
-| `DiscountBadgeToken` | `availableTextColor`, `unavailableTextColor`, `availableBackgroundColor`, `unavailableBackgroundColor`, `actionTextColor` | Badge giảm giá (`DiscountBadgeApplier` / `PRMEndowView`) |
+| `PRMButtonToken` | `backgroundColor`, `textColor`, `shadowColor`, `cornerRadius` | `PRMButton` / `PRMButton` |
+| `PRMSearchBarToken` | `borderColor`, `hintTextColor`, `textColor`, `iconColor`, `cornerRadius` | `PRMSearchField` / `PRMSearchTextField` |
+| `PRMListItemToken` | `linkTextColor`, `usedBadgeTextColor`, `usedBadgeBackgroundColor`, `radioButtonStrokeColor`, `radioButtonSelectedStrokeColor` | Item voucher (`PromotionListItemApplier` / `PromotionCardView`) |
+| `PRMTabChipToken` | `activeBackgroundColor`, `inactiveBackgroundColor`, `activeTextColor`, `inactiveTextColor`, `cornerRadius` | Tab chip (`TabChipThemeApplier` / `PromotionTabView`) |
+| `PRMTabUnderlineToken` | `indicatorColor`, `activeTextColor`, `inactiveTextColor`, `backgroundColor` | Tab gạch chân (`TabLayoutThemeApplier` / `UnderlinedSegmentControlItem`) |
+| `PRMDiscountBadgeToken` | `availableTextColor`, `unavailableTextColor`, `availableBackgroundColor`, `unavailableBackgroundColor`, `actionTextColor` | Badge giảm giá (`DiscountBadgeApplier` / `PRMOfferWidget`) |
 
 Màu: `@ColorInt` (Kotlin) / `UIColor` (Swift). Bo góc: `Float` **dp** / `CGFloat` **pt** — cùng con số
 trong JSON.
@@ -259,8 +259,8 @@ không cần. Tên type/hàm còn lại khớp nhau.
 val options = PromotionSDKOptions(
     config = sdkConfig,
     theme = PromotionSDKTheme(
-        buttonToken = ButtonToken(backgroundColor = Color.parseColor("#EE0033"), cornerRadius = 8f),
-        tabChipToken = TabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
+        buttonToken = PRMButtonToken(backgroundColor = Color.parseColor("#EE0033"), cornerRadius = 8f),
+        tabChipToken = PRMTabChipToken(activeBackgroundColor = ..., activeTextColor = ...),
     ),
 )
 PromotionSDK.initialize(context, options)
@@ -317,7 +317,7 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
 
 ## 8. Giới hạn đã biết
 
-- **Re-theme lúc runtime:** các custom view (`PRMButton`, `PRMSearchField`, `PRMEndowView`) cache token đã áp
+- **Re-theme lúc runtime:** các custom view (`PRMButton`, `PRMSearchField`, `PRMOfferWidget`) cache token đã áp
   trong `lastAppliedToken`; khi re-attach chúng ưu tiên token cache. Nếu host đổi theme **sau khi view đã render**,
   view đó chỉ cập nhật khi rebind. Item trong RecyclerView **không** bị ảnh hưởng (đọc registry mỗi lần bind).
   → Khuyến nghị: cấu hình theme **một lần** lúc khởi tạo. Nếu cần đổi theme động, làm mới màn hình liên quan.
@@ -336,7 +336,7 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
    - Cập nhật **bảng token ở §2 của file này**.
 2. **Token mới (loại view mới)** = tạo `XxxToken` + applier + getter trong registry + field trong
    `PromotionSDKTheme`. Token và `PromotionSDKTheme` là **public** vì host phải dựng được chúng;
-   applier + registry là `internal`. Tất cả cùng ở `ui/theme/` (Android) / `PromotionSDKUI/Theme/`
+   applier + registry là `internal`. Tất cả cùng ở `ui/theme/` (Android) / `PromotionKit/Theme/`
    (iOS) — đừng tách phần public sang `entry/`.
 3. **Luôn null-safe**: applier `return` khi token/field null; không ghi đè style mặc định khi host
    không cấu hình.
@@ -351,4 +351,4 @@ màu XIB / ảnh asset. `PromotionThemeDefaults.swift` khai đúng giá trị An
 - [PublicApi.md](./PublicApi.md) — toàn bộ bề mặt SDK cho host.
 - [AndroidUIGuide.md](../android/UIGuide.md) — theme trong tổng thể nền tảng.
 - [IosUIGuide.md](../ios/UIGuide.md) — tầng UI iOS.
-- [features/EndowView.md](../features/EndowView.md) — `PRMEndowView` dùng `DiscountBadgeToken`.
+- [features/OfferWidget.md](../features/OfferWidget.md) — `PRMOfferWidget` dùng `PRMDiscountBadgeToken`.

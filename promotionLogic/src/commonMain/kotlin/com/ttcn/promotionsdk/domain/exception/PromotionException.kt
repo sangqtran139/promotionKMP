@@ -1,7 +1,7 @@
 package com.ttcn.promotionsdk.domain.exception
 
-class PromotionException(
-    val errorCode: String?,
+public class PromotionException(
+    public val errorCode: String?,
     override val message: String?,
-    val httpStatus: Int? = null,
+    public val httpStatus: Int? = null,
 ) : RuntimeException(message)

@@ -62,7 +62,7 @@ fi
 
 # Version lấy từ chính binary sắp đẩy (MARKETING_VERSION nhồi lúc archive), không phải từ biến rời —
 # tránh cảnh đặt tên file 1.0.1 mà bên trong Info.plist vẫn ghi 1.0.0.
-PLIST="$XCF/ios-arm64/PRM.framework/Info.plist"
+PLIST="$XCF/ios-arm64/PromotionKit.framework/Info.plist"
 if [[ -f "$PLIST" ]]; then
     BUILT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")"
 else
@@ -223,5 +223,5 @@ echo "✅ Phát hành xong: $GROUP/$SDK_NAME/$VERSION"
 echo "📦 $ZIP_URL"
 echo "🔑 sha256: $SHA256"
 echo ""
-echo "ℹ️  dSYM KHÔNG nằm trong gói này. Giữ lại $ROOT/build/PRM.framework.dSYM theo bản phát hành —"
+echo "ℹ️  dSYM KHÔNG nằm trong gói này. Giữ lại $ROOT/build/PromotionKit.framework.dSYM theo bản phát hành —"
 echo "   không có nó thì crash report của app host chỉ còn địa chỉ trần."

@@ -91,14 +91,14 @@ sealed class PromotionSDKError : Exception() {
          *
          * Cần hàm này vì SDK có hai bề mặt lỗi không giống nhau:
          * - Headless [PromotionSDKApi] đã trả sẵn [PromotionSDKError] — bắt bằng `is` là xong.
-         * - Callback của widget ([com.ttcn.prm.ui.feature.endowview.PRMEndowView.onError],
+         * - Callback của widget ([com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget.onError],
          *   [PromotionSDK.confirmRedemption]) chỉ trả `String`, mà hằng số mã lỗi nằm trong
          *   `promotionLogic` — module khai `implementation` nên **không có** trên compile classpath
          *   của host. Host không tham chiếu được hằng số, đành hardcode `"PRM_MOB_021"`.
          *
          * Với hàm này host viết được:
          * ```kotlin
-         * endowView.onError = { code ->
+         * offerWidget.onError = { code ->
          *     when (PromotionSDKError.from(code)) {
          *         is PromotionSDKError.FeatureDisabled -> stopCheckout()  // SDK đã tự hiện popup
          *         else -> showMyOwnError()

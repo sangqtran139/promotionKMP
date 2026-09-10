@@ -2,12 +2,12 @@ package com.ttcn.prm.ui.theme
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
-import com.ttcn.prm.ui.theme.token.SearchBarToken
-import com.ttcn.prm.ui.theme.token.TabChipToken
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 /**
  * Serialize [PromotionSDKTheme] ↔ JSON. **Một định dạng duy nhất, dùng chung Android và iOS** —
@@ -144,37 +144,37 @@ private fun PromotionSDKTheme.toDto() = ThemeDto(
 
 private fun ThemeDto.toTheme() = PromotionSDKTheme(
     buttonToken = button?.let {
-        ButtonToken(
+        PRMButtonToken(
             color(it.backgroundColor), color(it.textColor), color(it.shadowColor), it.cornerRadius,
         )
     },
     searchBarToken = searchBar?.let {
-        SearchBarToken(
+        PRMSearchBarToken(
             color(it.borderColor), color(it.hintTextColor), color(it.textColor),
             color(it.iconColor), it.cornerRadius,
         )
     },
     listItemToken = listItem?.let {
-        ListItemToken(
+        PRMListItemToken(
             color(it.linkTextColor), color(it.usedBadgeTextColor),
             color(it.usedBadgeBackgroundColor), color(it.radioButtonStrokeColor),
             color(it.radioButtonSelectedStrokeColor),
         )
     },
     tabChipToken = tabChip?.let {
-        TabChipToken(
+        PRMTabChipToken(
             color(it.activeBackgroundColor), color(it.inactiveBackgroundColor),
             color(it.activeTextColor), color(it.inactiveTextColor), it.cornerRadius,
         )
     },
     tabUnderlineToken = tabUnderline?.let {
-        TabUnderlineToken(
+        PRMTabUnderlineToken(
             color(it.indicatorColor), color(it.activeTextColor), color(it.inactiveTextColor),
             color(it.backgroundColor),
         )
     },
     discountBadgeToken = discountBadge?.let {
-        DiscountBadgeToken(
+        PRMDiscountBadgeToken(
             color(it.availableTextColor), color(it.unavailableTextColor),
             color(it.availableBackgroundColor), color(it.unavailableBackgroundColor),
             color(it.actionTextColor),

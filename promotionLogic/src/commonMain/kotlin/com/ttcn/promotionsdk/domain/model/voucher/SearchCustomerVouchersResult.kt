@@ -1,6 +1,6 @@
 package com.ttcn.promotionsdk.domain.model.voucher
 
-data class SearchCustomerVouchersResult(
+public data class SearchCustomerVouchersResult(
     val keyword: String? = null,
     val serviceCode: String? = null,
     val tabs: List<VoucherTabItem> = emptyList(),
@@ -25,14 +25,14 @@ data class SearchCustomerVouchersResult(
      * > tab đó thắng thẳng, không đưa vào đây so bì. Nghe theo [selectedTab] trong tình huống ấy sẽ
      * > làm tab sáng nhảy ngược ngay dưới ngón tay user nếu server echo lệch tab đã yêu cầu.
      */
-    fun resolveActiveTab(requestedTab: String? = null): String? =
+    public fun resolveActiveTab(requestedTab: String? = null): String? =
         selectedTab
             ?: defaultTab
             ?: requestedTab
             ?: tabs.minByOrNull { it.order ?: Int.MAX_VALUE }?.code
 }
 
-data class VoucherTabItem(
+public data class VoucherTabItem(
     val code: String,
     val label: String,
     val count: Int? = null,
@@ -40,7 +40,7 @@ data class VoucherTabItem(
     val isDefault: Boolean = false,
 )
 
-data class VoucherItem(
+public data class VoucherItem(
     val voucherId: String,
     val merchantName: String? = null,
     val title: String? = null,

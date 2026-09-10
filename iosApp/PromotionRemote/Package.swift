@@ -1,6 +1,31 @@
 // swift-tools-version: 5.10
 
+import Foundation
 import PackageDescription
+
+/// Đường thoát khỏi vòng "phải publish xong mới verify được".
+///
+/// Đặt biến môi trường trỏ vào xcframework **cục bộ** thì app demo link thẳng bản vừa dựng, không
+/// đụng Artifactory:
+///
+///     PRM_LOCAL_XCFRAMEWORK=../iosPromotionSDK/build/Promotion.xcframework \
+///       xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp ...
+///
+/// Vì sao cần: `binaryTarget(url:checksum:)` đòi checksum, mà checksum chỉ có **sau** khi zip đã
+/// publish. Không có đường này thì mỗi lần muốn thử một thay đổi Swift là phải đốt một số version
+/// trên repo phát hành (repo không cho ghi đè), và bản đẩy lên chưa ai link thử bao giờ.
+///
+/// Đường dẫn tương đối tính từ **thư mục chứa Package.swift này**, đúng như SwiftPM hiểu `path:`.
+/// Không đặt biến → giữ nguyên hành vi cũ (kéo từ Artifactory), nên CI và máy dev khác không đổi gì.
+let localXCFramework = ProcessInfo.processInfo.environment["PRM_LOCAL_XCFRAMEWORK"]
+
+let promotionTarget: Target = localXCFramework.map { path in
+    .binaryTarget(name: "Promotion", path: path)
+} ?? .binaryTarget(
+    name: "Promotion",
+    url: "https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/1.0.0/Promotion-1.0.0.xcframework.zip",
+    checksum: "9da231216a057b570df3164e06ec51d5087a7fd64a74f2466f4a2da557caf065"
+)
 
 /// Cầu nối để `iosApp` lấy SDK **từ Artifactory** thay vì từ thư mục build cục bộ.
 ///
@@ -38,12 +63,9 @@ let package = Package(
     ],
     targets: [
         // Tên target BẮT BUỘC trùng tên xcframework bên trong zip (`Promotion.xcframework`),
-        // không phải tên framework lõi (`PRM.framework`, module host `import PRM`).
-        .binaryTarget(
-            name: "Promotion",
-            url: "https://mobile-data.viettelmoney.vn/artifactory/vdo-ios-frameworks/Martech/Promotion/1.0.0/Promotion-1.0.0.xcframework.zip",
-            checksum: "9da231216a057b570df3164e06ec51d5087a7fd64a74f2466f4a2da557caf065"
-        ),
+        // không phải tên framework lõi (`PromotionKit.framework`, module host `import PromotionKit`).
+        // Nguồn (Artifactory hay đĩa cục bộ) chọn ở đầu file — xem `PRM_LOCAL_XCFRAMEWORK`.
+        promotionTarget,
     ]
 )
 

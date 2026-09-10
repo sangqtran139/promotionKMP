@@ -19,27 +19,27 @@ cd "$(dirname "$0")/.."
 fail=0
 
 # ─── Android ─────────────────────────────────────────────────────────────────
-# Allowlist (bảng ở PublicApi.md §1): entry.** · ui.theme.** · ui.feature.endowview
+# Allowlist (bảng ở PublicApi.md §1): entry.** · ui.theme.** · ui.feature.offerwidget
 #
 # Regex KHÔNG neo vào chữ `public`: trong Kotlin, không ghi modifier NGHĨA LÀ public. Neo vào
 # `^public` là bỏ lọt đúng dạng khai phổ biến nhất (`data class Foo(`).
 android=$(grep -rEn '^(public )?(open |abstract |sealed |data |enum |annotation |value |inline |suspend |const |fun )*(class|interface|object|fun|val|var|typealias) ' \
     --include='*.kt' AndroidPromotionSDK/src/main/java/com/ttcn/prm \
-    | grep -vE '/(entry|ui/theme|ui/feature/endowview)/' || true)
+    | grep -vE '/(entry|ui/theme|ui/feature/offerwidget)/' || true)
 
 if [ -n "$android" ]; then
-    echo "❌ Android — khai báo public ngoài allowlist (entry / ui.theme / ui.feature.endowview):" >&2
+    echo "❌ Android — khai báo public ngoài allowlist (entry / ui.theme / ui.feature.offerwidget):" >&2
     echo "$android" >&2
     fail=1
 fi
 
 # ─── iOS ─────────────────────────────────────────────────────────────────────
-# Allowlist: Entry/** · PromotionSDKUI/Theme/** (theme là bề mặt công khai, không phải rò rỉ)
+# Allowlist: Entry/** · PromotionKit/Theme/** (theme là bề mặt công khai, không phải rò rỉ)
 ios=$(grep -rn '^[[:space:]]*\(public\|open\)[[:space:]]' --include='*.swift' \
-    iosPromotionSDK/PromotionSDKUI | grep -v '/Theme/' || true)
+    iosPromotionSDK/PromotionKit | grep -v '/Theme/' || true)
 
 if [ -n "$ios" ]; then
-    echo "❌ iOS — khai báo public trong PromotionSDKUI ngoài Theme/:" >&2
+    echo "❌ iOS — khai báo public trong PromotionKit ngoài Theme/:" >&2
     echo "$ios" >&2
     fail=1
 fi
@@ -51,4 +51,4 @@ if [ "$fail" -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Public API nằm gọn trong allowlist (Android: entry/ui.theme/endowview · iOS: Entry/Theme)"
+echo "✅ Public API nằm gọn trong allowlist (Android: entry/ui.theme/offerwidget · iOS: Entry/Theme)"

@@ -9,10 +9,10 @@ Màn hình **tìm kiếm voucher của khách hàng** theo từ khoá, có phân
 
 <!-- toc -->
   - [Quyết định hiển thị — native không tự suy](#quyết-định-hiển-thị--native-không-tự-suy)
-- [1. Contract (MVI)](#1-contract-mvi)
-  - [1.1. State — `SearchMyPromotionUiState`](#11-state--searchmypromotionuistate)
-  - [1.2. Action — `SearchMyPromotionAction`](#12-action--searchmypromotionaction)
-  - [1.3. Effect — `SearchMyPromotionEffect`](#13-effect--searchmypromotioneffect)
+- [1. Contract (dùng chung 2 nền tảng)](#1-contract-dùng-chung-2-nền-tảng)
+  - [1.1. State — `SearchMyPromotionState`](#11-state--searchmypromotionstate)
+  - [1.2. Intent — `SearchMyPromotionIntent`](#12-intent--searchmypromotionintent)
+  - [1.3. Bottom sheet "Chọn dịch vụ" — không đi qua store](#13-bottom-sheet-chọn-dịch-vụ--không-đi-qua-store)
 - [2. Luồng dữ liệu](#2-luồng-dữ-liệu)
 - [3. API backend](#3-api-backend)
 - [4. Chọn dịch vụ ("Sử dụng")](#4-chọn-dịch-vụ-sử-dụng)

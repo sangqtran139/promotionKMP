@@ -9,7 +9,7 @@ import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
  * Tách khỏi [PromotionDetailStore] để đọc được "màn này có dữ liệu gì, nhận được lệnh gì" mà không phải
  * lội qua phần điều phối. Logic nằm ở store; ở đây chỉ có cấu trúc, **không** chuỗi hiển thị.
  */
-data class PromotionDetailState(
+public data class PromotionDetailState(
     val isLoading: Boolean = false,
     val detail: VoucherDetail? = null,
     val status: VoucherStatus = VoucherStatus.UNKNOWN,
@@ -30,7 +30,7 @@ data class PromotionDetailState(
  * **Không có intent seed từ ngoài**: màn chi tiết chỉ hiển thị khi `getCustomerVoucherDetail` trả về —
  * dữ liệu từ màn danh sách không được dùng để dựng card/nút (tránh hai nguồn sự thật lệch nhau).
  */
-sealed interface PromotionDetailIntent {
-    data class LoadDetail(val voucherId: String) : PromotionDetailIntent
-    data object ConsumeError : PromotionDetailIntent
+public sealed interface PromotionDetailIntent {
+    public data class LoadDetail(val voucherId: String) : PromotionDetailIntent
+    public data object ConsumeError : PromotionDetailIntent
 }

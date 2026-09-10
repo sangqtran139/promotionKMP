@@ -24,7 +24,7 @@ class PromotionHtmlContentTest {
 
         assertTrue(html.startsWith("<!DOCTYPE html>"), "phải là trang HTML hoàn chỉnh: $html")
         assertTrue(html.contains("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"))
-        // Thay cho detail_endow.css (link cũ không bao giờ resolve vì baseURL null + file không tồn tại).
+        // Thay cho detail_offer.css (link cũ không bao giờ resolve vì baseURL null + file không tồn tại).
         assertTrue(html.contains("font-size: 14px"))
         assertTrue(html.contains("<p>Xin chào</p>"), "nội dung gốc phải được giữ nguyên")
         assertTrue(html.trimEnd().endsWith("</html>"))

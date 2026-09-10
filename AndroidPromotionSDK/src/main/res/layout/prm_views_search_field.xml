@@ -33,6 +33,7 @@
 
     <com.ttcn.prm.ui.widget.PRMImageView
         android:id="@+id/searchIcon"
+        android:importantForAccessibility="no"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/prm_6sdp"
@@ -43,6 +44,7 @@
 
     <com.ttcn.prm.ui.widget.PRMImageView
         android:id="@+id/buttonClear"
+        android:contentDescription="@string/prm_a11y_clear_search"
         android:layout_width="@dimen/prm_19sdp"
         android:layout_height="@dimen/prm_19sdp"
         android:layout_marginEnd="@dimen/prm_3sdp"
@@ -57,6 +59,7 @@
 
     <com.ttcn.prm.ui.widget.PRMImageView
         android:id="@+id/buttonSearch"
+        android:contentDescription="@string/prm_a11y_search"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/prm_32sdp"
         android:adjustViewBounds="true"

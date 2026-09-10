@@ -585,11 +585,11 @@ class ChoosePromotionStoreBranchTest {
      * không có response nào kèm theo nên `state.expireWarningDate` vẫn là default null.
      *
      * Trước khi sửa, `expiringInDays` ra null cho mọi item và dòng "HSD còn X ngày" không bao giờ
-     * hiện. Nay lùi về ngưỡng `EndowStore.loadInitial` đã ghi nhớ.
+     * hiện. Nay lùi về ngưỡng `OfferWidgetStore.loadInitial` đã ghi nhớ.
      */
     @Test
     fun preload_fallsBackToRememberedWarningThreshold() = runTest {
-        // Seed ngưỡng đúng như EndowStore làm khi nạp widget (nó gọi ExpiryWarning.remember).
+        // Seed ngưỡng đúng như OfferWidgetStore làm khi nạp widget (nó gọi ExpiryWarning.remember).
         val seeding = FakeRepo {
             EligibleOffersResult(
                 myOffers = listOf(offer("seed", expire = "2099-01-01")),

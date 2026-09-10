@@ -6,7 +6,7 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/prm_bg_endow"
+    android:background="@drawable/prm_bg_offer"
     android:clickable="true"
     android:focusable="true"
     app:layoutDescription="@xml/prm_home_scene">
@@ -41,7 +41,7 @@
             app:layout_constraintTop_toBottomOf="@+id/btnBack">
 
             <com.ttcn.prm.ui.widget.PRMTextView
-                android:id="@+id/tvEndow"
+                android:id="@+id/tvOffer"
                 style="@style/PRMFontSfDisplayBold22"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -51,22 +51,24 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <com.ttcn.prm.ui.widget.PRMImageView
+                android:importantForAccessibility="no"
                 android:layout_width="@dimen/prm_tokenSizing32"
                 android:layout_height="@dimen/prm_tokenSizing32"
                 android:layout_marginStart="@dimen/prm_view_size_10"
-                android:src="@drawable/prm_ic_my_endow_new"
-                app:layout_constraintBottom_toBottomOf="@+id/tvEndow"
-                app:layout_constraintStart_toEndOf="@+id/tvEndow"
-                app:layout_constraintTop_toTopOf="@+id/tvEndow" />
+                android:src="@drawable/prm_ic_my_offer_new"
+                app:layout_constraintBottom_toBottomOf="@+id/tvOffer"
+                app:layout_constraintStart_toEndOf="@+id/tvOffer"
+                app:layout_constraintTop_toTopOf="@+id/tvOffer" />
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgSearch"
+                android:contentDescription="@string/prm_a11y_search"
                 android:layout_width="@dimen/prm_tokenSizing32"
                 android:layout_height="@dimen/prm_tokenSizing32"
                 android:layout_marginEnd="@dimen/prm_view_size_15"
-                android:src="@drawable/prm_ic_search_endow"
+                android:src="@drawable/prm_ic_search_offer"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="@+id/tvEndow" />
+                app:layout_constraintTop_toTopOf="@+id/tvOffer" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -129,6 +131,7 @@
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgNoData"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:src="@drawable/prm_il_chua_co_uu_dai_new_vers"

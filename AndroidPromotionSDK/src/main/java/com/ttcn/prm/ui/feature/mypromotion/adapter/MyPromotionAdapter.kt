@@ -12,7 +12,7 @@ import com.ttcn.promotionsdk.domain.model.voucher.VoucherDisplayState
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
 import com.ttcn.promotionsdk.domain.model.voucher.displayState
 import com.ttcn.prm.databinding.PrmItemLoadingNotifyPrmBinding
-import com.ttcn.prm.databinding.PrmItemTitleMyEndowBinding
+import com.ttcn.prm.databinding.PrmItemTitleMyOfferBinding
 import com.ttcn.prm.databinding.PrmItemPromotionBinding
 import com.ttcn.prm.ui.feature.mypromotion.MyVoucherListItem
 import com.ttcn.prm.ui.theme.applier.PromotionListItemApplier
@@ -24,7 +24,7 @@ import com.ttcn.prm.ui.utils.loadPromotionVoucherLogo
 internal sealed class MyPromotionListItem {
     data class Header(val title: String) : MyPromotionListItem()
 
-    data class Endow(
+    data class Offer(
         val data: MyVoucherListItem,
         val rowKey: String,
         val highlightKeyword: String = "",
@@ -47,7 +47,7 @@ internal class MyPromotionAdapter(
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
             is MyPromotionListItem.Header -> VIEW_TYPE_HEADER
-            is MyPromotionListItem.Endow -> VIEW_TYPE_VOUCHER
+            is MyPromotionListItem.Offer -> VIEW_TYPE_VOUCHER
             is MyPromotionListItem.Loading -> VIEW_TYPE_LOADING
         }
     }
@@ -56,7 +56,7 @@ internal class MyPromotionAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             VIEW_TYPE_HEADER -> {
-                val binding = PrmItemTitleMyEndowBinding.inflate(inflater, parent, false)
+                val binding = PrmItemTitleMyOfferBinding.inflate(inflater, parent, false)
                 HeaderViewHolder(binding)
             }
 
@@ -77,7 +77,7 @@ internal class MyPromotionAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val item = getItem(position)) {
             is MyPromotionListItem.Header -> (holder as HeaderViewHolder).bind(item)
-            is MyPromotionListItem.Endow -> (holder as VoucherViewHolder).bind(item)
+            is MyPromotionListItem.Offer -> (holder as VoucherViewHolder).bind(item)
             is MyPromotionListItem.Loading -> Unit
         }
     }
@@ -87,10 +87,10 @@ internal class MyPromotionAdapter(
     ) : RecyclerView.ViewHolder(binding.root)
 
     class HeaderViewHolder(
-        private val binding: PrmItemTitleMyEndowBinding
+        private val binding: PrmItemTitleMyOfferBinding
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: MyPromotionListItem.Header) {
-            binding.txtTitleEndow.text = item.title
+            binding.txtTitleOffer.text = item.title
         }
     }
 
@@ -100,7 +100,7 @@ internal class MyPromotionAdapter(
         private val onUseClick: (MyVoucherListItem, Int) -> Unit,
     ) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(item: MyPromotionListItem.Endow) {
+        fun bind(item: MyPromotionListItem.Offer) {
             binding.apply {
                 val voucher = item.data
                 val ctx = binding.root.context
@@ -205,7 +205,7 @@ internal fun buildPromotionListItems(
         }
         addAll(
             vouchers.mapIndexed { index, voucher ->
-                MyPromotionListItem.Endow(
+                MyPromotionListItem.Offer(
                     data = voucher,
                     rowKey = voucher.buildStableRowKey(index),
                     highlightKeyword = keyword,
@@ -238,7 +238,7 @@ internal class MyPromotionDiffCallback : DiffUtil.ItemCallback<MyPromotionListIt
                 oldItem.title == newItem.title
             }
 
-            oldItem is MyPromotionListItem.Endow && newItem is MyPromotionListItem.Endow -> {
+            oldItem is MyPromotionListItem.Offer && newItem is MyPromotionListItem.Offer -> {
                 oldItem.rowKey == newItem.rowKey
             }
 

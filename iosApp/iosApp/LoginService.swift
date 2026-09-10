@@ -19,7 +19,7 @@
 //
 
 import Foundation
-import PRM
+import PromotionKit
 
 enum LoginError: Error {
     /// Không đọc được response. Mang theo HTTP status + đoạn đầu body: thiếu chúng thì lỗi mạng chỉ

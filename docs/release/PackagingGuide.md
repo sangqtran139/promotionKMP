@@ -24,7 +24,7 @@ publish (đã có ở [`../android/Distribution.md`](../android/Distribution.md)
 ## 1. Nguyên tắc
 
 1. **Một số version cho cả gói.** `SDK_VERSION` trong `gradle.properties` (Android/KMP) và
-   `MARKETING_VERSION` trong `PRM.xcodeproj` (iOS) **phải trùng nhau**. Đây là điểm đồng bộ **thủ
+   `MARKETING_VERSION` trong `Config/Version.xcconfig` (iOS) **phải trùng nhau**. Đây là điểm đồng bộ **thủ
    công** duy nhất còn lại — sai số là bàn giao lệch gói.
 2. **Không gọi tay từng Gradle task.** Luôn dùng script; version và toạ độ Maven đọc từ
    `gradle.properties`.

@@ -4,12 +4,12 @@ import android.content.Context
 import android.graphics.Color
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
 import com.ttcn.prm.ui.theme.PromotionThemeJson
-import com.ttcn.prm.ui.theme.token.ButtonToken
-import com.ttcn.prm.ui.theme.token.DiscountBadgeToken
-import com.ttcn.prm.ui.theme.token.ListItemToken
-import com.ttcn.prm.ui.theme.token.SearchBarToken
-import com.ttcn.prm.ui.theme.token.TabChipToken
-import com.ttcn.prm.ui.theme.token.TabUnderlineToken
+import com.ttcn.prm.ui.theme.token.PRMButtonToken
+import com.ttcn.prm.ui.theme.token.PRMDiscountBadgeToken
+import com.ttcn.prm.ui.theme.token.PRMListItemToken
+import com.ttcn.prm.ui.theme.token.PRMSearchBarToken
+import com.ttcn.prm.ui.theme.token.PRMTabChipToken
+import com.ttcn.prm.ui.theme.token.PRMTabUnderlineToken
 
 /**
  * Hai cách host lấy một [PromotionSDKTheme] — đối ứng `DemoThemeSource.swift` bên iOS.
@@ -40,40 +40,40 @@ object DemoThemeSource {
         val greyLight = Color.parseColor("#F4F4F4")
 
         return PromotionSDKTheme(
-            buttonToken = ButtonToken(
+            buttonToken = PRMButtonToken(
                 backgroundColor = teal,
                 textColor = white,
                 shadowColor = Color.parseColor("#332CA196"),
                 cornerRadius = 12f,
             ),
-            searchBarToken = SearchBarToken(
+            searchBarToken = PRMSearchBarToken(
                 borderColor = teal,
                 hintTextColor = grey,
                 textColor = Color.parseColor("#222222"),
                 iconColor = teal,
                 cornerRadius = 10f,
             ),
-            listItemToken = ListItemToken(
+            listItemToken = PRMListItemToken(
                 linkTextColor = teal,
                 usedBadgeTextColor = grey,
                 usedBadgeBackgroundColor = greyLight,
                 radioButtonStrokeColor = Color.parseColor("#A7A7A7"),
                 radioButtonSelectedStrokeColor = teal,
             ),
-            tabChipToken = TabChipToken(
+            tabChipToken = PRMTabChipToken(
                 activeBackgroundColor = teal,
                 inactiveBackgroundColor = tealLight,
                 activeTextColor = white,
                 inactiveTextColor = Color.parseColor("#4E4E4E"),
                 cornerRadius = 16f,
             ),
-            tabUnderlineToken = TabUnderlineToken(
+            tabUnderlineToken = PRMTabUnderlineToken(
                 indicatorColor = teal,
                 activeTextColor = teal,
                 inactiveTextColor = grey,
                 backgroundColor = white,
             ),
-            discountBadgeToken = DiscountBadgeToken(
+            discountBadgeToken = PRMDiscountBadgeToken(
                 availableTextColor = teal,
                 unavailableTextColor = Color.parseColor("#A7A7A7"),
                 availableBackgroundColor = tealLight,

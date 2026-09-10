@@ -211,7 +211,7 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     func getMetaData() -> String? { metaData }
 
     /// Map order items (public) → model lõi Kotlin cho Find Eligible Campaigns — dùng chung với
-    /// `ChoosePromotionStore`/`EndowStore`.
+    /// `ChoosePromotionStore`/`OfferWidgetStore`.
     func getOrderItems() -> [EligibleOrderItem] {
         orderItems.map {
             EligibleOrderItem(

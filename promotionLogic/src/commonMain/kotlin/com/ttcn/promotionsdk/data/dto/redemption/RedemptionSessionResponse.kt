@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class RedemptionSessionResponse(
+public data class RedemptionSessionResponse(
     @SerialName("sessionId") val sessionId: String,
     @SerialName("createdAt") val createdAt: String = "",
     @SerialName("expiresAt") val expiresAt: String = "",
@@ -14,7 +14,7 @@ data class RedemptionSessionResponse(
 )
 
 @Serializable
-data class SessionPreview(
+public data class SessionPreview(
     @SerialName("orderId") val orderId: String,
     @SerialName("originalAmount") val originalAmount: String,
     @SerialName("totalDiscount") val totalDiscount: String,
@@ -25,7 +25,7 @@ data class SessionPreview(
 )
 
 @Serializable
-data class AppliedDiscount(
+public data class AppliedDiscount(
     @SerialName("redeemableId") val redeemableId: String,
     @SerialName("redeemableType") val redeemableType: String,
     @SerialName("redeemableName") val redeemableName: String,
@@ -37,7 +37,7 @@ data class AppliedDiscount(
 )
 
 @Serializable
-data class BudgetHold(
+public data class BudgetHold(
     @SerialName("redeemableId") val redeemableId: String,
     @SerialName("holdId") val holdId: String,
     @SerialName("heldAmount") val heldAmount: String,
@@ -46,7 +46,7 @@ data class BudgetHold(
 )
 
 @Serializable
-data class RedemptionValidationErrorResponse(
+public data class RedemptionValidationErrorResponse(
     @SerialName("field") val field: String = "",
     @SerialName("code") val code: String,
     @SerialName("message") val message: String = "",

@@ -26,7 +26,7 @@ import com.ttcn.prm.entry.api.PromotionVoucherDetail
 import com.ttcn.prm.entry.api.toPublicDetail
 import com.ttcn.prm.entry.api.flagName
 import com.ttcn.prm.entry.api.toSnapshot
-import com.ttcn.prm.ui.feature.endowview.PRMEndowView
+import com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget
 import com.ttcn.prm.ui.base.PRMBaseConfirmDialog
 import com.ttcn.prm.ui.feature.choosepromotion.ChoosePromotionFragment
 import com.ttcn.prm.ui.feature.mypromotion.MyPromotionFragment
@@ -34,6 +34,7 @@ import com.ttcn.prm.ui.feature.promotiondetail.PromotionDetailFragment
 import com.ttcn.prm.ui.theme.PromotionSDKTheme
 import com.ttcn.prm.ui.theme.PromotionThemeRegistry
 import com.ttcn.prm.ui.theme.PromotionThemeStore
+import com.ttcn.prm.ui.utils.PRMLocale
 import com.ttcn.prm.ui.utils.isPromotionSdkDebug
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -151,6 +152,10 @@ object PromotionSDK {
         )
         if (isInitialized()) release()
         staticConfig = StaticConfig(incoming.baseUrl, incoming.language, incoming.environment)
+        // `language` quyết định chữ trên UI, không chỉ header của Ktor. Đặt TRƯỚC khi dựng container
+        // và áp theme — mọi màn inflate sau đó đọc chuỗi qua context đã bọc locale.
+        // Đối ứng `PRMLocalization.configure` bên iOS.
+        PRMLocale.configure(incoming.language)
         callback = options.callback
         mutableContext = PromotionMutableContext(incoming, options.availableServices)
         PromotionContainer.initialize(context, options.toCoreConfig(mutableContext))
@@ -338,7 +343,7 @@ object PromotionSDK {
     // ─── Feature flag ────────────────────────────────────────────────────────
     //
     // SDK **vẫn tự gác** mọi điểm vào (`openMyPromotion`, `PRMBaseFragment.openPromotionDetail`,
-    // `PRMEndowView`) qua `PromotionFeatureGate` — bốn hàm dưới đây **không** thay thế việc đó, chúng
+    // `PRMOfferWidget`) qua `PromotionFeatureGate` — bốn hàm dưới đây **không** thay thế việc đó, chúng
     // chỉ cho host *hỏi trước* để ẩn entry point của mình thay vì để user bấm rồi ăn toast PRM_MOB_021.
     //
     // Tất cả đều **fail-open**: chưa [initialize] hoặc chưa có cache → trả "bật hết". Không hàm nào
@@ -573,9 +578,9 @@ object PromotionSDK {
     }
 
     /**
-     * Hiển thị màn "Chọn ưu đãi" nối sẵn với widget [endowView] ở màn thanh toán.
+     * Hiển thị màn "Chọn ưu đãi" nối sẵn với widget [offerWidget] ở màn thanh toán.
      *
-     * `PRMEndowView` tự gọi hàm này khi user bấm widget (xem `PRMEndowView.setupClickListeners`) —
+     * `PRMOfferWidget` tự gọi hàm này khi user bấm widget (xem `PRMOfferWidget.setupClickListeners`) —
      * host **không cần wiring gì thêm**. Public vì đôi khi host muốn tự kích hoạt màn này từ nơi khác
      * ngoài cú bấm mặc định của widget (vd nút "Xem ưu đãi" riêng).
      *
@@ -584,11 +589,11 @@ object PromotionSDK {
      * [FragmentManager] theo [containerViewId] (xem [resolveFragmentManager]), dedup theo tag.
      *
      * Pre-select voucher đang áp và đẩy kết quả ngược về widget khi user bấm "Áp dụng" — xem
-     * [ChoosePromotionFragment.forEndowView]. Danh sách ưu đãi thì màn **tự gọi `findEligible`** mỗi
+     * [ChoosePromotionFragment.forOfferWidget]. Danh sách ưu đãi thì màn **tự gọi `findEligible`** mỗi
      * lần mở, không dùng lại bộ widget đã nạp.
      *
      * @param activity Activity host (FragmentActivity / AppCompatActivity).
-     * @param endowView Instance widget đang hiển thị — dùng để pre-select + nhận kết quả áp.
+     * @param offerWidget Instance widget đang hiển thị — dùng để pre-select + nhận kết quả áp.
      * @param containerViewId Xem [openMyPromotion].
      *
      * Chưa [initialize] → log `Log.e` rồi **không làm gì**. Xem [requireInitialized].
@@ -598,7 +603,7 @@ object PromotionSDK {
     @JvmOverloads
     fun openChoosePromotion(
         activity: FragmentActivity,
-        endowView: PRMEndowView,
+        offerWidget: PRMOfferWidget,
         containerViewId: Int? = null,
         onFeatureDisabled: (() -> Unit)? = null,
     ) {
@@ -609,7 +614,7 @@ object PromotionSDK {
         }
         val fm = resolveFragmentManager(activity, containerViewId)
         if (fm.findFragmentByTag(TAG_CHOOSE_PROMOTION) != null) return
-        val fragment = ChoosePromotionFragment.forEndowView(endowView)
+        val fragment = ChoosePromotionFragment.forOfferWidget(offerWidget)
         fm.beginTransaction()
             .setReorderingAllowed(true)
             .addOrHideThenAdd(fm, containerViewId, fragment, TAG_CHOOSE_PROMOTION)

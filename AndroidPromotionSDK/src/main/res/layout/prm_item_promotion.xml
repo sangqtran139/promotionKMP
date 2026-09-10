@@ -40,6 +40,7 @@
                 -->
                 <com.ttcn.prm.ui.widget.PRMImageView
                     android:id="@+id/imgVoucher"
+                    android:importantForAccessibility="no"
                     android:layout_width="@dimen/prm_view_size_48"
                     android:layout_height="@dimen/prm_view_size_48"
                     android:src="@drawable/prm_bg_image_placeholder_circle"
@@ -51,6 +52,7 @@
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgCircleTop"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/prm_minus7sdp"
@@ -61,6 +63,7 @@
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgCircleBottom"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/prm_minus7sdp"
@@ -71,10 +74,11 @@
 
             <com.ttcn.prm.ui.widget.PRMImageView
                 android:id="@+id/imgLine"
+                android:importantForAccessibility="no"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_marginVertical="@dimen/prm_7sdp"
-                android:background="@drawable/prm_bg_line_my_endow"
+                android:background="@drawable/prm_bg_line_my_offer"
                 app:layout_constraintStart_toEndOf="@+id/ctlPartOne" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -145,7 +149,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/prm_2sdp"
-                    android:background="@drawable/prm_bg_item_endow_expired"
+                    android:background="@drawable/prm_bg_item_offer_expired"
                     android:paddingHorizontal="@dimen/prm_5sdp"
                     android:paddingVertical="@dimen/prm_1sdp"
                     android:text="@string/prm_is_used"
@@ -173,6 +177,7 @@
 
                     <com.ttcn.prm.ui.widget.PRMImageView
                         android:id="@+id/tvArrowDetail"
+                        android:importantForAccessibility="no"
                         android:layout_width="@dimen/prm_12sdp"
                         android:layout_height="@dimen/prm_12sdp"
                         android:layout_gravity="bottom"

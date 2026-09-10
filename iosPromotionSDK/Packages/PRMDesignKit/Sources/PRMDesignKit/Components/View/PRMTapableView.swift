@@ -30,7 +30,9 @@ open class PRMTapableView: UIControl {
 
         self.animate(alpha: 1, scale: 1)
 
-        let location = touches.first!.location(in: self)
+        // `guard` chứ không phải `touches.first!`: `Set` rỗng là hợp lệ về kiểu, và crash ở đây
+        // là **SDK làm crash app host** ngay trong lúc user chạm màn hình.
+        guard let location = touches.first?.location(in: self) else { return }
         if self.bounds.inset(by: self.interactiveInset).contains(location) {
             self.sendActions(for: .touchUpInside)
             self.disableOverrideInteractiveFor(seconds: delayEventDuration)

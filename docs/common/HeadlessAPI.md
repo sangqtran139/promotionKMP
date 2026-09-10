@@ -2,7 +2,7 @@
 
 Bề mặt API không-UI của lõi. Mọi hàm nghiệp vụ trả `PromotionResult` — **không ném exception ra ngoài**.
 
-> **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionSDK` và `PromotionSDKUI` gọi vào đây.
+> **Đây KHÔNG phải bề mặt cho app host.** Chỉ `AndroidPromotionSDK` và `PromotionKit` gọi vào đây.
 > Host không với tới được `com.ttcn.promotionsdk.*`: Android khai
 > `implementation(projects.promotionLogic)`, iOS khai `@_implementationOnly import PRMKotlinBridge`.
 >
@@ -108,7 +108,7 @@ sau khi đã `initialize(...)`: `PromotionUseCases()`.
 > `searchVouchers` chỉ trả voucher khách đã sở hữu, **không xét đơn hàng**.
 > `findEligible` xét đơn hàng và trả **hai nhóm**: `myOffers` (đã sở hữu) và `otherOffers`
 > (campaign công khai chưa sở hữu), phân trang độc lập.
-> Màn checkout (`ChoosePromotion`, widget `PRMEndowView`) dùng `findEligible` trên **cả hai** nền tảng.
+> Màn checkout (`ChoosePromotion`, widget `PRMOfferWidget`) dùng `findEligible` trên **cả hai** nền tảng.
 > `findEligible` **không nhận `keyword`** — ô tìm kiếm của màn "Chọn ưu đãi" vì thế chưa chạy.
 
 > **Rule kill-switch.** Mỗi hàm bị gác bởi một feature flag. Cờ TẮT → trả ngay

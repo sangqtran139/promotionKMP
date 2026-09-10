@@ -14,7 +14,7 @@
 //
 
 import Foundation
-import PRM
+import PromotionKit
 
 final class DemoHeadlessViewModel {
 

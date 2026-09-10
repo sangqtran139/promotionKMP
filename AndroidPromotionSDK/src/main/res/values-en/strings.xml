@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Bản tiếng Anh của chuỗi SDK. Chỉ được dùng khi host truyền `language = "en"` lúc `initialize`
+    (mặc định vẫn là "vi-VN"), và chỉ áp trong màn của SDK — `PRMLocale.wrap` tạo context riêng,
+    KHÔNG đổi locale của app host.
+
+    ⚠️ Câu chữ ở đây do đội SDK dịch, **chưa qua duyệt nội dung của product**. Trước khi quảng bá
+    SDK "hỗ trợ tiếng Anh", cần đội nội dung rà lại — nhất là các câu lỗi, chúng hiện thẳng cho
+    người dùng cuối trong luồng thanh toán.
+
+    Giữ TRÙNG câu chữ với `iosPromotionSDK/PromotionKit/Resources/en.lproj/PromotionKit.strings`.
+    Khoá nào có ở `values/` thì phải có ở đây — `lint.xml` bật `MissingTranslation` mức `error`.
+-->
+<resources>
+    <string name="prm_promotion_example">Free golden lotus tea for bills from 59k</string>
+    <string name="prm_promotion_example_date">Valid until 18/10/2023</string>
+    <string name="prm_select_service">Select a service</string>
+    <string name="prm_no_applicable_service">No eligible service</string>
+    <string name="prm_use_now">Use now</string>
+    <string name="prm_use">Use</string>
+    <string name="prm_apply">Apply</string>
+    <string name="prm_deal_hot">Thousands of hot deals await</string>
+    <string name="prm_hot_deal_description">Fill your wallet with great offers!</string>
+    <string name="prm_my_promotion">My offers</string>
+    <string name="prm_get_now">Get it now</string>
+    <string name="prm_detail">Details</string>
+    <string name="prm_choose_offer">Choose an offer</string>
+    <string name="prm_check">Check</string>
+    <string name="prm_please_input_offer">Please enter an offer code</string>
+    <string name="prm_not_enough_apply_voucher">Not eligible yet</string>
+    <string name="prm_offer">Offers</string>
+    <string name="prm_no_offer">You have no offers</string>
+    <string name="prm_one_offer">You have 1 offer</string>
+    <string name="prm_multiple_offer">You have %d offers</string>
+    <string name="prm_use_voucher">Use</string>
+    <string name="prm_change_voucher">Change</string>
+    <string name="prm_is_used">All used up</string>
+    <string name="prm_status_used">Used</string>
+    <string name="prm_status_expired">Expired</string>
+    <string name="prm_status_ineligible">Not eligible</string>
+    <string name="prm_no_result">No matching results</string>
+    <string name="prm_discover_voucher">Discover more offers picked for you.</string>
+    <string name="prm_search_result">Search results</string>
+    <string name="prm_search_hint">Offer name/code, brand name, …</string>
+    <string name="prm_search_no_result">No matching results</string>
+    <string name="prm_search_input_empty">Enter a keyword to search for offers</string>
+    <string name="prm_slide_to_verify">Slide to confirm</string>
+    <string name="prm_discount_amount_format">Save %1$sđ</string>
+    <string name="prm_expiry_short_format">Valid until %1$s</string>
+    <string name="prm_expiry_remaining_days">%1$d days left</string>
+    <string name="prm_expiry_never">No expiry date</string>
+    <string name="prm_tab_all">All</string>
+    <string name="prm_tab_expiring_soon">Expiring soon</string>
+    <string name="prm_vouchers_more_suffix">+%1$d</string>
+    <string name="prm_demo_expiry_date">15/05/2025</string>
+    <string name="prm_keyword_too_short">Keyword must be at least 2 characters</string>
+    <string name="prm_missing_customer_id">Customer information not found</string>
+    <string name="prm_error_general">Something went wrong. Please try again later</string>
+    <string name="prm_error_network">No internet connection. Please check and try again</string>
+    <string name="prm_a11y_select_voucher">Select this offer</string>
+    <string name="prm_a11y_scroll_to_top">Back to top</string>
+    <string name="prm_a11y_back">Back</string>
+    <string name="prm_a11y_search">Search offers</string>
+    <string name="prm_a11y_clear_search">Clear search text</string>
+    <string name="prm_a11y_promotion_banner">Offer image</string>
+    <string name="prm_error_timeout">The request timed out. Please try again</string>
+    <string name="prm_feature_disabled">The offers feature is temporarily unavailable. Please try again later.</string>
+    <string name="prm_notification_title">Notice</string>
+    <string name="prm_notification_button_close">Close</string>
+    <string name="prm_my_offer">My offers</string>
+    <string name="prm_offer_different">Other offers</string>
+    <string name="prm_see_more">See more</string>
+    <string name="prm_collapse">Collapse</string>
+    <string name="prm_tab_detail_info">Details</string>
+    <string name="prm_tab_usage_guide">How to use</string>
+    <string name="prm_loading">Loading</string>
+    <string name="prm_budget_insufficient">This promotion has run out</string>
+    <string name="prm_cancel_voucher">Cancel</string>
+    <string name="prm_selected_voucher_count">%d voucher(s) selected</string>
+</resources>

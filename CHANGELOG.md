@@ -4,16 +4,179 @@ Toàn bộ thay đổi đáng chú ý của **TTCN Promotion SDK** ghi ở đây
 [Keep a Changelog](https://keepachangelog.com/), version theo [SemVer](https://semver.org/).
 
 Nguồn version tập trung: `gradle.properties` (`SDK_VERSION`) cho Android/KMP; `MARKETING_VERSION`
-trong `PRM.xcodeproj` cho iOS — **giữ trùng số**.
+trong `PromotionKit.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
+
+### Changed — dọn đường cho CI/CD: version một nguồn, verify được trước khi publish
+
+Hai thứ CI/CD cần mà chỉ dev đặt được, nên chúng nằm trong repo chứ không nằm trong pipeline:
+
+| | Trước | Sau |
+|---|---|---|
+| Version iOS | `MARKETING_VERSION = 1.0.0` hardcode **4 chỗ** trong `project.pbxproj` | một dòng ở `iosPromotionSDK/Config/Version.xcconfig` (`baseConfigurationReference` cấp project) |
+| App demo lấy SDK | chỉ từ Artifactory (`url:` + `checksum:`) | thêm `PRM_LOCAL_XCFRAMEWORK` trỏ xcframework cục bộ |
+
+Version hardcode ở 4 chỗ nghĩa là: `build-ios.sh` truyền `MARKETING_VERSION` nên bản phát hành đúng
+số, nhưng ai bấm Archive thẳng trong Xcode thì ra `1.0.0` **trong im lặng**. Đã kiểm cả hai đường —
+mặc định lấy `1.0.0` từ xcconfig, `xcodebuild MARKETING_VERSION=9.9.9` vẫn thắng.
+
+`PRM_LOCAL_XCFRAMEWORK` gỡ cái vòng "phải publish xong mới verify được": `binaryTarget(url:checksum:)`
+đòi checksum, mà checksum chỉ có sau khi zip đã lên server — nên trước đây mỗi lần muốn thử một thay
+đổi là **đốt một số version** trên repo phát hành (repo không cho ghi đè), và bản đẩy lên chưa ai
+link thử bao giờ. Không đặt biến thì hành vi y hệt cũ.
+
+Kèm theo: `build-xcframework.sh` nay **fail build** khi gói có framework động ngoài
+`PromotionKit.framework` — trước đây nó chỉ in danh sách rồi đi tiếp, mà "host kéo đúng một
+xcframework, không cài gì thêm" là thứ SDK bán cho bên tích hợp.
+
+### Changed — `language` nay thật sự đổi được chữ trên UI (cả hai nền tảng)
+
+`PromotionSessionConfig.language` (mặc định `"vi-VN"`) là tham số public từ đầu, nhưng nó **chỉ** đi
+xuống header của Ktor: một tham số không làm điều mà tên nó nói, và không có gì phát hiện ra. Nay nó
+quyết định cả bảng chuỗi lẫn cách format số.
+
+| | Trước | Sau |
+|---|---|---|
+| Chuỗi iOS | literal Swift trong `PromotionUIStrings` | `NSLocalizedString` → `{vi,en}.lproj/PromotionKit.strings` |
+| Chuỗi Android | chỉ `res/values/` | thêm `res/values-en/` |
+| Chọn ngôn ngữ | không có | `PRMLocalization` (iOS) / `PRMLocale` (Android) |
+| Dấu phân cách nghìn | hardcode `"."` cả hai bên | theo locale (`75.000` vs `75,000`) |
+
+**Không có API nào đổi.** Host đang truyền `"vi-VN"` (hoặc không truyền gì) thì mọi thứ y như cũ.
+
+Android **không** đụng `Locale.setDefault` hay cấu hình của Activity host — `PRMLocale.wrap` tạo một
+context riêng chỉ dùng để inflate màn SDK, nên ngôn ngữ của app host không bị đổi theo.
+
+Ngôn ngữ không có bảng (`"fr-FR"`) lùi về **tiếng Việt**, và lùi *tường minh*: trả thẳng bundle của
+framework là giao việc chọn ngôn ngữ lại cho hệ điều hành, mà hệ điều hành chọn theo ngôn ngữ **của
+thiết bị** — máy để tiếng Anh thì SDK hiện tiếng Anh dù host truyền `"fr-FR"`. Test
+`PromotionLocalizationTests.test_ngonNguLa_luiVeTiengViet` canh đúng chỗ này (nó bắt được lỗi đó
+ngay lần chạy đầu).
+
+> ⚠️ **Bản tiếng Anh chưa qua duyệt nội dung.** Câu chữ `values-en` / `en.lproj` do đội SDK dịch.
+> Cần đội nội dung rà lại — nhất là các câu lỗi, chúng hiện thẳng cho người dùng cuối trong luồng
+> thanh toán — trước khi quảng bá SDK "hỗ trợ tiếng Anh".
+
+### Added — accessibility cho tầng UI (cả hai nền tảng)
+
+Trước đây **0** thuộc tính accessibility trên toàn bộ iOS SDK, và 27/31 `ImageView` của Android
+không có `contentDescription`.
+
+- **iOS:** `accessibilityIdentifier` cho control của 4 màn + cell (bảng định danh tập trung ở
+  `PRMAccessibilityID`), `accessibilityLabel` cho nút chỉ có icon, logo voucher đánh
+  `isAccessibilityElement = false` để VoiceOver không đọc thừa một nhịp mỗi thẻ.
+- **Android:** `contentDescription` cho 7 control bấm được, `importantForAccessibility="no"` cho 20
+  ảnh trang trí. Nhãn giữ **trùng câu chữ** với iOS.
+
+Định danh mở đường cho XCUITest — thiếu nó thì TEST-1 mãi bị chặn ở tầng unit.
+
+**Dynamic Type (iOS) — bật, có chặn trần.** 36 token cỡ chữ ở `Typography` chuyển từ `static let`
+sang computed đi qua `UIFontMetrics`; `PRMBaseViewController` bật
+`adjustsFontForContentSizeCategory` cho cả cây view nên đổi cỡ chữ giữa chừng cũng ăn.
+
+Trần `dynamicTypeMaxScale = 1.3` là **cố ý**: 13 ràng buộc chiều cao trong XIB đang cố định
+(13…173pt), để chữ phóng tự do tới AX5 (~3,8×) là chữ bị **cắt** — tệ hơn hiện trạng. Nới trần là
+hai việc, không phải một: gỡ chiều cao cố định theo từng màn trước, rồi mới nâng số và duyệt lại
+bằng mắt. `DynamicTypeTests` khoá cả hai đầu — font phải scale được, và không được vượt trần.
+
+### BREAKING (iOS) — module đổi tên: `import PRM` → `import PromotionKit`
+
+Dòng đầu tiên host viết là `import PRM`, dòng thứ hai là `PromotionSDK.initialize(...)`: hai cái tên
+cho cùng một thứ, ngay hai dòng đầu của trải nghiệm tích hợp. Trước đây một artifact mang **bốn**
+tên song song — `Promotion.xcframework` (vỏ), `PRM.framework` (framework), `PRM` (module/scheme),
+`PromotionSDKUI` (thư mục nguồn).
+
+| | Trước | Sau |
+|---|---|---|
+| Module host import | `PRM` | **`PromotionKit`** |
+| `PRODUCT_NAME` / framework | `PRM.framework` | `PromotionKit.framework` |
+| Project / scheme / target | `PRM.xcodeproj`, scheme `PRM` | `PromotionKit.xcodeproj`, scheme `PromotionKit` |
+| Target test | `PromotionSDKTests` | `PromotionKitTests` |
+| Thư mục nguồn | `iosPromotionSDK/PromotionSDKUI/` | `iosPromotionSDK/PromotionKit/` |
+| Bundle id framework | `com.vtm.PRM` | `com.vtm.PromotionKit` |
+
+**Cách nâng cấp:** đổi `import PRM` → `import PromotionKit`. Không có API nào khác đổi.
+
+Module **không** đặt trùng luôn là `PromotionSDK`: Swift cho phép, nhưng module trùng tên type thì
+mọi chỗ cần phân định phải viết `PromotionSDK.PromotionSDK`. Tên type `PromotionSDK` giữ nguyên nên
+vẫn đối xứng Android; **package name Android không đổi** (`com.ttcn.prm`) — hai chuỗi này chưa bao
+giờ xuất hiện cùng nhau trong code host, và parity là về tên hàm với thứ tự tham số, không phải tên
+gói.
+
+Tên **vỏ** xcframework (`Promotion.xcframework`) và đường dẫn phát hành trên Artifactory **chưa**
+đổi — hai thứ đó thuộc CI/CD job, cần chốt cùng lúc với việc dọn bản `1.0.0` đã publish dưới tên cũ.
+
+> Không có cơ chế deprecation nào cho một dòng `import`. Đổi tên module sau go-live nghĩa là sửa mọi
+> file của mọi host — đây là mục đắt nhất trong bản rà soát nếu để muộn.
+
+### BREAKING — bỏ hẳn từ "Endow", widget ưu đãi nay tên là `PRMOfferWidget`
+
+`endow` trong tiếng Anh nghĩa là *phú cho / tài trợ vốn* (endowment fund), không phải "ưu đãi". Từ
+đúng là **offer** — và SDK *đã* dùng đúng từ đó ở `EligibleOffer`, nên đây là làm cho nhất quán chứ
+không phải áp một từ mới. Hai trong số đó nằm trên public API: host iOS gọi `createEndowView`, host
+Android đặt thẳng `PRMEndowView` vào layout XML.
+
+| Bỏ | Thay bằng | Bề mặt |
+|---|---|---|
+| `PromotionSDK.createEndowView(from:)` | `PromotionSDK.createOfferWidget(from:)` | public, iOS |
+| `PRMEndowView` | `PRMOfferWidget` | public, cả hai nền tảng |
+| `PRMEndowViewDelegate` / `DataSource` | `PRMOfferWidgetDelegate` / `DataSource` | internal, iOS |
+| `EndowStore` / `EndowState` / `EndowIntent*` | `OfferWidgetStore` / `OfferWidgetState` / `OfferWidgetIntent*` | `promotionLogic` |
+| `EndowWidgetState` | `OfferWidgetDisplayState` | `promotionLogic` |
+| `EndowApplyOutcome` / `EndowConfirmResult` | `OfferWidgetApplyOutcome` / `OfferWidgetConfirmResult` | `promotionLogic` |
+| `EndowHostEvent` / `EndowHostNotifier` | `OfferWidgetHostEvent` / `OfferWidgetHostNotifier` | `promotionLogic` |
+| `EndowAppliedDiscount` | `OfferWidgetAppliedDiscount` | `promotionLogic` |
+| package `ui.feature.endowview` | `ui.feature.offerwidget` | Android |
+| `@layout/prm_view_endow` | `@layout/prm_view_offer_widget` | Android, private |
+| resource `prm_*_endow*` | `prm_*_offer*` | Android, private (`public.xml` đã đóng) |
+
+`EndowWidgetState` **không** thành `OfferWidgetWidgetState`: nó là trạng thái *hiển thị* của widget,
+nên tên đúng là `OfferWidgetDisplayState`.
+
+**Cách nâng cấp:** iOS đổi `createEndowView` → `createOfferWidget`. Android đổi tên class trong
+layout XML (`com.ttcn.prm.ui.feature.endowview.PRMEndowView` →
+`com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget`) và ở chỗ khai biến. Không có tham số, kiểu trả
+về, hay hành vi nào đổi — đây là **rename thuần**: số test trước và sau bằng nhau (Kotlin + 16 test
+iOS đều xanh), không có commit logic nào đi kèm.
+
+> Đổi tên type public **sau** go-live là bắt từng đối tác sửa code, nên phải làm bây giờ.
+
+### BREAKING — 6 theme token public đổi tên, thêm tiền tố `PRM`
+
+Sáu type token mà host **thấy** sau khi import đang là những cái tên chung nhất trong cả bề mặt SDK:
+`ButtonToken`, `SearchBarToken`, `ListItemToken`, `TabChipToken`, `TabUnderlineToken`,
+`DiscountBadgeToken`. Chúng sống trong namespace của app host (Swift) và trong classpath của host
+(Android), nên `ButtonToken` trong một app tài chính lớn gần như chắc chắn đụng tên với type của
+host hoặc của SDK khác.
+
+Tiền tố đang bị đặt **ngược**: type nội bộ đã ẩn sau `@_implementationOnly` thì mang đủ tiền tố
+(`PRMButtonThemeToken`), còn type public — thứ CẦN tiền tố nhất — lại không có.
+
+| Bỏ | Thay bằng |
+|---|---|
+| `ButtonToken` | `PRMButtonToken` |
+| `SearchBarToken` | `PRMSearchBarToken` |
+| `ListItemToken` | `PRMListItemToken` |
+| `TabChipToken` | `PRMTabChipToken` |
+| `TabUnderlineToken` | `PRMTabUnderlineToken` |
+| `DiscountBadgeToken` | `PRMDiscountBadgeToken` |
+
+**Cách nâng cấp:** đổi tên type ở chỗ host dựng theme. Tên field **không** đổi, và **định dạng JSON
+theme cũng không đổi** (khoá vẫn là `button`, `searchBar`, …) — file theme sẵn có của host chạy
+nguyên.
+
+**Không** kèm `typealias` deprecated: chưa host nào cần đường chuyển, và một alias sinh ra ngày đầu
+tiên là loại nợ không bao giờ ai xoá.
+
+> Đổi tên type public **sau** go-live là bắt từng đối tác sửa code, nên phải làm bây giờ.
 
 ### BREAKING (iOS) — bề mặt public là `@MainActor`
 
 `PromotionSDK` bên iOS — và cả cây UI dưới nó (`PromotionSDKImpl`, `PRMStoreViewModel`,
 `PRMBaseBuilder`, `PRMBaseRouter`) — nay đánh `@MainActor`.
 
-Hợp đồng không đổi: đây vốn là API UI (`openMyPromotion(from:)`, `createEndowView(from:)`,
+Hợp đồng không đổi: đây vốn là API UI (`openMyPromotion(from:)`, `createOfferWidget(from:)`,
 `configure(theme:)`), luôn phải gọi trên main thread. Cái đổi là **ai bắt lỗi**: trước đây chỉ có
 doc comment, host gọi từ thread nền thì crash lúc chạy ở tầng UIKit; nay compiler chỉ đúng dòng sai.
 Nó cũng đóng phần global mutable state (bốn `private static var`) mà Swift 6 sẽ chặn.
@@ -76,9 +239,13 @@ khớp 100%) — không quy về dp cố định, vì sdp là "scalable dp" và 
 > `sdp-android`: layout của **chính nó** dùng `@dimen/_16sdp` mà chưa bao giờ khai dependency đó.
 > Host thật cũng có thể như vậy — nếu build gãy vì thiếu `_Xsdp`, hãy tự khai `sdp-android`.
 
-> **Glide 5.0.5 vẫn đi vào runtime classpath của host** và Gradle luôn chọn version cao nhất. Host
-> đang ở Glide 4.x cần chốt lại — xem `docs/AndroidIntegrationGuide.md` §3.1. Không gỡ được vì luật
-> GIF động, mà `AnimatedImageDrawable` chỉ có từ API 28 còn `minSdk` là 24.
+> **Glide hạ từ `5.0.5` xuống `4.16.0`.** Glide đi vào runtime classpath của host và Gradle luôn
+> chọn version **cao nhất**, nên ghim bản thấp là cách duy nhất để SDK không kéo app host lên: host
+> ở 4.x giữ nguyên 4.x, host ở 5.x vẫn chạy 5.x. Trước đây SDK ép mọi host còn ở 4.x lên 5.x — mà
+> Glide 4→5 có breaking change. Hạ được vì bề mặt SDK dùng (`Glide.with/load/apply/into/clear`,
+> `RequestOptions`, `CircleCrop`, `Transformation` tự viết) nằm trọn trong phần không đổi giữa hai
+> nhánh; SDK không dùng `@GlideModule`/generated API. `gifdecoder` vẫn vào classpath nên luật GIF
+> động giữ nguyên. Không gỡ hẳn được vì `AnimatedImageDrawable` chỉ có từ API 28, còn `minSdk` là 24.
 
 ### Changed — tầng ảnh iOS có cache đĩa và gộp request trùng
 
@@ -114,7 +281,7 @@ Host đọc được version SDK đang chạy bằng một dòng, **trước** `
 class nào để `Bundle(for:)`, tức kiến thức nội bộ của SDK; đây cũng là **lệch parity** vì Android đã
 có `BuildConfig.SDK_VERSION`. Nay cả hai nền tảng cùng một tên.
 
-Nguồn giữ nguyên: `SDK_VERSION` (`gradle.properties`) và `MARKETING_VERSION` (`PRM.xcodeproj`) —
+Nguồn giữ nguyên: `SDK_VERSION` (`gradle.properties`) và `MARKETING_VERSION` (`PromotionKit.xcodeproj`) —
 hai số vẫn phải giữ trùng nhau, xem `docs/release/VersioningPolicy.md`.
 
 ### Fixed — bỏ cơ chế "báo host khi kill-switch tắt" chưa từng chạy
@@ -139,7 +306,7 @@ Không đổi hành vi nào đang chạy — thứ bị xoá chưa từng chạy
 
 Ba thay đổi hành vi thấy được trên UI, **không** đụng public API của host.
 
-**1. Mở màn là luôn gọi lại `findEligible`.** Trước đây màn nhận danh sách widget `PRMEndowView` đã
+**1. Mở màn là luôn gọi lại `findEligible`.** Trước đây màn nhận danh sách widget `PRMOfferWidget` đã
 nạp và dùng thẳng, không gọi mạng — tiết kiệm một request nhưng user nhìn thấy dữ liệu của *thời điểm
 widget nạp*: ngân sách campaign có thể đã hết, voucher có thể vừa bị dùng ở thiết bị khác, và không có
 gì sửa lại cho tới khi user tự kéo-để-tải-lại. Nay mở màn là hiện shimmer một nhịp rồi ra danh sách
@@ -154,23 +321,23 @@ vừa từ chối.
 
 > Trước đây nhánh này bị gộp với thành công: màn chọn đóng lại như đã áp xong, còn widget lặng lẽ
 > chuyển sang `UNAVAILABLE`. User chọn voucher rồi thấy nó gạch ngang mà không ai nói vì sao. Hệ quả:
-> **`EndowWidgetState.UNAVAILABLE` nay chỉ còn đến từ** ưu đãi đang áp hỏng giữa chừng (hết ngân sách
+> **`OfferWidgetDisplayState.UNAVAILABLE` nay chỉ còn đến từ** ưu đãi đang áp hỏng giữa chừng (hết ngân sách
 > lúc `createRedemption`) và host tự đưa vào (`setDiscountDetails` / `markAppliedVoucherUnavailable`).
 
 **3. Gọi API hỏng → popup + ở lại màn** (không đổi so với trước, nay đi qua nhánh riêng
-`EndowApplyOutcome.Failed`).
+`OfferWidgetApplyOutcome.Failed`).
 
 Hiện áp dụng cho **chế độ chọn đơn** (mặc định); chế độ chọn nhiều sẽ làm sau.
 
-**Nội bộ SDK** (`internal`, host không chạm tới): `EndowStore.validateAndApply` trả
-`EndowApplyOutcome` (`Applied` / `Rejected(items)` / `Failed(errorCode)`) thay cho `EndowState`;
+**Nội bộ SDK** (`internal`, host không chạm tới): `OfferWidgetStore.validateAndApply` trả
+`OfferWidgetApplyOutcome` (`Applied` / `Rejected(items)` / `Failed(errorCode)`) thay cho `OfferWidgetState`;
 `ChoosePromotionIntent.SeedOnce` rút còn `SeedOnce(preSelectedIds)`; thêm intent `ApplyRejected` /
 `ConsumeApplyMessage`, state `rejectedIds` / `applyMessage` và `ChooseOffer.isRejected`; xoá đường preload
-(`PRMEndowView.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage`,
+(`PRMOfferWidget.myVouchers`/`otherVouchers`/`myIsLastPage`/`otherIsLastPage`,
 `ChoosePromotionFragment.initial*`, `ChoosePromotionBuilder.DataModel.preloaded*`).
 
 Chi tiết: [`docs/features/ChoosePromotion.md`](docs/features/ChoosePromotion.md),
-[`docs/features/EndowView.md`](docs/features/EndowView.md),
+[`docs/features/OfferWidget.md`](docs/features/OfferWidget.md),
 [`docs/common/InitParity.md`](docs/common/InitParity.md) B12.
 
 ### BREAKING — token vào SDK qua `PromotionTokenSource`, bỏ `accessToken` và `updateToken`
@@ -286,7 +453,7 @@ Không đổi chữ ký public nào.
 quyền** (token vẫn hợp lệ), không phải hết hạn/không hợp lệ. Nay chỉ 401 mới map sang `TOKEN_EXPIRED`;
 403 rơi về nhánh `errorCode`/`GENERAL` như các lỗi HTTP khác. Sửa ở tầng `promotionLogic` (dùng chung
 2 nền tảng) nên áp dụng cho cả 5 store (`MyPromotion`/`SearchMyPromotion`/`ChoosePromotion`/
-`PromotionDetail`/`Endow`) mà không cần sửa native.
+`PromotionDetail`/`OfferWidget`) mà không cần sửa native.
 
 ### Changed — **BREAKING**: `PromotionOrderItem`/`updateOrderInfo` đổi `skuId` thành `skuSourceId`; bỏ gửi chuỗi rỗng lên server
 
@@ -376,23 +543,23 @@ SKU, giờ phải truyền thêm `productId` — thiếu nó thì `skuId`/`produ
 
 ### Changed — **BREAKING**: widget "Ưu đãi" tự mở màn "Chọn ưu đãi", bỏ `onOpenVoucherSelection`
 
-Trước đây `PRMEndowView` chỉ bắn callback `onOpenVoucherSelection` khi user bấm — host phải tự dựng
-`FragmentTransaction` để add `PromotionSDK.createChoosePromotionFragment(endowView)` vào container
+Trước đây `PRMOfferWidget` chỉ bắn callback `onOpenVoucherSelection` khi user bấm — host phải tự dựng
+`FragmentTransaction` để add `PromotionSDK.createChoosePromotionFragment(offerWidget)` vào container
 của mình. Bước này lặp lại y hệt ở mọi host, và là chỗ dễ quên/làm sai (container id, back stack,
 dedup double-tap).
 
-Nay widget tự điều hướng: bấm vào widget → `PRMEndowView` tự resolve `FragmentActivity` từ `context`
-rồi gọi `PromotionSDK.openChoosePromotion(activity, endowView)` nội bộ — cùng khuôn
+Nay widget tự điều hướng: bấm vào widget → `PRMOfferWidget` tự resolve `FragmentActivity` từ `context`
+rồi gọi `PromotionSDK.openChoosePromotion(activity, offerWidget)` nội bộ — cùng khuôn
 `openMyPromotion`/`openPromotionDetail` (tự chọn `FragmentManager` qua `resolveFragmentManager`,
 dedup theo tag, `addToBackStack`). Host không cần dòng nào cho việc này nữa; chỉ cần nhúng
-`PRMEndowView` vào layout XML.
+`PRMOfferWidget` vào layout XML.
 
 **Host phải sửa:**
 
 | Cũ | Mới |
 |---|---|
-| `binding.endowView.onOpenVoucherSelection = { addFragment(PromotionSDK.createChoosePromotionFragment(binding.endowView)) }` | Xoá hẳn — widget tự mở màn, không cần wiring |
-| `PromotionSDK.createChoosePromotionFragment(endowView): Fragment` | `PromotionSDK.openChoosePromotion(activity, endowView, containerViewId = null)` — chỉ cần gọi thẳng khi host muốn tự kích hoạt màn này từ nơi khác ngoài cú bấm mặc định của widget |
+| `binding.offerWidget.onOpenVoucherSelection = { addFragment(PromotionSDK.createChoosePromotionFragment(binding.offerWidget)) }` | Xoá hẳn — widget tự mở màn, không cần wiring |
+| `PromotionSDK.createChoosePromotionFragment(offerWidget): Fragment` | `PromotionSDK.openChoosePromotion(activity, offerWidget, containerViewId = null)` — chỉ cần gọi thẳng khi host muốn tự kích hoạt màn này từ nơi khác ngoài cú bấm mặc định của widget |
 
 ### Fixed — iOS: skeleton hàng tab-chip bị skeleton danh sách đè trên màn hình nhỏ
 
@@ -413,23 +580,23 @@ vì canh giữa vùng tab, và vùng tab thật có sàn chiều cao required. C
 Luồng `createRedemption → gặp INSUFFICIENT_BUDGET → validate lại → cập nhật widget` là **nghiệp vụ
 đụng tiền**, nhưng nó nằm trong một class public **chỉ có ở Android**. iOS không hề có
 `confirmRedemption` nào — host iOS phải tự gọi `PromotionSDKApi.createRedemption`. Kèm theo là hai
-mapper thân giống hệt nhau (`appliedDiscountFor` bên Android ↔ `toEndowAppliedDiscount` ở lõi), một
+mapper thân giống hệt nhau (`appliedDiscountFor` bên Android ↔ `toOfferWidgetAppliedDiscount` ở lõi), một
 CoroutineScope thứ ba cho một widget, và nghĩa vụ `clear()` mà host quên là rò.
 
-Nay luồng này ở `EndowStore.confirmRedemption()` (`promotionLogic`), hai nền tảng chạy một đường và
-có **6 test** ở `EndowStoreTest` (body-error, HTTP 422, lỗi khác, revalidate rỗng, đơn không voucher,
+Nay luồng này ở `OfferWidgetStore.confirmRedemption()` (`promotionLogic`), hai nền tảng chạy một đường và
+có **6 test** ở `OfferWidgetStoreTest` (body-error, HTTP 422, lỗi khác, revalidate rỗng, đơn không voucher,
 request mang đúng `expectedDiscount`).
 
 **Host phải sửa:**
 
 | Cũ | Mới |
 |---|---|
-| `PromotionIntegrateManager.create(endowView)` + `confirmRedemption(...)` + `clear()` | `endowView.confirmRedemption(onSuccess, onError)` — không còn class, không còn `clear()` |
+| `PromotionIntegrateManager.create(offerWidget)` + `confirmRedemption(...)` + `clear()` | `offerWidget.confirmRedemption(onSuccess, onError)` — không còn class, không còn `clear()` |
 | (iOS: không có) | `PromotionSDK.confirmRedemption(onSuccess:onError:)` |
-| `com.ttcn.prm.ui.feature.endowview.EndowViewState` | `com.ttcn.promotionsdk.presentation.endow.EndowWidgetState` |
-| `PRMEndowView.onVoucherItemClick` | Bỏ — nó khai báo rồi nhưng **SDK chưa từng gọi** (đã ghi "Đang hỏng" trong docs) |
+| `com.ttcn.prm.ui.feature.offerwidget.OfferWidgetViewState` | `com.ttcn.promotionsdk.presentation.offerwidget.OfferWidgetDisplayState` |
+| `PRMOfferWidget.onVoucherItemClick` | Bỏ — nó khai báo rồi nhưng **SDK chưa từng gọi** (đã ghi "Đang hỏng" trong docs) |
 
-`PRMEndowView.getCurrentState()` giữ nguyên, chỉ đổi kiểu trả về sang `EndowWidgetState`.
+`PRMOfferWidget.getCurrentState()` giữ nguyên, chỉ đổi kiểu trả về sang `OfferWidgetDisplayState`.
 
 
 ### Fixed — màn "Ưu đãi của tôi": tab nhảy ngược & danh sách bị xoá trắng (cả 2 nền tảng)
@@ -457,7 +624,7 @@ Trước đây bề mặt public rò ra ngoài `entry` lúc nào không hay: 93 
 `AndroidPromotionSDK` nằm ngoài package `entry` vẫn `public` — toàn bộ `ui/widget/**`
 (`PRMButton`, `PRMSearchField`, `PRMTextView`…), `ui/base/**` (`PRMBaseFragment`, `PRMBaseActivity`,
 `PRMBaseViewModel`), ~40 extension trong `ui/utils/**`, cả năm Fragment nghiệp vụ, và nhóm theme.
-Host thấy hết trong autocomplete, dùng nhầm rồi vỡ ở bản sau. Bên iOS là 10 file `PromotionSDKUI/Theme/`.
+Host thấy hết trong autocomplete, dùng nhầm rồi vỡ ở bản sau. Bên iOS là 10 file `PromotionKit/Theme/`.
 
 Từ nay **`com.ttcn.prm.entry.**` (Android) / `iosPromotionSDK/Entry/**` (iOS) là bề mặt public duy
 nhất**; mọi khai báo khác là `internal` / không `public`. Xem [PublicApi.md](./docs/common/PublicApi.md)
@@ -467,12 +634,12 @@ nhất**; mọi khai báo khác là `internal` / không `public`. Xem [PublicApi
 
 | Cũ | Mới |
 |---|---|
-| `com.ttcn.prm.ui.feature.endowview.PRMEndowView` (kể cả tag trong layout XML) | `com.ttcn.prm.ui.feature.endowview.PRMEndowView` |
-| `com.ttcn.prm.ui.feature.PromotionIntegrateManager` | **Đã bỏ hẳn** — xem mục BREAKING ở trên (`endowView.confirmRedemption`) |
-| `ChoosePromotionFragment.forEndowView(endowView)` | `PromotionSDK.createChoosePromotionFragment(endowView)` — trả `Fragment` trần |
+| `com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget` (kể cả tag trong layout XML) | `com.ttcn.prm.ui.feature.offerwidget.PRMOfferWidget` |
+| `com.ttcn.prm.ui.feature.PromotionIntegrateManager` | **Đã bỏ hẳn** — xem mục BREAKING ở trên (`offerWidget.confirmRedemption`) |
+| `ChoosePromotionFragment.forOfferWidget(offerWidget)` | `PromotionSDK.createChoosePromotionFragment(offerWidget)` — trả `Fragment` trần |
 | `com.ttcn.prm.ui.theme.PromotionSDKTheme` / `PromotionThemeJson` / `PromotionThemeDisplay` | `com.ttcn.prm.ui.theme.*` |
 | `com.ttcn.prm.ui.theme.token.*` (6 token) | `com.ttcn.prm.ui.theme.token.*` |
-| `com.ttcn.prm.entry.AppliedDiscount` | `com.ttcn.prm.ui.feature.endowview.AppliedDiscount` (về ở cạnh widget dùng nó) |
+| `com.ttcn.prm.entry.AppliedDiscount` | `com.ttcn.prm.ui.feature.offerwidget.AppliedDiscount` (về ở cạnh widget dùng nó) |
 | Kế thừa `PRMBaseFragment` / `PRMBaseActivity` | Không còn — host tự viết base của mình (xem `androidApp/.../base/`) |
 | `PromotionThemeDefaults` (iOS) | Không còn public — dùng `PromotionThemeDisplay.load()` |
 
@@ -486,7 +653,7 @@ Kèm theo:
   sang `androidApp` thành `fragment_payment_demo.xml`.
 - App demo `androidApp` được sửa để chỉ dùng bề mặt host: có base class riêng
   (`app/base/AppBaseFragment` + `AppBaseActivity`), codec hex riêng (`DemoHex`), và màn "Theme
-  preview" bỏ phần preview widget nội bộ (chỉ còn `PRMEndowView`).
+  preview" bỏ phần preview widget nội bộ (chỉ còn `PRMOfferWidget`).
 - Hai chỗ **không khoá được** trên Android: `com.ttcn.prm.R` và `com.ttcn.prm.databinding.*` là class
   Java do AGP sinh nên luôn public. Chúng không nằm trong hợp đồng.
 
@@ -510,7 +677,7 @@ Kèm theo:
   ẩn entry point rồi thì không có đường hiện lại. Nay nó bắn ở 4 thời điểm với cả hai giá trị: nạp cờ
   xong sau `initialize`/login lại, mỗi lần `refreshFeatureFlags`, widget checkout đổi trạng thái, và
   khi user bấm mà bị chặn.
-- Android còn thiếu so với iOS ở luồng widget — `PRMEndowView.applyFeatureFlag()` nay cũng báo host
+- Android còn thiếu so với iOS ở luồng widget — `PRMOfferWidget.applyFeatureFlag()` nay cũng báo host
   mỗi lần đổi trạng thái, đối xứng `PromotionSDKImpl.applyFlag`.
 - **Tương thích:** thuần bổ sung, không đổi chữ ký. Host nào đang coi mọi lần gọi là "tắt SDK" thì
   phải đọc tham số `enabled` — hành vi cũ tương đương `if (!enabled)`.
@@ -552,8 +719,8 @@ Bản phát hành ổn định đầu tiên. Từ đây bề mặt public tuân 
 ### Bề mặt công khai
 - Entry `PromotionSDK`: `initialize` / `release` / `isInitialized` / `updateContext` /
   `configure(theme)` / `currentTheme` / `getCallback`.
-- Màn hình: `openMyPromotion`, `openPromotionDetail`, widget checkout (`PRMEndowView` /
-  `createEndowView`).
+- Màn hình: `openMyPromotion`, `openPromotionDetail`, widget checkout (`PRMOfferWidget` /
+  `createOfferWidget`).
 - Headless `PromotionSDKApi` (5 hàm): `getVouchers`, `findEligible`, `getVoucherDetail`,
   `validateDiscounts`, `createRedemption` — trả DTO + `PromotionApiResult`.
 - Callback thống nhất 6 sự kiện (`PromotionSDKCallback`); theming qua `PromotionSDKTheme`.
