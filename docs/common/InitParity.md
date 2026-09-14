@@ -13,6 +13,7 @@
   - [2.1. Token — `PromotionTokenSource`, một khái niệm duy nhất](#21-token--promotiontokensource-một-khái-niệm-duy-nhất)
   - [2.2. Năng lực do host cấp — `PromotionHostServices`](#22-năng-lực-do-host-cấp--promotionhostservices)
 - [3. `PromotionSDKCallback` — hợp nhất theo iOS (6 sự kiện), tên trùng cả 2 bên](#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên)
+  - [3.0. Vòng đời & thread — chuẩn chung cho mọi object host cấp](#30-vòng-đời--thread--chuẩn-chung-cho-mọi-object-host-cấp)
   - [3.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#31-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
 - [4. Ngoại lệ N1 — buộc lệch (đã duyệt)](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)
 - [5. Bố cục file (target, đối xứng)](#5-bố-cục-file-target-đối-xứng)
@@ -193,6 +194,32 @@ Bỏ phong cách `vdsPromotion(_:didX:)` (ObjC-delegate) để tên **trùng ch�
   (xem dưới), không qua callback toàn cục.
 
 `PromotionSDKCallback` nay còn **ba** sự kiện: `onVoucherApplied`, `onServiceSelected`, `onExpireToken`.
+
+### 3.0. Vòng đời & thread — chuẩn chung cho mọi object host cấp
+
+`PromotionSDKCallback`, `PromotionTokenSource` và `PromotionHostServices.{tracker,storage}` đều là
+object của host mà SDK **giữ**. Hợp đồng vòng đời của chúng là **một**, không phải mỗi cổng một kiểu:
+
+| | Chuẩn | Android | iOS |
+|---|---|---|---|
+| Cách giữ | **strong**, từ `initialize` đến `release()` | `private var callback` | `private static var callback` |
+| Sau `release()` | không còn sự kiện nào; host **không** phải tự huỷ đăng ký | `callback = null` | `callback = nil` |
+| Đổi callback | gọi lại `initialize` — không có setter riêng | ✅ | ✅ |
+| Thread khi bắn | **main thread**, cả ba sự kiện | Fragment / `PRMOfferWidget` / `PRMStoreViewModel.effects` — đều ở luồng UI | `PromotionSDKImpl` / `PRMStoreViewModel` / ViewController — đều `@MainActor` |
+| Host ném | SDK **không** nuốt, lỗi nổi lên luồng UI của màn SDK | ✅ | ✅ |
+
+Ba điểm dễ làm sai, ghi ra để không phải tranh luận lại:
+
+1. **Strong là cố ý, không phải bỏ sót.** Giữ weak thì host truyền một object cục bộ là callback lặng
+   lẽ chết ở lần GC / rời scope đầu tiên — không lỗi, không log. Hỏng kiểu đó khó lần hơn hẳn rò rỉ,
+   mà rò rỉ thì đã có cảnh báo tường minh trong doc comment của cả ba cổng.
+2. **Main thread là bảo đảm, không phải tình cờ.** Host được phép đụng View/UIKit và điều hướng
+   thẳng trong thân method. Dời một chỗ bắn sang thread nền là **breaking change** → ghi `CHANGELOG.md`.
+   Đây là chỗ hai nền tảng dễ lệch nhất: iOS được `@MainActor` ép ở compiler, Android **không có gì
+   ép** — chỉ đúng vì mọi chỗ bắn hiện nằm trong luồng UI.
+3. **`PromotionTracker` là ngoại lệ có chủ đích ở mục "host ném".** Tracking là phụ trợ nên lõi bọc
+   `runCatching` + `promotionWarn` (`PromotionAnalytics`); callback thì không, vì nuốt một sự kiện
+   nghiệp vụ là để host tưởng đã xử lý xong. Xem [HostCapabilities.md](./HostCapabilities.md) §4.
 
 > **Dọn ngày 2026-09-10 — quyết định trên đúng, nhưng code và doc chưa theo kịp.** Bốn thứ còn sót
 > lại sau khi bỏ các callback này, tất cả đã xoá:

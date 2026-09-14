@@ -29,6 +29,32 @@ public struct PromotionServiceSelection {
     }
 }
 
+/// Callback sự kiện SDK — set qua `PromotionSDKOptions.callback`.
+///
+/// **Hợp đồng — bắt buộc đọc.** Giống `PromotionTokenSource` và `PromotionTracker`, đây là một object
+/// của host mà SDK giữ; ba mục dưới đây là cùng một hợp đồng, phát biểu cho cả ba cổng. Đối ứng từng
+/// mục với `PromotionSDKCallback` bên Android.
+///
+/// 1. **Thread: luôn là main thread.** Cả ba sự kiện đều phát ra từ tầng UI của SDK
+///    (`PromotionSDKImpl`, `PRMStoreViewModel`, các ViewController) — đều `@MainActor` — nên host
+///    **được phép** đụng UIKit / điều hướng thẳng trong thân method, không cần
+///    `DispatchQueue.main.async`. Đây là **bảo đảm**, không phải tình cờ: đổi chỗ bắn sang thread nền
+///    là breaking change và phải ghi vào `CHANGELOG.md`.
+/// 2. **Vòng đời — bẫy dễ dính nhất.** `PromotionSDK` là singleton; nó giữ **strong reference** tới
+///    object này từ `initialize` đến `release()`. Cho một `UIViewController` conform protocol này rồi
+///    truyền `self` là giữ màn hình đó vĩnh viễn, và sau khi màn hình biến mất thì callback vẫn chạy
+///    trên một view đã rời hierarchy. Trỏ vào một singleton **cấp app** rồi từ đó phát tiếp đi đâu
+///    cũng được — xem `DemoPromotionCallback` ở app demo.
+///
+///    SDK **cố ý giữ strong, không giữ weak** dù protocol là `AnyObject`: weak thì host truyền một
+///    object cục bộ là callback lặng lẽ chết ngay khi nó rời scope, không lỗi không log — hỏng theo
+///    kiểu khó lần hơn hẳn rò rỉ. Đối ứng `private var callback` (strong) bên Android.
+/// 3. **Sau `release()` thì không còn sự kiện nào.** `release()` xoá tham chiếu này, nên host không
+///    phải tự huỷ đăng ký. Đổi callback = gọi lại `initialize`.
+///
+/// Ném/`fatalError` trong các method này thì **SDK không cứu** — nó nổi lên đúng chỗ bắn, tức trong
+/// luồng UI của màn SDK. Khác `PromotionTracker` (tracking là phụ trợ nên lõi nuốt + log): những sự
+/// kiện ở đây là nghiệp vụ của host, nuốt đi thì host tưởng đã xử lý xong.
 public protocol PromotionSDKCallback: AnyObject {
     /// Gọi khi user chọn và bấm "Áp dụng" ưu đãi thành công.
     func onVoucherApplied(voucherId: String)
