@@ -69,7 +69,11 @@ final class PromotionSDKImpl: NSObject {
     private let hostNotifier = OfferWidgetHostNotifier()
 
     init(options: PromotionSDKOptions) {
-        self.context = PromotionMutableContext(session: options.session, availableServices: options.availableServices)
+        self.context = PromotionMutableContext(
+            session: options.session,
+            availableServices: options.availableServices,
+            hostServices: options.hostServices
+        )
         // Khởi tạo lõi Kotlin qua map public→core (đối ứng `options.toCoreConfig` bên Android).
         // `isDebug`: bản DEBUG in toàn bộ request/response của Ktor ra console để đối chiếu schema thật
         // của server với DTO; bản Release tắt hẳn (không log token) — xem `isDebugBuild`.

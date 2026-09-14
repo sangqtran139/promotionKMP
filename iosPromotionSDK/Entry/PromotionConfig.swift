@@ -162,6 +162,9 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     /// Danh mục dịch vụ host cấu hình — giữ ở đây để dựng lại core config
     /// không cần host truyền lại (đối ứng `PromotionMutableContext.availableServices` bên Android).
     let availableServices: [PromotionAvailableService]
+    /// Gói năng lực do host cấp — giữ ở đây cùng lý do với `availableServices`.
+    /// Đối ứng `PromotionMutableContext.hostServices` bên Android.
+    let hostServices: PromotionHostServices
 
     var orderId: String?
     var orderValue: String?
@@ -170,9 +173,14 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
     /// Order items (SKU) của đơn hiện tại — lõi đọc qua `getOrderItems()` cho `findEligible`.
     var orderItems: [PromotionOrderItem] = []
 
-    init(session: PromotionSessionConfig, availableServices: [PromotionAvailableService] = []) {
+    init(
+        session: PromotionSessionConfig,
+        availableServices: [PromotionAvailableService] = [],
+        hostServices: PromotionHostServices = PromotionHostServices()
+    ) {
         self.session = session
         self.availableServices = availableServices
+        self.hostServices = hostServices
         super.init()
     }
 
@@ -187,6 +195,7 @@ final class PromotionMutableContext: NSObject, PromotionRequestContextProvider {
                 AvailableService(productId: $0.productId, productName: $0.productName,
                                  skuSourceId: $0.skuSourceId, iconUrl: $0.iconUrl)
             },
+            hostServices: hostServices.toCore(),
             isDebug: isDebug
         )
     }

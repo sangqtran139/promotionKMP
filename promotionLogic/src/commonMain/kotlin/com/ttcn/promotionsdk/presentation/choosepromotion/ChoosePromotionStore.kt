@@ -1,5 +1,7 @@
 package com.ttcn.promotionsdk.presentation.choosepromotion
 
+import com.ttcn.promotionsdk.common.PromotionAnalytics
+import com.ttcn.promotionsdk.common.PromotionEvents
 import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
@@ -64,6 +66,9 @@ public class ChoosePromotionStore(
 
     /** Gác [ChoosePromotionIntent.SeedOnce] — xem KDoc của intent đó. */
     private var hasSeeded = false
+
+    /** Gác [ChoosePromotionEvents.VIEW] — xem [trackViewOnce]. */
+    private var hasTrackedView = false
 
     override fun errorOf(state: ChoosePromotionState): String? = state.errorCode
 
@@ -148,6 +153,12 @@ public class ChoosePromotionStore(
                 applyMessage = items.firstOrNull { it.message.isNotBlank() }?.message.orEmpty(),
             )
         }
+        // Chỉ **số lượng** bị từ chối, không kèm `message`: câu đó do server soạn cho người dùng,
+        // có thể mang tên/giá trị đơn — đúng thứ `PromotionEvent` cấm mang theo.
+        PromotionAnalytics.track(
+            ChoosePromotionEvents.APPLY_REJECTED,
+            mapOf(PromotionEvents.PARAM_REJECTED_COUNT to items.size.toString()),
+        )
     }
 
     /**
@@ -164,6 +175,15 @@ public class ChoosePromotionStore(
             }
             it.copy(selectedIds = next)
         }
+        // Đọc lại state SAU cập nhật thay vì suy ra trong `update {}`: lambda của `update` có thể
+        // chạy lại khi có tranh chấp, bắn event bên trong nó là bắn trùng.
+        PromotionAnalytics.track(
+            ChoosePromotionEvents.SELECT,
+            mapOf(
+                PromotionEvents.PARAM_VOUCHER_ID to id,
+                PromotionEvents.PARAM_SELECTED to (id in _state.value.selectedIds).toString(),
+            ),
+        )
     }
 
     /**
@@ -221,6 +241,27 @@ public class ChoosePromotionStore(
                 isEmpty = my.isEmpty() && other.isEmpty(),
             )
         }
+        trackViewOnce(my.size, other.size)
+    }
+
+    /**
+     * "Đã xem màn chọn ưu đãi" — bắn **đúng một lần** cho mỗi vòng đời store, ở lượt đầu tiên màn
+     * thực sự có dữ liệu để vẽ (dù dữ liệu tới từ [preload] hay từ API).
+     *
+     * Cờ riêng chứ không dựa vào `hasLoadedInitial`: cờ đó cũng bật ở nhánh **lỗi** của [loadOffers],
+     * và kéo-để-tải-lại / gõ tìm kiếm đều đi qua cùng một `onSuccess`. Đếm mỗi lần đó là một lượt xem
+     * sẽ thổi phồng phễu lên nhiều lần.
+     */
+    private fun trackViewOnce(myCount: Int, otherCount: Int) {
+        if (hasTrackedView) return
+        hasTrackedView = true
+        PromotionAnalytics.track(
+            ChoosePromotionEvents.VIEW,
+            mapOf(
+                PromotionEvents.PARAM_MY_COUNT to myCount.toString(),
+                PromotionEvents.PARAM_OTHER_COUNT to otherCount.toString(),
+            ),
+        )
     }
 
     private fun loadOffers(isRefresh: Boolean) {
@@ -255,6 +296,23 @@ public class ChoosePromotionStore(
                             otherOffers = result?.otherOffers.orEmpty().map { o -> o.toChooseOffer(warn, it.rejectedIds.toSet()) },
                             isEmpty = result?.myOffers.orEmpty().isEmpty() && result?.otherOffers.orEmpty().isEmpty(),
                             hasLoadedInitial = true,
+                        )
+                    }
+                    trackViewOnce(
+                        myCount = result?.myOffers.orEmpty().size,
+                        otherCount = result?.otherOffers.orEmpty().size,
+                    )
+                    // Tìm kiếm là **server-side**, nên một lượt gọi có keyword = một lượt tìm. Gửi
+                    // `has_keyword` chứ KHÔNG gửi chính keyword: người dùng gõ gì vào ô tìm kiếm là
+                    // dữ liệu của họ, không đẩy ra hệ tracking bên thứ ba.
+                    if (_state.value.keyword.isNotBlank()) {
+                        PromotionAnalytics.track(
+                            ChoosePromotionEvents.SEARCH,
+                            mapOf(
+                                PromotionEvents.PARAM_HAS_KEYWORD to true.toString(),
+                                PromotionEvents.PARAM_MY_COUNT to result?.myOffers.orEmpty().size.toString(),
+                                PromotionEvents.PARAM_OTHER_COUNT to result?.otherOffers.orEmpty().size.toString(),
+                            ),
                         )
                     }
                 }

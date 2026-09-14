@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.di
 
+import com.ttcn.promotionsdk.host.HostModule
 import com.ttcn.promotionsdk.config.PromotionRequestContextProvider
 import com.ttcn.promotionsdk.config.PromotionSDKConfig
 import com.ttcn.promotionsdk.data.local.LocalModule
@@ -39,11 +40,15 @@ public object PromotionContainer {
      * ở đây chỉ liệt kê theo đúng thứ tự lớp.
      *
      * Không còn `FeatureFlagModule` cắt ngang bốn lớp — mỗi binding của nó về đúng tầng của mình.
+     *
+     * `HostModule` đứng **đầu**: nó dựng gói năng lực do host cấp (tracker, kho dữ liệu…), thứ mà
+     * mọi tầng bên dưới đều có thể cần — `LocalModule` hỏi nó ngay để chọn kho.
      */
     public fun initialize(config: PromotionSDKConfig) {
         this.config = config
         SdkDi.getInstance().start(
             config = config,
+            HostModule.module,
             NetworkModule.module,
             LocalModule.module,
             RepositoryModule.module,

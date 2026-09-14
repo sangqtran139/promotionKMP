@@ -1,6 +1,7 @@
 package com.ttcn.promotionsdk.presentation.choosepromotion
 
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOffer
+import com.ttcn.promotionsdk.common.PromotionEvents
 import com.ttcn.promotionsdk.common.daysUntil
 import com.ttcn.promotionsdk.presentation.common.ExpiryWarning
 import com.ttcn.promotionsdk.presentation.common.RejectedOffer
@@ -351,4 +352,18 @@ internal fun EligibleOffer.toChooseOffer(
         isExpired = expired,
         isRejected = rejected,
     )
+}
+
+/**
+ * Tên event tracking của **riêng màn này** — nằm cạnh store bắn nó, không gom vào `common/`.
+ *
+ * Feature sở hữu tên event của mình: tầng nền (`PromotionAnalytics`) chỉ nhận chuỗi, nên nó không
+ * cần biết màn nào tồn tại. Đây là điều kiện để tách feature thành module Gradle riêng mà không tạo
+ * phụ thuộc ngược. Tiền tố và tên tham số dùng chung: [PromotionEvents].
+ */
+internal object ChoosePromotionEvents {
+    const val VIEW: String = "${PromotionEvents.PREFIX}choose_promotion_view"
+    const val SEARCH: String = "${PromotionEvents.PREFIX}choose_promotion_search"
+    const val SELECT: String = "${PromotionEvents.PREFIX}choose_promotion_select"
+    const val APPLY_REJECTED: String = "${PromotionEvents.PREFIX}choose_promotion_apply_rejected"
 }

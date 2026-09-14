@@ -8,6 +8,46 @@ trong `PromotionKit.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Added — `PromotionHostServices`: một gói cho mọi năng lực host cấp (tracking, kho dữ liệu)
+
+Host có sẵn tracker và kho dữ liệu ở tầng native; SDK cần dùng chúng mà **không** được biết Firebase
+hay Room/CoreData là gì. Cơ chế: **port/adapter** — interface ở `commonMain`, host cấp hiện thực lúc
+`initialize`. Không phải `expect/actual`: `actual` nằm trong SDK thì chỉ có đúng một hiện thực mỗi
+target và kéo KSP vào `:promotionLogic`.
+
+```kotlin
+PromotionSDK.initialize(
+    context, tokenSource = AppTokenSource, baseUrl = BASE_URL,
+    hostServices = PromotionHostServices(tracker = AppPromotionTracker),
+)
+```
+
+**Một field `hostServices` cho mọi năng lực**, không phải mỗi năng lực một tham số: thêm cổng thứ ba
+sau này không đụng chữ ký `initialize`/`PromotionSDKOptions` của bên nào.
+
+| Năng lực | Không cấp thì | Ghi chú |
+|---|---|---|
+| `tracker` | SDK không bắn event đi đâu | Điểm bắn nằm trong **Store dùng chung**, nên Android và iOS phát ra cùng tên event — tên sinh một lần ở `PromotionEvents` |
+| `storage` | SDK dùng `SharedPreferences`/`NSUserDefaults` của riêng nó | Cho app muốn SDK đọc ghi vào kho sẵn có (điển hình: **DB của bản SDK native cũ**) thay vì mở kho thứ hai |
+
+5 event đầu tiên: `prm_choose_promotion_view` / `_search` / `_select` / `_apply_rejected`,
+`prm_promotion_detail_view`. Không event nào mang PII — từ khoá người dùng gõ chỉ đi dưới dạng
+`has_keyword`, câu lỗi server soạn chỉ đi dưới dạng `rejected_count`. Tên event là hợp đồng với BI:
+đổi/xoá phải ghi vào đây.
+
+Host ném từ `track()` → lõi nuốt kèm một dòng cảnh báo, màn hình không đổ. Chưa `initialize()` → bỏ
+qua im lặng.
+
+Kèm `scripts/check-core-feature-boundary.sh`: gác chiều phụ thuộc **nền → feature** trong
+`:promotionLogic`. Vi phạm kiểu này không làm build đỏ, nó chỉ âm thầm khoá cánh cửa tách feature
+thành module Gradle riêng — và nó đã xảy ra một lần ngay trong chính thay đổi này (danh mục tên event
+ban đầu nằm ở `common/` và liệt kê tên của hai màn). Nay mỗi feature giữ danh mục của mình; tầng nền
+chỉ biết tiền tố `prm_` và tên tham số dùng chung.
+
+Tài liệu: [`docs/common/HostCapabilities.md`](./docs/common/HostCapabilities.md) — gồm cả §8 về đồ
+thị module đích khi mỗi feature tách thành một module Gradle.
+Không breaking — mọi field đều có mặc định, host không sửa gì vẫn chạy như cũ.
+
 ### Changed — dọn đường cho CI/CD: version một nguồn, verify được trước khi publish
 
 Hai thứ CI/CD cần mà chỉ dev đặt được, nên chúng nằm trong repo chứ không nằm trong pipeline:

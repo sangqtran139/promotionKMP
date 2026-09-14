@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.presentation.promotiondetail
 
+import com.ttcn.promotionsdk.common.PromotionEvents
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherDetail
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
 
@@ -33,4 +34,12 @@ public data class PromotionDetailState(
 public sealed interface PromotionDetailIntent {
     public data class LoadDetail(val voucherId: String) : PromotionDetailIntent
     public data object ConsumeError : PromotionDetailIntent
+}
+
+/**
+ * Tên event tracking của **riêng màn này** — xem ghi chú ở
+ * [com.ttcn.promotionsdk.presentation.choosepromotion.ChoosePromotionEvents].
+ */
+internal object PromotionDetailEvents {
+    const val VIEW: String = "${PromotionEvents.PREFIX}promotion_detail_view"
 }

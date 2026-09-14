@@ -1,6 +1,7 @@
 package com.ttcn.promotionsdk.config
 
 import com.ttcn.promotionsdk.domain.model.eligible.EligibleOrderItem
+import com.ttcn.promotionsdk.host.PromotionHostServices
 
 public data class AvailableService(
     val productId: String,
@@ -14,6 +15,13 @@ public data class PromotionSDKConfig(
     val requestContextProvider: PromotionRequestContextProvider? = null,
     val environment: SdkEnvironment = SdkEnvironment.PROD,
     val availableServices: List<AvailableService> = emptyList(),
+    /**
+     * Gói năng lực do host cấp (tracking, kho dữ liệu…). Mặc định là gói rỗng — SDK dùng hiện thực
+     * của chính nó. Xem [PromotionHostServices].
+     *
+     * **Một field cho mọi năng lực** là cố ý: thêm cổng mới không đụng chữ ký public nào.
+     */
+    val hostServices: PromotionHostServices = PromotionHostServices(),
     /** Bật log body của HTTP request/response. */
     val isDebug: Boolean = false,
 )

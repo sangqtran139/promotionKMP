@@ -93,7 +93,7 @@ iOS/common:  PromotionContainer.init(config)
                     └─ SdkDi.getInstance().start(config, modules…)
                          ├─ registry.single { config }      // đăng ký config TRƯỚC
                          └─ loadModules(
-                              NetworkModule, LocalModule,
+                              HostModule, NetworkModule, LocalModule,
                               RepositoryModule, UseCaseModule)
 ```
 
@@ -112,8 +112,9 @@ khai nó nằm ngay bên cạnh; `di/` chỉ còn container + engine.
 
 | Module | File | Đăng ký gì |
 |--------|------|------------|
+| `HostModule` | `host/HostModule.kt` | `PromotionHostServices` (gói năng lực do host cấp), `PromotionTracker` → no-op nếu host không cấp. Nạp **đầu tiên** — xem [HostCapabilities.md](./HostCapabilities.md) |
 | `NetworkModule` | `data/remote/NetworkModule.kt` | `PromotionRequestContextProvider`, `HttpClient`, `PromotionApiService`, `PromotionRemoteDataSource`, + `FeatureFlagApiService`, `FeatureFlagRemoteDataSource` |
-| `LocalModule` | `data/local/LocalModule.kt` | `PromotionPreferences`, `FeatureFlagLocalDataSource` |
+| `LocalModule` | `data/local/LocalModule.kt` | `PromotionPreferences` (kho của host nếu `hostServices.storage` có, không thì kho nền tảng), `FeatureFlagLocalDataSource` |
 | `RepositoryModule` | `data/repository/RepositoryModule.kt` | `PromotionRepository`, `FeatureFlagRepository` → impl |
 | `UseCaseModule` | `domain/usecase/UseCaseModule.kt` | 5 use case nghiệp vụ + `PromotionUseCases`, + 4 use case feature flag + `PromotionFeatureFlagUseCases` |
 

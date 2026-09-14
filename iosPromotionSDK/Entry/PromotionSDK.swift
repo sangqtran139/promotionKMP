@@ -103,6 +103,7 @@ public final class PromotionSDK {
             availableServices: options.availableServices,
             theme: options.theme,
             callback: options.callback,
+            hostServices: options.hostServices,
         ))
         _impl = impl
         callback = options.callback
@@ -126,7 +127,8 @@ public final class PromotionSDK {
         language: String = "vi-VN",
         availableServices: [PromotionAvailableService] = [],
         theme: PromotionSDKTheme? = nil,
-        callback: PromotionSDKCallback? = nil
+        callback: PromotionSDKCallback? = nil,
+        hostServices: PromotionHostServices = PromotionHostServices()
     ) {
         initialize(options: PromotionSDKOptions(
             session: PromotionSessionConfig(
@@ -136,6 +138,7 @@ public final class PromotionSDK {
             availableServices: availableServices,
             theme: theme,
             callback: callback,
+            hostServices: hostServices,
         ))
     }
 

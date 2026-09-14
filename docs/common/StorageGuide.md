@@ -194,3 +194,7 @@ giữ nguyên nên host không phải sửa gì.
 4. Đổi schema key hoặc thêm kiểu dữ liệu → **cập nhật file này** (AI_AGENT_RULES điều 8). Thêm kiểu
    mới chỉ sửa `SettingsPreferences` ở `commonMain` — không đụng `actual`.
 5. **Không** đổi sang `multiplatform-settings-no-arg` (§2.1) và **không** đổi sang DataStore (§2.2).
+6. Host có thể **thay** kho mặc định bằng kho của app (điển hình: DB của bản SDK native cũ) qua
+   `PromotionHostServices.storage` — xem [HostCapabilities.md §5](./HostCapabilities.md). Nhánh chọn
+   kho nằm ở **một** chỗ duy nhất (`LocalModule`); đừng thêm chỗ thứ hai đọc `hostServices.storage`,
+   nếu không cờ tính năng và theme sẽ lệch kho nhau.

@@ -99,7 +99,7 @@ object PromotionSDK {
 
     /**
      * Khởi tạo **tối giản** — đủ cho phần lớn host: chỉ nguồn token + baseUrl.
-     * `availableServices`/`theme`/`callback` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
+     * `availableServices`/`theme`/`callback`/`hostServices` là tuỳ chọn; cần cấu hình sâu hơn thì dùng overload
      * [initialize] nhận [PromotionSDKOptions]. Đối ứng `PromotionSDK.initialize(...)` phẳng bên iOS.
      *
      * @param tokenSource Nguồn token — xem [PromotionTokenSource]. SDK đọc lại token ở **mỗi**
@@ -117,6 +117,7 @@ object PromotionSDK {
         availableServices: List<PromotionAvailableService> = emptyList(),
         theme: PromotionSDKTheme? = null,
         callback: PromotionSDKCallback? = null,
+        hostServices: PromotionHostServices = PromotionHostServices(),
     ) = initialize(
         context,
         PromotionSDKOptions(
@@ -124,6 +125,7 @@ object PromotionSDK {
             availableServices = availableServices,
             theme = theme,
             callback = callback,
+            hostServices = hostServices,
         ),
     )
 
@@ -157,7 +159,7 @@ object PromotionSDK {
         // Đối ứng `PRMLocalization.configure` bên iOS.
         PRMLocale.configure(incoming.language)
         callback = options.callback
-        mutableContext = PromotionMutableContext(incoming, options.availableServices)
+        mutableContext = PromotionMutableContext(incoming, options.availableServices, options.hostServices)
         PromotionContainer.initialize(context, options.toCoreConfig(mutableContext))
         // Theme cũng là cấu hình tĩnh: host truyền → ghi đè + lưu; không truyền → khôi phục bản đã
         // lưu. Nhờ vậy host cấu hình một lần, các lần init sau theme tự sống lại.

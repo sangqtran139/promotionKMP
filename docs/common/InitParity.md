@@ -11,6 +11,7 @@
 - [1. Entry `PromotionSDK` — bảng ánh xạ canonical](#1-entry-promotionsdk--bảng-ánh-xạ-canonical)
 - [2. Config types — bảng ánh xạ](#2-config-types--bảng-ánh-xạ)
   - [2.1. Token — `PromotionTokenSource`, một khái niệm duy nhất](#21-token--promotiontokensource-một-khái-niệm-duy-nhất)
+  - [2.2. Năng lực do host cấp — `PromotionHostServices`](#22-năng-lực-do-host-cấp--promotionhostservices)
 - [3. `PromotionSDKCallback` — hợp nhất theo iOS (6 sự kiện), tên trùng cả 2 bên](#3-promotionsdkcallback--hợp-nhất-theo-ios-6-sự-kiện-tên-trùng-cả-2-bên)
   - [3.1. Cờ tính năng chặn điểm mở màn — `onFeatureDisabled`](#31-cờ-tính-năng-chặn-điểm-mở-màn--onfeaturedisabled)
 - [4. Ngoại lệ N1 — buộc lệch (đã duyệt)](#4-ngoại-lệ-n1--buộc-lệch-đã-duyệt)
@@ -45,7 +46,7 @@
 | Khái niệm | Canonical (đích) | Android hiện tại | iOS hiện tại | TT |
 |---|---|---|---|---|
 | Khởi tạo (options) | **`initialize`** | `fun initialize(context, options)` | `initialize(options:)` | ✅ tên trùng; N1 nhỏ: Android cần `context` (iOS không) |
-| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, tokenSource, baseUrl, environment=, language=, availableServices=, theme=, callback=)` | `initialize(tokenSource:baseUrl:environment:language:availableServices:theme:callback:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
+| Khởi tạo (phẳng) | **`initialize`** overload | `initialize(context, tokenSource, baseUrl, environment=, language=, availableServices=, theme=, callback=, hostServices=)` | `initialize(tokenSource:baseUrl:environment:language:availableServices:theme:callback:hostServices:)` | ✅ đủ cho phần lớn host — chỉ 2 tham số bắt buộc; uỷ thẳng cho overload options |
 | Login lại / mở lại app | **`initialize`** | gọi lại `initialize(context, options)` | gọi lại `initialize(options:)` | ✅ **lối duy nhất**, `updateSession`/`updateToken` đã bỏ. `baseUrl`/`environment`/`language`/`theme` là cấu hình **tĩnh**: đặt ở lần đầu (hoặc lần đầu sau `release()`) rồi **dùng lại** — host chỉ đưa `tokenSource`. `release()` **giữ** cấu hình tĩnh + theme, chỉ xoá dữ liệu phiên |
 | Token hết hạn giữa phiên | — | không có API | không có API | ✅ **đã bỏ `updateToken`**: SDK đọc lại `tokenSource.currentToken()` ở mỗi request, không có gì để đẩy vào |
 | Giải phóng | `release()` | ✅ | ✅ | ✅ |
@@ -76,12 +77,16 @@ không cần truyền identity). iOS gỡ luôn hack `callbackToken`.
 
 | Type | Field / thứ tự (canonical) | Android | iOS | TT |
 |---|---|---|---|---|
-| `PromotionSDKOptions` | `session, availableServices, theme, callback` | ✅ | ✅ | ✅ |
+| `PromotionSDKOptions` | `session, availableServices, theme, callback, hostServices` | ✅ | ✅ | ✅ `hostServices` thêm 2026-09-15, mặc định gói rỗng. **Một field cho mọi năng lực** — xem [§2.2](#22-năng-lực-do-host-cấp--promotionhostservices) |
 | `PromotionSessionConfig` | `tokenSource, baseUrl, language = "vi-VN", environment` | ✅ (`baseUrl`) | ✅ (`baseUrl`) | ✅ đã nắn ở B2. Không còn `accessToken` |
 | `PromotionTokenSource` | `currentToken()`, `refreshToken(onResult)` | `interface`, `refreshToken` có default `= onResult(false)` | `protocol`, default ở `public extension` | ✅ **nguồn token duy nhất** — xem [§Token](#21-token--promotiontokensource-một-khái-niệm-duy-nhất) |
 | `PromotionEnvironment` | `PROD, STAGING` / `prod, staging` | `PROD, STAGING` | `prod, staging` | **N1** — đã chốt: giữ convention mỗi ngôn ngữ (xem ghi chú) |
 | `PromotionAvailableService` | `productId, productName, skuSourceId = "", iconUrl = ""` | ✅ | ✅ | ✅ |
-| `PromotionMutableContext` (internal) | `session` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter + `refreshAccessToken` | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng). **Không có field token nào** — chỉ chuyển tiếp sang `tokenSource` |
+| `PromotionHostServices` | `tracker = null, storage = null` | `data class` | `struct` | ✅ **gói** năng lực hạ tầng do host cấp — xem [§2.2](#22-năng-lực-do-host-cấp--promotionhostservices) |
+| `PromotionTracker` | `track(event)` | `interface` | `protocol` | ✅ **một hàm duy nhất** |
+| `PromotionEvent` | `name, params = [:]` | `data class` | `struct` | ✅ `params` chỉ `String`→`String`; tên event sinh ở lõi (`PromotionEvents`), không phải ở tầng UI |
+| `PromotionStorage` | `putBoolean/getBoolean/putString/getString/contains/remove/clear` | `interface` | `protocol` | ✅ **đồng bộ**, map sang `PromotionPreferences` của lõi qua adapter mỗi bên |
+| `PromotionMutableContext` (internal) | `session, availableServices, hostServices` + `orderId/orderValue/serviceCode/metaData/orderItems` + 7 getter + `refreshAccessToken` | ✅ | ✅ | ✅ nội bộ, vị trí xem [§5](#5-bố-cục-file-target-đối-xứng). **Không có field token nào** — chỉ chuyển tiếp sang `tokenSource` |
 | `PromotionOrderItem` | `skuSourceId, productId, productName, productCategory, quantity, unitPrice` | ✅ | ✅ | ✅ `getOrderItems()` map sang `EligibleOrderItem` của lõi ở **cả hai** bên |
 
 ### 2.1. Token — `PromotionTokenSource`, một khái niệm duy nhất
@@ -125,6 +130,48 @@ nếu host không gọi lại callback.
 
 > **Enum case (đã chốt):** giữ convention mỗi bên (`PROD`↔`prod`) — N1 *duy nhất được miễn* vì ánh
 > xạ 1-1 hiển nhiên. Mọi tên hàm/tham số khác đã ép trùng chữ tuyệt đối.
+
+### 2.2. Năng lực do host cấp — `PromotionHostServices`
+
+**Một gói, không phải mỗi năng lực một tham số.** `tracker` và `storage` (và những cổng thêm sau)
+đều đi qua đúng một field `hostServices` của `PromotionSDKOptions`. Nhờ vậy thêm năng lực thứ ba
+không đụng chữ ký `initialize` của bên nào — đó là cả lý do gói này tồn tại.
+
+Ranh giới với `PromotionSessionConfig`: gói này là **năng lực hạ tầng** (gắn vòng đời app);
+`tokenSource` là **thông tin phiên** (gắn lần đăng nhập) nên ở lại `PromotionSessionConfig`.
+
+`tracker` đi **ngược** chiều `PromotionTokenSource`: ở đó SDK *hỏi* host, ở đây SDK *báo* host.
+
+```
+Store dùng chung (promotionLogic)
+   └─ PromotionAnalytics.track(PromotionEvents.X, params)
+        └─ config.PromotionTracker           ← cổng ở commonMain
+             ├─ PromotionTrackerAdapter (Kotlin)  → com.ttcn.prm.entry.PromotionTracker
+             └─ PromotionTrackerAdapter (Swift)   → PromotionKit.PromotionTracker
+```
+
+**Ràng buộc phải giữ đối xứng khi sửa:**
+
+1. **Điểm bắn nằm ở `promotionLogic`, không ở Fragment/ViewController.** Đây là toàn bộ lý do tồn
+   tại của cơ chế: tên event sinh một lần ở tầng dùng chung (`ChoosePromotionEvents`,
+   `PromotionDetailEvents` — cạnh store của chính feature) nên hai nền tảng không thể lệch. Thêm một
+   `analytics.log(...)` ở tầng UI của một bên là phá đúng thứ này.
+2. Tên event là **hợp đồng với BI**. Thêm thì tự do; đổi/xoá thì ghi `CHANGELOG.md` như mọi breaking
+   change public khác.
+3. `params` chỉ `String` → `String` ở cả hai bên. `Map<String, Any>` xuống Swift rồi xuống Firebase
+   thì mỗi hệ ép kiểu một khác — đúng kiểu lệch âm thầm mà không test nào bắt.
+4. **Không PII** trong event (token, số điện thoại, email, từ khoá người dùng gõ, câu lỗi của
+   server). Tracker của host thường đẩy thẳng ra bên thứ ba. Cùng lý do với
+   [StorageGuide §5.3](./StorageGuide.md).
+5. Host ném → lõi nuốt kèm `promotionWarn` (`PromotionAnalytics`), **không** kéo đổ màn hình. Test
+   khoá điều này: `PromotionTrackerTest`.
+6. Chưa `initialize()` → bỏ qua im lặng. Store dựng trực tiếp trong unit test rơi vào nhánh này.
+
+7. `storage` (kho của host, điển hình là DB của bản SDK cũ) được chọn ở **một** chỗ duy nhất —
+   `LocalModule` — nên cache cờ tính năng và theme đã lưu không thể lệch kho. Test:
+   `PromotionHostServicesTest.storage_whenHostProvidesOne_sdkUsesIt`.
+
+Chi tiết cơ chế port/adapter và cách thêm cổng mới: [HostCapabilities.md](./HostCapabilities.md).
 
 ---
 

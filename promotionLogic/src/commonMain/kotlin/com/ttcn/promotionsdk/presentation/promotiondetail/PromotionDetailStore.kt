@@ -1,5 +1,7 @@
 package com.ttcn.promotionsdk.presentation.promotiondetail
 
+import com.ttcn.promotionsdk.common.PromotionAnalytics
+import com.ttcn.promotionsdk.common.PromotionEvents
 import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.exception.toErrorCode
 import com.ttcn.promotionsdk.domain.model.voucher.VoucherStatus
@@ -82,6 +84,16 @@ public class PromotionDetailStore(
                         errorCode = if (detail == null) "error_detail_unavailable" else it.errorCode,
                     )
                 }
+                // Bắn **sau khi có dữ liệu**, không phải lúc `LoadDetail` vào: mở màn rồi API hỏng
+                // thì đó không phải một lượt xem chi tiết. `status` lấy từ enum đã chuẩn hoá ở
+                // domain nên hai nền tảng gửi cùng chuỗi.
+                PromotionAnalytics.track(
+                    PromotionDetailEvents.VIEW,
+                    mapOf(
+                        PromotionEvents.PARAM_VOUCHER_ID to voucherId,
+                        PromotionEvents.PARAM_STATUS to status.name,
+                    ),
+                )
             }.onFailure { throwable ->
                 _state.update { it.copy(isLoading = false, errorCode = throwable.toErrorCode()) }
             }
