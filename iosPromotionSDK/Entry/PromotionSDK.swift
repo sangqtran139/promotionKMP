@@ -40,13 +40,15 @@ public final class PromotionSDK {
     private static var _impl: NSObject?
     private static var impl: PromotionSDKImpl? { _impl as? PromotionSDKImpl }
 
-    /// Đồ thị đang sống. Gọi trước `initialize` → **không** crash: ghi log nêu đúng hàm bị gọi sớm
-    /// rồi trả `nil` để nơi gọi `guard … else { return }`. Đối ứng `requireInitialized` bên Android.
+    /// Đồ thị đang sống. Gọi trước `initialize` → **không** crash: ghi log (mức `.default`, vì đây là
+    /// trạng thái hợp lệ khi host cố ý tắt tính năng) rồi trả `nil` cho nơi gọi `guard`.
+    /// Hai hàm `open…` biến `nil` đó thành `onFeatureDisabled` — cùng đầu mối với ca cờ TẮT.
+    /// Đối ứng `requireInitialized` bên Android.
     private static func requireImpl(_ caller: String) -> PromotionSDKImpl? {
         guard let impl else {
-            PRMLog.integrationError(
-                "[PromotionSDK] \(caller) bị gọi trước initialize() — bỏ qua. "
-                + "Hãy gọi PromotionSDK.initialize(options:) trước."
+            PRMLog.integrationWarning(
+                "[PromotionSDK] \(caller) bị gọi khi SDK chưa initialize() — bỏ qua. "
+                + "Nếu không cố ý tắt tính năng, hãy gọi PromotionSDK.initialize(options:) trước."
             )
             return nil
         }
@@ -249,8 +251,13 @@ public final class PromotionSDK {
     ///
     /// Lưu ý: theme nên cấu hình **một lần** lúc khởi tạo. Các view đã render có thể chỉ cập nhật khi
     /// được dựng lại (rebind / đẩy màn mới).
+    ///
+    /// Chưa `initialize` → log rồi **không làm gì**. Hành vi vốn đã vậy (`impl` là `nil`), nhưng đi
+    /// qua `requireImpl` để có dòng log: theme bị bỏ qua trong im lặng là thứ rất khó lần ra — host
+    /// thấy màu mặc định và không có manh mối nào. Đối xứng `configure(theme)` bên Android.
     public static func configure(theme: PromotionSDKTheme?) {
-        impl?.applyAndPersistTheme(theme)
+        guard let impl = requireImpl("configure(theme:)") else { return }
+        impl.applyAndPersistTheme(theme)
     }
 
     /// Theme đang áp (`nil` nếu đang dùng mặc định). Đối ứng `PromotionSDK.currentTheme()` bên Android.
@@ -264,8 +271,12 @@ public final class PromotionSDK {
     // dưới đây **không** thay thế việc đó, chúng chỉ cho host *hỏi trước* để ẩn entry point của mình
     // thay vì để user bấm rồi ăn toast PRM_MOB_021.
     //
-    // Tất cả đều **fail-open**: chưa `initialize` hoặc chưa có cache → trả "bật hết". Không hàm nào
-    // dừng chương trình, vì cờ hỏng không được phép làm chết màn hình của host.
+    // Hai mặc định ngược nhau, tuỳ nguyên nhân (luật chốt ở `PromotionFeatureGate.isEnabled` của lõi):
+    //  - Chưa `initialize`      → **fail-closed**, "tắt hết". Host có thể cố ý không init để tắt
+    //    tính năng; lúc đó `open…` cũng không mở được gì, nên trả "bật hết" là dẫn tới ngõ cụt.
+    //  - Đã init, chưa có cache → **fail-open**, "bật hết". Mạng chậm không được khoá tính năng.
+    //
+    // Không hàm nào dừng chương trình, vì cờ hỏng không được phép làm chết màn hình của host.
     //
     // Logic quyết định nằm ở `PromotionFeatureGate` trong `promotionLogic`, dùng chung với Android.
 
@@ -299,7 +310,7 @@ public final class PromotionSDK {
     /// và vẫn gọi `completion` với giá trị đang có (fail-open).
     ///
     /// `completion` chạy trên **main thread** để host set UI được ngay; gọi trước `initialize` cũng
-    /// an toàn (trả cờ mặc định bật hết).
+    /// an toàn — trả `.allDisabled` (fail-closed) và **không** gọi mạng.
     ///
     /// **Đây là đường DUY NHẤT** host biết công tắc tổng — không có callback toàn cục nào cho việc
     /// này. `PromotionSDKCallback` có đúng ba sự kiện (`onVoucherApplied` / `onServiceSelected` /
@@ -324,28 +335,35 @@ public final class PromotionSDK {
 
     /// Show the "My Promotions" list screen.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
-    /// Cờ `VOUCHER_LIST` TẮT → gọi `onFeatureDisabled` nếu host truyền, không thì SDK tự hiện
-    /// PRM_MOB_021 trên `viewController`.
+    /// Cờ `VOUCHER_LIST` TẮT **hoặc chưa `initialize()`** → gọi `onFeatureDisabled` nếu host truyền,
+    /// không thì SDK tự hiện PRM_MOB_021 trên `viewController`. Hai ca đi chung một đầu mối.
     /// Cờ tính năng TẮT ở một điểm mở màn: **ưu tiên trả cho host**, host không nhận thì SDK tự lo.
     ///
     /// Nhận closure ngay ở hàm `open…` chứ không dùng callback toàn cục: chỉ có cách đó SDK mới biết
     /// chắc host **có đăng ký hay không**. Đối ứng `PromotionSDK.notifyFeatureDisabled` bên Android.
-    private static func notifyFeatureDisabled(_ impl: PromotionSDKImpl,
-                                              _ viewController: UIViewController,
+    ///
+    /// **Không** nhận `impl`: nhánh chưa-`initialize()` cũng đi ra đây, mà lúc đó chưa có `impl` nào
+    /// tồn tại. `showFeatureDisabledDialog` đã thành `static` cho đúng việc này.
+    private static func notifyFeatureDisabled(_ viewController: UIViewController,
                                               _ onFeatureDisabled: (() -> Void)?) {
         if let onFeatureDisabled {
             onFeatureDisabled()
             return
         }
-        impl.showFeatureDisabledDialog(on: viewController)
+        PromotionSDKImpl.showFeatureDisabledDialog(on: viewController)
     }
 
     public static func openMyPromotion(from viewController: UIViewController,
                                        onFeatureDisabled: (() -> Void)? = nil) {
-        guard let impl = requireImpl("openMyPromotion(from:)") else { return }
+        // Chưa init → ra **đúng một đầu mối với ca cờ TẮT**: host đã wiring `onFeatureDisabled` thì
+        // nhận ở đó, không thì SDK hiện PRM_MOB_021. Log ở `requireImpl` mới là chỗ nêu nguyên nhân thật.
+        guard let impl = requireImpl("openMyPromotion(from:)") else {
+            notifyFeatureDisabled(viewController, onFeatureDisabled)
+            return
+        }
         impl.canOpenVoucherList { enabled in
             guard enabled else {
-                notifyFeatureDisabled(impl, viewController, onFeatureDisabled)
+                notifyFeatureDisabled(viewController, onFeatureDisabled)
                 return
             }
             let nav = viewController.navigationController ?? (viewController as? UINavigationController)
@@ -366,8 +384,8 @@ public final class PromotionSDK {
     /// Mở màn **chi tiết ưu đãi** theo `voucherId`.
     /// Nếu viewController có navigationController → push. Ngược lại → present modal.
     /// Màn tự gọi API lấy chi tiết đầy đủ; trong lúc chờ hiện shimmer.
-    /// Cờ `VOUCHER_DETAIL` TẮT → gọi `onFeatureDisabled` nếu host truyền, không thì SDK tự hiện
-    /// PRM_MOB_021 trên `viewController`.
+    /// Cờ `VOUCHER_DETAIL` TẮT **hoặc chưa `initialize()`** → gọi `onFeatureDisabled` nếu host truyền,
+    /// không thì SDK tự hiện PRM_MOB_021 trên `viewController`. Hai ca đi chung một đầu mối.
     ///
     /// `returnVoucherOnApply` quyết định **nhãn nút và hành vi khi bấm** (TLNV MOB_002 control #5):
     /// - `true` (mặc định): nút "Áp dụng" → trả `voucherId` về `onVoucherApplied`, SDK tự đóng màn.
@@ -405,7 +423,10 @@ public final class PromotionSDK {
         onVoucherApplied: ((PromotionVoucherDetail) -> Void)? = nil,
         onFeatureDisabled: (() -> Void)? = nil
     ) {
-        guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else { return }
+        guard let impl = requireImpl("openPromotionDetail(voucherId:from:)") else {
+            notifyFeatureDisabled(viewController, onFeatureDisabled)
+            return
+        }
         let nav = viewController.navigationController ?? (viewController as? UINavigationController)
         impl.openPromotionDetail(
             voucherId: voucherId,
@@ -448,7 +469,10 @@ public final class PromotionSDK {
         // Chuỗi mã lỗi viết thẳng: file Entry này KHÔNG import PRMKotlinBridge (type Kotlin lọt vào
         // chữ ký public là app host không build được — xem PublicApi.md).
         guard let impl = requireImpl("confirmRedemption(onSuccess:onError:)") else {
-            onError(.networkFailure(code: nil, message: "error_general"))
+            // `.notInitialized` chứ không `.networkFailure("error_general")`: **cùng một mã** với
+            // `PromotionSDK.api` khi chưa init, để host chỉ phải bắt một thứ cho "SDK đang tắt".
+            // Đối ứng `PRMOfferWidget.confirmRedemption` bên Android.
+            onError(.notInitialized)
             return
         }
         impl.confirmRedemption(onSuccess: onSuccess, onError: onError)

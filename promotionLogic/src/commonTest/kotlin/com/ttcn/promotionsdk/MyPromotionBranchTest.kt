@@ -321,16 +321,50 @@ class MyPromotionBranchTest {
         assertNull(s.currentState().errorCode)
     }
 
-    // ─── PromotionFeatureGate — fail-open ─────────────────────────────────────
+    // ─── PromotionFeatureGate — fail-closed trước init, fail-open sau ─────────
+
+    /**
+     * Chưa `initialize()` → **tắt hết**. Host được phép cố ý không init để tắt tính năng ở phía
+     * mình; lúc đó `openMyPromotion`/`openPromotionDetail` cũng không mở được màn nào, nên trả
+     * "bật hết" là bảo host hiện entry point dẫn tới ngõ cụt.
+     *
+     * Ca này trước đây trả `true`: lookup ném `IllegalStateException` vì đồ thị DI rỗng, và
+     * `runCatching` của gate nuốt luôn thành fail-open. Hệ quả thật: kill-switch đã tắt từ phiên
+     * trước vẫn trả `true` nếu host hỏi trước `initialize()` — cache cờ nằm sau DI nên không ai
+     * đọc được. Test này khoá lại điều đó.
+     */
+    @Test
+    fun featureGate_beforeInitialize_isFailClosed() {
+        PromotionContainer.clear()   // huỷ đồ thị mà setUp() vừa dựng
+
+        assertFalse(PromotionFeatureGate.isSdkEnabled())
+        assertFalse(PromotionFeatureGate.canOpenVoucherList())
+        assertFalse(PromotionFeatureGate.canOpenVoucherDetail())
+        assertFalse(PromotionFeatureGate.canShowVoucherSelection())
+        assertFalse(PromotionFeatureGate.canApplyVoucher())
+        assertFalse(PromotionFeatureGate.canRedeemVoucher())
+        assertFalse(PromotionFeatureGate.isEnabled("KHONG_TON_TAI"))
+    }
+
+    /**
+     * Đã `initialize()` nhưng chưa nạp cờ lần nào → **bật hết**. Đây là mặt còn lại của luật trên:
+     * mạng chậm hay server cờ chết không được phép khoá tính năng của user.
+     *
+     * Đúng trên cả hai nền tảng nhưng vì hai lý do khác nhau — JVM không có SharedPreferences nên
+     * lookup ném và rơi vào `getOrDefault(true)`; Native đọc được NSUserDefaults, thấy cache rỗng
+     * nên `FeatureFlagLocalDataSource.load()` trả `PromotionFeatureFlags.AllEnabled`.
+     */
+    @Test
+    fun featureGate_afterInitializeWithoutCache_isFailOpen() {
+        // setUp() đã initialize, và không gọi refresh() nên chưa có cờ nào từ server.
+        assertTrue(PromotionFeatureGate.isSdkEnabled())
+        assertTrue(PromotionFeatureGate.canOpenVoucherList())
+    }
 
     @Test
     fun featureGate_neverThrows_andEachGateMatchesItsFlag() {
         // Bất biến đúng trên CẢ hai nền tảng: gate không bao giờ ném (mọi lỗi tra cờ đều bị nuốt),
         // và mỗi hàm canX() chỉ là bí danh của isEnabled(<cờ tương ứng>).
-        //
-        // CỐ Ý không assert "luôn true": fail-open chỉ xảy ra khi lookup NÉM. JVM (unit test, không
-        // có SharedPreferences) thì ném → true; Native thì NSUserDefaults chạy được, cache rỗng →
-        // trả false. Khác biệt này là của tầng storage, không phải của gate.
         val flags = listOf(
             PromotionFeatureFlag.ENABLE_ALL to PromotionFeatureGate.isSdkEnabled(),
             PromotionFeatureFlag.VOUCHER_LIST to PromotionFeatureGate.canOpenVoucherList(),

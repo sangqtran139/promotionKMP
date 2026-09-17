@@ -64,8 +64,8 @@ data class PromotionFeatureFlagsSnapshot(
 
     companion object {
         /**
-         * Mặc định **fail-open**: chưa `initialize()` hoặc chưa có cache → coi như bật hết.
-         * SDK không tự khoá tính năng chỉ vì chưa gọi được API lần nào.
+         * Mặc định **fail-open**: đã `initialize()` nhưng chưa có cache (hoặc API cờ hỏng) → coi như
+         * bật hết. SDK không tự khoá tính năng chỉ vì chưa gọi được API lần nào.
          */
         @JvmField
         val AllEnabled = PromotionFeatureFlagsSnapshot(
@@ -75,6 +75,20 @@ data class PromotionFeatureFlagsSnapshot(
             voucherSelection = true,
             voucherApply = true,
             voucherRedeem = true,
+        )
+
+        /**
+         * Mặc định **fail-closed**: chưa `initialize()` → tắt hết. SDK chưa bật thì host không có gì
+         * để mở; hiện entry point ra chỉ dẫn tới ngõ cụt. Xem `PromotionFeatureGate.isEnabled`.
+         */
+        @JvmField
+        val AllDisabled = PromotionFeatureFlagsSnapshot(
+            all = false,
+            voucherList = false,
+            voucherDetail = false,
+            voucherSelection = false,
+            voucherApply = false,
+            voucherRedeem = false,
         )
     }
 }

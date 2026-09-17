@@ -323,7 +323,12 @@ final class PromotionSDKImpl: NSObject {
     /// (`if (!enableAll) return false`), field thô thì không. Đọc thẳng field sẽ trả
     /// `voucherList = true` ngay cả khi công tắc tổng đang tắt — host ẩn nhầm/hiện nhầm.
     static func featureFlagsSnapshot() -> PromotionFeatureFlagsSnapshot {
-        PromotionFeatureFlagsSnapshot(
+        // Chưa init → fail-CLOSED. Về kết quả thì thừa (6 lần `isFeatureEnabled` bên dưới đều qua
+        // gate, mà gate đã tự trả `false`), nhưng viết ra để file này đọc giống
+        // `PromotionSDK.featureFlags()` bên Android — nơi nhánh này BẮT BUỘC phải có vì đường đó
+        // không đi qua gate.
+        guard PromotionContainer.shared.isInitialized() else { return .allDisabled }
+        return PromotionFeatureFlagsSnapshot(
             all: isFeatureEnabled(.all),
             voucherList: isFeatureEnabled(.voucherList),
             voucherDetail: isFeatureEnabled(.voucherDetail),
@@ -350,7 +355,10 @@ final class PromotionSDKImpl: NSObject {
     /// `PRMConfirmationDialog` — một popup có nút "Đóng", chặn thao tác. Toast và dialog khác hẳn
     /// nhau về UX; đọc tên mà tưởng là toast thì sẽ đặt nó vào những chỗ không được phép chặn.
     /// Kèm theo đó `PRMToast` là code chết (0 chỗ dùng) nên đã xoá — không còn toast nào trong SDK.
-    func showFeatureDisabledDialog(on viewController: UIViewController) {
+    ///
+    /// `static`: nay nó còn được gọi ở nhánh **chưa `initialize()`** của các hàm `open…`, lúc đó chưa
+    /// có `impl` nào để hỏi. Thân hàm vốn không đụng state của instance nên không mất gì.
+    static func showFeatureDisabledDialog(on viewController: UIViewController) {
         let message = PromotionSDKError.featureDisabled.errorDescription
             ?? PromotionUIStrings.featureDisabled
         PRMConfirmationDialog.showError(message, in: viewController.view)
@@ -379,7 +387,7 @@ final class PromotionSDKImpl: NSObject {
                 if let onFeatureDisabled {
                     onFeatureDisabled()
                 } else {
-                    self.showFeatureDisabledDialog(on: viewController)
+                    Self.showFeatureDisabledDialog(on: viewController)
                 }
                 return
             }

@@ -20,6 +20,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
+import com.ttcn.promotionsdk.di.PromotionContainer
+import com.ttcn.promotionsdk.config.PromotionSDKConfig
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -40,6 +44,17 @@ private fun uc(json: String): PromotionUseCases {
 
 /** Chạy JSON Success Example CHÍNH THỨC (copy từ PDF) qua DTO+mapper thật → in domain data. */
 class ApiMappingVerifyTest {
+
+    // `PromotionUseCases` gác 5 hàm nghiệp vụ bằng `PromotionFeatureGate`, mà gate **fail-closed khi
+    // chưa init** (chưa init = host cố ý tắt tính năng). Không dựng container thì mọi lời gọi dưới
+    // đây dừng ở `PRM_MOB_021` trước khi chạm `MockEngine` — test pipeline sẽ đỏ vì một lý do chẳng
+    // liên quan gì tới pipeline. Các test store trong repo đã init sẵn từ trước, đây chỉ là bù cho
+    // nhóm test facade.
+    @BeforeTest
+    fun setUpContainer() = PromotionContainer.initialize(PromotionSDKConfig(baseUrl = "https://api.example.com"))
+
+    @AfterTest
+    fun tearDownContainer() = PromotionContainer.clear()
 
     @Test
     fun voucherDetail_officialExample_mapsAllChangedFields() = runTest {

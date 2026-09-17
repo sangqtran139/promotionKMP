@@ -114,7 +114,8 @@ sau khi đã `initialize(...)`: `PromotionUseCases()`.
 > **Rule kill-switch.** Mỗi hàm bị gác bởi một feature flag. Cờ TẮT → trả ngay
 > `PromotionResult.Failure(PromotionErrorCodes.FEATURE_DISABLED)` (= `PRM_MOB_021`), **không gọi mạng**.
 > `PROMOTION.ENABLE_ALL` là công tắc tổng: tắt nó thì mọi cờ con đều tắt.
-> **Fail-open**: chưa `initialize()` hoặc chưa có cache cờ → coi như bật hết.
+> **Chưa `initialize()` → tắt hết (fail-closed); đã init mà chưa có cache → bật hết (fail-open).**
+> Xem [FeatureFlag.md §1.1](../features/FeatureFlag.md#11-hai-mặc-định-ngược-nhau).
 
 ### 3.1. `searchVouchers`
 

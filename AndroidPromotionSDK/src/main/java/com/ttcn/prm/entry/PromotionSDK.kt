@@ -74,12 +74,20 @@ object PromotionSDK {
 
 
     /**
-     * Gác "đã [initialize] chưa" cho các **điểm mở màn**: chưa init → ghi `Log.e` rồi trả `false` để
-     * nơi gọi `return`, **không ném**. Đối ứng `requireImpl(_:)` bên iOS (cũng log + trả `nil`).
+     * Gác "đã [initialize] chưa": chưa init → ghi `Log.w` rồi trả `false` để nơi gọi thoát sớm,
+     * **không ném**. Đối ứng `requireImpl(_:)` bên iOS (cũng log + trả `nil`).
+     *
+     * Ba hàm `open…` gộp kết quả này với gate bằng `||` rồi cùng đi ra [notifyFeatureDisabled], nên
+     * với host thì **chưa-init và cờ-tắt là một đầu mối**: "tính năng không dùng được lúc này". Log ở
+     * đây là chỗ duy nhất phân biệt hai nguyên nhân, và nó dành cho dev tích hợp, không cho end user.
      */
     private fun requireInitialized(caller: String): Boolean {
         if (PromotionContainer.isInitialized()) return true
-        Log.e(TAG, "$caller bị gọi trước initialize() — bỏ qua. Hãy gọi PromotionSDK.initialize(...) trước.")
+        // `Log.w` chứ không `Log.e`: "chưa init" nay là **trạng thái hợp lệ** — host được phép cố ý
+        // không init để tắt tính năng ở phía mình, và khi đó dòng này in mỗi lần user chạm vào một
+        // entry point còn sót. Giữ `Log.e` thì logcat đầy lỗi giả, dev học cách lờ nó đi, và lần init
+        // hỏng thật sẽ chìm nghỉm giữa đám đó.
+        Log.w(TAG, "$caller bị gọi khi SDK chưa initialize() — bỏ qua. Nếu không cố ý tắt tính năng, hãy gọi PromotionSDK.initialize(...) trước.")
         return false
     }
 
@@ -87,7 +95,8 @@ object PromotionSDK {
      * Log chẩn đoán, **chỉ in khi host bật `isDebug`** — cùng cờ gác cURL/`LogLevel.BODY` ở
      * `PromotionHttpClient` và ảnh ở `PRMImageExt`. Đối ứng `#if DEBUG` bên iOS.
      *
-     * Khác [Log.e] của [requireInitialized]: cái đó báo host dùng SAI API nên phải luôn in; những
+     * Khác `Log.w` của [requireInitialized]: cái đó báo một entry point bị chạm khi SDK đang tắt nên
+     * phải luôn in (dev cần thấy để biết còn sót chỗ nào chưa ẩn); những
      * dòng dưới đây chỉ mô tả SDK chọn nhánh nào ở luồng chạy đúng, ra logcat bản release là rác —
      * kèm theo lộ cả tên class fragment/view của host.
      */
@@ -289,7 +298,13 @@ object PromotionSDK {
      * @param quantity Số lượng (> 0) — mặc định `1` nếu không truyền.
      * @param unitPrice Đơn giá — mặc định `"0"` nếu không truyền.
      *
-     * @throws IllegalStateException nếu [initialize] chưa được gọi.
+     * Chưa [initialize] → log rồi **bỏ qua**, không ném. Đối ứng `updateOrderInfo` bên iOS.
+     *
+     * Trước đây chỗ này `checkNotNull(mutableContext)` → ném [IllegalStateException] làm **chết app
+     * host**, trong khi iOS cùng hàm chỉ log rồi thôi. Ném được coi là hợp lý khi "chưa init" luôn
+     * đồng nghĩa với bug của host. Nay host có thể **cố ý** không init (cờ tắt tính năng ở phía
+     * host), nên đây là trạng thái hợp lệ — mà màn thanh toán thì vẫn gọi hàm này. Giết app vì một
+     * trạng thái hợp lệ là hành vi tệ nhất SDK có thể làm.
      */
     @JvmStatic
     @JvmOverloads
@@ -304,9 +319,11 @@ object PromotionSDK {
         quantity: Int? = null,
         unitPrice: String? = null,
     ) {
-        val ctx = checkNotNull(mutableContext) {
-            "PromotionSDK.initialize() must be called before updateOrderInfo()."
-        }
+        if (!requireInitialized("updateOrderInfo()")) return
+        // Đã qua `requireInitialized` thì `mutableContext` chắc chắn khác null (cả hai được gán/xoá
+        // cùng lúc trong `initialize`/`release`). Vẫn dùng `?: return` thay vì `!!` để không có
+        // đường nào ném ra khỏi hàm này.
+        val ctx = mutableContext ?: return
         ctx.orderId = orderId
         ctx.orderValue = orderValue
         ctx.metaData = metaData
@@ -330,17 +347,34 @@ object PromotionSDK {
      *
      * View đã render có thể chỉ cập nhật khi được dựng lại (rebind/đẩy màn mới) — nên cấu hình theme
      * **một lần** lúc khởi tạo là tốt nhất.
+     *
+     * Chưa [initialize] → log rồi **không làm gì**, đối xứng iOS. Trước đây hàm này áp theme vào
+     * [PromotionThemeRegistry] (chạy được, registry chỉ là bộ nhớ) rồi [PromotionThemeStore.save]
+     * âm thầm thất bại vì `PromotionContainer.preferences` chưa có — theme sống nửa vời: đúng trong
+     * phiên này, mất sau khi khởi động lại app, mà không có dấu hiệu nào. iOS cùng hàm thì no-op
+     * hoàn toàn (`impl?.applyAndPersistTheme`), nên hai nền tảng cho ra hai kết quả khác nhau.
      */
     @MainThread
     @JvmStatic
     fun configure(theme: PromotionSDKTheme?) {
+        if (!requireInitialized("configure(theme)")) return
         PromotionThemeRegistry.configure(theme)
         if (theme != null) PromotionThemeStore.save(theme) else PromotionThemeStore.clear()
     }
 
-    /** Theme đang áp (`null` nếu đang dùng mặc định). Đối ứng `PromotionSDK.currentTheme()` bên iOS. */
+    /**
+     * Theme đang áp (`null` nếu đang dùng mặc định). Đối ứng `PromotionSDK.currentTheme()` bên iOS.
+     *
+     * Chưa [initialize] → `null`, **không log**: đây là câu hỏi chứ không phải hành động, host đọc
+     * để dựng UI thì không đáng bị cảnh báo. Đối ứng `impl?.currentTheme()` bên iOS (cũng im lặng).
+     *
+     * Kiểm tường minh thay vì tin vào chuỗi bất biến "registry rỗng khi chưa init" ([configure] đã
+     * gác, [release] gọi `PromotionThemeRegistry.configure(null)`): hợp đồng này phải đúng vô điều
+     * kiện, không phụ thuộc việc ai đó sau này có giữ đúng hai chỗ kia hay không.
+     */
     @JvmStatic
-    fun currentTheme(): PromotionSDKTheme? = PromotionThemeRegistry.currentConfig()
+    fun currentTheme(): PromotionSDKTheme? =
+        if (isInitialized()) PromotionThemeRegistry.currentConfig() else null
 
     // ─── Feature flag ────────────────────────────────────────────────────────
     //
@@ -348,8 +382,12 @@ object PromotionSDK {
     // `PRMOfferWidget`) qua `PromotionFeatureGate` — bốn hàm dưới đây **không** thay thế việc đó, chúng
     // chỉ cho host *hỏi trước* để ẩn entry point của mình thay vì để user bấm rồi ăn toast PRM_MOB_021.
     //
-    // Tất cả đều **fail-open**: chưa [initialize] hoặc chưa có cache → trả "bật hết". Không hàm nào
-    // ném lỗi, vì cờ hỏng không được phép làm chết màn hình của host.
+    // Hai mặc định ngược nhau, tuỳ nguyên nhân (luật chốt ở `PromotionFeatureGate.isEnabled`):
+    //  - Chưa [initialize]      → **fail-closed**, "tắt hết". Host có thể cố ý không init để tắt
+    //    tính năng; lúc đó `open…` cũng không mở được gì, nên trả "bật hết" là dẫn tới ngõ cụt.
+    //  - Đã init, chưa có cache → **fail-open**, "bật hết". Mạng chậm không được khoá tính năng.
+    //
+    // Không hàm nào ném lỗi, vì cờ hỏng không được phép làm chết màn hình của host.
 
     /**
      * Ảnh chụp toàn bộ cờ, đọc **cache đồng bộ** — không gọi mạng, gọi được từ main thread.
@@ -361,9 +399,14 @@ object PromotionSDK {
      * Đối ứng `PromotionSDK.featureFlags()` bên iOS.
      */
     @JvmStatic
-    fun featureFlags(): PromotionFeatureFlagsSnapshot =
-        runCatching { PromotionFeatureFlagUseCases().all().toSnapshot() }
+    fun featureFlags(): PromotionFeatureFlagsSnapshot {
+        // Hỏi tường minh thay vì để `PromotionFeatureFlagUseCases()` ném rồi rơi vào `getOrDefault`:
+        // đường này KHÔNG đi qua [PromotionFeatureGate] nên không thừa hưởng fail-closed của nó.
+        // Bỏ dòng này thì Android trả "bật hết" trong khi iOS trả "tắt hết" — lệch parity câm lặng.
+        if (!isInitialized()) return PromotionFeatureFlagsSnapshot.AllDisabled
+        return runCatching { PromotionFeatureFlagUseCases().all().toSnapshot() }
             .getOrDefault(PromotionFeatureFlagsSnapshot.AllEnabled)
+    }
 
     /**
      * Tra **một** tính năng. Tương đương `featureFlags().isEnabled(feature)` nhưng khỏi dựng snapshot.
@@ -400,7 +443,7 @@ object PromotionSDK {
      * và vẫn gọi [onComplete] với giá trị đang có (fail-open).
      *
      * [onComplete] chạy trên **main thread** để host set UI được ngay. Chưa [initialize] thì gọi
-     * luôn với [PromotionFeatureFlagsSnapshot.AllEnabled].
+     * luôn với [PromotionFeatureFlagsSnapshot.AllDisabled] (fail-closed), **không** gọi mạng.
      *
      *
      * ```kotlin
@@ -416,11 +459,11 @@ object PromotionSDK {
     fun refreshFeatureFlags(onComplete: ((PromotionFeatureFlagsSnapshot) -> Unit)? = null) {
         val scope = sdkScope
         if (scope == null) {
-            // Chưa init → không có gì để nạp. Trả mặc định fail-open ngay, vẫn trên main thread.
+            // Chưa init → không có gì để nạp. Trả mặc định fail-CLOSED ngay, vẫn trên main thread.
             // Post thẳng lên main looper thay vì dựng một CoroutineScope rời: scope đó không ai giữ,
             // không ai huỷ, và ở đây chỉ để chạy đúng một lambda.
             onComplete?.let { done ->
-                Handler(Looper.getMainLooper()).post { done(PromotionFeatureFlagsSnapshot.AllEnabled) }
+                Handler(Looper.getMainLooper()).post { done(PromotionFeatureFlagsSnapshot.AllDisabled) }
             }
             return
         }
@@ -446,7 +489,8 @@ object PromotionSDK {
      * đang add trong cùng container (nếu có và đang hiện) chỉ bị `hide()`, **không** bị remove/destroy
      * view (xem [addOrHideThenAdd]); nếu null, fragment được add lên android.R.id.content.
      *
-     * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
+     * Chưa [initialize] → log rồi báo ra **đúng một đầu mối với ca cờ TẮT**: gọi [onFeatureDisabled]
+     * nếu host truyền, không thì hiện PRM_MOB_021. Không ném. Xem [requireInitialized].
      */
     /**
      * Cờ tính năng TẮT ở một điểm mở màn: **ưu tiên trả cho host**, host không nhận thì SDK tự lo.
@@ -474,8 +518,10 @@ object PromotionSDK {
         containerViewId: Int? = null,
         onFeatureDisabled: (() -> Unit)? = null,
     ) {
-        if (!requireInitialized("openMyPromotion()")) return
-        if (!PromotionFeatureGate.canOpenVoucherList()) {
+        // `||` ngắn mạch: chưa init thì `requireInitialized` đã log nêu đúng nguyên nhân, và gate
+        // không bị hỏi (hỏi cũng vô nghĩa khi đồ thị DI còn rỗng). Hai ca cùng ra **một đầu mối**
+        // [notifyFeatureDisabled] — host chỉ phải wiring một chỗ để biết "không dùng được".
+        if (!requireInitialized("openMyPromotion()") || !PromotionFeatureGate.canOpenVoucherList()) {
             notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }
@@ -544,7 +590,8 @@ object PromotionSDK {
      * chi tiết pop — nhờ vậy [hostHandlesDismiss] mới chạy được (host còn màn để tự đóng). Bỏ trống
      * thì màn vẫn đóng nhưng không ai nhận data.
      *
-     * Chưa [initialize] → log `Log.e` rồi **không làm gì** (không ném). Xem [requireInitialized].
+     * Chưa [initialize] → log rồi báo ra **đúng một đầu mối với ca cờ TẮT**: gọi [onFeatureDisabled]
+     * nếu host truyền, không thì hiện PRM_MOB_021. Không ném. Xem [requireInitialized].
      */
     @MainThread
     @JvmStatic
@@ -558,8 +605,7 @@ object PromotionSDK {
         onVoucherApplied: ((detail: PromotionVoucherDetail) -> Unit)? = null,
         onFeatureDisabled: (() -> Unit)? = null,
     ) {
-        if (!requireInitialized("openPromotionDetail()")) return
-        if (!PromotionFeatureGate.canOpenVoucherDetail()) {
+        if (!requireInitialized("openPromotionDetail()") || !PromotionFeatureGate.canOpenVoucherDetail()) {
             notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }
@@ -598,7 +644,8 @@ object PromotionSDK {
      * @param offerWidget Instance widget đang hiển thị — dùng để pre-select + nhận kết quả áp.
      * @param containerViewId Xem [openMyPromotion].
      *
-     * Chưa [initialize] → log `Log.e` rồi **không làm gì**. Xem [requireInitialized].
+     * Chưa [initialize] → log rồi báo ra **đúng một đầu mối với ca cờ TẮT**: gọi [onFeatureDisabled]
+     * nếu host truyền, không thì hiện PRM_MOB_021. Không ném. Xem [requireInitialized].
      */
     @MainThread
     @JvmStatic
@@ -609,8 +656,7 @@ object PromotionSDK {
         containerViewId: Int? = null,
         onFeatureDisabled: (() -> Unit)? = null,
     ) {
-        if (!requireInitialized("openChoosePromotion()")) return
-        if (!PromotionFeatureGate.canShowVoucherSelection()) {
+        if (!requireInitialized("openChoosePromotion()") || !PromotionFeatureGate.canShowVoucherSelection()) {
             notifyFeatureDisabled(activity, onFeatureDisabled)
             return
         }

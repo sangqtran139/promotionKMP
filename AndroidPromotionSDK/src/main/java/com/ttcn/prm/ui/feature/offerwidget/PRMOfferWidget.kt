@@ -308,6 +308,8 @@ class PRMOfferWidget @JvmOverloads constructor(
      * `PromotionIntegrateManager` — một class riêng, một scope riêng, và host phải nhớ gọi `clear()`;
      * nay chạy trên chính scope của widget nên không còn nghĩa vụ nào.
      *
+     * SDK chưa `initialize` → [onError] [PromotionSDKError.NotInitialized] — **cùng một mã** với
+     * `PromotionSDK.api` khi chưa init, để host chỉ phải bắt một thứ cho trạng thái "SDK đang tắt".
      * Widget chưa attach (chưa có ViewModel) → [onError] `PRM_ERROR_GENERAL`.
      */
     @JvmOverloads
@@ -315,6 +317,13 @@ class PRMOfferWidget @JvmOverloads constructor(
         onSuccess: () -> Unit,
         onError: (error: PromotionSDKError) -> Unit = {},
     ) {
+        // Gác TRƯỚC nhánh ViewModel: chưa init thì widget vẫn attach được (VM dựng được vì use case
+        // resolve repository lazy), nên không gác ở đây sẽ đi tiếp xuống store rồi ngã ra
+        // `PRM_MOB_021` hoặc `PRM_ERROR_GENERAL` — hai mã khác nhau cho cùng một nguyên nhân.
+        if (!PromotionSDK.isInitialized()) {
+            onError(PromotionSDKError.NotInitialized)
+            return
+        }
         val vm = viewModel
         val scope = viewScope
         if (vm == null || scope == null) {

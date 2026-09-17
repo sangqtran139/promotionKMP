@@ -1,5 +1,6 @@
 package com.ttcn.promotionsdk.domain.usecase
 
+import com.ttcn.promotionsdk.di.PromotionContainer
 import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlag
 import com.ttcn.promotionsdk.domain.model.featureflag.PromotionFeatureFlags
 import kotlin.coroutines.cancellation.CancellationException
@@ -22,9 +23,19 @@ import kotlin.coroutines.cancellation.CancellationException
  * Cờ đọc từ cache đồng bộ (`isEnabled` **không gọi mạng**). `PROMOTION.ENABLE_ALL` là công tắc
  * tổng: tắt nó thì mọi cờ con đều tắt.
  *
- * **Fail-open**: chưa `PromotionContainer.initialize(...)` hoặc chưa có cache → bật hết, đúng như
- * [PromotionFeatureFlags.AllEnabled]. Mọi hàm ở đây nuốt lỗi thay vì ném; gọi trước `initialize()`
- * trả `true`.
+ * **Hai mặc định ngược nhau — đừng gộp làm một:**
+ *
+ * | Tình huống | Trả về | Vì sao |
+ * |---|---|---|
+ * | Chưa `PromotionContainer.initialize(...)` | `false` (**fail-closed**) | SDK chưa bật thì không có màn nào mở được. Host có thể **cố ý** không init để tắt tính năng, nên trả `true` là bảo host hiện entry point dẫn tới ngõ cụt. |
+ * | Đã init, chưa có cache / API cờ hỏng | `true` (**fail-open**) | Mạng chậm hay server cờ chết không được phép khoá tính năng của user. Xem [PromotionFeatureFlags.AllEnabled]. |
+ *
+ * Trước 2026-09-17 cả hai ca cùng trả `true`: lookup ném `IllegalStateException` ("Dependency not
+ * found") khi đồ thị DI rỗng và `runCatching` nuốt luôn thành fail-open. Hệ quả thật: kill-switch đã
+ * tắt từ phiên trước vẫn trả `true` nếu host hỏi trước `initialize()` — cache cờ nằm sau DI nên
+ * không ai đọc được. Nay tách bằng một lần hỏi [PromotionContainer.isInitialized] tường minh.
+ *
+ * Mọi hàm ở đây vẫn **nuốt lỗi thay vì ném**: cờ hỏng không được phép làm chết màn hình của host.
  *
  * Chặn ở **hai tầng**:
  *  - [PromotionUseCases] (facade headless) tự gác 5 hàm nghiệp vụ → `Failure(FEATURE_DISABLED)`.
@@ -48,8 +59,13 @@ public object PromotionFeatureGate {
      * Tra một cờ bất kỳ theo tên hằng trong [PromotionFeatureFlag].
      * `PROMOTION.ENABLE_ALL` gate ngầm mọi cờ con — xem [PromotionFeatureFlags.isEnabled].
      */
-    public fun isEnabled(flagName: String): Boolean =
-        runCatching { PromotionFeatureFlagUseCases().isEnabled(flagName) }.getOrDefault(true)
+    public fun isEnabled(flagName: String): Boolean {
+        // Chưa init → fail-CLOSED. Không để `runCatching` bên dưới bắt hộ: nó không phân biệt được
+        // "DI rỗng vì chưa init" với "cache chưa có", mà hai ca đó cần hai mặc định ngược nhau.
+        if (!PromotionContainer.isInitialized()) return false
+        // Đã init → fail-OPEN cho mọi trục trặc còn lại (cache rỗng, storage hỏng…).
+        return runCatching { PromotionFeatureFlagUseCases().isEnabled(flagName) }.getOrDefault(true)
+    }
 
     /**
      * Công tắc tổng `PROMOTION.ENABLE_ALL`. Tắt nó thì mọi hàm `canX()` dưới đây đều trả `false`.
@@ -78,6 +94,8 @@ public object PromotionFeatureGate {
      */
     @Throws(CancellationException::class)
     public suspend fun refresh() {
+        // Chưa init thì không có baseUrl lẫn nguồn token để gọi API — về sớm, tường minh.
+        if (!PromotionContainer.isInitialized()) return
         val useCases = runCatching { PromotionFeatureFlagUseCases() }.getOrNull() ?: return
         useCases.refresh()
     }

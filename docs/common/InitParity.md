@@ -60,7 +60,7 @@
 | Đọc theme | **`currentTheme()`** (hàm, cả 2) | `fun currentTheme()` | `func currentTheme()` | ✅ đã nắn ở B2 |
 | Đọc callback | **`getCallback()`** (cả 2) | `fun getCallback()` | `func getCallback()` | ✅ đã nắn ở B2 |
 | Đọc version SDK | **`sdkVersion`** (cả 2) | `val sdkVersion` | `static let sdkVersion` | ✅ thêm 2026-09-10 (API-7). Android lấy `BuildConfig.SDK_VERSION`, iOS lấy `CFBundleShortVersionString` — hai số giữ trùng nhau |
-| Cờ — chụp tất cả | `featureFlags()` | `fun featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | ✅ cache đồng bộ, fail-open |
+| Cờ — chụp tất cả | `featureFlags()` | `fun featureFlags(): PromotionFeatureFlagsSnapshot` | `featureFlags() -> PromotionFeatureFlagsSnapshot` | ✅ cache đồng bộ; chưa init → tắt hết, đã init chưa có cache → bật hết |
 | Cờ — tra một | `isFeatureEnabled(feature)` | `fun isFeatureEnabled(feature: PromotionFeature)` | `isFeatureEnabled(_ feature: PromotionFeature)` | ✅ enum public mỗi bên; hằng chuỗi lõi không ra tới host |
 | Cờ — công tắc tổng | `isSdkEnabled()` | `fun isSdkEnabled()` | `isSdkEnabled()` | ✅ uỷ cho `PromotionFeatureGate.isSdkEnabled()` |
 | Cờ — nạp lại | `refreshFeatureFlags(…)` | `fun refreshFeatureFlags(onComplete? = null)` | `refreshFeatureFlags(completion:)` | ✅ callback về **main thread** |

@@ -8,6 +8,47 @@ trong `PromotionKit.xcodeproj` cho iOS — **giữ trùng số**.
 
 ## [Unreleased]
 
+### Changed — SDK không được init nay là **trạng thái hợp lệ**, mọi bề mặt public ứng xử thống nhất
+
+Host có thể dùng cờ của chính mình để quyết định có `initialize` hay không; tắt cờ thì SDK không bao
+giờ được dựng. Trước đây bề mặt public giả định "chưa init = host có bug", nên mỗi chỗ phản ứng một
+kiểu — kể cả **làm crash app host**. Nay một câu luật: *không ném, không gọi mạng, không tự vẽ gì lên
+màn host*.
+
+Hợp đồng đầy đủ: [`docs/common/PublicApi.md` §1.3](./docs/common/PublicApi.md#13-sdk-không-được-init--ứng-xử-của-toàn-bộ-bề-mặt-public).
+
+| Gọi khi chưa init | Trước | Nay |
+|---|---|---|
+| `updateOrderInfo(...)` (Android) | **ném `IllegalStateException` → crash app** | log rồi bỏ qua (đối xứng iOS) |
+| `isSdkEnabled()` / `isFeatureEnabled(_)` | `true` | `false` |
+| `featureFlags()` / `refreshFeatureFlags { }` | bật hết | tắt hết, không gọi mạng |
+| `openMyPromotion` / `openPromotionDetail` / `openChoosePromotion` | im lặng, chỉ `Log.e` | `onFeatureDisabled()`, hoặc popup PRM_MOB_021 nếu host không truyền |
+| `PRMOfferWidget` tự attach (Android) | hiện + shimmer + gọi API hỏng → `PRM_ERROR_GENERAL` | widget ẩn, không gọi mạng |
+| `confirmRedemption` (cả 2 nền tảng) | `PRM_ERROR_GENERAL` / `.networkFailure("error_general")` | `NotInitialized` |
+| `configure(theme)` | Android áp vào registry rồi **âm thầm không lưu được**; iOS no-op | cả hai: log rồi bỏ qua |
+| `currentTheme()` | Android đọc registry (có thể khác `null`); iOS `nil` | cả hai: `null`/`nil`, không log |
+| `api.*` (5 hàm headless) | `Failure(NotInitialized)` | *(không đổi — đây là mẫu chuẩn)* |
+
+**⚠️ Breaking hành vi (chữ ký không đổi).** Host đang dựa vào fail-open của cờ trước `initialize` sẽ
+thấy entry point biến mất — đó là mục đích. Host đang bắt `IllegalStateException` quanh
+`updateOrderInfo` thì `catch` đó thành code chết.
+
+**Feature flag: hai mặc định ngược nhau, tuỳ nguyên nhân.** Chưa init → **fail-closed**; đã init mà
+chưa có cache / API cờ hỏng → **fail-open** (giữ nguyên). Luật chốt ở một chỗ,
+`PromotionFeatureGate.isEnabled`. Đây cũng vá một lỗ kill-switch thật: cờ đã tắt từ phiên trước vẫn
+trả `true` nếu host hỏi trước `initialize()`, vì cache cờ nằm sau DI nên không ai đọc được.
+Xem [`docs/features/FeatureFlag.md` §1.1](./docs/features/FeatureFlag.md#11-hai-mặc-định-ngược-nhau).
+
+**Hai mã lỗi, không phải ba.** `NotInitialized` = SDK đang tắt; `FeatureDisabled` (`PRM_MOB_021`) =
+kill-switch từ server khi SDK đang chạy.
+
+**Log hạ mức** `Log.e` → `Log.w` (Android) và `os_log(.error)` → `.default` (iOS): chưa init nay in
+mỗi lần user chạm entry point còn sót, để ở mức lỗi thì log đầy lỗi giả và lần init hỏng thật sẽ chìm.
+
+Thêm `PromotionFeatureFlagsSnapshot.AllDisabled` / `.allDisabled` (Android/iOS).
+Test mới: `PromotionSDKApiNotInitializedTest`, `MyPromotionBranchTest.featureGate_beforeInitialize_isFailClosed`.
+
+
 ### Added — `PromotionHostServices`: một gói cho mọi năng lực host cấp (tracking, kho dữ liệu)
 
 Host có sẵn tracker và kho dữ liệu ở tầng native; SDK cần dùng chúng mà **không** được biết Firebase

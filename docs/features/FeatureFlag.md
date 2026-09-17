@@ -27,6 +27,7 @@ Cơ chế **bật/tắt tính năng** của SDK theo cấu hình từ xa — kil
 
 <!-- toc -->
 - [1. Các cờ](#1-các-cờ)
+  - [1.1. Hai mặc định ngược nhau](#11-hai-mặc-định-ngược-nhau)
 - [2. Gác ở hai tầng, một nguồn sự thật](#2-gác-ở-hai-tầng-một-nguồn-sự-thật)
 - [3. API cho host](#3-api-cho-host)
 - [4. Nguyên tắc dùng feature flag](#4-nguyên-tắc-dùng-feature-flag)
@@ -44,8 +45,26 @@ Ba hành vi cần nhớ:
 
 1. **`ENABLE_ALL` là công tắc tổng.** Tắt nó thì mọi cờ con đều tắt, bất kể giá trị riêng
    (`if (!enableAll) return false` trong `PromotionFeatureFlags.isEnabled`).
-2. **Fail-open.** Chưa có cache → bật hết. SDK không tự khoá tính năng khi chưa gọi được API lần nào.
-3. **`refresh()` không ném lỗi.** Gọi API thất bại thì giữ nguyên cờ đang cache.
+2. **Fail-open *sau* init, fail-closed *trước* init.** Hai mặc định ngược nhau, tuỳ nguyên nhân —
+   xem [§1.1](#11-hai-mặc-định-ngược-nhau).
+3. **`refresh()` không ném lỗi.** Gọi API thất bại thì giữ nguyên cờ đang cache. Chưa `initialize()`
+   thì nó về sớm, không gọi mạng.
+
+### 1.1. Hai mặc định ngược nhau
+
+| Tình huống | Cờ trả | Vì sao |
+|---|---|---|
+| **Chưa `PromotionContainer.initialize(...)`** | `false` — **fail-closed** | Host được phép **cố ý** không init để tắt tính năng ở phía mình. Khi đó `openMyPromotion`/`openPromotionDetail` cũng không mở được màn nào, nên trả "bật hết" là bảo host hiện entry point dẫn tới ngõ cụt. |
+| Đã init, chưa có cache / API cờ hỏng | `true` — **fail-open** | Mạng chậm hay server cờ chết không được phép khoá tính năng của user. |
+
+Luật chốt ở **một chỗ**: `PromotionFeatureGate.isEnabled` hỏi `PromotionContainer.isInitialized()`
+trước, rồi mới tới `runCatching { … }.getOrDefault(true)`. Cả hai nền tảng và cả ba tầng gác cùng ăn
+theo.
+
+> **Trước 2026-09-17 hai ca này cùng trả `true`** và đó là một lỗ kill-switch thật: lookup ném
+> `IllegalStateException` ("Dependency not found") khi đồ thị DI rỗng, `runCatching` nuốt luôn thành
+> fail-open. Nên cờ đã tắt từ phiên trước vẫn trả `true` nếu host hỏi trước `initialize()` — cache cờ
+> nằm sau DI nên không ai đọc được. Test khoá: `MyPromotionBranchTest.featureGate_beforeInitialize_isFailClosed`.
 
 Instance `PromotionFeatureFlags` **thoát ra khỏi repository đã được chuẩn hoá** bằng
 `normalized()` (`FeatureFlagRepositoryImpl.getPromotionFeatureFlags`), nên đọc thẳng field cũng đúng
@@ -162,8 +181,9 @@ Ba điều phải nhớ:
    nhau: `PromotionSDK.kt` (Android) / `PromotionSDKImpl.swift` (iOS). Đây là **ngoại lệ duy nhất**
    được phép lặp điều kiện `ENABLE_ALL`; các call site khác chỉ hỏi
    `PromotionFeatureGate.isEnabled(...)`.
-2. **Fail-open, không ném.** Chưa `initialize()` / chưa có cache → trả bật hết. Không hàm nào ném lỗi
-   hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
+2. **Không hàm nào ném.** Mặc định thì hai chiều tuỳ nguyên nhân — chưa `initialize()` → **tắt hết**
+   (fail-closed), đã init mà chưa có cache → **bật hết** (fail-open). Xem [§1.1](#11-hai-mặc-định-ngược-nhau).
+   Không hàm nào ném lỗi hay dừng chương trình; cờ hỏng không được phép làm chết màn hình của host.
 3. **Đây là tầng tuỳ chọn.** Host bỏ qua hoàn toàn thì SDK vẫn tự gác như cũ (§2).
 
 **`onAvailabilityChanged` đã bị bỏ** khỏi `PromotionSDKCallback` — host không cần biết trạng thái

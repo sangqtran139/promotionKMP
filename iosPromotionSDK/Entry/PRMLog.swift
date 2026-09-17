@@ -33,4 +33,14 @@ enum PRMLog {
     static func integrationError(_ message: String) {
         os_log("%{public}@", log: integration, type: .error, message)
     }
+
+    /// Như [integrationError] nhưng mức `.default` — dành cho **trạng thái hợp lệ mà dev vẫn nên
+    /// biết**, điển hình là chạm vào một entry point khi SDK đang tắt (host cố ý không `initialize`).
+    ///
+    /// Tách khỏi `.error` vì ca đó nay in mỗi lần user bấm, đúng như thiết kế. Để ở `.error` thì
+    /// Console.app đầy lỗi giả, dev học cách lọc bỏ category này, và lần init hỏng thật sẽ chìm.
+    /// Đối ứng `Log.w` của `requireInitialized` bên Android.
+    static func integrationWarning(_ message: String) {
+        os_log("%{public}@", log: integration, type: .default, message)
+    }
 }

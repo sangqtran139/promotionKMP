@@ -57,6 +57,7 @@ Hệ quả: **mọi model của lõi phải được map sang DTO** trước khi
 - [1. Vòng đời](#1-vòng-đời)
   - [1.1. Android](#11-android)
   - [1.2. iOS](#12-ios)
+  - [1.3. SDK không được init — ứng xử của TOÀN BỘ bề mặt public](#13-sdk-không-được-init--ứng-xử-của-toàn-bộ-bề-mặt-public)
 - [2. Feature flag — SDK tự gác, host hỏi thêm được](#2-feature-flag--sdk-tự-gác-host-hỏi-thêm-được)
 - [3. `PromotionSDKApi` — ranh giới, không phải use case](#3-promotionsdkapi--ranh-giới-không-phải-use-case)
   - [3.1. Năm hàm](#31-năm-hàm)
@@ -117,7 +118,7 @@ object PromotionSDK {
     fun configure(theme: PromotionSDKTheme?)
     fun currentTheme(): PromotionSDKTheme?
 
-    // Feature flag — fail-open, không hàm nào ném lỗi (xem §2)
+    // Feature flag — không hàm nào ném lỗi; chưa init → tắt hết (xem §2)
     fun featureFlags(): PromotionFeatureFlagsSnapshot          // cache đồng bộ, không gọi mạng
     fun isFeatureEnabled(feature: PromotionFeature): Boolean
     fun isSdkEnabled(): Boolean                                // công tắc tổng ENABLE_ALL
@@ -258,6 +259,53 @@ chuỗi rỗng), các field còn lại vẫn tuỳ chọn. `ChoosePromotionStore
 
 ---
 
+### 1.3. SDK không được init — ứng xử của TOÀN BỘ bề mặt public
+
+**Không init là trạng thái hợp lệ, không phải lỗi.** Host được phép dùng một cờ của chính mình để
+quyết định có `initialize` hay không — tắt cờ thì SDK không bao giờ được dựng. Vì vậy mọi hàm public
+phải ứng xử đoán trước được, chứ không thể giả định "chưa init nghĩa là host có bug".
+
+**Một câu luật:** *không ném, không gọi mạng, không tự vẽ gì lên màn host; trả failure / `false` /
+`null`.*
+
+| Gọi vào | Trả ra |
+|---|---|
+| `api.getVouchers` / `findEligible` / `getVoucherDetail` / `validateDiscounts` / `createRedemption` | `Failure(NotInitialized)` |
+| `PRMOfferWidget.confirmRedemption` (Android) / `PromotionSDK.confirmRedemption` (iOS) | `onError(NotInitialized)` |
+| `openMyPromotion` / `openPromotionDetail` / `openChoosePromotion` | `onFeatureDisabled()` nếu host truyền, không thì popup PRM_MOB_021 |
+| `isSdkEnabled()` / `isFeatureEnabled(_)` | `false` |
+| `featureFlags()` / `refreshFeatureFlags { }` | tắt hết, không gọi mạng |
+| `PRMOfferWidget` tự attach (Android) / `createOfferWidget` (iOS) | widget ẩn / `UIView()` rỗng, không gọi mạng |
+| `updateOrderInfo(...)` | log rồi bỏ qua |
+| `configure(theme)` | log rồi bỏ qua — **không** áp, **không** lưu |
+| `isInitialized()` | `false` |
+| `session` / `currentOrderId` / `currentOrderValue` / `currentServiceCode` / `currentMetaData` / `getCallback()` / `currentTheme()` | `null` (im lặng — đây là câu hỏi, không phải hành động) |
+| `closePromotionDetail` / `closeMyPromotion` | `false` |
+| `release()` | vô hại |
+| `sdkVersion` | chuỗi version (không phụ thuộc init) |
+
+**Hai mã lỗi, không phải ba.** `NotInitialized` = SDK đang tắt. `FeatureDisabled` (`PRM_MOB_021`) =
+kill-switch từ server khi SDK *đang chạy*. Host phân biệt được hai ca; trước đây cùng một nguyên nhân
+lại ra ba mã khác nhau (`NotInitialized`, `PRM_ERROR_GENERAL`, không mã nào).
+
+**Ngoại lệ có chủ đích:** ba hàm `open…` báo qua `onFeatureDisabled` chứ không qua mã lỗi, vì chúng
+không có kênh trả lỗi — và host chỉ cần biết "không mở được" để tự điều hướng. Chưa-init và cờ-tắt cố
+ý gộp làm **một đầu mối** ở đây; chỗ duy nhất phân biệt là log.
+
+**Log là `Log.w` / `os_log(.default)`, không phải `.error`.** Chưa init nay là trạng thái chạy bình
+thường nên dòng này in mỗi lần user chạm vào một entry point còn sót. Để ở mức `error` thì log đầy
+lỗi giả, dev học cách lờ đi, và lần init hỏng thật sẽ chìm nghỉm.
+
+> **`updateOrderInfo` từng làm crash app host.** Nó dùng `checkNotNull(mutableContext)` → ném
+> `IllegalStateException`, trong khi iOS cùng hàm chỉ log rồi thôi. Ném là hợp lý hồi "chưa init" luôn
+> đồng nghĩa với bug; nay host được cố ý không init mà màn thanh toán vẫn gọi hàm này. Đã sửa về
+> no-op, đối xứng iOS.
+
+Test khoá: `PromotionSDKApiNotInitializedTest` (cả 5 hàm headless),
+`MyPromotionBranchTest.featureGate_beforeInitialize_isFailClosed` (cờ).
+
+---
+
 ## 2. Feature flag — SDK tự gác, host hỏi thêm được
 
 **Tầng bắt buộc (SDK tự làm).** Mọi điểm vào tự gác qua `PromotionFeatureGate` của lõi
@@ -275,7 +323,8 @@ vì để user bấm rồi ăn toast:
 | `PromotionSDK.refreshFeatureFlags { flags -> … }` | `PromotionSDK.refreshFeatureFlags { flags in … }` |
 
 Ba hàm đầu đọc **cache đồng bộ** (không gọi mạng); `refreshFeatureFlags` gọi server rồi trả snapshot
-mới trên **main thread**. Tất cả **fail-open**: chưa `initialize` / chưa có cache → bật hết, và
+mới trên **main thread**. Chưa `initialize` → **tắt hết** (fail-closed); đã init mà chưa có cache →
+bật hết (fail-open). Và
 không hàm nào ném lỗi.
 
 DTO public: `PromotionFeature` (enum) + `PromotionFeatureFlagsSnapshot` — song ánh
